@@ -1,0 +1,235 @@
+#!/usr/bin/perl
+#
+#  Synopsis:
+#	Transform stream of xdr records into sql 'copy in' for xdr table
+#  Usage:
+#	xdr2sql <flowd.xdr | psql
+#  Blame:
+#	jmscott@setspace.com
+#	setspace@gmail.com
+#  Note:
+#  	Rename to bio-xdr2psql?
+#
+
+my ($first_start_time, $end_time);
+
+#
+#  Simple sanity parse of a superset of go's duration values.
+#
+my $float_re = '(?:\d{0,9}(?:\.\d{0,9})?)';
+my $duration_unit = '(?:' . $float_re . '(?:(us|ms|s|m|h)))';
+my $duration_re = '^(?:(?:' . $duration_unit . '){1,4})|0$';
+
+print <<END;
+\\timing on
+\\set ON_ERROR_STOP on
+
+\\echo search path is blobio,public
+set search_path to blobio,public;
+
+\\echo create temp table sync_xdr
+create temp table sync_xdr as
+  select
+	*,
+	'New'::text as syncability
+    from
+    	xdr
+    where
+	false
+;
+
+\\echo copy into pg_temp.sync_xdr
+copy pg_temp.sync_xdr (
+	start_time,
+	flow_sequence,
+	call_name,
+	termination_class,
+	blob,
+	termination_code,
+	wall_duration,
+	system_duration,
+	user_duration,
+	syncability
+) from stdin;
+END
+my $count = 0;
+while (<STDIN>) {
+	chomp;
+	my (
+		$start_time,
+		$flow_sequence,
+		$call_name,
+		$termination_class,
+		$blob,
+		$termination_code,
+		$wall_duration,
+		$system_duration,
+		$user_duration,
+	) = split("\t");
+
+	#
+	#  Run the gauntlet for obvious errors.
+	#
+	die "unexpected start time: $start_time" unless $start_time =~
+			/\d{4}\/\d\d\/\d\d \d\d:\d\d:\d\d(?:\.\d{1,9})?/;
+	die "unexpected flow sequence: $flow_sequence" unless $flow_sequence =~
+			/^\d{1,19}$/;
+	die "unexpected call name: $call_name"
+			unless $call_name =~/^[[:alpha:]_][[:alnum:]_]{0,127}$/;
+	die "unexpected termination class: $termination_class"
+			unless $termination_class =~ /^(OK|ERR|SIG|NOPS)$/;
+	die "unexpected termination code: $termination_code"
+			unless $termination_code =~ /^[0-9]{1,3}/ &&
+			       $termination_code >= 0 && $termination_code <=255
+	;
+	die "unexpected blob udig: $blob" unless $blob =~
+			/^[[:alpha:]][[:alnum:]]{0,14}:[[:graph:]]{1,128}$/;
+
+	die "unexpected wall duration: $wall_duration" unless
+				$wall_duration =~ /$duration_re/;
+	;
+	die "unexpected system duration: $system_duration" unless
+				$system_duration =~ /$duration_re/;
+	;
+	die "unexpected user duration: $user_duration" unless
+					$user_duration =~ /$duration_re/;
+	;
+
+	print <<END;
+$start_time\t$flow_sequence\t$call_name\t$termination_class\t$blob\t$termination_code\t$wall_duration\t$system_duration\t$user_duration\tNew
+END
+	$first_start_time = $start_time unless $first_start_time;
+	$end_time = $start_time;
+
+	$count++;
+}
+
+unless ($first_start_time) {
+	print <<END;
+\\echo no execution records scanned
+\\quit
+END
+	exit 0;
+}
+
+print <<END;
+\\.
+
+\\echo copied in $count execution records
+
+\\echo creating unique index on (start_time, flow_sequence, call_name)
+create unique index sync_xdr_bss
+  on pg_temp.sync_xdr(start_time, flow_sequence, call_name)
+;
+
+\\echo vacuum/analyze pg_temp.sync_xdr
+vacuum analyze pg_temp.sync_xdr;
+
+\\echo tagging existing xdr records
+update pg_temp.sync_xdr s
+  set
+  	syncability = 'Existing'
+  where
+  	exists (
+	  select
+	  	*
+	    from
+	    	xdr
+	    where
+		xdr.start_time = s.start_time
+		and
+		xdr.flow_sequence = s.flow_sequence
+		and
+		xdr.call_name = s.call_name
+	)
+;
+
+\\echo creating index on sync_xdr(syncability)
+create index sync_xdr_sync
+  on
+  	pg_temp.sync_xdr(syncability)
+;
+
+\\echo creating index on sync_xdr(start_time)
+create index sync_xdr_start_time
+  on
+  	pg_temp.sync_xdr(start_time)
+;
+
+\\echo revacuum/analyze pg_temp.sync_xdr after update
+vacuum analyze pg_temp.sync_xdr;
+
+\\x on
+\\echo summarizing only New execution detail records
+select
+	to_char(min(start_time), 'YYYY/MM/DD HH24:MI:SS TZ') as "Start Time",
+	to_char(max(start_time), 'YYYY/MM/DD HH24:MI:SS TZ') as "End Time",
+	(max(start_time) - min(start_time)) as "Request Duration",
+	avg(wall_duration) as "Average Wall Duration",
+	avg(system_duration) as "Average System Duration",
+	avg(user_duration) as "Average User Duration",
+	avg(wall_duration - (system_duration + user_duration))
+				as "Average Overhead Duration",
+	count(*) as "New Process Exec Count",
+	count(distinct blob) as "New Distinct Blob Count"
+  from
+  	pg_temp.sync_xdr
+  where
+	syncability = 'New'
+  order by
+  	2 desc
+;
+
+\\echo inserting new execution records ...
+insert into xdr(
+	start_time,
+	flow_sequence,
+	call_name,
+	termination_class,
+	blob,
+	termination_code,
+	wall_duration,
+	system_duration,
+	user_duration
+) select
+	start_time,
+	flow_sequence,
+	call_name,
+	termination_class,
+	blob,
+	termination_code,
+	wall_duration,
+	system_duration,
+	user_duration
+    from
+    	pg_temp.sync_xdr
+    where
+    	syncability = 'New'
+;
+
+\\x on
+\\echo summarize all xdr from $end_time to $first_start_time
+select
+	to_char('$first_start_time'::timestamptz, 'YYYY/MM/DD HH24:MI:SS TZ') as
+		"Start Time",
+	to_char('$end_time'::timestamptz, 'YYYY/MM/DD HH24:MI:SS TZ') as
+		"End Time",
+	('$end_time'::timestamptz - '$first_start_time'::timestamptz) as
+		"Request Duration",
+	avg(wall_duration) as "Average Wall Duration",
+	avg(system_duration) as "Average System Duration",
+	avg(user_duration) as "Average User Duration",
+	avg(wall_duration - (system_duration + user_duration))
+		as "Average Overhead Duration",
+	count(*) as "Total Process Exec Count",
+	count(distinct blob) as "Total Distinct Blob Count"
+  from
+  	xdr
+  where
+	start_time >= '$first_start_time'
+	and
+	start_time <= '$end_time'
+  order by
+  	2 desc
+;
+END

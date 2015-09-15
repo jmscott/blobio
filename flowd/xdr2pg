@@ -1,0 +1,237 @@
+#
+#  Synopsis:
+#	Push all process execution detail records to the PostgreSQL
+#  Usage:
+#	xdr2pg --log-dir /usr/local/setspace/log
+#  Blame:
+#	jmscott@setspace.com
+#	setspace@gmail.com
+#  Exit Status:
+#	0	no errors
+#	255	unknown system error
+#  Note:
+#  	Rename to bio-xdr2pg
+#
+
+PROG=$(basename $0)
+TMPDIR=${TMPDIR:=/tmp}
+XDR_LOG_UDIG_SET=
+JOB_XML=
+
+JOB_START_TIME=$(date +'%Y/%m/%d %H:%M:%S %z')
+
+log()
+{
+	echo "$(date +'%Y/%m/%d %H:%M:%S'): $PROG#$$: $@"
+}
+
+die()
+{
+	log "ERROR: $@" >&2
+	exit 255
+}
+
+leave()
+{
+	rm -f run/$PROG.pid $XDR_LOG_UDIG_SET $JOB_XML
+	log 'good bye, cruel world'
+}
+
+trap leave EXIT
+
+#
+#  Verify process environment
+#
+test -n "$BLOBIO_SERVICE" ||
+			die 'environment variable not defined: BLOBIO_SERVICE'
+test -n "$BLOBIO_ALGORITHM" ||
+		die 'environment variable not defined: BLOBIO_ALGORITHM'
+
+#
+#  Parse command line arguments
+#
+test $# -eq 2 || die 'wrong number of arguments'
+while [ "$1" ]; do
+	ARG=$1;  shift
+	case "$ARG" in
+	--log-dir)
+		test -z $LOG_DIR || die 'option --log-dir: alread defined'
+		LOG_DIR="$1";  shift
+		test -z $LOG_DIR && die 'option --log-dir: missing dir path'
+		test -d $LOG_DIR ||
+			die "option --log-dir: not a directory: $LOG_DIR"
+		;;
+	--*)
+		die "unknown option: $ARG"
+		;;
+	*)
+		die "unknown command line argument: $ARG"
+		;;
+	esac
+done
+test $LOG_DIR || die 'missing required option: --log-dir <dir path>'
+
+log 'hello, world'
+
+log "log dir: $LOG_DIR"
+log "BLOBIO_SERVICE: $BLOBIO_SERVICE"
+log "BLOBIO_ALGORITHM: $BLOBIO_ALGORITHM"
+log "TMPDIR: $TMPDIR"
+log "PATH: $PATH"
+log "PGHOST: $PGHOST"
+log "PGPORT: $PGPORT"
+log "PGUSER: $PGUSER"
+log "PGDATABASE: $PGDATABASE"
+
+XDR_LOG_UDIG_SET=$TMPDIR/$PROG-$$.xdr.udig
+>$XDR_LOG_UDIG_SET
+JOB_XML=$TMPDIR/$PROG-$$.job.xml
+
+ls $LOG_DIR | grep '^flowd-[0-9]*\.xdr$' | while read XDR; do
+	XDR=$LOG_DIR/$XDR
+	test -r $XDR || die "can't read xdr file: $XDR"
+	log "xdr file: $XDR"
+
+	DIGEST=$(blobio eat --input-path $XDR --algorithm $BLOBIO_ALGORITHM)
+	STATUS=$?
+	test $STATUS = 0 || die "blobio eat failed: exit status=$STATUS"
+
+	XDR_LOG_UDIG=$BLOBIO_ALGORITHM:$DIGEST
+
+	blobio eat --udig $XDR_LOG_UDIG --service $BLOBIO_SERVICE
+	STATUS=$?
+	case $STATUS in
+	#
+	#  Blob exists, so do nothing
+	#
+	0)
+		log "xdr udig: !$XDR_LOG_UDIG"
+		;;
+	#
+	#  Blob does not exist, so put to server
+	#
+	1)
+		blobio put						\
+			--input-path $XDR				\
+			--udig $XDR_LOG_UDIG				\
+			--service $BLOBIO_SERVICE
+		STATUS=$?
+		case $STATUS in
+		0)
+			log "xdr udig: >$XDR_LOG_UDIG"
+			;;
+		1)
+			die "blobio put: returned no: $XDR_LOG_UDIG"
+			;;
+		*)
+			die "blobio put failed: status=$STATUS: $XDR_LOG_UDIG"
+			;;
+		esac
+		;;
+	*)
+		die "blobio eat $SERVICE failed: status=$STATUS: $XDR_LOG_UDIG"
+		;;
+	esac
+	blobio get --udig $XDR_LOG_UDIG --service $BLOBIO_SERVICE	|
+		xdr2psql						|
+		psql
+	STATUS=${PIPESTATUS[*]}
+	test "$STATUS" = '0 0 0' ||
+				die "blobio | xdr2psql | psql failed: $STATUS"
+	#
+	#  Note:
+	#	order of xdr log and udig is wrong.
+	#	udig out to be first field, in order to minimize errors when
+	#	parsing fdr log file paths with white space.
+	#
+	echo "$XDR	$XDR_LOG_UDIG" >>$XDR_LOG_UDIG_SET ||
+					die "echo >$XDR_LOG_UDIG_SET failed"
+done
+
+XDR_COUNT=$(wc -l $XDR_LOG_UDIG_SET | awk '{print $1}')
+
+log "processed $XDR_COUNT log files"
+
+log 'taking udig of xdr udig set ...'
+XDR_LOG_UDIG_SET_UDIG=$(
+	blobio eat --algorithm $BLOBIO_ALGORITHM --input-path $XDR_LOG_UDIG_SET
+)
+STATUS=$?
+test $STATUS -eq 0 || die "blobio eat xdr-udig-set failed: exit status=$STATUS"
+XDR_LOG_UDIG_SET_UDIG="$BLOBIO_ALGORITHM:$XDR_LOG_UDIG_SET_UDIG"
+log "xdr log udig set: $XDR_LOG_UDIG_SET_UDIG"
+
+log "putting xdr udig set: $XDR_LOG_UDIG_SET_UDIG"
+blobio put								\
+	--input-path $XDR_LOG_UDIG_SET					\
+	--udig $XDR_LOG_UDIG_SET_UDIG					\
+	--service $BLOBIO_SERVICE
+STATUS=$?
+test $STATUS -eq 0 || die "blobio put xdr-udig-set failed: exit status=$STATUS"
+
+(
+	cat <<END
+<?xml version="1.0" encoding="UTF-8" ?>
+<blobio>
+ <title>Cron Job - cron-xdr2pg script loading $XDR_COUNT xdr log files</title>
+ <date>$JOB_START_TIME</date>
+ <cron-job>
+  <start-time>$JOB_START_TIME</start-time>
+
+  <hostname>$(hostname -f)</hostname>
+  <user>$USER</user>
+  <directory>$(pwd)</directory>
+
+  <shell pid="$$">
+   <argv argv0="$0">$@</argv>
+   <cron-xdr2pg>
+    <xdr-log-udig-set
+      blob="$XDR_LOG_UDIG_SET_UDIG"
+      xdr-log-count="$XDR_COUNT"
+    >
+END
+
+	#
+	#  Note:
+	#	Need to xml escape source path
+	#
+	while read SOURCE_PATH UDIG;  do
+		cat <<END
+     <xdr-log
+       blob="$UDIG"
+       source-path="$SOURCE_PATH"
+     />
+END
+	done <$XDR_LOG_UDIG_SET
+
+	cat <<END
+    </xdr-log-udig-set>
+END
+	cat <<END
+   </cron-xdr2pg>
+  </shell>
+  <end-time>$(date +'%Y/%m/%d %H:%M:%S %z')</end-time>
+ </cron-job>
+</blobio>
+END
+) >$JOB_XML
+
+log "job xml file: $JOB_XML"
+log "calculating digest of job xml file $JOB_XML"
+JOB_XML_UDIG=$BLOBIO_ALGORITHM:$(
+	blobio eat --algorithm $BLOBIO_ALGORITHM --input-path $JOB_XML
+)
+STATUS=$?
+test $STATUS -eq 0 || die "blobio eat job xml failed: status=$STATUS"
+
+log 'put job xml file ...'
+blobio put --input-path $JOB_XML --udig $JOB_XML_UDIG --service $BLOBIO_SERVICE
+STATUS=$?
+test $STATUS -eq 0 || die "blobio give job xml failed: status=$STATUS"
+
+log 'removing xdr log files ...'
+while read SOURCE_PATH UDIG;  do
+	log "-$SOURCE_PATH"
+	rm $SOURCE_PATH || die "rm $SOURCE_PATH failed"
+done <$XDR_LOG_UDIG_SET
+log "job xml blob: $JOB_XML_UDIG"
