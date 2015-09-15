@@ -1,0 +1,44 @@
+#
+#  Synopsis:
+#	Convert file system paths into udigs
+#  Usage:
+#	fs2udig | bio-eat		#  touch every blob
+#  Blame:
+#  	jmscott@setspace.com
+#  	setspace@gmail.com
+#  Note:
+#	Must have read access to $BLOBIO_ROOT/data.
+#	Starting directory must be match <algorithm>_fs
+#
+
+PROG=$(basename $0)
+
+die()
+{
+	echo "$PROG: $@" >&2
+	exit 1
+}
+
+case "$BLOBIO_ROOT" in
+'')
+	die 'environment variable BLOBIO_ROOT not defined'
+	;;
+*)
+	test -d $BLOBIO_ROOT || die "no data directory: $BLOBIO_ROOT/data"
+	cd $BLOBIO_ROOT/data || die "cd $BLOBIO_ROOT/data failed"
+	;;
+esac
+
+#
+#  Search for files in <algorithm>_fs/ not matching ^[^/]*/tmp/ or 
+#  sha/sk file blobs with dots in the file path.
+#
+#  Note:
+#	Need to positively match file blobs instead of filtering.
+#
+find *_fs -follow -type f -print			|
+	grep -v '^[^/]*/tmp/'				|
+	grep -v 'sha_fs\/.*[.]'				|
+	grep -v 'sk_fs\/.*[.]'				|
+	sed 's/_fs\//:/'				|
+	sed 's/\///g'

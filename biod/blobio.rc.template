@@ -1,0 +1,49 @@
+#!/bin/sh
+########################################################################
+# Begin $rc_base/init.d/
+#
+# Description :
+#
+# Authors     :
+#
+# Version     : 00.00
+#
+# Notes       :
+#
+########################################################################
+
+BLOBIO_ROOT=${BLOBIO_ROOT:=/usr/local/blobio}
+export BLOBIO_ROOT
+
+. /etc/sysconfig/rc
+. ${rc_functions}
+. $BLOBIO_ROOT/etc/profile.rc
+
+case "${1}" in
+	start)
+		boot_mesg "Starting BlobIO biod daemon..."
+		loadproc -p $BLOBIO_RC_BIOD_PID_FILE $BLOBIO_RC_BIOD
+		;;
+
+	stop)
+		boot_mesg "Stopping BlobIO biod daemon..."
+		killproc -p $BLOBIO_RC_BIOD_PID_FILE $BLOBIO_RC_BIOD
+		;;
+
+	restart)
+		${0} stop
+		sleep 1
+		${0} start
+		;;
+
+	status)
+		statusproc -p $BLOBIO_RC_BIOD_PID_FILE $BLOBIO_RC_BIOD
+		;;
+
+	*)
+		echo "Usage: ${0} {start|stop|restart|status}"
+		exit 1
+		;;
+esac
+
+# End $rc_base/init.d/
