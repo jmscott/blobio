@@ -7,13 +7,13 @@
 #	setspace@gmail.com
 HELP=$(cat <<'END'
 
-SYNOPSIS:
+Synopsis:
 	Merge udigs $BLOBIO_SERVICE to a target service
-USAGE:
+Usage:
 	bio-merge panoz.setspace.com:1797 [sha:1234 ...]
 	bio-merge --quiet panoz.setspace.com:1797 [sha:1234 ...]
 	bio-merge --help
-EXIT STATUS:
+Exit Status:
 	0	all source blobs exist on target server
 	1	blob does not exist on either source or target servers
 	255	unexpected error
@@ -25,10 +25,11 @@ EXIT STATUS:
 	target server, then an error - exit status 1 - occurs.  
 
 	Welcome to content addressable memory.
-ENVIRONMENT:
+Environment:
 	BLOBIO_SERVICE		defines source service
-BLAME:
+Blame:
 	jmscott@setspace.com
+	setspace@gmail.com
 END
 )
 
