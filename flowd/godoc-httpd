@@ -1,0 +1,71 @@
+#
+#  Synopsis:
+#	Start godoc http server on the blobio flowd source code
+#  Usage:
+#  	BLOBIO_ROOT=$HOME/opt/blobio
+#  	cd $BLOBIO_ROOT
+#  	sbin/godoc-httpd >log/godoc-httpd.log 2>&1 &
+#  Environment:
+#  	GOROOT
+#  	GOPATH
+#  	BLOBIO_GODOC_HTTP_SERVIVCE	# host:port for http to listen on
+#  Blame:
+#	jmscott@setspace.com
+#	setspace@gmail.com
+#  Note:
+#  	Need to do static analysis via '-analysis=type,pointer'
+#
+PROG=$(basename $0)
+NOTES='BUG|Bug|Note|NOTE|Notes|TODO|ToDo'
+
+log()
+{
+	echo "$(date +'%Y/%M/%D'): $PROG#$$: $@" 
+}
+
+die()
+{
+	log "ERROR: $@" >&2
+	exit 255
+}
+
+leave()
+{
+	log 'good bye, cruel world'
+	exit
+}
+log 'hello, world'
+trap leave EXIT QUIT TERM
+trap '' HUP
+
+test -n "$BLOBIO_ROOT" || die "BLOBIO_ROOT not defined as environment variable"
+test -d "$BLOBIO_ROOT" || die "BLOBIO_ROOT: $BLOBIO_ROOT is not a directory"
+cd $BLOBIO_ROOT || die "cd $BLOBIO_ROOT failed"
+test -r etc/profile && . etc/profile
+
+test -n "$GOROOT" || die "GOROOT not defined as environment variable"
+test -d "$GOROOT" || die "GOROOT: $GOROOT is not a directory"
+
+HTTP_SERVICE=${BLOBIO_GODOC_HTTP_SERVICE:=localhost:6060}
+
+PATH=$GOROOT/bin:$PATH
+export GOPATH=$BLOBIO_ROOT:/usr/local
+
+log "PATH=$PATH"
+log "GOROOT=$GOROOT"
+log "GOPATH=$GOPATH"
+log "BLOBIO_ROOT=$BLOBIO_ROOT"
+
+log "http service: $HTTP_SERVICE"
+log "notes: $NOTES"
+
+cd $BLOBIO_ROOT || die "cd $BLOBIO_ROOT failed"
+
+mkdir -p doc || exit 1
+exec godoc -v								\
+	-index								\
+	-links=true							\
+	-notes=$NOTES							\
+	-http=$HTTP_SERVICE						\
+	-analysis=type,pointer						\
+	-goroot=$BLOBIO_ROOT/http/go

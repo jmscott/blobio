@@ -1,0 +1,17 @@
+biod.brr
+doc
+etc
+flowd
+flowd*.fdr
+flowd-*.log
+flowd-os-exec
+flowd*.qdr
+flowd*.xdr
+fork-bench
+lib
+log
+profile
+sbin
+src
+tmp
+y.output

@@ -1,0 +1,197 @@
+#!/usr/bin/perl
+#
+#  Synopsis:
+#	Transform stream of fdr records into sql 'copy in' for fdr table
+#  Usage:
+#	fdr2sql <flowd.fdr | psql
+#  Note:
+#  	Rename to bio-fdr2psql?
+#  Blame:
+#	jmscott@setspace.com
+#	setspace@gmail.com
+#
+
+#
+#  Simple sanity parse of a superset of go's duration values.
+#
+my $float_re = '(?:\d{0,9}(?:\.\d{0,9})?)';
+my $duration_unit = '(?:' . $float_re . '(?:(us|ms|s|m|h)))';
+my $duration_re = '^(?:(?:' . $duration_unit . '){1,4})|0$';
+
+my ($first_start_time, $end_time);
+
+print <<END;
+\\timing on
+\\set ON_ERROR_STOP on
+
+\\echo create temp table sync_fdr
+create temp table sync_fdr as
+  select
+	*,
+	'New'::text as syncability
+    from
+    	blobio.fdr
+    where
+	false
+;
+
+\\echo copy into pg_temp.sync_fdr
+copy pg_temp.sync_fdr (
+	start_time,
+	blob,
+	ok_count,
+	fault_count,
+	wall_duration,
+	sequence,
+	syncability
+) from stdin;
+END
+my $count = 0;
+while (<STDIN>) {
+	chomp;
+	my (
+		$start_time,
+		$blob,
+		$ok_count,
+		$fault_count,
+		$wall_duration,
+		$sequence
+	) = split("\t");
+
+	die "unexpected start time: $start_time" unless $start_time =~
+			/\d{4}\/\d\d\/\d\d \d\d:\d\d:\d\d(?:\.\d{1,9})?/;
+	die "unexpected blob udig: $blob" unless $blob =~
+			/^[[:alpha:]][[:alnum:]]{0,14}:[[:graph:]]{1,256}$/;
+	die "unexpected ok count: $ok_count" unless $ok_count =~ /^\d{1,5}/;
+	die "unexpected fault count: $fault_count" unless
+			$fault_count =~ /^\d{1,5}/;
+	die "unexpected wall duration: $wall_duration" unless
+		$wall_duration =~ /$duration_re/ || $wall_duration eq '0'
+	;
+	die "unexpected sequence: $sequence" unless $sequence =~ /^\d{1,20}/;
+	print <<END;
+$start_time\t$blob\t$ok_count\t$fault_count\t$wall_duration\t$sequence\tNew
+END
+	$first_start_time = $start_time unless $first_start_time;
+	$end_time = $start_time;
+
+	$count++;
+}
+
+unless ($first_start_time) {
+	print <<END;
+\\echo no flow records scanned
+\\quit
+END
+	exit 0;
+}
+
+print <<END;
+\\.
+
+\\echo copied in $count flow records
+
+\\echo creating unique index on (start_time, sequence)
+create unique index sync_fdr_bss
+  on pg_temp.sync_fdr(start_time, sequence)
+;
+
+\\echo vacuum/analyze pg_temp.sync_fdr
+vacuum analyze pg_temp.sync_fdr;
+
+\\echo tagging existing fdr records
+update pg_temp.sync_fdr s
+  set
+  	syncability = 'Existing'
+  where
+  	exists (
+	  select
+	  	*
+	    from
+	    	blobio.fdr fdr
+	    where
+		fdr.start_time = s.start_time
+		and
+		fdr.sequence = s.sequence
+	)
+;
+
+\\echo creating index on sync_fdr(syncability)
+create index sync_fdr_sync
+  on
+  	pg_temp.sync_fdr(syncability)
+;
+
+\\echo creating index on sync_fdr(start_time)
+create index sync_fdr_start_time
+  on
+  	pg_temp.sync_fdr(start_time)
+;
+
+\\echo revacuum/analyze pg_temp.sync_fdr after update
+vacuum analyze pg_temp.sync_fdr;
+
+\\x on
+\\echo summarizing only New flow detail records
+select
+	to_char(min(start_time), 'YYYY/MM/DD HH24:MI:SS TZ') as "Start Time",
+	to_char(max(start_time), 'YYYY/MM/DD HH24:MI:SS TZ') as "End Time",
+	(max(start_time) - min(start_time)) as "Request Duration",
+	avg(wall_duration) as "Average Wall Duration",
+	count(*) as "New Flow Count",
+	count(distinct blob) as "Distinct Blob Count",
+	sum(ok_count) as "Ok Count",
+	sum(fault_count) as "Fault Count"
+  from
+  	pg_temp.sync_fdr
+  where
+	syncability = 'New'
+  order by
+  	2 desc
+;
+
+\\echo inserting new flow records ...
+insert into blobio.fdr(
+	start_time,
+	blob,
+	ok_count,
+	fault_count,
+	wall_duration,
+	sequence
+) select
+	start_time,
+	blob,
+	ok_count,
+	fault_count,
+	wall_duration,
+	sequence
+    from
+    	pg_temp.sync_fdr
+    where
+    	syncability = 'New'
+;
+
+\\x on
+\\echo summarize all fdr from $end_time to $first_start_time
+select
+	to_char('$first_start_time'::timestamptz, 'YYYY/MM/DD HH24:MI:SS TZ') as
+		"Start Time",
+	to_char('$end_time'::timestamptz, 'YYYY/MM/DD HH24:MI:SS TZ') as
+		"End Time",
+	('$end_time'::timestamptz - '$first_start_time'::timestamptz) as
+		"Request Duration",
+	avg(wall_duration) as "Average Wall Duration",
+	count(*) as "Total Flow Count",
+	count(distinct blob) as "Total Distinct Blob Count",
+	sum(ok_count) as "Total Ok Count",
+	sum(fault_count) as "Total Fault Count"
+  from
+  	blobio.fdr
+  where
+	start_time >= '$first_start_time'
+	and
+	start_time <= '$end_time'
+  order by
+  	2 desc
+;
+END

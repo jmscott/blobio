@@ -1,0 +1,236 @@
+Synopsis:
+	Flow blob request records into a directed acylic graph of processes
+
+Description:
+	While reading blob request records the flowd server will order the
+	execution of unix process or database queries by qualifying on the
+	exit status or query results.  The purpose of flowd is to derive
+	immutable facts about the blobs scanned on the input stream,
+	starting with unix processes than analyze the blobs and ending with
+	facts populated into a relational database.
+
+	The design inspiration of flowd is a mashup of the famous unix commands
+	"make" and "awk".  The process/query order is syntacally a directed
+	acyclic graph.  The side affects of the invoked unix processes/queries
+	is hidden from flowd, other than the exit status or query results.
+
+	The invocation of a particular process is determined by
+	qualifying on the exit status of older processes in the the
+	same flow.  A flow on a particular brr tuple will always
+	terminate, since the call order is a DAG.  However,
+	infinite loops are possible for processes that always reread a
+	blob, thus generating more brr records.
+
+	Flows are independent of other flows.  In other words, the
+	results of a particular flow can not be referenced with in flowd by
+	a different flow.
+
+	The flow diagram of the software is as follows:
+
+Flow Detail Record:
+	A flow detail record, named a "fdr", summarizes the outcome
+	of invoking a set of related calls, a "flow", on a particular blob
+	request record.
+
+	The format of an "fdr" is the typical unixy new-line separated row
+	of tab separated fields.  The layout of the fields are as follows:
+
+		start_time		#  YYYY-MM-DD hh:mm:ss.ns9 [+-]0000
+		udig			#  udig of the blob
+		ok_count		#  count of ok process exits <=2^63-1
+		fault_count		#  count of process faults <=2^63-1
+		wall_duration		#  wall clock duration seconds.nsec
+		sequence		#  service flow sequence, <= 2^63 - 1 
+
+	The combination of "start_time" and "sequence" can safely be assumed to
+	be unique for records associated with this service.  Unfortunatly, in
+	theory, the uniqueness constraint could be violated by EXTREMELY rapid
+	process bouncing.
+
+	The total number of processing events in the flow is ok_count +
+	fault_count.  Currently the flows only fire executable programs;
+	eventually, queries, forwarding a brr and, possibly, cache inquires
+	will become events within a flow.
+
+	ok and fault count are uint8.
+
+	Wall duration is float64 seconds formated as %20.9f.
+
+Process Execution Detail Record:
+	A process execution detail record, abbreviated as "xdr", summarizes
+	the outcome of calling a particular command on a particular blob.
+
+	The format of an "xdr" is the typical unixy new-line separated row
+	of tab separated fields.  The layout of the fields are as follows:
+
+		start_time		#  YYYY-MM-DD hh:mm:ss.ns9 [+-]ZZZZ
+		flow_sequence		#  service flow sequence
+		command_name		#  command name in config file
+		termination_class	#  termination class: OK, ERR, SIG, NOPS
+		udig			#  blob udig
+		termination_code	#  process/signal/query exit code value
+		wall_duration		#  wall clock duration in seconds
+		system_duration		#  os duration in seconds
+		user_duration		#  user/kids total duration in seconds
+
+	The combination of start_time, call_name and flow_sequence  can
+	safely assumed to be unique, although, in theory, uniqueness could be
+	by EXTREMELY rapid process bouncing.  See comment for "fdr"
+	
+	The NOPS termination class indicates a failure to determine the process
+	status.  Typically a NOPS means the process never started.
+
+	Wall/System/Users duration is float64 seconds formated as %20.9f.
+
+Query Detail Record:
+
+	A query detail record, abbreviated as "qdr", summarizes the
+	invocation of an sql database query 
+
+		start_time		#  YYYY-MM-DD hh:mm:ss.ns9 [+-]ZZZZ
+		flow_sequence		#  service flow sequence
+		query_name		#  name of query, unique across flow
+		termination_class	#  termination class: OK, ERR
+		udig			#  blob udig
+		sqlstate		#  sql termination state
+		rows_affected		#  Rows fetched/merged/updated
+		wall_duration		#  wall clock duration as seconds
+		query_duration		#  db query duration as seconds
+
+	As with the "xdr" records, uniqueness can be determined by start_time,
+	flow_sequence and query_name.
+
+	Wall/Query durations are float64 seconds formated as %20.9f.
+
+Blame:
+	jmscott@setspace.com
+	setspace@gmail.com
+
+Note:
+	- should [fxq]dr logs be rolled on flow boundaries?
+
+	- think about defaulting to single defined database{} in query{}
+	  statements, thus eliminating the redundant 'database is ...'
+	  statement.
+
+	- think about how to handle sql database restarts.
+
+	- should the statement 'exit_status is OK when ...' be rewritten like
+	  OK when exit_status in {...}' for a more query like syntax?
+
+	- unfortunatly the flow language is ascii only, expect for strings.
+	  being ascii only, particualr in command and query names, makes
+	  identifying exec and query detail records much easier, at the cost
+	  of completness.  investigate the meaning of the functions
+	  golang.unicode.IsLetter() and glolang.unicode.IsDigit().
+	  if command/query names are allowed to be full unicode, then maybe a
+	  field like ascii_name = "..." ought to be required in the definition.
+
+	- eliminate the NOPS and SIG as termination classes, since they have
+	  no meaning in the context of the query or command.  in other words,
+	  no action with regard to reparing the query can be done upon NOPS
+	  or SIG, so the condition should be handled at a different layer.
+
+	- insure that tail, command & sql query ascii names match the pattern
+	  ^[a-zA-Z0-9][a-zA-Z0-9_]{0,63}$.
+
+	- verify that all 64 bit counts and sequences are no bigger than
+	  2^63 - 1.
+
+	- should flowd write an [fqx]dr records summarizing the whole process
+	  activity?
+
+	- change timestamp to RFC3339Nano in [fqd]dr log files
+
+	- log when a tailed file rolls.
+
+	- The implied log rolling algorithm ought to be <prefix>-Dow.<suffix>
+          for all logs.  Specifying only a duration automatically flips to
+	  <prefix>-YYYYMMDD_hhmmss.<suffix>.  Not sure how to unix 1970 epoch.
+
+	- Why is the statement 'database is ...' required in the query
+	  definition?  when the statement is missing why not just default to
+	  the only database defined previously in the file?
+
+	- Should the flowd-<Dow>.log stats reset at midnight + 1s, after
+	  rolling the file?
+
+	- each logroll ought to write the process context at the start of the
+	  file.  in other words, enought info to debug from a single, daily
+	  log file.
+
+	- Should the statement 'sql query <name> row' be 
+	  'sql query row <name>'>?  Also, what changing the
+	  'result row is(answer bool)' to 'result row is(answer in bool)'
+
+	- does flowing {bool,string,ui64}_value full structures instead
+	  of pointers lessen garbage collection overhead.
+
+	- think about a channel that traces i/o, possibly using reflection.
+
+	- should statement blocks in the flow language be delimited
+	  with brackets [...] - instead of {...}, since backets colloquially
+	  imply a sequence and {} imply a set ?
+
+	- What about a daily summary of the rrd stats, written as the
+	  last line and the first line of every rolled log file.
+
+	- The heartbeat stats written to the flowd-Dow.log file ought to have
+	  the following form
+
+		stat: all: fault=2342,...
+		stat: today: fault=232
+		stat: sample: fault=4
+
+	  also, distinct udigs ought to be tracked.  also, maximum number
+	  of open queries.
+
+	- On every daily log roll, add dump of environment variables and
+	  any other bootup configs that dumped upon startup to newly
+	  rolled log file.
+
+	- Why not only fire a particular flow once over a particular blob
+	  in a particular duration window?
+
+	- How to eliminate the fdr service sequence number.  Does a more
+	  natural key exist?  for example, the xdr could reasonably use
+	  as a key the timestamp/call_name/udig if the flow firing
+	  were serialized per udig.  see the next item below.
+
+	- Should flowd serialize the firing of flow to a particular brr?
+	  For example, suppose the following 2 brr records.
+
+		10:00:00am	sha:abc ...	eat==no
+		10:00:01am	sha:abc ...	put==yes
+
+	  if the 10:00:00am eat fires after the 10:00:01 put, then
+	  could that problematic.  ordering for a single udig may help
+	  for independent facts about that udig, but will it help for
+	  interelated facts, like graph dependency?  not so clear.
+
+	- Also, think about adding to the command{} block a boot_command
+	  directive
+	
+		command = {
+			boot_command = {
+				path = "check-command-version";
+				argv = (
+					"some-command",
+					"5.14"
+				);
+			};
+		}
+
+	  where command.boot_command.path is invoked during bootup, exiting
+	  if the command returns non-zero.  The directive would be useful
+	  for checking the version of executables, for example.
+
+	- Think about adding code to catch runaways; i.e, commands that keep
+	  failing to frequently.  Another approach penalize blobs which keep
+	  reappearing via separate queues or weights.
+
+	- Tail needs a process oriented version.  What about a named pipe
+	  version, perhaps, where flowd creates the named pipe and starts
+	  the process.
+
+	- randomize the initial flow sequence value
