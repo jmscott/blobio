@@ -1,0 +1,143 @@
+#!/bin/bash
+#
+#  Synopsis:
+#	Take blobs from a server
+#  Usage:
+#	bio-take <file1> <file2> ...
+#	bio-take <blob-set.txt
+#  Blame:
+#	jmscott@setspace.com
+#	setspace@gmail.com
+#  Note:
+#	Need to add '--service host:port' option!!
+#
+
+PROG=$(basename $0)
+SERVICE=${BLOBIO_SERVICE:=localhost:1797}
+SAVE=yes
+
+die()
+{
+	echo "$PROG: $@" >&2
+	exit 1
+}
+
+bio_take()
+{
+	U="$1"
+
+	case "$U" in
+	*:*)
+		case $SAVE in
+		yes)
+			blobio take			\
+				--udig "$U"		\
+				--output-path $U	\
+				--service $SERVICE
+			STATUS=$?
+			case $STATUS in
+			0)
+				echo "-$U"
+				;;
+			1)
+				echo "?$U"
+				;;
+			*)
+				die "failed: exit status=$STATUS:"	\
+					"blobio take $U $SERVICE >$U"
+				;;
+			esac
+			;;
+		no)
+			blobio take			\
+				--udig "$U"		\
+				--service $SERVICE	>/dev/null
+			STATUS=$?
+			case $STATUS in
+			0)
+				echo "-$U"
+				;;
+			1)
+				echo "?$U"
+				;;
+			*)
+				die "failed: exit status=$STATUS:" 	\
+					"blobio take $U $SERVICE >/dev/null"
+				;;
+			esac
+			;;
+		*)
+			die "PANIC: impossible value for SAVE: $SAVE"
+			;;
+		esac
+		;;
+	*)
+		die "unexpected udig: $U"
+		;;
+	esac
+}
+
+case $# in
+0)
+	while read F;  do
+		bio_take "$F"
+	done
+	;;
+2)
+	case "$1" in
+	--save)
+		shift
+		case "$1" in
+		yes|no)
+			SAVE=$1
+			#
+			#  Read list of udigs from stdin
+			#
+			while read F;  do
+				bio_take "$F"
+			done
+			;;
+		*)
+			die "option --save: expected yes or no, got $1"
+			;;
+		esac
+		;;
+	*)
+		bio_take "$1"
+		bio_take "$2"
+		;;
+	esac
+	;;
+*)
+	while [ "$1" ];  do
+		UDIG=
+		ARG="$1"
+		shift
+		case "$ARG" in
+		'')
+			die 'empty argument'
+			;;
+		--save)
+			case "$1" in
+			yes|no)
+				SAVE=$1
+				shift
+				;;
+			*)
+				die "option --save: expected yes or no, got $1"
+				;;
+			esac
+			;;
+		--*)
+			die "unknown option: $ARG"
+			;;
+		*:*)
+			bio_take "$ARG"
+			;;
+		*)
+			die "unknown option: $ARG"
+			;;
+		esac
+	done
+	;;
+esac

@@ -1,0 +1,11 @@
+.svn-ignore
+BlobIO.pm
+Makefile
+blobio.c
+blobio.h
+brrstat
+dump.c
+id.c
+module.c
+sha.c
+sk.c

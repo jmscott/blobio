@@ -1,0 +1,70 @@
+#
+#  Synopsis:
+#	Cat a list of blobs
+#  Usage:
+#	bio-cat [--service host:port] udig1 [udig2 ...]
+#  Blame:
+#  	jmscott@setspace.com
+#	setspace@gmail.com
+#  Note:
+#	Default service is localhost:1797
+#	SIGPIPE needs to be ignored.
+#
+PROG=$(basename $0)
+SERVICE=${BLOBIO_SERVICE:=localhost:1797}
+
+die()
+{
+	echo "$PROG: ERROR: $@" >&2
+	exit 1
+}
+
+while [ "$1" ]; do
+	ARG="$1"
+	case "$ARG" in
+	*:*)
+		UDIG=$ARG
+		;;
+	--service)
+		shift
+		SERVICE="$1"
+		case "$SERVICE" in
+		'')
+			die 'option --service: missing service'
+			;;
+		*:*)
+			;;
+		*)
+			die "option --service: unexpected service: $SERVICE"
+			;;
+		esac
+		shift
+		continue
+		;;
+	'')
+		die 'empty blob'
+		;;
+	--*)
+		die "unknown option: $ARG"
+		;;
+	*)
+		die "unknown argument: $ARG"
+		;;
+	esac
+	#
+	#  Fetch the file from the blob server.
+	#
+	blobio get --udig $UDIG --service $SERVICE
+	STATUS=$?
+	case $STATUS in
+	0)
+		;;
+	1)
+		echo "$PROG: ?$UDIG" >&2
+		;;
+	*)
+		die "blobio get $UDIG $SERVICE failed: status=$STATUS"
+		;;
+	esac
+	shift
+done

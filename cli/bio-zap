@@ -1,0 +1,11 @@
+#
+#  Synopsis:
+#	Take a blob and delete the fetched blob
+#  Blame:
+#	jmscott@setspace.com
+#	setspace@gmail.com
+#  Note:
+#	The option --no ought to be removed from the bio-take.  bio-zap ought
+#	remove the taken blob from the file system.
+#
+exec bio-take --save no $@

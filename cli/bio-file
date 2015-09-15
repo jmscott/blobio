@@ -1,0 +1,57 @@
+#
+#  Synopsis:
+#	Unix 'file' command run on a blob
+#  Blame:
+#  	jmscott@setspace.com
+#	setspace@gmail.com
+#
+PROG=$(basename $0)
+SERVICE=${BLOBIO_SERVICE:=localhost:1797}
+ALGORITHM=sha
+TMP_FILE=${TMPDIR:=/tmp}/$PROG.$$
+
+die()
+{
+	echo "$PROG: ERROR: $@" >&2
+	exit 1
+}
+
+leave()
+{
+	STATUS=$?
+	rm -f $TMP_FILE
+	exit $STATUS
+}
+
+trap leave EXIT
+
+while [ "$1" ]; do
+	case "$1" in
+	*:*)
+		UDIG=$1
+		;;
+	'')
+		die 'empty blob'
+		;;
+	*)
+		UDIG="$ALGORITHM:$1"
+		;;
+	esac
+	shift
+	rm -f $TMP_FILE
+	blobio get --udig $UDIG --service $SERVICE --output-path $TMP_FILE
+	STATUS=$?
+	case "$STATUS" in
+	0)
+		echo $UDIG
+		;;
+	1)
+		echo "?$UDIG"
+		continue
+		;;
+	*)
+		die "blob get $UDIG $SERVICE failed"
+		;;
+	esac
+	echo "	$(file $TMP_FILE | sed 's/^[^:]*: *//')"
+done

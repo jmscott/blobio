@@ -1,0 +1,56 @@
+#
+#  Synopsis:
+#	Get a blob into a local file named <udig>.
+#  Blame:
+#  	jmscott@setspace.com
+#	setspace@gmail.com
+#
+ALGORITHM=sha
+SERVICE=${BLOBIO_SERVICE:=localhost:1797}
+
+die()
+{
+	echo "$0: $@" >&2
+	exit 1
+}
+
+while [ "$1" ]; do
+	case "$1" in
+	*:*)
+		UDIG=$1
+		;;
+	'')
+		die 'empty blob'
+		;;
+	*)
+		die "unexpected udig: $UDIG"
+		;;
+	esac
+	shift
+
+	FILE=$UDIG
+
+	#
+	#  Skip if file exists.  
+	#
+	if [ -f $FILE ];  then
+		echo "@$UDIG"
+		continue
+	fi
+	#
+	#  Fetch the file from the blob server.
+	#
+	blobio get --udig $UDIG --service $SERVICE  --output-path $FILE
+	STATUS=$?
+	case $STATUS in
+	0)
+		echo ">$UDIG"
+		;;
+	1)
+		echo "?$UDIG"
+		;;
+	*)
+		die "blobio get $UDIG $SERVICE $FILE failed: status=$STATUS"
+		;;
+	esac
+done
