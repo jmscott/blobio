@@ -1,0 +1,83 @@
+#!/bin/bash
+#
+#  Synopsis:
+#	Report on symmetric difference between the file system and service view.
+#  Usage:
+#	fs-xor-service >fs-xor-service.log 2>&1 &
+#	32 4 * * Sun sbin/fs-xor-service >>support/fs-xor-service/fsc.out 2>&1
+#  Blame:
+#	jmscott@setspace.com
+#	setspace@gmail.com
+#  Note:
+#	Would be nice to query service table and file system for timestamps,
+#	so blobs created during the scan could be quickly identified.
+#
+#	Be wary of the LC_COLLATE environment variable.  Setting value to 'C'
+#	forces sorting case sensitive ascii, I (jmscott) think.
+#
+
+PROG=$(basename $0)
+#
+#  Force sort command to honor case.
+#
+export LC_COLLATE=C
+
+log()
+{
+	echo "$(date +'%Y/%m/%d %H:%M:%S'): #$$: $@"
+}
+
+die()
+{
+	log "ERROR: $@" >&2
+	exit 1
+}
+
+leave()
+{
+	log 'good bye, cruel world'
+}
+
+log hello, world
+trap leave EXIT INT QUIT TERM
+
+test -n "$BLOBIO_ROOT" || die 'BLOBIO_ROOT environment variable not defined'
+
+cd $BLOBIO_ROOT || die "cd $BLOBIO_ROOT failed"
+log "BLOBIO_ROOT=$BLOBIO_ROOT"
+test -f etc/profile || die "expected file $BLOBIO_ROOT/etc/profile"
+. etc/profile
+
+log "PGHOST=$PGHOST"
+log "PGPORT=$PGPORT"
+log "PGUSER=$PGUSER"
+log "PGDATABASE=$PGDATABASE"
+
+log "starting scan of $(pwd)/data/ ..."
+log "file system only in left column, service only in right colum"
+comm -3 <(
+	cd data || die "cd $(pwd)/data failed"
+	find *_fs -follow -type f -print				|
+		fgrep -v '/tmp/'					|
+		fgrep -v '.DS_Store'					|
+		sed 's/\.\///'					|
+		sed 's/_fs\//:/' | sed 's/\///g'		|
+		sort
+	#
+	#  Need to check error condition!!!
+	#
+) <(
+	psql --no-align --tuples-only --command '
+select
+	blob::text
+  from
+  	blobio.service
+  order by
+  	1 asc
+') |
+	sed 's/^\t/> /' 		|
+	sed 's/^\([^>]\)/< \1/'		|
+	while read LINE;  do
+		log $LINE
+	done
+log 'done with xor of file system and service table'

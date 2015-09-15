@@ -1,0 +1,195 @@
+#/bin/bash
+#
+#  Synopsis:
+#	Eat all blobos in $BLOBIO_ROOT/data not in the blobio.service table.
+#  Usage:
+#  	fs-eat
+#  	fs-eat --help
+#  Exit Status:
+#  	0	no errors
+#  	1	error
+#  Depends:
+#	fs2udig
+#	well known gnu comm program
+#  Blame:
+#  	jmscott@setspace.com
+#  	setspace@gmail.com
+#
+
+PROG=$(basename $0)
+FS=${TMPDIR:=/tmp}/$PROG.fs.$$
+EAT=${TMPDIR:=/tmp}/$PROG.eat.$$
+SERVICE=${TMPDIR:=/tmp}/$PROG.service.$$
+SERVICE2=${TMPDIR:=/tmp}/$PROG.service2.$$
+
+log()
+{
+	echo "$(date +'%Y/%m/%d %H:%M:%S'): $PROG #$$: $@"
+}
+
+die()
+{
+	log "ERROR: $@" >&2
+	log "usage: $PROG [--help]"
+	exit 1
+}
+
+help()
+{
+	#
+	#  Burp the comments section above and exit.
+	#
+	#  Sorry about using perl for the absolute path.
+	#  Mac OSX 10.7 doesn't support gnu readlink -f
+	#
+	ABSPATH=$(perl -MCwd=realpath -e "print realpath '$0'")
+	awk '
+		!/^ *#/ {
+			exit
+		}
+		!/^# *!/
+	' $ABSPATH | sed 's/^# *//'
+	exit 0
+}
+
+leave()
+{
+	STATUS=$?
+
+	rm -f $FS $SERVICE $SERVICE2 $EAT
+	log 'good bye, cruel world'
+
+	exit $STATUS
+}
+
+test "$1" = '--help' && help
+
+log hello, world
+trap leave EXIT
+test $# -ne 0 && die 'wrong number of arguments'
+
+case "$BLOBIO_ROOT" in
+'')
+	die 'BLOBIO_ROOT environment variable not defined'
+	;;
+*)
+	cd $BLOBIO_ROOT || die "cd $BLOBIO_ROOT failed"
+	test -f etc/profile || die "expected file $BLOBIO_ROOT/etc/profile"
+	. etc/profile
+	log "BLOBIO_ROOT=$BLOBIO_ROOT"
+
+	BLOBIO_SERVICE=${BLOBIO_SERVICE:=localhost:1797}
+	log "BLOBIO_SERVICE=$BLOBIO_SERVICE"
+
+	log "PGHOST=$PGHOST"
+	log "PGPORT=$PGPORT"
+	log "PGUSER=$PGUSER"
+	log "PGDATABASE=$PGDATABASE"
+	log "LOCALE=$LOCALE"
+	;;
+esac
+
+#
+#  Fetch the set of udigs from local file system.
+#
+log 'fetching udigs with fs2udig ...'
+fs2udig | sort >$FS
+STATUS=${PIPESTATUS[*]}
+case $STATUS in
+'0 0')
+	C=$(wc -l $FS | awk '{print $1}')
+	case "$C" in
+	0)
+		log 'WARN: empty fs2udig output'
+		exit 0
+		;;
+	[1-9]*)
+		log "$C loaded from fs2udig"
+		;;
+	esac
+	;;
+*)
+	die "fs2udig | sort failed: $STATUS"
+	;;
+esac
+
+#
+#  Fetch the udigs from blobio.service table
+#
+log 'fetchings udigs from blobio.service'
+
+psql --no-align  --tuples-only <<END
+\\timing
+\\o $SERVICE
+select
+	blob
+  from
+  	service
+;
+END
+STATUS=$?
+test $STATUS = 0 || die "psql failed: status=$STATUS"
+
+#
+#  Sort the service udigs using the same sort order.
+#
+sort $SERVICE >$SERVICE2
+STATUS=$?
+test $STATUS = 0 || die "sort $SERVICE failed: status=$STATUS"
+rm $SERVICE || die "rm $SERVICE failed"
+
+C=$(wc -l $SERVICE2 | awk '{print $1}')
+case "$C" in
+0)
+	log "WARN: no blob in blobio.service table"
+	;;
+[1-9]*)
+	log "$C blobs in service table"
+	;;
+*)
+	die 'psql: sql failed'
+	;;
+esac
+
+#
+#  Find new blobs to eat
+#
+log 'finding new blobs in file system with comm ...'
+comm -2 -3 $FS $SERVICE2 >$EAT
+STATUS=$?
+test $STATUS = 0 || die "comm -2 -3 $FS $SERVICE2 failed: status=$STATUS"
+rm $SERVICE2 || die "rm $SERVICE2 failed"
+
+C=$(wc -l $EAT | awk '{print $1}')
+
+case "$C" in
+0)
+	log 'WARN: no new files'
+	exit 0
+	;;
+[1-9]*)
+	log "$C new blobs to eat"
+	;;
+*)
+	die "unexpected value for wc -l $EAT: $C"
+	;;
+esac
+
+#
+#  Eat the undiscovered blobs
+#
+while read U;  do
+	blobio eat --udig $U --service $BLOBIO_SERVICE
+	STATUS=$?
+	case $STATUS in
+	0)
+		log "<$U"
+		;;
+	1)
+		log "?$U"
+		;;
+	*)
+		die "blobio eat $UDIG $BLOBIO_SERVICE failed"
+		;;
+	esac
+done <$EAT

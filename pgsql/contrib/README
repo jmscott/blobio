@@ -1,0 +1,15 @@
+Synopsis:
+	Install udig datatype to PostgreSQL
+Description:
+	PostgreSQL database type definitions for udig, udig_sk and udig_sha
+	types.  Code intended to run postgresql source contrib directory.
+	After a successfull build of the postgresql distribution, do from this
+	directory
+
+		PGDIST=$HOME/src/postgresql-9.X.X
+
+		mkdir -p $PGDIST/contrib/udig
+		cp * $PGDIST/contrib/udig
+		cd $PGDIST/contrib/udig
+		make install
+		cp udig.sql ..
