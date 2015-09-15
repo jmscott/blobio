@@ -33,6 +33,8 @@
 #
 
 #  where to install entire blobio distribution
+#  for developement, try $(HOME)/blobio
+#
 DIST_ROOT=/usr/local/blobio
 
 #  user/group for installed distribution dir/files
