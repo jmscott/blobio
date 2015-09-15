@@ -1,0 +1,27 @@
+#!/bin/bash
+#
+#  Synopsis:
+#	Trivial rc template for sysv init environment
+#  Blame:
+#  	jmscott@setspace.com
+#  	setspace@gmail.com
+
+export BLOBIO_ROOT=/usr/local/blobio
+
+case "$1" in
+reboot)
+	rm -f $BLOBIO_ROOT/run/*.pid
+	;;
+start|stop|restart|boot)
+	su blobio -c "
+		BLOBIO_ROOT=$BLOBIO_ROOT
+		$BLOBIO_ROOT/sbin/biod_ctl $1
+	"
+	;;
+'')
+	echo "$0: missing action: expected start|stop|restart|boot"
+	;;
+*)
+	echo "$0: unknown action: $1: expected start|stop|restart|boot"
+	;;
+esac

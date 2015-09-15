@@ -1,0 +1,74 @@
+#!/usr/bin/perl
+#
+#  Synopsis:
+#	Map udigs onto a tab delimited tuple <udig> <tab> <path-to-udig-file>
+#  Description:
+#	Read a stream of blob udigs from standard input and write for each
+#	udig a tab separated tuple like:
+#
+#		<udig> <tab> path-to-blob-file
+#
+#	The path to the blob file is relative to $BLOBIO_ROOT/data.
+#	Existence is not verified for the underlying blob file.
+#
+#  Usage:
+#	# compare udig to shasum of all pdf blobs
+#
+#	$ cat pdf.udig | udig2fs-path | while read UDIG FILE;  do
+#		echo $UDIG $(shasum $BLOBIO_ROOT/data/$FILE | awk '{print $1}')
+#	done
+#  Blame:
+#  	jmscott@setspace.com
+#  	setspace@gmail.com
+#
+
+my $PROG = 'udig2fs';
+
+my $line_count = 0;
+
+$SIG{__DIE__} = sub
+{
+	my $lc;
+	my $msg = join(':', @_);
+
+	$lc = ": near line $line_count" if $line_count > 0;
+	printf STDERR "$PROG: ERROR$lc: $msg ";
+	exit 1;
+};
+
+while (my $udig = <STDIN>) {
+	$line_count++;
+	chop $udig;
+	die "unrecognized udig at line count $line_count: $udig"
+			unless $udig =~ /^([a-z]{1,8}):([[:graph:]]{32,128})$/;
+	my ($algorithm, $digest) = ($1, $2);
+
+	my ($fs, $path);
+
+	if ($algorithm eq 'sha') {
+
+		$fs = 'sha_fs';
+		die "unexpected sha digest: $digest"
+				unless $digest =~ /^[0-9a-f]{40}$/;
+
+		# sha path: 0/3c/c0cb/347e4f88/642e5470c76d0747/21f18c741
+
+		$path = $digest;
+		$path =~
+		     s/(.)(..)(....)(.{8})(.{16})(.{9})/$1\/$2\/$3\/$4\/$5\/$6/;
+	} elsif ($algorithm eq 'sk') {
+
+		$fs = 'sk_fs';
+		die "unexpected skein digest: $digest"
+				unless $digest =~ /^[[:alnum:]\@_]{43}$/;
+
+		# sk path: 1/em/ADn4/dfmx5Dox/0MJAUP_JHF@Huutj/MDN4zL33FfUA
+
+		$path = $digest;
+		$path =~
+		    s/(.)(..)(....)(.{8})(.{16})(.{12})/$1\/$2\/$3\/$4\/$5\/$6/;
+	} else {
+		die "unknown algorithm: $algorithm";
+	}
+	print $udig, "\t", "$fs/$path", "\n";
+}

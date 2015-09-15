@@ -1,0 +1,23 @@
+#
+#  Synopsis
+#	BlobIO variables used by rc.d startup script and biod daemon
+#  See Also:
+#	blobio.rc.template
+#  Blame:
+#  	jmscott@setspace.com
+#  	setspace@gmail.com
+#
+export BLOBIO_ROOT=${BLOBIO_ROOT:=/usr/local/blobio}
+
+#
+#  The script 'biod_ctl' consults $BLOBIO_SERVICE to change the port from the
+#  default port of 1797 to a different port. For example, a development server
+#  might listen on port 1796.
+#
+#  $BLOBIO_BIOD_PORT is not used by any client software.
+#
+#  Note:
+#  	The biod_ctl script outght to derive the port from $BLOBIO_SERVICE.
+#  	Defining a second variable is stupid.
+#
+#export BLOBIO_BIOD_PORT=1796

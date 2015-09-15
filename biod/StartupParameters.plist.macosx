@@ -1,0 +1,19 @@
+#
+#  Synopsis:
+#	Untested launchd service config
+#  Blame:
+#  	jmscott@setspace.com
+#  	setspace@gmail.com
+#
+{
+  Description     = "BlobIO Service";
+  Provides        = ("BlobIO");
+  Requires        = ("Network");
+  Uses            = ("Network");
+  OrderPreference = "Late";
+  Messages =
+  {
+    start = "Starting BlobIO";
+    stop  = "Stopping BlobIO";
+  };
+}
