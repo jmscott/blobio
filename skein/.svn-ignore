@@ -1,0 +1,10 @@
+libskein.a
+brg_types.h
+skein-digest
+nab.o
+skein_iv.h
+skein.h
+skein_port.h
+skein_debug.h
+SHA3api_ref.h
+brg_endian.h
