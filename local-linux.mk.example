@@ -1,0 +1,43 @@
+#
+#  Synopsis:
+#	Makefile Template for typical Linux >= 2.18
+#  Description:
+#	Template for local make environment under Linux >= 2.18
+#
+#	Examine and possbily edit the following variables:
+#
+#		DIST_ROOT	Where to install full blobio distribution;
+#				  e.g., /usr/local/blobio for production or
+#				  $HOME/opt/blobio for development.
+#
+#		DIST_USER	User Id of installed dist files.  Typically
+#				  'blobio' user in production and $USER
+#				  during development
+#
+#		DIST_GROUP	Group Id of installed dist files.  Typically
+#				  'blobio' in both production and $USER
+#				  for development.
+#
+#		GODIST		Where is go distribution installed.
+#				  Redefining GOROOT is problematic, hence GODIST
+#		
+#  Usage:
+#	cp local-linux.mk.example local.mk
+#	vi local.mk
+#	make install
+#  Blame:
+#	jmscott@setspace.com
+#	setspace@gmail.com
+#  Note:
+#	Initialize DIST_USER=$(USER)
+#
+
+#  where to install entire blobio distribution
+DIST_ROOT=/usr/local/blobio
+
+#  user/group for installed distribution dir/files
+DIST_USER=$(USER)
+DIST_GROUP=$(USER)
+
+#  where is go distribution installed
+GODIST=/usr/local/go

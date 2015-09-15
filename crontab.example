@@ -1,0 +1,75 @@
+#
+#  Synopsis:
+#	Example crontab for BlobIO daemon account
+#  Blame:
+#  	jmscott@setspace.com
+#  	setspace@gmail.com
+#
+BLOBIO_ROOT=/usr/local/blobio
+BLOBIO_SERVICE=localhost:1797
+
+#
+#  What:
+#       Wrap and eat new blobs by unrolling logs
+#  When:
+#       15 minutes after every hour
+#
+15 * * * * $BLOBIO_ROOT/sbin/cron-eat-unroll >>$BLOBIO_ROOT/log/cron-eat-unroll.log 2>&1
+
+#
+#  What:
+#       Clear log file $BLOBIO_ROOT/log/cron-eat-unroll.log
+#  When:
+#       15th day of every Apr,Nov
+#
+47 23 15 Apr,Nov * echo "$(date); cleared by cron" >$BLOBIO_ROOT/log/cron-eat-unroll.log 2>&1
+
+#
+#  What:
+#	Roll the brr log files
+#  When:
+#	4:48am every early morning, every fifth day
+#
+48 4 */5 * * (echo "$(date): cron: roll: hello world";  cd $BLOBIO_ROOT;  . etc/profile;  ROLL_UDIG=$(blobio wrap --service $BLOBIO_SERVICE);  echo "$(date): cron: roll: udig: $ROLL_UDIG";  blobio roll --service $BLOBIO_SERVICE --udig $ROLL_UDIG;  echo "$(date): cron: roll: good bye, cruel world") >>$BLOBIO_ROOT/log/wrap-roll.log 2>&1
+
+#
+#  What:
+#	Clear the log file log/wrap-roll.log
+#  When:
+#	Every Sunday at 7:44pm
+#
+44 19 * * Sun echo "$(date): cleared by cron" >$BLOBIO_ROOT/log/wrap-roll.log 2>&1
+
+#
+#  What:
+#	Clear flow, query and exec detail record logs files
+#  When:
+#	26 minutes after each hour
+#
+26 * * * * (echo "$(date): hello, world";  find $BLOBIO_ROOT/log/ -mtime +1 -follow -type f -name '*-*.[fqx]dr' | xargs --no-run-if-empty rm -v;  echo "$(date): good bye, cruel world") >>$BLOBIO_ROOT/log/purge-dr.log 2>&1
+
+#
+#  What:
+#	Save crontab every night into $BLOBIO_ROOT/etc/
+#  When:
+#	2:52am, every night
+#
+52 2 * * * crontab -l >$BLOBIO_ROOT/etc/crontab.conf
+
+#
+#  What:
+#	Startup the biod and flow servers
+#  When:
+#	On system reboot
+#  Note:
+#	Log file cleared on reboot $BLOBIO_ROOT/log/cron-reboot.log
+#
+@reboot $BLOBIO_ROOT/sbin/cron-reboot >$BLOBIO_ROOT/log/cron-reboot.log 2>&1
+
+#
+#  What:
+#       Count blobs in service
+#  When:
+#       5 minutes after every hour
+#
+5 * * * * (echo "$(date): hello, world";  . $BLOBIO_ROOT/etc/profile;  psql -c 'select count(*) from blobio.service';  echo "$(date): good bye, cruel world") >>support/service-count/service-count.log

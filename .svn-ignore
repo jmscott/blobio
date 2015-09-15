@@ -1,0 +1,13 @@
+bin
+http/bin
+http/Makefile
+cgi-bin
+data
+etc
+gospace
+htdocs
+lib
+local.mk
+log
+profile
+tmp
