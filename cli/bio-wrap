@@ -1,0 +1,39 @@
+#!/bin/bash
+HELP=$(cat <<'END'
+
+Synopsis:
+	Wrap blob request records of service in $BLOBIO_SERVICE
+Usage:
+	bio-wrap [--help]
+Exit Status:
+	0	ok, udig of wrap set written to standard out
+	1	no, wrap failed
+	255	unexpected error
+Blame:
+	jmscott@setspace.com
+	setspace@gmail.com
+END
+)
+
+PROG=$(basename $0)
+SERVICE=${BLOBIO_SERVICE:=localhost:1797}
+
+help()
+{
+	echo "$HELP"
+	exit 0
+}
+
+die()
+{
+	echo "$PROG: ERROR: $@" >&2
+	exit 255
+}
+
+test "$1" = '--help' && help
+test $# -eq 0 || die 'wrong number of arguments'
+
+blobio wrap --service $BLOBIO_SERVICE
+STATUS=$?
+test $STATUS = 0 -o $STATUS = 1 && exit $STATUS
+die "blobio wrap $BLOBIO_SERVICE failed: exit status=$STATUS"

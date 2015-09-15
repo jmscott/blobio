@@ -1,0 +1,159 @@
+#!/bin/bash
+#
+#  Synopsis:
+#	Merge two blob.io services
+#  Blame:
+#  	jmscott@setspace.com
+#	setspace@gmail.com
+HELP=$(cat <<'END'
+
+SYNOPSIS:
+	Merge udigs $BLOBIO_SERVICE to a target service
+USAGE:
+	bio-merge panoz.setspace.com:1797 [sha:1234 ...]
+	bio-merge --quiet panoz.setspace.com:1797 [sha:1234 ...]
+	bio-merge --help
+EXIT STATUS:
+	0	all source blobs exist on target server
+	1	blob does not exist on either source or target servers
+	255	unexpected error
+
+	If the blob already exists on the target server but NOT on the source
+	server, then no error occurs.  In other words, the merge has been
+	fulfilled, despite the non existence of the blob on the source server.
+	However, if the blob does not exist either on the source or on the 
+	target server, then an error - exit status 1 - occurs.  
+
+	Welcome to content addressable memory.
+ENVIRONMENT:
+	BLOBIO_SERVICE		defines source service
+BLAME:
+	jmscott@setspace.com
+END
+)
+
+PROG=$(basename $0)
+EAT_ERR=${TMPDIR:=/tmp}/$PROG.eat-err.$$
+SRC=${BLOBIO_SERVICE:=localhost:1797}
+TGT=
+QUIET=no
+STATUS=
+
+leave()
+{
+	rm -f $EAT_ERR
+}
+
+help()
+{
+	#
+	#  Burp the comments section above and exit.
+	#
+	#  Sorry about using perl for the absolute path.
+	#  Mac OSX 10.7 doesn't support gnu readlink -f
+	#
+	echo "$HELP"
+	exit 0
+}
+
+trap leave EXIT
+
+die()
+{
+	echo "$PROG: $@" >&2
+	echo "usage: $PROG [--help] host:port <udig ...>" >&2
+	exit 255
+}
+
+case "$1" in
+--help)
+	help
+	;;
+--quiet)
+	QUIET=yes
+	shift
+	;;
+esac
+
+case "$1" in
+'')
+	die 'missing host:port as first command line argument'
+	;;
+--help)
+	help
+	;;
+*:*)
+	TGT="$1"
+	;;
+*)
+	die "expected host:port as first command argument: $1"
+	;;
+esac
+shift
+
+merge_blob()
+{
+	UDIG=$1
+	case "$UDIG" in
+	*:*)
+		;;
+	*)
+		die "unexpected udig: $UDIG"
+		;;
+	esac
+
+	#
+	#  Check if the blob exists on other server.
+	#
+	blobio eat --service "$TGT" --udig "$UDIG"
+	STATUS=$?
+	case $STATUS in
+	0)
+		test $QUIET = no && echo "@$UDIG"
+		return 0		#  blob already exists on other server
+		;;
+	1)
+		;;		# does not exist on other server
+	*)
+		die "blobio eat $TGT $UDIG failed: status=$STATUS"
+		;;
+	esac
+
+	#
+	#  Pipe source blob to target service.
+	#
+	blobio get --service "$SRC" --udig "$UDIG" |
+			blobio put --service "$TGT" --udig "$UDIG" 2>$EAT_ERR
+	STATUS=${PIPESTATUS[*]}
+
+	case $STATUS in
+	'0 0')
+		test $QUIET = no && echo ">$UDIG"
+		return 0			#  blob sunk to other server
+		;;
+	'1 '*)
+		test $QUIET = no && echo "?$UDIG"
+		return 3			#  blob does not exist in source
+		;;
+	*)
+		test -s $EAT_ERR && cat $EAT_ERR >&2
+		die "blobio get($SRC) | put($TGT) $UDIG failed: status=$STATUS"
+		;;
+	esac
+}
+
+while [ "$1" ];  do
+	U=$1
+	shift
+	merge_blob $U
+
+	STATUS=$?
+	case $STATUS in
+	0|1|2|3)
+		;;
+	*)
+		exit $STATUS
+		;;
+	esac
+done
+exit $STATUS

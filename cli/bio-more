@@ -1,0 +1,69 @@
+#!/bin/bash
+#
+#  Synopsis:
+#	bio-cat <udig> | more
+#  Blame:
+#  	jmscott@setspace.com
+#	setspace@gmail.com
+HELP=$(cat <<'END'
+
+SYNOPSIS:
+	Pipe a contatenated list of blobs to 'more' program, for easy viewing
+USAGE:
+	bio-more [--service host:port] udig1 [udig2 ...]
+END
+)
+
+PROG=$(basename $0)
+SERVICE=${BLOBIO_SERVICE:=localhost:1797}
+
+trap '' PIPE
+
+help()
+{
+	echo "$HELP"
+	exit 0
+}
+
+die()
+{
+	echo "$PROG: ERROR: $@" >&2
+	exit 1
+}
+
+while [ "$1" ]; do
+	ARG="$1"
+	case "$ARG" in
+	--help)
+		help
+		;;
+	*:*)
+		UDIG=$ARG
+		;;
+	'')
+		die 'empty blob'
+		;;
+	--*)
+		die "unknown option: $ARG"
+		;;
+	*)
+		die "unknown argument: $ARG"
+		;;
+	esac
+	#
+	#  Fetch the file from the blob server.
+	#
+	blobio get --udig $UDIG --service $BLOBIO_SERVICE
+	STATUS=$?
+	case $STATUS in
+	0)
+		;;
+	1)
+		echo "$PROG: ?$UDIG" >&2
+		;;
+	*)
+		die "blobio get $UDIG $SERVICE failed: status=$STATUS"
+		;;
+	esac
+	shift
+done | more

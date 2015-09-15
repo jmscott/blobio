@@ -1,0 +1,168 @@
+#!/bin/bash
+HELP=$(cat <<'END'
+
+Synopsis:
+	Unroll all wrapped sets into a set of udigs
+Usage:
+	bio-unroll
+	bio-unroll --cache-dir
+Exit Status:
+	0	Ok, set of all wraps has been blobified
+	1	Missing non-empty wrap blob encountered
+	255	System Error
+Blame:
+	jmscott@setspace.com
+	setspace@gmail.com
+END
+)
+PROG=$(basename $0)
+TMPDIR=${TMPDIR:=/tmp}
+BLOBIO_SERVICE=${BLOBIO_SERVICE:=localhost:1797}
+NOW=$(date +'%s')
+
+WORK_DIR=$TMPDIR/$PROG.$NOW.$$.d
+CACHE_DIR=
+
+leave()
+{
+	STATUS=$?
+	cd $TMPDIR
+	test "$TMPDIR" != '.' && test -e $WORK_DIR && rm -r $WORK_DIR
+	exit $STATUS
+}
+
+trap leave EXIT
+
+die()
+{
+	echo "$PROG: ERROR: $@" >&2
+	exit 255
+}
+
+cache_blob()
+{
+	UDIG=$1
+
+	test -n "$UDIG" || return 1		#  empty string
+
+	#
+	#  If blob is well-known empty digest, then done  
+	#
+	blobio empty --udig $UDIG && return 1
+
+	#
+	#  If non-empty blob cache file is empty, then done, as well.
+	#  Caller will clear the blob contents after parsing
+	#
+	OUTPUT_PATH=$CACHE_DIR/$UDIG
+	if [ -e $OUTPUT_PATH ];  then
+		test -s $OUTPUT_PATH || return 1
+		return 0
+	fi
+
+	blobio get							\
+		--udig $UDIG						\
+		--service $BLOBIO_SERVICE				\
+		--output-path $OUTPUT_PATH
+	STATUS=$?
+	case $STATUS in
+	0)
+		chmod u+w $OUTPUT_PATH ||
+		       die "cache_blob: chmod $OUTPUT_PATH failed:"	\
+		       		"exit status=$?"
+		test -s $OUTPUT_PATH ||
+			die "cache_blob: unexpected empty file: $OUTPUT_PATH"
+		return 0
+		;;
+	1)
+		echo "WARN: blob does not exist: $UDIG at $BLOBIO_SERVICE"
+		exit 1
+		;;
+	*)
+		die "cache_blob: blobio get failed: exit status=$STATUS"
+	esac
+}
+
+test "$1" = '--help' && echo "$HELP" && exit 0
+case $# in
+0)
+	;;
+2)
+	test "$1" = '--cache-dir' || die "unexpected option: $1"
+	test -n "$2" || die 'option --cache-dir: missing directory path'
+	CACHE_DIR=$2
+	test -d $CACHE_DIR || die "option --cache-dir: no directory: $CACHE_DIR"
+	test -w $CACHE_DIR || die "option --cache-dir: not writable: $CACHE_DIR"
+	;;
+*)
+	die "wrong number of arguments: got $#, expected either 0 or 2"
+	;;
+esac
+
+
+mkdir $WORK_DIR || die "mkdir $WORK_DIR failed: exit status=$?"
+cd $WORK_DIR || die "cd $WORK_DIR failed: exit status=$?"
+
+#
+#  Make a temp blob cache dir, if caller has not specified directory.
+#
+if [ -z "$CACHE_DIR" ];  then
+	mkdir cache || die "mkdir $(pwd)/cache failed: exit status=$?"
+	CACHE_DIR=cache
+fi
+
+WRAP_UDIG=$(blobio wrap --service $BLOBIO_SERVICE)
+STATUS=$?
+test $STATUS = 0 || die "blobio wrap $BLOBIO_SERVICE failed"
+
+echo $WRAP_UDIG >WRAP_UDIG_SET
+
+#
+#  Find all "wrap/ok" udigs by exploding the brr log blobs of each wrap set.
+#  Proceed until no wrap sets are found.
+#
+while [ -e WRAP_UDIG_SET ];  do
+	>WRAP_UDIG_SET_NEW || die ">WRAP_UDIG_SET_NEW failed: exi status=$?"
+	while read WRAP_UDIG;  do
+		cache_blob $WRAP_UDIG || continue
+		echo $WRAP_UDIG
+		WRAP_SET_BLOB=$CACHE_DIR/$WRAP_UDIG
+
+		#
+		#  Filter the brr logs for wrap requests.
+		#  In the background, write the wrap udig to the WRAP_FIFO.
+		#
+		while read BRR_LOG_UDIG;  do
+			BRR_LOG=$CACHE_DIR/$BRR_LOG_UDIG
+
+			#
+			#  Already processed the brr file
+			#
+			test -e $BRR_LOG && continue
+
+			#
+			#  Fetch the blob.  Skip if blob is empty.  
+			#
+			cache_blob $BRR_LOG_UDIG || continue
+
+			awk -F'	' '
+				$3 == "wrap" &&
+				$5 == "ok" {
+					print $4
+				}
+			' $BRR_LOG
+			>$BRR_LOG || die ">$BRR_LOG failed: exit status=$?"
+		done <$WRAP_SET_BLOB >>WRAP_UDIG_SET_NEW
+		>$WRAP_SET_BLOB || die ">$WRAP_SET_BLOB failed: exit status=$?"
+	done <WRAP_UDIG_SET
+	rm WRAP_UDIG_SET
+
+	#
+	#  If new wrap set blobs have been found, then mv newly found
+	#  set to WRAP_UDIG_NEW
+	#
+	if [ -s WRAP_UDIG_SET_NEW ];  then
+		mv WRAP_UDIG_SET_NEW WRAP_UDIG_SET ||
+		 die "mv WRAP_UDIG_SET_NEW WRAP_UDIG_SET failed: exit status=$?"
+	fi
+done

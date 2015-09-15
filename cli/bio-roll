@@ -1,0 +1,72 @@
+#!/bin/bash
+HELP=$(cat <<'END'
+
+Synopsis:
+	Roll blob request records of service in $BLOBIO_SERVICE
+Usage:
+	bio-roll [--help]
+Exit Status:
+	0	ok, roll succeeded
+	1	no, roll failed
+	2	wrap sent no, so roll not attempted
+	bio-roll [--help]
+Blame:
+	jmscott@setspace.com
+	setspace@gmail.com
+END
+)
+
+PROG=$(basename $0)
+SERVICE=${BLOBIO_SERVICE:=localhost:1797}
+
+help()
+{
+	echo "$HELP"
+	exit 0
+}
+
+log()
+{
+	echo "$PROG: $@"
+}
+
+die()
+{
+	echo "$PROG: ERROR: $@" >&2
+	exit 255
+}
+
+test "$1" = '--help' && help
+test $# -eq 0 || die 'wrong number of arguments'
+
+#
+#  Fetch the most recent udig.  Croak if we can't fetch a wrap set udig.
+#
+WRAP_UDIG=$(blobio wrap --service $BLOBIO_SERVICE)
+STATUS=$?
+case $STATUS in
+0)
+	;;
+1)
+	log "ERROR: wrap replied with 'no', so roll not attempted" >&2
+	exit 2
+	;;
+*)
+	die "blob wrap $BLOBIO_SERVICE failed: exit status=$STATUS"
+	;;
+esac
+
+blobio roll --udig $WRAP_UDIG --service $BLOBIO_SERVICE
+STATUS=$?
+case $STATUS in
+0)
+	echo $WRAP_UDIG
+	exit 0
+	;;
+1)
+	log "ERROR: roll replied with 'no': wrap set $WRAP_SET" >&2
+	exit 1
+	;;
+esac
+
+die "blobio roll $BLOBIO_SERVICE failed: exit status=$STATUS"
