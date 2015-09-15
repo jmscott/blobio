@@ -1,0 +1,97 @@
+#
+#  Synopsis:
+#	Cron script to fully reboot all blob process @reboot cron schedule
+#  Usage:
+#	#  in crontab
+#	BLOBIO_ROOT=/usr/local/blobio
+#	@reboot $BLOBIO_ROOTsbin/cron-reboot 				\
+#		>>$BLOBIO_ROOT/log/cron-reboot.log 2>&1
+#  Blame:
+#  	jmscott@setspace.com
+#  	setspace@gmail.com
+#
+
+PROG=$(basename $0)
+
+log()
+{
+	echo "$(date +'%Y/%m/%d %H:%M:%S'): $PROG#$$: $@"
+}
+
+die()
+{
+	log "ERROR: $@" >&2
+	exit 1
+}
+
+leave()
+{
+	log 'good bye, cruel world'
+}
+
+log 'hello, world'
+trap leave EXIT
+
+test -n "$BLOBIO_ROOT" || die "environment variable not defined: BLOBIO_ROOT"
+log "BLOBIO_ROOT=$BLOBIO_ROOT"
+
+cd $BLOBIO_ROOT || die "cd $BLOBIO_ROOT failed"
+. etc/profile
+
+#
+#  Stop any running flowd process using pkill/pgrep brothers
+#
+PGREP_RE='flowd server etc/blobio.flow'
+log "pkill $PGREP_ARGV ..."
+
+pkill -u $USER -f "$PGREP_RE"
+STATUS=$?
+case $STATUS in
+0)
+	log 'flowd was running and killed'
+	;;
+1)
+	log 'no flowd process found'
+	;;
+*)
+	die "PANIC: pkill $USER flowd failed: exit status=$STATUS"
+	;;
+esac
+
+#
+#  Insure flowd has stopped
+#
+if [ $STATUS = 0 ];  then
+	TRIES=10
+	PAUSE=2
+	log "pausing $PAUSE seconds while flowd exits"
+	while sleep $PAUSE;  do
+		test $TRIES -eq 0 && die "can't kill flowd"
+		pgrep -u $USER -f "$PGREP_RE" >/dev/null
+		STATUS=$?
+		case $STATUS in
+		0)
+			log "flowd stilling running: remaining attempts: $TRIES"
+			;;
+		1)
+			log 'flowd not running'
+			break
+			;;
+		*)
+			die "pgrep $PGREP_ARGV failed: exit status=$STATUS"
+			;;
+		esac
+		TRIES=$(expr $TRIES - 1)
+	done
+fi
+
+log 'calling biod_ctl reboot ...'
+biod_ctl reboot
+test $? = 0 || die "biod_ctl reboot failed: exit status=$STATUS"
+log 'biod_ctl reboot ok'
+
+log 'starting flowd server in background ...'
+flowd server etc/blobio.flow &
+log "flowd server process id is $!"
+
+exit 0

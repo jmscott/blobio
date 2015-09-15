@@ -1,0 +1,358 @@
+Synopsis:
+	A trivial protocol to manage immutable blobs over a network.
+Usage:
+	#  get a blob
+	$ nc blob.setspace.com 1797
+	> get sha:a0bc76c479b55b5af2e3c7c4a4d2ccf44e6c4e71
+	< To be, or not to be : that is the question:
+	< Whether 'tis nobler in the mind to suffer
+	< The slings and arrows of outrageous fortune,
+	< ...
+	<EOT>
+
+	#  put a blob to network
+	$ echo 'hello, world' | shasum
+	cd50d19784897085a8d0e3e413f8612b097c03f1  -
+	$ nc blob.setspace.com 1797
+	> put sha:cd50d19784897085a8d0e3e413f8612b097c03f1
+	> hello, world
+	< ok
+	<EOT>
+
+	# take a blob
+	$ nc blob.setspace.com 1797
+	> take sha:cd50d19784897085a8d0e3e413f8612b097c03f1
+	< ok
+	< hello, world
+	> ok
+	< ok
+	<EOT>
+
+	# does the blob still exist?
+	$ nc blob.setspace.com 1797
+	> get sha:cd50d19784897085a8d0e3e413f8612b097c03f1
+	< no
+	<EOT>
+
+Description:
+	The blobio environment implements a simple client/server protocol for 
+	associating crypto hash digests as keys for immutable binary
+	large objects stored on the "cloud".  The blobs are referenced with a
+	uri (uniform resource identifier) called a uniform digest, shortened to
+	'udig', with a syntax like
+
+		algorithm:digest
+
+	where 'algorithm' is the hash algorithm, like 'sha' for example, and
+	'digest' is the hash value of the blob.  the colon character separates
+	the algorithm and the digest.  the algorithm matches the perl5 regex
+	
+		^[a-z][a-z0-9]{0,7}$
+
+	and digest matches both the regexs
+
+		^[[:isgraph:]]{32,128}$
+		^[[:isascii:]{32,128}$
+
+	An example udig is sha:cd50d19784897085a8d0e3e413f8612b097c03f1
+	which describes the string "hello, world\n".
+
+		echo 'hello, world' | shasum
+		cd50d19784897085a8d0e3e413f8612b097c03f1  -
+
+	The network protocol implements 7 verbs
+	
+		get <udig>		fetch a blob
+		put <udig>		write a blob
+		take <udig>		fetch a blob that server may forget
+		give <udig>		write a blob that client may forget
+		eat <udig>		verify a blob exists on server
+
+		wrap			bundle current unwrapped brr traffic
+					logs into a single blob and return
+					udig of the set of all blobs wrapped
+					after the previous roll. the wrapped
+					<udig>, returned to client, will
+					be in the next wrap, which allows
+					perpetual chaining.
+
+		roll <udig>		forget all wrapped BRR logs in the
+					set described by <udig>.  subsequent
+					wrap/rolls will probably never see
+					these BRR sets again. however, the
+					blobs themselves will exist and 
+					be gettable.  the <udig> of the rolled
+					udig will be in the next wrap set
+					as a "roll" blob request record.
+
+
+	and replys comprised of sequences of 'ok' and 'no'.
+
+	For each correct client request the server writes a request record
+	in the ascii character set.  The format of a single request record is
+	a new-line terminated list of tab separated fields, i.e, the typical
+	unixy ascii record:
+
+		start_time		#  YYYY-MM-DD hh:mm:ss.ns9 [+-]0000
+		netflow			#  [a-z][a-z0-9]{0,7}~[[:graph:]]{1,128}
+		verb			#  get/put/take/give/eat/wrap/roll
+		algorithm:digest	#  udig of the blob in request
+		chat_history		#  ok/no handshake between server&client
+		blob_size		#  unsigned 64 bit long < 2^63
+		wall_duration		#  wall clock duration in seconds.ns9>=0
+
+	Most important is that each request is associated with a single blob
+	described by a udig. Also, BRR records are always syntactally correct
+	as described above. For example, a request for a syntactically incorrect
+	udig or an unknown verb will not generate a BRR record.
+	The maximum size of a blob request record is 365 ascii chars =
+	
+		(9+1+8+1+9+1+5) + 1 +	=   start request time
+		(8+1+128) + 1 +		>=  netflow
+		(8) + 1 +		>=  verb
+		(8+1+128) + 1 +		>=  algorithm:digest
+		(8) + 1 + 		>=  chat history
+		(20) + 1 +		>=  blob size
+		(10+1+9)		>=  wall duration
+
+		<= 365 ascii chars
+
+	not including a trailing new-line or null characters.
+
+Protocol Flow:
+ 	>get udig\n			# request for blob
+ 	    <ok\n[blob bytes][close]	#   server sends blob
+            <no\n[close]		#   server rejects request
+
+  	>put udig\n[blob]		# request for blob
+  	    <ok\n[close]		#   server accepts blob
+            <no\n[close]		#   server rejects request
+
+  	>take udig\n			# request for blob
+  	    <ok\n[blob bytes]		#   server sends blob
+  		>ok\n			#     client has the blob
+  		    <ok[close]		#       server forgets the blob
+  		    <no[close]		#       server may not forget the blob
+  		>no[close]		#     client rejects blob
+  	    <no\n[close]		#   server rejects request
+
+  	>give udig\n[blob]		# client sends the blob
+  	    <ok\n			#   server accepts the blob
+  	        >ok[close]		#     client forgets blob
+  		>no[close]		#     client might remember the blob
+  	    <no\n[close]		#   server rejects blob request
+
+	>eat udig\n			# client requests to verify blob
+	    <ok\n			#   blob exists and has been verified
+	    <no\n			#   server was unable to digest the blob
+
+	>wrap				# request udig set of traffic logs
+	    <ok\nudig\n[close]		#   udig of set of traffic logs
+	    <no\n[close]		#   no logs available
+
+	>roll udig			# udig set of traffic logs to forget
+	    <ok\n[close]		# logs forgotten by server.  typically
+	    				# a wrap set.
+	    <no\n[close]		# not all logs in set forgotten
+
+	Warning: the protocol is ambiguous about how the end of the blob stream
+	is physically interpreted.  This may turn out to be a serious design
+	flaw, particulary with regard to denial-of-service attacks.  Essentially
+	the only indication that the end of the blob has been reached is that 
+	the socket has closed;  nothing in the protocol explicity indicates
+	"END of BLOB", other than the sequence of bytes matching the signature.
+	In other words, only the digest presented by the request determines
+	the correctness of the blob.
+
+	As blobio evolves, I (jmscott) expect a client friendly, RESTful and
+	inherently more complex caching protocol to be built in front of the
+	blobio protocol described above.  In other words, a biod server never
+	talks to untrusted code, due to the denial of service susceptibility
+	described above.
+
+Blame:
+ 	jmscott@setspace.com
+ 	setspace@gmail.com
+
+Protocol Questions:
+	- change definition of udig to match the pattern:
+
+		[a-z][a-z0-9]{0,7}:[[:graph:]]{32,128}
+
+	  what about forbidding ':' in digest?
+
+	- should 'roll' with no udig return the last rolled udig?
+
+        - think about a "prove" command that allows the server to formally prove
+	  the existence of a set of blobs, thus verifying the server is not
+	  lying about storage.  the obvious technique would be for the client
+	  to send the udig of a randomly selected set of blobs for which the
+	  server is expected to digest the cancatenation of the blobs.
+
+	- should the length of a digest always >= 20 (length 2^64)?
+	  what is the relationship between the complexity of the digest and the
+	  complexity of the name of the algorithm.  in other words, for a given
+
+	  	algorithm:digest
+
+	  should the
+	  	
+			length(digest) > length(algorithm)
+	  
+	- should the algorithm name be allowed to possibly start with a capital
+	  X, for possible private, extended digest algorithms?  perhaps lower
+	  case x is sufficent.
+
+	- should the @ character in the nab encoding be replaced with the dash
+	  character?  RFC 3986 (circa 2005) officially reserves the at sign, @,
+	  character in url encoding.  perhaps ~ should replace @?  is the dash
+	  character too easy to confuse with the under score?  perhaps both
+	  the @ and _ should be replaced with a dash and period?
+
+	- reimplement wrap as
+
+		wrap <udig>
+
+	  the idea is that the final record of the wrap set will always contain
+	  <udig>, creating a kind of audit trail.  also insures no wrap set is
+	  empty and sequential wraps could always return different udigs if the
+	  given udig was unique. in shell parlance
+
+	  	test $(blobio wrap <udigA>) = $(blobio wrap <udigB>)
+
+	  is always false, even when udigA = udigB.
+
+	- a roll without a udig
+
+Billing Model Questions:
+	- what to measure per billing cycle:
+		total count of blobs stored
+		total bytes stored
+		total bytes transfered on public interface
+		avg transfer bytes/duration > X
+			for blob size > Y
+		total number of eat requests/proof of retrievability
+
+		should a small numbers of plans exist or should a formula
+		determine cycle charges?
+
+		what about overages? a mulligan is nice for customer
+		satisfaction but rolling to next higher plan is draconian.
+
+	- duration of storage: per blob or per plan?
+
+	- should the blob request record include a "duration to first byte",
+	  which measures the difference between start_time and time after the
+	  first read or write to the client.  the time to first byte can be
+	  observed on the network, sort of.  the sender will see a slightly
+	  different time to first byte than the receiver, as with the
+	  start_time.
+Memes:
+	- ruminate on constructive proofs of protocols.
+
+	- name the get/put/give/take protocol 'blob.io'.  what, really, is the
+	  blobio protocol?  are many assumptions made about the math behind
+	  digests (wtf)?
+
+	- de-emphasize key/value, emphasize historical flow of events.
+	   never rediscover of facts is silly
+
+	- perpetual accuracy, rigorous participants in protocol,
+	   proof of retrievability
+
+	- locking humour from internet
+	    Almost every locking scheme starts off as "one big lock around 
+	    everything" and a vague hope that performance won't suck. When that 
+	    hope is dashed, and it almost always is, the big lock is broken up 
+	    into smaller ones and the prayer is repeated, and then the whole 
+	    process is repeated, presumably until performance is adequate.
+	    Often, though, each iteration increases complexity and locking
+	    overhead by 20-50% in return for a 5-10% decrease in lock
+	    contention. With luck, the net result is still a modest increase in
+	    performance, but actual decreases are not uncommon. The designer is
+	    left scratching his head (I use "his" because I'm a guy myself; get
+	    over it). "I made the locks finer grained like all the textbooks
+	    said I should," he thinks, "so why did performance get worse?"
+To Do:
+	- Should the variable BLOBIO_ROOT be renamed BLOBIO_INSTALL or
+	  BLOBIO_DIST?  Currently BLOBIO_ROOT means the actual install 
+	  directory and not the parent, which is the correct root.
+
+	- in biod is a three second socket accept timeout to quick?
+
+	- shasum on mac os is about 3 times quicker than 'blobio eat'. why?
+
+	- add option to biod to limit size of accepted blob
+
+	- what about adding system/user duration to the brr record?
+	  need to do now.
+
+	- investigate linux splice() system call.
+
+	- create postgres types for at least brr timestamp and netflow.
+
+	- eliminate the sk: algorithm in a udig.  screws up case dependent
+	  mac os file system
+
+	- think about separate biod processes sharing the same data/ file system
+	  but otherwise separate.  or, explore union file systems.
+
+	- biod does not always remove run/biod.pid
+
+	- make the postgresql udig data type be an extension
+
+	- prove that every brr log contains a successful "wrap" other than the
+	  the first brr log.  critical to prove this.
+
+	- two quick wraps in a row could generate the same wrap set?
+
+	- should BRR log files always have unique digests, modulo other servers.
+
+	- contemplate running the server such that the empty blob always exists
+
+	- in biod server, investigate closing down all unused file descriptiors
+	  upon forking a blob request
+
+	- what about a stats process to handle rolling, distinct udig count
+	  and blob byte count?
+
+	- think about adding fadvise to file system blob reads.
+          seems natural since every open of blob file will read the entire blob.
+
+	- rename biod-logger/brr-logger/arborist processes to shorter
+		biod-log, biod-brr-log, biod-arbor
+
+	- rethink how stats are delivered to snmp or rrd graphs - udp service?
+
+	- cleanup the code in server/sha_fs.c
+
+	- create an is_empty() function in postgres/udig and in blobio client.
+
+	- add support for unix domain socket, std{in,out}, inetd, and libevent
+
+	- upon server start up on mac os x test for case sensitive file system
+
+	     see http://www.mail-archive.com/wine-devel@winehq.org/msg66830.html
+
+	  another idea under macosx would be to convert blob file path to lower
+	  case.
+
+	- rewrite makefile for client only install, without golang requirement
+
+	- should the postgres datatype include a function is_zero_size(udig)?
+
+	- the postgres udig data type ought to be in the blobio schema.
+
+	- merge fdr2sql & cron-fdr2pg into flowd
+
+	- enable/disable specific commands get/put/give/take per server/per
+	  subnet
+
+	- trivial bandwidth throttling
+
+	- move log/*.[fx]dr files to spool
+
+	- named pipes to flowd as another tail source
+
+	- signal handling needs to be pushed to main listen loop or cleaned
+ 	  up with sigaction().
