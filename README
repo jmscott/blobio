@@ -256,9 +256,7 @@ Billing Model Questions:
 Memes:
 	- ruminate on constructive proofs of protocols.
 
-	- name the get/put/give/take protocol 'blob.io'.  what, really, is the
-	  blobio protocol?  are many assumptions made about the math behind
-	  digests (wtf)?
+	- name the get/put/give/take protocol 'blob.io'.
 
 	- de-emphasize key/value, emphasize historical flow of events.
 	   never rediscover of facts is silly
