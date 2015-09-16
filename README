@@ -36,7 +36,7 @@ Usage:
 
 Description:
 	The blobio environment implements a simple client/server protocol for 
-	associating crypto hash digests as keys for immutable binary
+	associating crypto hash digests as keys for immutable, binary
 	large objects stored on the "cloud".  The blobs are referenced with a
 	uri (uniform resource identifier) called a uniform digest, shortened to
 	'udig', with a syntax like
