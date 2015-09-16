@@ -176,10 +176,6 @@ Protocol Flow:
 	talks to untrusted code, due to the denial of service susceptibility
 	described above.
 
-Blame:
- 	jmscott@setspace.com
- 	setspace@gmail.com
-
 Protocol Questions:
 	- what about forbidding ':' as a digest character?
 
@@ -319,3 +315,7 @@ To Do:
 
 	- signal handling needs to be pushed to main listen loop or cleaned
  	  up with sigaction().
+
+Blame:
+ 	jmscott@setspace.com
+ 	setspace@gmail.com
