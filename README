@@ -63,10 +63,10 @@ Description:
 
 	The network protocol implements 7 verbs
 	
-		get <udig>		fetch a blob
-		put <udig>		write a blob
-		take <udig>		fetch a blob that server may forget
-		give <udig>		write a blob that client may forget
+		get <udig>		get a blob with a particular digest
+		put <udig>		write a blob with a digest
+		take <udig>		get a blob that server may forget
+		give <udig>		put a blob that client may forget
 		eat <udig>		verify a blob exists on server
 
 		wrap			bundle current unwrapped brr traffic
@@ -78,14 +78,13 @@ Description:
 					perpetual chaining.
 
 		roll <udig>		forget all wrapped BRR logs in the
-					set described by <udig>.  subsequent
-					wrap/rolls will probably never see
-					these BRR sets again. however, the
-					blobs themselves will exist and 
-					be gettable.  the <udig> of the rolled
-					udig will be in the next wrap set
+					udig set described by <udig>.
+					subsequent wrap/rolls will probably
+					never see these BRR sets again.
+					however, the blobs themselves will exist
+					and be gettable.  the <udig> of the
+					rolled udig will be in the next wrap set
 					as a "roll" blob request record.
-
 
 	and replys comprised of sequences of 'ok' and 'no'.
 
@@ -107,12 +106,12 @@ Description:
 		blob_size		#  unsigned 64 bit long < 2^63
 		wall_duration		#  request wall duration in sec.ns>=0
 
-	Most important is that each request is associated with a single blob
-	described by a udig. Also, BRR records are always syntactally correct
-	as described above. For example, a request for a syntactically incorrect
-	udig or an unknown verb will not generate a BRR record.
+	Most important is that each client request is associated with a single
+	blob described by a udig. Also, BRR records are always syntactally
+	correct as described above.  For example, a request for a syntactically
+	incorrect udig or an unknown verb will not generate a BRR record.
 
-	The maximum size of a blob request record is 371 ascii chars =
+	The maximum size of a blob request record is 371 bytes.
 	
 		(10+1+8+1+9+1+5) + 1 +	=   start request time
 		(8+1+128) + 1 +		>=  netflow
@@ -122,28 +121,28 @@ Description:
 		(20) + 1 +		>=  blob size
 		(10+1+9)		>=  wall duration
 
-		<= 371 ascii chars
+		<= 371 bytes
 
-	not including a trailing new-line spool/biod.brr or null characters.
+	not including a trailing new-line spool/biod.brr or null character.
 
 Protocol Flow:
- 	>get udig\n			# request for blob
- 	    <ok\n[blob bytes][close]	#   server sends blob
+ 	>get udig\n			# request for blob by udig
+ 	    <ok\n[bytes][close]		#   server sends bytes of blob
             <no\n[close]		#   server rejects request
 
-  	>put udig\n[blob]		# request for blob
-  	    <ok\n[close]		#   server accepts blob
+  	>put udig\n[bytes]		# put udig and blob bytes
+  	    <ok\n[close]		#   server accepts blob bytes
             <no\n[close]		#   server rejects request
 
-  	>take udig\n			# request for blob
-  	    <ok\n[blob bytes]		#   server sends blob
+  	>take udig\n			# request for blob by udig
+  	    <ok\n[bytes]		#   server sends blob bytes
   		>ok\n			#     client has the blob
   		    <ok[close]		#       server forgets the blob
   		    <no[close]		#       server may not forget the blob
   		>no[close]		#     client rejects blob
   	    <no\n[close]		#   server rejects request
 
-  	>give udig\n[blob]		# client sends the blob
+  	>give udig\n[bytes]		# client sends the udig and blob bytes
   	    <ok\n			#   server accepts the blob
   	        >ok[close]		#     client forgets blob
   		>no[close]		#     client might remember the blob
