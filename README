@@ -44,7 +44,7 @@ Description:
 		algorithm:digest
 
 	where 'algorithm' is the hash algorithm, like 'sha' for example, and
-	'digest' is the hash value of the blob.  the colon character separates
+	'digest' is the ascii hash value of the blob.  the colon character separates
 	the algorithm and the digest.  the algorithm matches the perl5 regex
 	
 		^[a-z][a-z0-9]{0,7}$
