@@ -36,9 +36,9 @@ Usage:
 
 Description:
 	The blobio environment implements a simple client/server protocol for 
-	associating crypto hash digests as keys for immutable, binary
-	large objects stored on a network.  The blobs are referenced with a
-	uri (uniform resource identifier) called a uniform digest, shortened to
+	associating crypto hash digests as keys for immutable, binary large
+	objects stored on a network.  The blobs are referenced with a uri
+	(uniform resource identifier) called a uniform digest, shortened to
 	'udig', with a syntax like
 
 		algorithm:digest
@@ -89,10 +89,12 @@ Description:
 
 	and replys comprised of sequences of 'ok' and 'no'.
 
-	On the blob server, named biod, for each correct client request
-	a single record describing the request is written to
-	server:$BLOBIO_ROOT/spool/biod.brr.  Those records are named
-	"Blob Request Records" and abbreiviated as BRR.
+	On the blob server, named "biod", for each correct client request a
+	single record describing the request is written to the file
+
+		server:$BLOBIO_ROOT/spool/biod.brr
+
+	Those records are named "Blob Request Records" and abbreiviated as BRR.
 
 	The format of a single request record is a new-line terminated list of
 	tab separated fields, i.e, the typical unixy ascii record:
@@ -109,6 +111,7 @@ Description:
 	described by a udig. Also, BRR records are always syntactally correct
 	as described above. For example, a request for a syntactically incorrect
 	udig or an unknown verb will not generate a BRR record.
+
 	The maximum size of a blob request record is 365 ascii chars =
 	
 		(10+1+8+1+9+1+5) + 1 +	=   start request time
