@@ -44,12 +44,13 @@ Description:
 		algorithm:digest
 
 	where 'algorithm' is the hash algorithm, like 'sha' for example, and
-	'digest' is the ascii hash value of the blob.  the colon character separates
-	the algorithm and the digest.  the algorithm matches the perl5 regex
+	'digest' is the ascii hash value of the blob.  The colon character
+	separates the algorithm and the digest.  The algorithm matches the
+	perl5 regex
 	
 		^[a-z][a-z0-9]{0,7}$
 
-	and digest matches both the regexs
+	and the digest matches
 
 		^[[:isgraph:]]{32,128}$
 		^[[:isascii:]{32,128}$
@@ -88,18 +89,21 @@ Description:
 
 	and replys comprised of sequences of 'ok' and 'no'.
 
-	For each correct client request the server writes a request record
-	in the ascii character set.  The format of a single request record is
-	a new-line terminated list of tab separated fields, i.e, the typical
-	unixy ascii record:
+	On the blob server, named biod, for each correct client request
+	a single record describing the request is written to
+	server:$BLOBIO_ROOT/spool/biod.brr.  Those records are named
+	"Blob Request Records" and abbreiviated as BRR.
 
-		start_time		#  YYYY-MM-DD hh:mm:ss.ns9 [+-]0000
+	The format of a single request record is a new-line terminated list of
+	tab separated fields, i.e, the typical unixy ascii record:
+
+		start_time		#  YYYY-MM-DDThh:mm:ss.ns[+-]HH:MM
 		netflow			#  [a-z][a-z0-9]{0,7}~[[:graph:]]{1,128}
 		verb			#  get/put/take/give/eat/wrap/roll
 		algorithm:digest	#  udig of the blob in request
 		chat_history		#  ok/no handshake between server&client
 		blob_size		#  unsigned 64 bit long < 2^63
-		wall_duration		#  wall clock duration in seconds.ns9>=0
+		wall_duration		#  request wall duration in sec.ns>=0
 
 	Most important is that each request is associated with a single blob
 	described by a udig. Also, BRR records are always syntactally correct
@@ -107,17 +111,17 @@ Description:
 	udig or an unknown verb will not generate a BRR record.
 	The maximum size of a blob request record is 365 ascii chars =
 	
-		(9+1+8+1+9+1+5) + 1 +	=   start request time
+		(10+1+8+1+9+1+5) + 1 +	=   start request time
 		(8+1+128) + 1 +		>=  netflow
 		(8) + 1 +		>=  verb
 		(8+1+128) + 1 +		>=  algorithm:digest
-		(8) + 1 + 		>=  chat history
+		(8) + 1 + 		>=  chat history: max=ok,ok,ok
 		(20) + 1 +		>=  blob size
 		(10+1+9)		>=  wall duration
 
-		<= 365 ascii chars
+		<= 371 ascii chars
 
-	not including a trailing new-line or null characters.
+	not including a trailing new-line spool/biod.brr or null characters.
 
 Protocol Flow:
  	>get udig\n			# request for blob
