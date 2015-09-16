@@ -112,7 +112,7 @@ Description:
 	as described above. For example, a request for a syntactically incorrect
 	udig or an unknown verb will not generate a BRR record.
 
-	The maximum size of a blob request record is 365 ascii chars =
+	The maximum size of a blob request record is 371 ascii chars =
 	
 		(10+1+8+1+9+1+5) + 1 +	=   start request time
 		(8+1+128) + 1 +		>=  netflow
