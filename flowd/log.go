@@ -65,7 +65,7 @@ func wtf(format string, args ...interface{}) {
 	wtf_once.Do(io)
 
 	pay := &wtf_payload{
-		msg:  Sprintf("wtf: %s\n", Sprintf(format, args...)),
+		msg:  Sprintf("WTF: %s\n", Sprintf(format, args...)),
 		done: make(chan bool),
 	}
 	wtf_io <- pay
