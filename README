@@ -181,11 +181,7 @@ Blame:
  	setspace@gmail.com
 
 Protocol Questions:
-	- change definition of udig to match the pattern:
-
-		[a-z][a-z0-9]{0,7}:[[:graph:]]{32,128}
-
-	  what about forbidding ':' in digest?
+	- what about forbidding ':' as a digest character?
 
 	- should 'roll' with no udig return the last rolled udig?
 
@@ -194,26 +190,6 @@ Protocol Questions:
 	  lying about storage.  the obvious technique would be for the client
 	  to send the udig of a randomly selected set of blobs for which the
 	  server is expected to digest the cancatenation of the blobs.
-
-	- should the length of a digest always >= 20 (length 2^64)?
-	  what is the relationship between the complexity of the digest and the
-	  complexity of the name of the algorithm.  in other words, for a given
-
-	  	algorithm:digest
-
-	  should the
-	  	
-			length(digest) > length(algorithm)
-	  
-	- should the algorithm name be allowed to possibly start with a capital
-	  X, for possible private, extended digest algorithms?  perhaps lower
-	  case x is sufficent.
-
-	- should the @ character in the nab encoding be replaced with the dash
-	  character?  RFC 3986 (circa 2005) officially reserves the at sign, @,
-	  character in url encoding.  perhaps ~ should replace @?  is the dash
-	  character too easy to confuse with the under score?  perhaps both
-	  the @ and _ should be replaced with a dash and period?
 
 	- reimplement wrap as
 
@@ -227,8 +203,6 @@ Protocol Questions:
 	  	test $(blobio wrap <udigA>) = $(blobio wrap <udigB>)
 
 	  is always false, even when udigA = udigB.
-
-	- a roll without a udig
 
 Billing Model Questions:
 	- what to measure per billing cycle:
@@ -255,14 +229,12 @@ Billing Model Questions:
 	  start_time.
 
 Memes:
-	- ruminate on constructive proofs of protocols.
-
-	- name the get/put/give/take protocol 'blob.io'.
+	- name the get/put/give/take/wrap/roll/eat protocol 'blob.io'.
 
 	- de-emphasize key/value, emphasize historical flow of events.
 	   never rediscover of facts is silly
 
-	- perpetual accuracy, rigorous participants in protocol,
+	- blob.io gives perpetual accuracy, rigorous participants in protocol,
 	   proof of retrievability
 To Do:
 	- Should the variable BLOBIO_ROOT be renamed BLOBIO_INSTALL or
