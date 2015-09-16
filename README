@@ -253,6 +253,7 @@ Billing Model Questions:
 	  observed on the network, sort of.  the sender will see a slightly
 	  different time to first byte than the receiver, as with the
 	  start_time.
+
 Memes:
 	- ruminate on constructive proofs of protocols.
 
@@ -263,20 +264,6 @@ Memes:
 
 	- perpetual accuracy, rigorous participants in protocol,
 	   proof of retrievability
-
-	- locking humour from internet
-	    Almost every locking scheme starts off as "one big lock around 
-	    everything" and a vague hope that performance won't suck. When that 
-	    hope is dashed, and it almost always is, the big lock is broken up 
-	    into smaller ones and the prayer is repeated, and then the whole 
-	    process is repeated, presumably until performance is adequate.
-	    Often, though, each iteration increases complexity and locking
-	    overhead by 20-50% in return for a 5-10% decrease in lock
-	    contention. With luck, the net result is still a modest increase in
-	    performance, but actual decreases are not uncommon. The designer is
-	    left scratching his head (I use "his" because I'm a guy myself; get
-	    over it). "I made the locks finer grained like all the textbooks
-	    said I should," he thinks, "so why did performance get worse?"
 To Do:
 	- Should the variable BLOBIO_ROOT be renamed BLOBIO_INSTALL or
 	  BLOBIO_DIST?  Currently BLOBIO_ROOT means the actual install 
