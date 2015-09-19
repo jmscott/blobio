@@ -75,7 +75,7 @@ Process Execution Detail Record:
 
 	The combination of start_time, call_name and flow_sequence  can
 	safely assumed to be unique, although, in theory, uniqueness could be
-	by EXTREMELY rapid process bouncing.  See comment for "fdr"
+	compromised by EXTREMELY rapid process bouncing.  See comment for "fdr"
 	
 	The NOPS termination class indicates a failure to determine the process
 	status.  Typically a NOPS means the process never started.
