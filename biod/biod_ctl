@@ -9,6 +9,9 @@
 
 PROG=$(basename $0)
 PID=$BLOBIO_ROOT/run/biod.pid
+
+#  duration in secords rrd samples written to log/biod-rrd.log. 0 disables
+RRD_SAMPLE_DURATION=0
 PAUSE=3
 
 die()
@@ -93,7 +96,7 @@ start)
 		die "remove file: $PID"
 	fi
 	$BIOD --ps-title-XXXXXXXXXXXXXXXXXXXXXXX --port $PORT		\
-				--rrd-sample-duration 60
+				--rrd-sample-duration $RRD_SAMPLE_DURATION
 	STATUS=$?
 	test $STATUS = 0 || die "biod failed to start: exit status=$STATUS"
 

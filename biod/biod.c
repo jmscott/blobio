@@ -1232,7 +1232,8 @@ catch_CHLD(int sig)
 	time(&now);
 	if (now - last_log_heartbeat >= HEARTBEAT) {
 		heartbeat();
-		put_rrd_sample();	//  --rrd-sample-duration == HEARTBEAT
+		if (rrd_sample_duration > 0)
+			put_rrd_sample();
 	}
 }
 
@@ -1570,7 +1571,6 @@ main(int argc, char **argv)
 			else if (isdigit(hb[0])) {
 				unsigned j, sec;
 
-
 				if (strlen(hb) > 4)
 					die3(o,"seconds must be < 5 digits",hb);
 				for (j = 1;  hb[j] && j < 4;  j++) {
@@ -1715,15 +1715,8 @@ accept_request:
 		connect_count++;
 		fork_accept(&req);
 		break;
-	case 1: {
-		char buf[MSG_SIZE];
-
-		snprintf(buf, sizeof buf,
-				"accept() on socket timed out after %d seconds",
-				ACCEPT_TIMEOUT);
-		warn(buf);
+	case 1:
 		break;
-	}
 	default:
 		panic("io_accept() returned impossible value");
 	}
