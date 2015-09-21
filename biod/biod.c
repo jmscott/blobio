@@ -1715,8 +1715,15 @@ accept_request:
 		connect_count++;
 		fork_accept(&req);
 		break;
-	case 1:
+	case 1: {
+		char buf[MSG_SIZE];
+
+		snprintf(buf, sizeof buf,
+				"accept() on socket timed out after %d seconds",
+				ACCEPT_TIMEOUT);
+		warn(buf);
 		break;
+	}
 	default:
 		panic("io_accept() returned impossible value");
 	}
