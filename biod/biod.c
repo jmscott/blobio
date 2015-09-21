@@ -53,7 +53,7 @@
 	state = STATE_HALT;						\
 }
 	
-#define HEARTBEAT		15	/* 15 seconds */
+#define HEARTBEAT		10	/* 10 seconds */
 #define REQUEST_READ_TIMEOUT	20	/* 20 seconds */
 #define REQUEST_WRITE_TIMEOUT	20	/* 20 seconds */
 #define LEAVE_PAUSE		3	/* 3 seconds */
