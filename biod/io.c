@@ -294,7 +294,7 @@ again:
 			return 1;
 		goto again;
 	}
-	error2("accept_timeout: accept() failed", strerror(e));
+	error2("io_accept: accept() failed", strerror(e));
 	return -1;
 }
 
