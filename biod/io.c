@@ -1,12 +1,13 @@
 /*
  *  Synopsis:
- *	Restartable i/o operations.
+ *	Restartable i/o operations.  The io_*() funcs never log errors.
  *  Blame:
  *  	jmscott@setspace.com
  *  	setspace@gmail.com
  *  Note:
  *  	Need to prefix the global functions with 'os' instead of 'io'
- *  	and rename this os.c
+ *  	and rename this os.c  Probably ought to move the read/write*() into
+ *	different file.
  *
  *  	Verify that EGAIN is tested properly.  I (jmscott) still not sure what
  *  	EGAIN REALLY means.
@@ -284,7 +285,7 @@ again:
 	}
 
 	/*
-	 *  Error or timeout.
+	 *  Retry or timeout.
 	 */
 	if (e == EINTR || e == EAGAIN) {
 		/*
@@ -294,7 +295,7 @@ again:
 			return 1;
 		goto again;
 	}
-	error2("io_accept: accept() failed", strerror(e));
+	errno = e;
 	return -1;
 }
 
@@ -891,11 +892,8 @@ io_readdir(DIR *dirp)
 again:
 	if ((dp = readdir(dirp)))
 		return dp;
-	if (errno == EINTR || errno == EAGAIN) {
-		
-		errno = 0;
+	if (errno == EINTR || errno == EAGAIN)
 		goto again;
-	}
 	return (struct dirent *)0;
 }
 
