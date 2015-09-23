@@ -265,14 +265,14 @@ trace2(char *msg1, char *msg2)
 
 /*
  *  Synopsis:
- *	Parse out the algorithm and signature from a text uniform digest.
+ *	Parse out the algorithm and digest from a text uniform digest (udig).
+ *  Args:
+ *	udig:		null terminated udig string to parse
+ *	algorithm:	at least 9 bytes for extracted algorithm. 
+ *	digest:		at least 129 bytes for extracted digest
  *  Returns:
  *	0	upon success
  *	EINVAL	upon failure.
- *
- *	The algorithm is written into the memory pointed to by *algorithm,
- *	the digest into	*digest.  algorithm[] must point to at least 16 bytes
- *	and digest at least 256 bytes.
  */
 static int
 parse_udig(char *udig, char *algorithm, char *digest)
@@ -288,7 +288,7 @@ parse_udig(char *udig, char *algorithm, char *digest)
 	for (u = udig;  *u;  u++) {
 		char c = *u;
 
-		if (!isgraph(c))
+		if (!isascii(c) || !isgraph(c))
 			return EINVAL;
 		/*
 		 *  Scanning algorithm.
@@ -301,7 +301,14 @@ parse_udig(char *udig, char *algorithm, char *digest)
 				in_algorithm = 0;
 			}
 			else {
-				if (a - algorithm > 16)
+				int alen = a - algorithm;
+
+				if (alen >= 8)
+					return EINVAL;
+				if (alen == 0) {
+					if (!isalpha(c) || !islower(c))
+						return EINVAL;
+				} else if (!isalnum(c) || !islower(c))
 					return EINVAL;
 				*a++ = c;
 			}
@@ -310,11 +317,13 @@ parse_udig(char *udig, char *algorithm, char *digest)
 		/*
 		 *  Scanning digest.
 		 */
-		if (d - digest > 255)
+		if (d - digest >= 128)
 			return EINVAL;
 		*d++ = c;
 	}
 	*d = 0;
+	if (d - digest < 32)
+		return EINVAL;
 	return 0;
 }
 
