@@ -5,7 +5,7 @@
  *	jmscott@setspace.com
  *	setspace@gmail.com
  *  Note:
- *	A command/query not dependednt on any other command/query/tail will
+ *	A command/query not dependent on any other command/query/tail will
  *	never fire.  For example,
  *
  *		sql query empty_query {
