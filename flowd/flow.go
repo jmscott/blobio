@@ -429,8 +429,6 @@ func (flow *flow) project_xdr_exit_status(
 			}
 			flow = flow.wait(xv.flow.seq)
 
-			xdr := xv.xdr
-
 			var is_null bool
 			var ui uint64
 
@@ -438,7 +436,7 @@ func (flow *flow) project_xdr_exit_status(
 				xv.xdr.termination_class != "OK" {
 				is_null = true
 			} else {
-				ui = xdr.termination_code
+				ui = xv.xdr.termination_code
 			}
 
 			flow.put_uint64(ui, is_null, out)
@@ -617,7 +615,7 @@ func (flow *flow) project_qdr_sqlstate(
 }
 
 func (flow *flow) eq_string(
-	s string,
+	s_const string,
 	in string_chan,
 ) (out bool_chan) {
 
@@ -642,7 +640,7 @@ func (flow *flow) eq_string(
 			if sv.is_null {
 				is_null = true
 			} else {
-				b = (s == sv.string)
+				b = (s_const == sv.string)
 			}
 
 			flow.put_bool(b, is_null, out)
@@ -652,7 +650,7 @@ func (flow *flow) eq_string(
 }
 
 func (flow *flow) eq_bool(
-	b0 bool,
+	b_const bool,
 	in bool_chan,
 ) (out bool_chan) {
 
@@ -677,7 +675,7 @@ func (flow *flow) eq_bool(
 			if bv.is_null {
 				is_null = true
 			} else {
-				b = (b0 == bv.bool)
+				b = (b_const == bv.bool)
 			}
 
 			flow.put_bool(b, is_null, out)
@@ -1041,9 +1039,12 @@ func (flow *flow) argv1(in string_chan) (out argv_chan) {
 	return out
 }
 
+//  read strings from multiple input channels and write assmbled argv[]
+//  any null value renders the whole argv[] null
+
 func (flow *flow) argv(in_args []string_chan) (out argv_chan) {
 
-	//  track an string argument in argv = []string
+	//  track a received string and position in argv[]
 	type arg_value struct {
 		*string_value
 		position uint8
@@ -1059,16 +1060,17 @@ func (flow *flow) argv(in_args []string_chan) (out argv_chan) {
 
 		defer close(out)
 
-		//  merge many string channels onto a single channel of
+		//  merge() many string channels onto a single channel of
 		//  argument values.
-		merge := func() (out chan arg_value) {
+
+		merge := func() (mout chan arg_value) {
 
 			var wg sync.WaitGroup
-			out = make(chan arg_value)
+			mout = make(chan arg_value)
 
 			io := func(sc string_chan, p uint8) {
 				for sv := range sc {
-					out <- arg_value{
+					mout <- arg_value{
 						string_value: sv,
 						position:     p,
 					}
@@ -1081,12 +1083,12 @@ func (flow *flow) argv(in_args []string_chan) (out argv_chan) {
 				go io(sc, uint8(i))
 			}
 
-			//  Start a goroutine to close 'out' channel
+			//  Start a goroutine to close 'mout' channel
 			//  once all the output goroutines are done.
 
 			go func() {
 				wg.Wait()
-				close(out)
+				close(mout)
 			}()
 			return
 		}()
@@ -1819,7 +1821,7 @@ func (flo *flow) fanout_xdr(
 	return out
 }
 
-//  broadcast an qdr to many qdr channels
+//  broadcast a qdr to many qdr channels
 //
 //  Note:
 //	would be nice to randomize writes to the output channels
