@@ -23,7 +23,7 @@ Description:
 
 	Flows are independent of other flows.  In other words, the
 	results of a particular flow can not be referenced with in flowd by
-	a different flow.
+	a different flow. Such logical independence yields natural parallelism.
 
 Flow Detail Record:
 	A flow detail record, named a "fdr", summarizes the outcome
