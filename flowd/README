@@ -25,8 +25,6 @@ Description:
 	results of a particular flow can not be referenced with in flowd by
 	a different flow.
 
-	The flow diagram of the software is as follows:
-
 Flow Detail Record:
 	A flow detail record, named a "fdr", summarizes the outcome
 	of invoking a set of related calls, a "flow", on a particular blob
