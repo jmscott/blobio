@@ -1937,6 +1937,8 @@ func (flow *flow) wait_fire(
 			if when.flow.seq != flow.seq {
 				panic("when clause flow out of sequence")
 			}
+		default:
+			panic("premature resolution")
 		}
 	}
 	return
