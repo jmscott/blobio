@@ -222,7 +222,7 @@ main(int argc, char **argv)
 				x_argv[x_argc] = 0;
 				break;
 
-			//  partial parse of an attribute in the string vector
+			//  partial parse of an element in the string vector
 			default:
 				if (!isascii(c))
 					die("non-ascii input");
