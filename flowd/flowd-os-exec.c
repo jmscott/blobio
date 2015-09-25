@@ -1,31 +1,49 @@
 /*
  *  Synopsis:
- *	Execute processes on behalf of the flowd process.
+ *	Execute processes on behalf of the flowd process (experimental).
  *  Usage:
- *	Invoked by flowd server.  See Note below.
+ *	Invoked by flowd server and still experimental.
  *  Exit Status:
  *  	0	exit ok
  *  	1	exit error (written to standard error)
  *  Note:
- *	The read() from stdin assumes final char is \n, since coordination
- *	with the flowd is synchronous.  However, this assumptioon will break
- *	a streaming algorithm.	In other words, the following will not work
+ *	The read() from stdin is assumed to be atomic and terminated by a
+ *	new-line char (\n).  This assumption makes sense when invoked by flowd,
+ *	since coordination is stricly synchronized on i/o flow. This implies
+ *	that the following command line invocation could fail:
  *
  *		flowd-os-exec <multi-line-test-file
  *
- *	This assumption is too strict, especially for testing.
+ *	This is a sad situation, since trivial testing from the shell will
+ *	break.  However, the following command line invocation ought to never
+ *	fail:
+ *
+ *		grep --line-buffered '.*' multi-line-test-file | flowd-os-exec
+ *
  *  Blame:
  *  	jmscott@setspace.com
  *  	setspace@gmail.com
  */
+#include <sys/wait.h>
+
 #include <unistd.h>
 #include <string.h>
 #include <errno.h>
 #include <ctype.h>
+#include <stdio.h>
 
-#define MAX_SLURP	4096
+#ifndef MAX_PIPE
+#define MAX_PIPE	512
+#endif
+
 #define MAX_X_ARG	256
 #define MAX_X_ARGC	64
+
+static char	buf[MAX_PIPE + 1];
+static int	x_argc;
+
+//  execv(&x_argv[1]), since x_argv[0] == flow seq#
+static char	*x_argv[MAX_X_ARGC + 2];	//  x_argv[0] == flow seq#
 
 /*
  *  Synopsis:
@@ -86,18 +104,30 @@ die2(char *msg1, char *msg2)
 	die(msg);
 }
 
+static void
+die3(char *msg1, char *msg2, char *msg3)
+{
+	char msg[256] = {0};
+
+	_strcat(msg, sizeof msg, msg1);
+	_strcat(msg, sizeof msg, ": ");
+	_strcat(msg, sizeof msg, msg2);
+
+	die2(msg, msg3);
+}
+
 /*
  *  read() up to 'nbytes' from standard input, croaking upon error
  */
 
 static int
-_read(void *p, ssize_t nbytes)
+_read()
 {
 	ssize_t nb;
 
 	again:
 
-	nb = read(0, p, nbytes);
+	nb = read(0, buf, MAX_PIPE);
 	if (nb >= 0)
 		return nb;
 	if (errno == EINTR)		//  try read()
@@ -109,9 +139,6 @@ _read(void *p, ssize_t nbytes)
 	return -1;
 }
 
-/*
- *  write() exactly nbytes to standard output or croak with error
- */
 static void
 _write(void *p, ssize_t nbytes)
 {
@@ -133,80 +160,78 @@ _write(void *p, ssize_t nbytes)
 	goto again;
 }
 
-#define ST_READ		0
-#define ST_EXEC		1
-#define ST_START_ARG	2
-#define ST_ARG		3
-#define ST_COPY_ARG	4
+static void
+push_arg(char *p, char *a) {
+
+	if (x_argc >= MAX_X_ARG)
+		die("too many arguments in execvp()");
+	*--p = 0;
+	x_argv[x_argc++] = a;
+}
+
+static void
+_execv() {
+
+	execv(x_argv[0], x_argv);
+	die3("execv() failed", strerror(errno), x_argv[0]);
+}
+
+static void
+vfork_wait() {
+
+	pid_t pid;
+	int status;
+	char reply[MAX_PIPE + 1];
+
+	pid = vfork();
+	if (pid < 0)
+		die2("vfork() failed", strerror(errno));
+	if (pid == 0)
+		_execv();
+	wait(&status);
+
+	snprintf(reply, sizeof reply, "%d\n", status);
+
+	_write(reply, strlen(reply));
+}
 
 int
 main(int argc, char **argv)
 {
-	char buf[MAX_SLURP + 1];
-	int nread = 0;
-	int state = ST_READ;
-	char *p, *p_end;
-	char *a_start;
-	int x_argc = 0;
-	char *x_argv[MAX_X_ARGC];
-
 	if (argc != 1)
 		die("wrong number of arguments");
 	(void)argv;
 
-tick:
-	switch (state) {
-	case ST_READ:
-		nread = _read(buf, MAX_SLURP);
-		if (nread == 0) {
-			if (x_argc > 0)
-				die("read: unexpected end of file");
-			_exit(0);
-		}
-		p = buf;
-		p_end = p + nread;
-		state = ST_START_ARG;
-		break;
-	case ST_EXEC:
-		if (x_argc == 0)
-			die("exec: no exec arguments");
-		_write(buf, nread);
-		state = ST_START_ARG;
-		break;
-	case ST_START_ARG:
-		if (x_argc++ > MAX_X_ARGC)
-			die("start_arg: too many arguments in input");
-		if (p == p_end) {
-			if (x_argc > 0)
-				state = ST_COPY_ARG;  // implies args < 2 reads
-			else
-				state = ST_READ;
-		} else {
-			a_start = p;
-			state = ST_ARG;
-		}
-		break;
-	case ST_ARG: {
-		char c = *p++;
+	while (_read() > 0) {
+		
+		char *a, *p, c;
+		x_argc = 0;
 
-		if (p - a_start > MAX_X_ARG)
-			die("arg too long");
-		if (!isascii(c))
-			die("non-ascii char in arg");
-		if (c == '\t' || c == '\n') {
-			*p = 0;
-			x_argv[x_argc++] = a_start;
-			if (c == '\t')
-				state = ST_START_ARG;
-			else
-				state = ST_EXEC;
-			break;
-		}
+		a = p = buf;
+		while ((c = *p++)) {
+			switch (c) {
+			//  finished parsing an element of string vector
+			case '\t':
+				push_arg(p, a);
+				a = p;
+				continue;
 
-		break;
+			//  parsed final element of string vector, so exec()
+			case '\n':
+				push_arg(p, a);
+				x_argv[x_argc] = 0;
+				break;
+
+			//  partial parse of an attribute in the string vector
+			default:
+				if (!isascii(c))
+					die("non-ascii input");
+				if (p - a > MAX_X_ARG)
+					die("arg too big");
+				continue;
+			}
+			vfork_wait();
+		}
 	}
-	default:
-		die("impossible input state");
-	}
-	goto tick;
+	return 0;
 }
