@@ -40,7 +40,6 @@
 #define MAX_X_ARG	256
 #define MAX_X_ARGC	64
 
-static char	buf[MAX_PIPE + 1];
 static int	x_argc;
 
 static double ticks_per_sec;
@@ -126,13 +125,13 @@ die3(char *msg1, char *msg2, char *msg3)
  */
 
 static int
-_read()
+_read(int fd, char *buf)
 {
 	ssize_t nb;
 
 	again:
 
-	nb = read(0, buf, MAX_PIPE);
+	nb = read(fd, buf, MAX_PIPE);
 	if (nb >= 0) {
 		buf[nb] = 0;
 		return nb;
@@ -179,10 +178,57 @@ again:
 }
 
 static void
-_execv() {
+_close(int fd)
+{
+again:
+	if (close(fd) < 0) {
+		if (errno == EINTR)
+			goto again;
+		die2("close() failed", strerror(errno));
+	}
+}
 
-	execv(x_argv[0], x_argv);
-	die3("execv() failed", strerror(errno), x_argv[0]);
+static void
+_dup2(int old, int new)
+{
+again:
+	if (dup2(old, new) < 0) {
+		if (errno == EINTR)
+			goto again;
+		die2("dup2() failed", strerror(errno));
+	}
+}
+
+//  drain child and copy first line of output into buf.
+
+static int
+drain(int child_fd, char *child_out) {
+
+	int nb;
+	int seen_line = 0;
+	char *p, *q;
+	char buf[MAX_PIPE + 1];
+
+	p = child_out;
+	while ((nb = _read(child_fd, buf)) > 0) {
+		char c;
+
+		if (seen_line)
+			continue;
+		buf[nb] = 0;
+		q = buf;
+		while ((p - child_out) < MAX_PIPE && (c = *q++)) {
+			*p++ = c;
+			if (c == '\n') {
+				seen_line = 1;
+				break;
+			}
+		}
+	}
+	*p = 0;
+	if (p - child_out == MAX_PIPE)
+		p[-1] = '\n';
+	return p - child_out;
 }
 
 static void
@@ -190,17 +236,36 @@ fork_wait() {
 
 	pid_t pid;
 	int status;
-	char reply[MAX_PIPE + 1];
+	char reply[MAX_PIPE + 1], buf[MAX_PIPE + 1];
 	struct rusage ru;
 	char *xclass = 0;
 	int xstatus = 0;
+	ssize_t olen = 0;
+	int merge[2];
 
+	if (pipe(merge) < 0)
+		die2("pipe(merge) failed", strerror(errno));
 	pid = fork();
 	if (pid < 0)
 		die2("fork() failed", strerror(errno));
-	if (pid == 0)
-		_execv();
 
+	//  in the child
+	if (pid == 0) {
+		_close(0);
+		_close(merge[0]);
+		_dup2(merge[1], 1);
+		_dup2(merge[1], 2);
+		_close(merge[1]);
+		execv(x_argv[0], x_argv);
+		die3("execv() failed", strerror(errno), x_argv[0]);
+	}
+
+	//  in parent
+	_close(merge[1]);
+	olen = drain(merge[0], buf);
+	_close(merge[0]);
+
+	//  reap the dead
 	_wait4(pid, &status, &ru);
 
 	//  Note: what about core dumps
@@ -216,22 +281,25 @@ fork_wait() {
 	} else
 		die("wait() exited with impossible value");
 
-	snprintf(reply, sizeof reply, "%s\t%d\t%ld.%06ld\t%ld.%06ld\n",
+	snprintf(reply, sizeof reply, "%s%s\t%d\t%ld.%06ld\t%ld.%06ld\n",
 			xclass,
+			olen > 0 ? "+" : "",
 			xstatus,
 			ru.ru_utime.tv_sec,
 			(long)ru.ru_utime.tv_usec,
 			ru.ru_stime.tv_sec,
 			(long)ru.ru_stime.tv_usec
 	);
-
 	_write(reply, strlen(reply));
+	if (olen > 0)
+		_write(buf, olen);
 }
 
 int
 main(int argc, char **argv)
 {
 	char *arg, c = 0;
+	char buf[MAX_PIPE + 1];
 
 	if (argc != 1)
 		die("wrong number of arguments");
@@ -257,7 +325,7 @@ main(int argc, char **argv)
 	x_argc = 0;
 	arg = x_argv[0];
 
-	while (_read() > 0) {
+	while (_read(0, buf) > 0) {
 		char *p;
 
 		p = buf;
@@ -292,8 +360,10 @@ main(int argc, char **argv)
 			x_argc++;
 			arg = x_argv[x_argc];
 			x_argv[x_argc] = 0;	//  null-terminate vector
+
 			fork_wait();
-			x_argv[x_argc] = arg;	//  reset to arg buffer
+
+			x_argv[x_argc] = arg;	//  reset null to arg buffer
 			arg = x_argv[0];
 			x_argc = 0;
 		}
