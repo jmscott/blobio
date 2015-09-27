@@ -216,13 +216,13 @@ fork_wait() {
 	} else
 		die("wait() exited with impossible value");
 
-	snprintf(reply, sizeof reply, "%s\t%d\t%ld.%06d\t%ld.%06d\n",
+	snprintf(reply, sizeof reply, "%s\t%d\t%ld.%06ld\t%ld.%06ld\n",
 			xclass,
 			xstatus,
 			ru.ru_utime.tv_sec,
-			ru.ru_utime.tv_usec,
+			(long)ru.ru_utime.tv_usec,
 			ru.ru_stime.tv_sec,
-			ru.ru_stime.tv_usec
+			(long)ru.ru_stime.tv_usec
 	);
 
 	_write(reply, strlen(reply));
