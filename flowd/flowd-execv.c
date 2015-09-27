@@ -12,13 +12,13 @@
  *	since coordination is stricly synchronized on i/o flow. This implies
  *	that the following command line invocation could fail:
  *
- *		flowd-os-exec <multi-line-test-file
+ *		flowd-execv <multi-line-test-file
  *
  *	This is a sad situation, since trivial testing from the shell will
  *	break.  However, the following command line invocation ought to never
  *	fail:
  *
- *		grep --line-buffered '.*' multi-line-test-file | flowd-os-exec
+ *		grep --line-buffered '.*' multi-line-test-file | flowd-execv
  *
  *  Blame:
  *  	jmscott@setspace.com
@@ -85,7 +85,7 @@ _strcat(char *tgt, int tgtsize, char *src)
 static void
 die(char *msg1)
 {
-	static char ERROR[] = "flowd-os-exec: ERROR: ";
+	static char ERROR[] = "ERROR: ";
 	char msg[256] = {0};
 
 	_strcat(msg, sizeof msg, ERROR);
