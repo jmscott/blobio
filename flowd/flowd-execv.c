@@ -170,7 +170,7 @@ static void
 _wait4(pid_t pid, int *statp, struct rusage *ru)
 {
 again:
-	if (wait4(pid, statp, WEXITED, ru) == pid)
+	if (wait4(pid, statp, 0, ru) == pid)
 		return;
 	if (errno == EINTR)
 		goto again;
