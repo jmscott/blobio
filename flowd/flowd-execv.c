@@ -168,14 +168,14 @@ _write(void *p, ssize_t nbytes)
 }
 
 static void
-_waitpid(pid_t pid, int *statp)
+_wait4(pid_t pid, int *statp, struct rusage *ru)
 {
 again:
-	if (waitpid(pid, statp, 0) == pid)
+	if (wait4(pid, statp, WEXITED, ru) == pid)
 		return;
 	if (errno == EINTR)
 		goto again;
-	die2("waitpid() failed", strerror(errno));
+	die2("wait4() failed", strerror(errno));
 }
 
 static void
@@ -186,25 +186,22 @@ _execv() {
 }
 
 static void
-vfork_wait() {
+fork_wait() {
 
 	pid_t pid;
 	int status;
 	char reply[MAX_PIPE + 1];
-	struct tms tm;
-	char *xclass;
-	int xstatus;
+	struct rusage ru;
+	char *xclass = 0;
+	int xstatus = 0;
 
-	pid = vfork();
+	pid = fork();
 	if (pid < 0)
-		die2("vfork() failed", strerror(errno));
+		die2("fork() failed", strerror(errno));
 	if (pid == 0)
 		_execv();
 
-	_waitpid(pid, &status);
-
-	if (times(&tm) == (clock_t)-1)
-		die2("times() failed", strerror(errno));
+	_wait4(pid, &status, &ru);
 
 	//  Note: what about core dumps
 	if (WIFEXITED(status)) {
@@ -219,11 +216,13 @@ vfork_wait() {
 	} else
 		die("wait() exited with impossible value");
 
-	snprintf(reply, sizeof reply, "%s\t%d\t%.9f\t%.9f\n",
+	snprintf(reply, sizeof reply, "%s\t%d\t%ld.%06d\t%ld.%06d\n",
 			xclass,
 			xstatus,
-			(double)tm.tms_cutime / ticks_per_sec,
-			(double)tm.tms_cstime / ticks_per_sec
+			ru.ru_utime.tv_sec,
+			ru.ru_utime.tv_usec,
+			ru.ru_stime.tv_sec,
+			ru.ru_stime.tv_usec
 	);
 
 	_write(reply, strlen(reply));
@@ -293,7 +292,7 @@ main(int argc, char **argv)
 			x_argc++;
 			arg = x_argv[x_argc];
 			x_argv[x_argc] = 0;	//  null-terminate vector
-			vfork_wait();
+			fork_wait();
 			x_argv[x_argc] = arg;	//  reset to arg buffer
 			arg = x_argv[0];
 			x_argc = 0;
