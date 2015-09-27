@@ -2,7 +2,7 @@
  *  Synopsis:
  *	Execute processes on behalf of the flowd process (experimental).
  *  Usage:
- *	Invoked by flowd server and still experimental.
+ *	Invoked as a background worker by flowd server.
  *  Exit Status:
  *  	0	exit ok
  *  	1	exit error (written to standard error)
@@ -24,6 +24,7 @@
  *  	jmscott@setspace.com
  *  	setspace@gmail.com
  */
+#include <sys/times.h>
 #include <sys/wait.h>
 
 #include <unistd.h>
@@ -42,8 +43,12 @@
 static char	buf[MAX_PIPE + 1];
 static int	x_argc;
 
-//  execv(&x_argv[1]), since x_argv[0] == flow seq#
-static char	*x_argv[MAX_X_ARGC + 2];	//  x_argv[0] == flow seq#
+static double ticks_per_sec;
+
+//  the argv for the execv()
+static char	*x_argv[MAX_X_ARGC + 1];
+
+static char	args[MAX_X_ARGC * (MAX_X_ARG +1 )];
 
 /*
  *  Synopsis:
@@ -128,8 +133,10 @@ _read()
 	again:
 
 	nb = read(0, buf, MAX_PIPE);
-	if (nb >= 0)
+	if (nb >= 0) {
+		buf[nb] = 0;
 		return nb;
+	}
 	if (errno == EINTR)		//  try read()
 		goto again;
 
@@ -161,12 +168,14 @@ _write(void *p, ssize_t nbytes)
 }
 
 static void
-push_arg(char *p, char *a) {
-
-	if (x_argc >= MAX_X_ARG)
-		die("too many arguments in execvp()");
-	*--p = 0;
-	x_argv[x_argc++] = a;
+_waitpid(pid_t pid, int *statp)
+{
+again:
+	if (waitpid(pid, statp, 0) == pid)
+		return;
+	if (errno == EINTR)
+		goto again;
+	die2("waitpid() failed", strerror(errno));
 }
 
 static void
@@ -182,15 +191,40 @@ vfork_wait() {
 	pid_t pid;
 	int status;
 	char reply[MAX_PIPE + 1];
+	struct tms tm;
+	char *xclass;
+	int xstatus;
 
 	pid = vfork();
 	if (pid < 0)
 		die2("vfork() failed", strerror(errno));
 	if (pid == 0)
 		_execv();
-	wait(&status);
 
-	snprintf(reply, sizeof reply, "%d\n", status);
+	_waitpid(pid, &status);
+
+	if (times(&tm) == (clock_t)-1)
+		die2("times() failed", strerror(errno));
+
+	//  Note: what about core dumps
+	if (WIFEXITED(status)) {
+		xclass = "EXIT";
+		xstatus = WEXITSTATUS(status);
+	} else if (WIFSIGNALED(status)) {
+		xclass = "SIG";
+		xstatus = WTERMSIG(status);
+	} else if (WIFSIGNALED(status)) {
+		xclass = "STOP";
+		xstatus = status;
+	} else
+		die("wait() exited with impossible value");
+
+	snprintf(reply, sizeof reply, "%s\t%d\t%.9f\t%.9f\n",
+			xclass,
+			xstatus,
+			(double)tm.tms_cutime / ticks_per_sec,
+			(double)tm.tms_cstime / ticks_per_sec
+	);
 
 	_write(reply, strlen(reply));
 }
@@ -198,40 +232,74 @@ vfork_wait() {
 int
 main(int argc, char **argv)
 {
+	char *arg, c = 0;
+
 	if (argc != 1)
 		die("wrong number of arguments");
 	(void)argv;
 
-	while (_read() > 0) {
-		
-		char *a, *p, c;
-		x_argc = 0;
+	//  fetch ticks per second for user/system times
 
-		a = p = buf;
+	{
+		long int sv = sysconf(_SC_CLK_TCK);
+		if (sv < 0)
+			die2("sysconf(_SC_CLK_TCK) failed", strerror(errno));
+		ticks_per_sec = (double)sv;
+	}
+
+	//  initialize x_argv vector
+	{
+		int i;
+
+		for (i = 0;  i < MAX_X_ARGC;  i++)
+			x_argv[i] = &args[i * (MAX_X_ARG + 1)];
+	}
+
+	x_argc = 0;
+	arg = x_argv[0];
+
+	while (_read() > 0) {
+		char *p;
+
+		p = buf;
+
 		while ((c = *p++)) {
 			switch (c) {
+
 			//  finished parsing an element of string vector
 			case '\t':
-				push_arg(p, a);
-				a = p;
+				*arg = 0;
+				x_argc++;
+				if (x_argc > MAX_X_ARGC)
+					die("argc too big");
+				arg = x_argv[x_argc];
 				continue;
 
 			//  parsed final element of string vector, so exec()
 			case '\n':
-				push_arg(p, a);
-				x_argv[x_argc] = 0;
+				*arg = 0;
+				x_argc++;
 				break;
 
 			//  partial parse of an element in the string vector
 			default:
 				if (!isascii(c))
 					die("non-ascii input");
-				if (p - a > MAX_X_ARG)
+				if (arg - x_argv[x_argc] > MAX_X_ARG)
 					die("arg too big");
+				*arg++ = c;
 				continue;
 			}
+			x_argc++;
+			arg = x_argv[x_argc];
+			x_argv[x_argc] = 0;	//  null-terminate vector
 			vfork_wait();
+			x_argv[x_argc] = arg;	//  reset to arg buffer
+			arg = x_argv[0];
+			x_argc = 0;
 		}
 	}
+	if (c != 0 && c != '\n')
+		die("last read() char not new-line");
 	return 0;
 }

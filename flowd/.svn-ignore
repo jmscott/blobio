@@ -4,7 +4,7 @@ etc
 flowd
 flowd*.fdr
 flowd-*.log
-flowd-os-exec
+flowd-execv
 flowd*.qdr
 flowd*.xdr
 fork-bench

@@ -20,7 +20,7 @@ GOPKG_OSARCH=$(GOHOSTOS)_$(GOHOSTARCH)
 #
 #GO_BUILD_RACE=-race
 
-EXEC=flowd flowd-os-exec
+EXEC=flowd flowd-execv
 
 SRC=									\
 	flowd.go							\
@@ -76,7 +76,7 @@ distclean:
 	rm -rf 								\
 		$(DIST_ROOT)/src/flowd	 				\
 		$(DIST_ROOT)/bin/flowd					\
-		$(DIST_ROOT)/bin/flowd-os-exec
+		$(DIST_ROOT)/bin/flowd-execv
 
 
 fmt: $(SRC)
@@ -88,8 +88,8 @@ parser.go: parser.y
 	go tool yacc -o parser.go parser.y || (rm -f parser.go; exit 1)
 	go fmt parser.go
 
-flowd-os-exec: flowd-os-exec.c
-	cc $(CFLAGS) -o flowd-os-exec flowd-os-exec.c
+flowd-execv: flowd-execv.c
+	cc $(CFLAGS) -o flowd-execv flowd-execv.c
 
 dev-links:
 	test -e lib || ln -s . lib
