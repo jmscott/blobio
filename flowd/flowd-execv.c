@@ -127,8 +127,7 @@ _read(int fd, char *buf)
 {
 	ssize_t nb;
 
-	again:
-
+again:
 	nb = read(fd, buf, MAX_PIPE);
 	if (nb >= 0) {
 		buf[nb] = 0;
@@ -148,8 +147,7 @@ _write(void *p, ssize_t nbytes)
 {
 	int nb = 0;
 
-	again:
-
+again:
 	nb = write(1, p + nb, nbytes);
 	if (nb < 0) {
 		if (errno == EINTR)
