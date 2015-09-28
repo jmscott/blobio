@@ -42,8 +42,6 @@
 
 static int	x_argc;
 
-static double ticks_per_sec;
-
 //  the argv for the execv()
 static char	*x_argv[MAX_X_ARGC + 1];
 
@@ -305,15 +303,6 @@ main(int argc, char **argv)
 		die("wrong number of arguments");
 	(void)argv;
 
-	//  fetch ticks per second for user/system times
-
-	{
-		long int sv = sysconf(_SC_CLK_TCK);
-		if (sv < 0)
-			die2("sysconf(_SC_CLK_TCK) failed", strerror(errno));
-		ticks_per_sec = (double)sv;
-	}
-
 	//  initialize x_argv vector
 	{
 		int i;
@@ -357,7 +346,6 @@ main(int argc, char **argv)
 				*arg++ = c;
 				continue;
 			}
-			x_argc++;
 			arg = x_argv[x_argc];
 			x_argv[x_argc] = 0;	//  null-terminate vector
 
