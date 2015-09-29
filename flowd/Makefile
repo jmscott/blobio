@@ -22,7 +22,7 @@ GOPKG_OSARCH=$(GOHOSTOS)_$(GOHOSTARCH)
 
 EXEC=flowd flowd-execv
 
-SRC=									\
+GOSRC=									\
 	flowd.go							\
 	brr.go								\
 	command.go							\
@@ -43,8 +43,8 @@ SRC=									\
 
 all: $(EXEC)
 
-flowd: $(SRC)
-	go build $(GCFLAGS) $(GO_BUILD_RACE) $(SRC)
+flowd: $(GOSRC)
+	go build $(GCFLAGS) $(GO_BUILD_RACE) $(GOSRC)
 
 install: all
 	install -g $(DIST_GROUP) -o $(DIST_USER) -m u=rwx,go=	\
@@ -55,34 +55,39 @@ install: all
 		-d $(DIST_ROOT)/src/flowd
 	install -g $(DIST_GROUP) -o $(DIST_USER) -m ug=r,o=		\
 		parser.y						\
-		$(SRC)							\
+		$(GOSRC)						\
 		$(DIST_ROOT)/src/flowd
 	install -g $(DIST_GROUP) -o $(DIST_USER) -m ug=r,o=		\
+		flowd-execv.c						\
+		$(DIST_ROOT)/src
+	install -g $(DIST_GROUP) -o $(DIST_USER) -m ug=r,o=		\
 		parser.y						\
-		$(SRC)							\
+		$(GOSRC)						\
 		$(DIST_ROOT)/http/go/src/flowd
 	go install $(GO_BUILD_RACE) flowd
 	install -g $(DIST_GROUP) -o $(DIST_USER) -m ugo=rx		\
 		fdr2pg							\
 		fdr2psql						\
+		flowd-execv						\
 		xdr2pg							\
 		xdr2psql						\
 		$(DIST_ROOT)/bin
 
 clean:
-	rm -f $(EXEC) parser.go y.output $(EXEC)
+	rm -f $(EXEC) parser.go y.output
 
 distclean:
 	rm -rf 								\
 		$(DIST_ROOT)/src/flowd	 				\
+		$(DIST_ROOT)/src/flowd-execv.c 				\
 		$(DIST_ROOT)/bin/flowd					\
 		$(DIST_ROOT)/bin/flowd-execv
 
 
-fmt: $(SRC)
-	go fmt $(SRC)
-vet: $(SRC)
-	go vet $(SRC)
+fmt: $(GOSRC)
+	go fmt $(GOSRC)
+vet: $(GOSRC)
+	go vet $(GOSRC)
 
 parser.go: parser.y
 	go tool yacc -o parser.go parser.y || (rm -f parser.go; exit 1)
@@ -101,10 +106,12 @@ env:
 	env
 goenv:
 	go env
+t: t.go
+	go build t.go
 doc:
 	godoc flowd
 lint:
-	(golint $(filter-out parser.go,$(SRC))				|\
+	(golint $(filter-out parser.go,$(GOSRC))			|\
 		fgrep -v underscore					|\
 		fgrep -v 'use CamelCase'				|\
 		fgrep -v 'should not use dot imports'			|\
