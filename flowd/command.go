@@ -10,6 +10,9 @@ import (
 	"os/exec"
 	"strings"
 	"syscall"
+	"bufio"
+	"io"
+	"strconv"
 
 	. "time"
 )
@@ -48,7 +51,7 @@ type command struct {
 
 type os_exec_reply struct {
 	started         bool
-	output_256      []byte //  process output
+	output_256      []byte		//  process output
 	exit_status     uint8
 	signal          uint8
 	err             error
@@ -138,6 +141,108 @@ func (in os_exec_chan) worker() {
 	}
 }
 
+//  answer requests to exec a command with a particular
+func (in os_exec_chan) worker_ipc() {
+
+	//  start a flowd-execv process
+
+	cmd := &exec.Cmd{
+		Path:	"/home/jmscott/opt/blobio/bin/flowd-execv",
+		Args:	[]string{"flowd-execv"},
+	}
+
+	cmd_pipe_in, err := cmd.StdinPipe()
+	if err != nil {
+		panic(err)
+	}
+
+	cmd_pipe_out, err := cmd.StdoutPipe()
+	if err != nil {
+		panic(err)
+	}
+	cmd_out := bufio.NewReader(cmd_pipe_out)
+
+	cmd_pipe_err, err := cmd.StderrPipe()
+	if err != nil {
+		panic(err)
+	}
+	cmd_err := bufio.NewReader(cmd_pipe_err)
+
+	err = cmd.Start()
+	if err != nil {
+		panic(err)
+	}
+
+	//  listen on stderr for a dieing flowd-execv
+
+	go func() {
+
+		reply, err := cmd_err.ReadString('\n');
+		if err != nil && err != io.EOF{
+			panic(err)
+		}
+		panic("flowd-execv exited unexpected: " + reply)
+	}()
+
+	for req := range in {
+
+		reqs := strings.Join(req.argv, "\t") + "\n";
+		//  write request to exec command to flowd-execv process
+		_, err := cmd_pipe_in.Write([]byte(reqs))
+		if err != nil {
+			panic(err)
+		}
+
+		reps, err := cmd_out.ReadString('\n');
+		if err != nil {
+			panic(err)
+		}
+		reps = strings.TrimSuffix(reps, "\n");
+
+		rep := strings.Split(reps, "\t")
+		reply := os_exec_reply{}
+
+		if rep[0] == "ERROR" {
+			reply.err = errors.New(rep[1])
+			req.reply <- reply
+			continue
+		}
+
+		reply.user_duration, err = ParseDuration(rep[2] + "s")
+		if err != nil {
+			panic(err)
+		}
+
+		reply.system_duration, err = ParseDuration(rep[3] + "s")
+		if err != nil {
+			panic(err)
+		}
+		if strings.Contains(rep[0], "+") {
+			reps, err = cmd_out.ReadString('\n');
+			if err != nil {
+				panic(err)
+			}
+			reply.output_256 = []byte(reps)
+			if len(reply.output_256) > 255 {
+				reply.output_256 = reply.output_256[:256]
+			}
+		}
+
+		reply.started = true
+
+		tc, err := strconv.ParseUint(rep[1], 10, 8)
+		if err != nil {
+			panic(err)
+		}
+		if strings.HasPrefix(rep[0], "EXIT") {
+			reply.exit_status = uint8(tc)
+		} else {
+			reply.signal = uint8(tc)
+		}
+		req.reply <- reply
+	}
+}
+
 func (cmd *command) call(argv []string, osx_q os_exec_chan) (xv *xdr_value) {
 
 	xdr := &xdr{
@@ -158,7 +263,6 @@ func (cmd *command) call(argv []string, osx_q os_exec_chan) (xv *xdr_value) {
 	xargv := make([]string, 1+cargc+len(argv))
 
 	//  the first argument must be the command path
-	//  Note: investigate if exec is doing full path expansion any way.
 	xargv[0] = cmd.full_path
 	copy(xargv[1:cargc+1], cmd.argv[:])
 	copy(xargv[cargc+1:], argv[:])
