@@ -1,8 +1,13 @@
 /*
  *  Synopsis:
- *	Execute processes on behalf of the flowd process (experimental).
+ *	Execute command read from stdin and write summaries on standard out 
  *  Usage:
  *	Invoked as a background worker by flowd server.
+ *
+ * 	#  to test at command line, do
+ *	echo /bin/true | flowd-execv
+ *	echo /bin/false | flowd-execv
+ *	echo /bin/date | flowd-execv
  *  Exit Status:
  *  	0	exit ok
  *  	1	exit error (written to standard error)
@@ -20,6 +25,8 @@
  *
  *		grep --line-buffered '.*' multi-line-test-file | flowd-execv
  *
+ *	On ERROR, flowd-exec does not return user/system times.
+ *
  *  Blame:
  *  	jmscott@setspace.com
  *  	setspace@gmail.com
@@ -33,6 +40,8 @@
 #include <ctype.h>
 #include <stdio.h>
 
+#include <stdlib.h>		//  zap me when done debugging
+
 #ifndef MAX_PIPE
 #define MAX_PIPE	512
 #endif
@@ -45,7 +54,7 @@ static int	x_argc;
 //  the argv for the execv()
 static char	*x_argv[MAX_X_ARGC + 1];
 
-static char	args[MAX_X_ARGC * (MAX_X_ARG +1 )];
+static char	args[MAX_X_ARGC * (MAX_X_ARG + 1)];
 
 /*
  *  Synopsis:
@@ -83,7 +92,7 @@ _strcat(char *tgt, int tgtsize, char *src)
 static void
 die(char *msg1)
 {
-	static char ERROR[] = "ERROR: ";
+	static char ERROR[] = "ERROR	";
 	char msg[256] = {0};
 
 	_strcat(msg, sizeof msg, ERROR);
@@ -296,18 +305,14 @@ main(int argc, char **argv)
 {
 	char *arg, c = 0;
 	char buf[MAX_PIPE + 1];
+	int i;
 
 	if (argc != 1)
 		die("wrong number of arguments");
 	(void)argv;
 
-	//  initialize x_argv vector
-	{
-		int i;
-
-		for (i = 0;  i < MAX_X_ARGC;  i++)
-			x_argv[i] = &args[i * (MAX_X_ARG + 1)];
-	}
+	for (i = 0;  i < MAX_X_ARGC;  i++)
+		x_argv[i] = &args[i * (MAX_X_ARG + 1)];
 
 	x_argc = 0;
 	arg = x_argv[0];
