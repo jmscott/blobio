@@ -168,7 +168,7 @@ func (conf *config) server(par *parse) {
 
 	info("spawning %d os exec workers", conf.os_exec_worker_count)
 	for i := uint16(0); i < conf.os_exec_worker_count; i++ {
-		go osx_q.worker()
+		go osx_q.worker_flowd_execv()
 	}
 
 	info("opening brr tail %s (cap=%d) for %s biod.brr",

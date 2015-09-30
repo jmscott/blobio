@@ -142,12 +142,17 @@ func (in os_exec_chan) worker() {
 }
 
 //  answer requests to exec a command with a particular
-func (in os_exec_chan) worker_ipc() {
+func (in os_exec_chan) worker_flowd_execv() {
 
 	//  start a flowd-execv process
 
+	flowd_execv_path, err := exec.LookPath("flowd-execv")
+	if err != nil {
+		panic(err)
+	}
+
 	cmd := &exec.Cmd{
-		Path:	"/home/jmscott/opt/blobio/bin/flowd-execv",
+		Path:	flowd_execv_path,
 		Args:	[]string{"flowd-execv"},
 	}
 
