@@ -1546,6 +1546,22 @@ cmd_stmt:
 	  {
 		yylex.(*yyLexState).command.argv = $5
 	  }
+	|
+	  //  Note: shouldn't the when clause be a true qualification?
+	  //        when exit_status in {0, 1}.
+	  EXIT_STATUS  IS  yy_OK  WHEN  IN 
+	  {
+		l := yylex.(*yyLexState)
+		cmd := l.command
+		if cmd.OK_exit_status != nil {
+			l.error("command %s: 'exit_status OK' defined again",
+								cmd.name)
+			return 0
+		}
+		cmd.OK_exit_status = make([]byte, 32)
+	  }
+	  '{'  exit_status_list  '}'
+	;
 
 exit_status_list:
 	  UINT64
@@ -1592,24 +1608,6 @@ sqlstate_list:
 		}
 	  }
 	;
-
-cmd_stmt:
-	  //  Note: shouldn't the when clause be a true qualification?
-	  //        when exit_status in {0, 1}.
-	  EXIT_STATUS  IS  yy_OK  WHEN  IN 
-	  {
-		l := yylex.(*yyLexState)
-		cmd := l.command
-		if cmd.OK_exit_status != nil {
-			l.error("command %s: 'exit_status OK' defined again",
-								cmd.name)
-			return 0
-		}
-		cmd.OK_exit_status = make([]byte, 32)
-	  }
-	  '{'  exit_status_list  '}'
-	;
-;
 
 cmd_stmt_list:
 	  cmd_stmt  ';'
