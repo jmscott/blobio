@@ -316,15 +316,15 @@ func (bv *bool_value) rummy() rummy {
 //
 //		for flow := range flow {
 //			...
-func (flow *flow) get() *flow {
+func (flo *flow) get() *flow {
 
-	<-flow.resolved
+	<-flo.resolved
 
 	//  next active flow arrives on this channel
 	reply := make(flow_chan)
 
 	//  request another flow, sending reply channel to mother
-	flow.next <- reply
+	flo.next <- reply
 
 	//  return next flow
 	return <-reply
@@ -332,22 +332,22 @@ func (flow *flow) get() *flow {
 
 //  push string up stream or resolve
 
-func (flow *flow) put_string(s string, is_null bool, out string_chan) {
+func (flo *flow) put_string(s string, is_null bool, out string_chan) {
 
 	select {
 	case out <- &string_value{
 		string:  s,
 		is_null: is_null,
-		flow:    flow,
+		flow:    flo,
 	}:
 
 	//  flow resolved, so move on
-	case <-flow.resolved:
+	case <-flo.resolved:
 	}
 }
 
 //  push uint64 up stream or resolve
-func (flow *flow) put_uint64(ui uint64, is_null bool, out uint64_chan) {
+func (flo *flow) put_uint64(ui uint64, is_null bool, out uint64_chan) {
 
 	select {
 
@@ -356,41 +356,41 @@ func (flow *flow) put_uint64(ui uint64, is_null bool, out uint64_chan) {
 	case out <- &uint64_value{
 		uint64:  ui,
 		is_null: is_null,
-		flow:    flow,
+		flow:    flo,
 	}:
 
 	//  flow resolved, so move on
-	case <-flow.resolved:
+	case <-flo.resolved:
 	}
 }
 
 //  push bool up stream
-func (flow *flow) put_bool(bool bool, is_null bool, out bool_chan) {
+func (flo *flow) put_bool(bool bool, is_null bool, out bool_chan) {
 
 	select {
 
 	case out <- &bool_value{
 		bool:    bool,
 		is_null: is_null,
-		flow:    flow,
+		flow:    flo,
 	}:
 
 	//  flow resolved, so move on
-	case <-flow.resolved:
+	case <-flo.resolved:
 	}
 }
 
 //  project a field in the brr of this flow
-func (flow *flow) project_brr(field brr_field) (out string_chan) {
+func (flo *flow) project_brr(field brr_field) (out string_chan) {
 
 	out = make(string_chan)
 
 	go func() {
 		defer close(out)
 
-		for flow = flow.get(); flow != nil; flow = flow.get() {
+		for flo = flo.get(); flo != nil; flo = flo.get() {
 
-			flow.put_string((*(flow.brr))[field], false, out)
+			flo.put_string((*(flo.brr))[field], false, out)
 		}
 	}()
 	return out
@@ -407,7 +407,7 @@ func (flow *flow) project_brr(field brr_field) (out string_chan) {
 //
 //	or the composition of several simpler operations
 
-func (flow *flow) project_xdr_exit_status(
+func (flo *flow) project_xdr_exit_status(
 	in xdr_chan,
 ) (out uint64_chan) {
 
@@ -416,18 +416,18 @@ func (flow *flow) project_xdr_exit_status(
 	go func() {
 		defer close(out)
 
-		for flow = flow.get(); flow != nil; flow = flow.get() {
+		for flo = flo.get(); flo != nil; flo = flo.get() {
 
 			var xv *xdr_value
 
-			xv, resolved := flow.wait_xdr(in)
+			xv, resolved := flo.wait_xdr(in)
 			if xv == nil {
 				if resolved {
 					continue
 				}
 				return
 			}
-			flow = flow.wait(xv.flow.seq)
+			flo = flo.wait(xv.flow.seq)
 
 			var is_null bool
 			var ui uint64
@@ -439,16 +439,16 @@ func (flow *flow) project_xdr_exit_status(
 				ui = xv.xdr.termination_code
 			}
 
-			flow.put_uint64(ui, is_null, out)
+			flo.put_uint64(ui, is_null, out)
 		}
 	}()
 
 	return out
 }
 
-func (flow *flow) wait(seq uint64) (f *flow) {
+func (flo *flow) wait(seq uint64) (f *flow) {
 
-	f = flow
+	f = flo
 	for f.seq < seq {
 		reply := make(flow_chan)
 		f.next <- reply
@@ -460,35 +460,35 @@ func (flow *flow) wait(seq uint64) (f *flow) {
 	return
 }
 
-func (flow *flow) wait_qdr(in qdr_chan) (qv *qdr_value, resolved bool) {
+func (flo *flow) wait_qdr(in qdr_chan) (qv *qdr_value, resolved bool) {
 	for qv == nil {
 		select {
 		case qv = <-in:
-			if qv == nil || qv.flow.seq >= flow.seq {
+			if qv == nil || qv.flow.seq >= flo.seq {
 				return
 			}
 			qv = nil
 
 		//  flow resolved, so move on to next flow
-		case <-flow.resolved:
+		case <-flo.resolved:
 			return nil, true
 		}
 	}
 	panic("impossible break from for loop")
 }
 
-func (flow *flow) wait_xdr(in xdr_chan) (xv *xdr_value, resolved bool) {
+func (flo *flow) wait_xdr(in xdr_chan) (xv *xdr_value, resolved bool) {
 
 	for xv == nil {
 		select {
 		case xv = <-in:
-			if xv == nil || xv.flow.seq >= flow.seq {
+			if xv == nil || xv.flow.seq >= flo.seq {
 				return
 			}
 			xv = nil
 
 		//  flow resolved, so move on to next flow
-		case <-flow.resolved:
+		case <-flo.resolved:
 			return nil, true
 		}
 	}
@@ -497,7 +497,7 @@ func (flow *flow) wait_xdr(in xdr_chan) (xv *xdr_value, resolved bool) {
 
 //  project the boolean value bound of a qdr record.
 
-func (flow *flow) project_sql_query_row_bool(
+func (flo *flow) project_sql_query_row_bool(
 	in qdr_chan,
 	field uint8,
 ) (out bool_chan) {
@@ -507,16 +507,16 @@ func (flow *flow) project_sql_query_row_bool(
 	go func() {
 		defer close(out)
 
-		for flow = flow.get(); flow != nil; flow = flow.get() {
+		for flo = flo.get(); flo != nil; flo = flo.get() {
 
-			qv, resolved := flow.wait_qdr(in)
+			qv, resolved := flo.wait_qdr(in)
 			if qv == nil {
 				if resolved {
 					continue
 				}
 				return
 			}
-			flow = flow.wait(qv.flow.seq)
+			flo = flo.wait(qv.flow.seq)
 
 			var is_null bool
 			var b bool
@@ -531,7 +531,7 @@ func (flow *flow) project_sql_query_row_bool(
 			} else {
 				is_null = true
 			}
-			flow.put_bool(b, is_null, out)
+			flo.put_bool(b, is_null, out)
 		}
 	}()
 
@@ -540,7 +540,7 @@ func (flow *flow) project_sql_query_row_bool(
 
 //  project the uint64 rows_affected value of a query detail record.
 
-func (flow *flow) project_qdr_rows_affected(
+func (flo *flow) project_qdr_rows_affected(
 	in qdr_chan,
 ) (out uint64_chan) {
 
@@ -549,16 +549,16 @@ func (flow *flow) project_qdr_rows_affected(
 	go func() {
 		defer close(out)
 
-		for flow = flow.get(); flow != nil; flow = flow.get() {
+		for flo = flo.get(); flo != nil; flo = flo.get() {
 
-			qv, resolved := flow.wait_qdr(in)
+			qv, resolved := flo.wait_qdr(in)
 			if qv == nil {
 				if resolved {
 					continue
 				}
 				return
 			}
-			flow = flow.wait(qv.flow.seq)
+			flo = flo.wait(qv.flow.seq)
 
 			var is_null bool
 			var ui uint64
@@ -569,7 +569,7 @@ func (flow *flow) project_qdr_rows_affected(
 				ui = uint64(qv.qdr.rows_affected)
 			}
 
-			flow.put_uint64(ui, is_null, out)
+			flo.put_uint64(ui, is_null, out)
 		}
 	}()
 
@@ -578,7 +578,7 @@ func (flow *flow) project_qdr_rows_affected(
 
 //  project the string 'sqlstate' value of a query detail record.
 
-func (flow *flow) project_qdr_sqlstate(
+func (flo *flow) project_qdr_sqlstate(
 	in qdr_chan,
 ) (out string_chan) {
 
@@ -587,16 +587,16 @@ func (flow *flow) project_qdr_sqlstate(
 	go func() {
 		defer close(out)
 
-		for flow = flow.get(); flow != nil; flow = flow.get() {
+		for flo = flo.get(); flo != nil; flo = flo.get() {
 
-			qv, resolved := flow.wait_qdr(in)
+			qv, resolved := flo.wait_qdr(in)
 			if qv == nil {
 				if resolved {
 					continue
 				}
 				return
 			}
-			flow = flow.wait(qv.flow.seq)
+			flo = flo.wait(qv.flow.seq)
 
 			var is_null bool
 			var s string
@@ -607,14 +607,14 @@ func (flow *flow) project_qdr_sqlstate(
 				s = qv.qdr.sqlstate
 			}
 
-			flow.put_string(s, is_null, out)
+			flo.put_string(s, is_null, out)
 		}
 	}()
 
 	return out
 }
 
-func (flow *flow) eq_string(
+func (flo *flow) eq_string(
 	s_const string,
 	in string_chan,
 ) (out bool_chan) {
@@ -624,16 +624,16 @@ func (flow *flow) eq_string(
 	go func() {
 		defer close(out)
 
-		for flow = flow.get(); flow != nil; flow = flow.get() {
+		for flo = flo.get(); flo != nil; flo = flo.get() {
 
-			sv, resolved := flow.wait_string(in)
+			sv, resolved := flo.wait_string(in)
 			if sv == nil {
 				if resolved {
 					continue
 				}
 				return
 			}
-			flow = flow.wait(sv.flow.seq)
+			flo = flo.wait(sv.flow.seq)
 
 			var b, is_null bool
 
@@ -643,13 +643,13 @@ func (flow *flow) eq_string(
 				b = (s_const == sv.string)
 			}
 
-			flow.put_bool(b, is_null, out)
+			flo.put_bool(b, is_null, out)
 		}
 	}()
 	return out
 }
 
-func (flow *flow) eq_bool(
+func (flo *flow) eq_bool(
 	b_const bool,
 	in bool_chan,
 ) (out bool_chan) {
@@ -659,16 +659,16 @@ func (flow *flow) eq_bool(
 	go func() {
 		defer close(out)
 
-		for flow = flow.get(); flow != nil; flow = flow.get() {
+		for flo = flo.get(); flo != nil; flo = flo.get() {
 
-			bv, resolved := flow.wait_bool(in)
+			bv, resolved := flo.wait_bool(in)
 			if bv == nil {
 				if resolved {
 					continue
 				}
 				return
 			}
-			flow = flow.wait(bv.flow.seq)
+			flo = flo.wait(bv.flow.seq)
 
 			var b, is_null bool
 
@@ -678,7 +678,7 @@ func (flow *flow) eq_bool(
 				b = (b_const == bv.bool)
 			}
 
-			flow.put_bool(b, is_null, out)
+			flo.put_bool(b, is_null, out)
 		}
 	}()
 	return out
@@ -686,7 +686,7 @@ func (flow *flow) eq_bool(
 
 //  wait for either a string to be sent or the flow to be resolved.
 
-func (flow *flow) wait_string(in string_chan) (
+func (flo *flow) wait_string(in string_chan) (
 	sv *string_value,
 	resolved bool,
 ) {
@@ -694,13 +694,13 @@ func (flow *flow) wait_string(in string_chan) (
 	for sv == nil {
 		select {
 		case sv = <-in:
-			if sv == nil || sv.flow.seq >= flow.seq {
+			if sv == nil || sv.flow.seq >= flo.seq {
 				return
 			}
 			sv = nil //  stale flow from the past
 
 		//  flow resolved, so move on to next flow
-		case <-flow.resolved:
+		case <-flo.resolved:
 			return nil, true
 		}
 	}
@@ -709,7 +709,7 @@ func (flow *flow) wait_string(in string_chan) (
 
 //  wait for either a bool to be sent or the flow to be resolved.
 
-func (flow *flow) wait_bool(in bool_chan) (
+func (flo *flow) wait_bool(in bool_chan) (
 	bv *bool_value,
 	resolved bool,
 ) {
@@ -717,20 +717,20 @@ func (flow *flow) wait_bool(in bool_chan) (
 	for bv == nil {
 		select {
 		case bv = <-in:
-			if bv == nil || bv.flow.seq >= flow.seq {
+			if bv == nil || bv.flow.seq >= flo.seq {
 				return
 			}
 			bv = nil //  stale value from the past
 
 		//  flow resolved, so move on to next flow
-		case <-flow.resolved:
+		case <-flo.resolved:
 			return nil, true
 		}
 	}
 	panic("impossible break from for loop")
 }
 
-func (flow *flow) wait_uint64(in uint64_chan) (
+func (flo *flow) wait_uint64(in uint64_chan) (
 	uv *uint64_value,
 	resolved bool,
 ) {
@@ -739,12 +739,12 @@ func (flow *flow) wait_uint64(in uint64_chan) (
 		select {
 
 		case uv = <-in:
-			if uv == nil || uv.flow.seq >= flow.seq {
+			if uv == nil || uv.flow.seq >= flo.seq {
 				return
 			}
 			uv = nil
 
-		case <-flow.resolved:
+		case <-flo.resolved:
 			return nil, true
 		}
 	}
@@ -753,23 +753,23 @@ func (flow *flow) wait_uint64(in uint64_chan) (
 
 //  cast string to uint64, panicing upon error
 
-func (flow *flow) cast_uint64(in string_chan) (out uint64_chan) {
+func (flo *flow) cast_uint64(in string_chan) (out uint64_chan) {
 
 	out = make(uint64_chan)
 
 	go func() {
 		defer close(out)
 
-		for flow = flow.get(); flow != nil; flow = flow.get() {
+		for flo = flo.get(); flo != nil; flo = flo.get() {
 
-			sv, resolved := flow.wait_string(in)
+			sv, resolved := flo.wait_string(in)
 			if sv == nil {
 				if resolved {
 					continue
 				}
 				return
 			}
-			flow = flow.wait(sv.flow.seq)
+			flo = flo.wait(sv.flow.seq)
 
 			var is_null bool
 			var ui64 uint64
@@ -783,13 +783,13 @@ func (flow *flow) cast_uint64(in string_chan) (out uint64_chan) {
 					panic(err)
 				}
 			}
-			flow.put_uint64(ui64, is_null, out)
+			flo.put_uint64(ui64, is_null, out)
 		}
 	}()
 	return out
 }
 
-func (flow *flow) neq_string(
+func (flo *flow) neq_string(
 	string string,
 	in string_chan,
 ) (out bool_chan) {
@@ -799,16 +799,16 @@ func (flow *flow) neq_string(
 	go func() {
 		defer close(out)
 
-		for flow = flow.get(); flow != nil; flow = flow.get() {
+		for flo = flo.get(); flo != nil; flo = flo.get() {
 
-			sv, resolved := flow.wait_string(in)
+			sv, resolved := flo.wait_string(in)
 			if sv == nil {
 				if resolved {
 					continue
 				}
 				return
 			}
-			flow = flow.wait(sv.flow.seq)
+			flo = flo.wait(sv.flow.seq)
 
 			var b, is_null bool
 
@@ -817,13 +817,13 @@ func (flow *flow) neq_string(
 			} else {
 				b = (string != sv.string)
 			}
-			flow.put_bool(b, is_null, out)
+			flo.put_bool(b, is_null, out)
 		}
 	}()
 	return out
 }
 
-func (flow *flow) eq_uint64(
+func (flo *flow) eq_uint64(
 	ui64 uint64,
 	in uint64_chan,
 ) (out bool_chan) {
@@ -833,16 +833,16 @@ func (flow *flow) eq_uint64(
 	go func() {
 		defer close(out)
 
-		for flow = flow.get(); flow != nil; flow = flow.get() {
+		for flo = flo.get(); flo != nil; flo = flo.get() {
 
-			uv, resolved := flow.wait_uint64(in)
+			uv, resolved := flo.wait_uint64(in)
 			if uv == nil {
 				if resolved {
 					continue
 				}
 				return
 			}
-			flow = flow.wait(uv.flow.seq)
+			flo = flo.wait(uv.flow.seq)
 
 			var b, is_null bool
 
@@ -851,13 +851,13 @@ func (flow *flow) eq_uint64(
 			} else {
 				b = (ui64 == uv.uint64)
 			}
-			flow.put_bool(b, is_null, out)
+			flo.put_bool(b, is_null, out)
 		}
 	}()
 	return out
 }
 
-func (flow *flow) neq_uint64(
+func (flo *flow) neq_uint64(
 	ui64 uint64,
 	in uint64_chan,
 ) (out bool_chan) {
@@ -867,16 +867,16 @@ func (flow *flow) neq_uint64(
 	go func() {
 		defer close(out)
 
-		for flow = flow.get(); flow != nil; flow = flow.get() {
+		for flo = flo.get(); flo != nil; flo = flo.get() {
 
-			uv, resolved := flow.wait_uint64(in)
+			uv, resolved := flo.wait_uint64(in)
 			if uv == nil {
 				if resolved {
 					continue
 				}
 				return
 			}
-			flow = flow.wait(uv.flow.seq)
+			flo = flo.wait(uv.flow.seq)
 
 			var b, is_null bool
 
@@ -885,13 +885,13 @@ func (flow *flow) neq_uint64(
 			} else {
 				b = (ui64 != uv.uint64)
 			}
-			flow.put_bool(b, is_null, out)
+			flo.put_bool(b, is_null, out)
 		}
 	}()
 	return out
 }
 
-func (flow *flow) wait_bool2(
+func (flo *flow) wait_bool2(
 	op [137]rummy,
 	in_left, in_right bool_chan,
 ) (
@@ -910,40 +910,40 @@ func (flow *flow) wait_bool2(
 		case lv = <-in_left:
 			//  end of stream
 			if lv == nil {
-				return rum_WAIT, flow, true
+				return rum_WAIT, flo, true
 			}
 
 			//  newer flow, so current flow is resolved
-			if lv.flow.seq > flow.seq {
+			if lv.flow.seq > flo.seq {
 				if rv != nil && rv.flow.seq < lv.flow.seq {
 					rv = nil
 				}
-				flow = lv.flow
+				flo = lv.flow
 			}
 
 		case rv = <-in_right:
 			if rv == nil {
-				return rum_WAIT, flow, true
+				return rum_WAIT, flo, true
 			}
-			if rv.flow.seq > flow.seq {
+			if rv.flow.seq > flo.seq {
 				if lv != nil && lv.flow.seq < rv.flow.seq {
 					lv = nil
 				}
-				flow = rv.flow
+				flo = rv.flow
 			}
 
-		case <-flow.resolved:
+		case <-flo.resolved:
 			return rum_NULL, nil, true
 		}
 		next = op[(lv.rummy()<<4)|rv.rummy()]
 	}
-	return next, flow, false
+	return next, flo, false
 }
 
 /*
  *  Apply PostgreSQL 9.3 SQL logical semantics to two bool streams.
  */
-func (flow *flow) bool2(
+func (flo *flow) bool2(
 	op [137]rummy,
 	in_left, in_right bool_chan,
 ) (out bool_chan) {
@@ -955,16 +955,16 @@ func (flow *flow) bool2(
 	go func() {
 		defer close(out)
 
-		for flow = flow.get(); flow != nil; flow = flow.get() {
+		for flo = flo.get(); flo != nil; flo = flo.get() {
 
-			r, f, resolved := flow.wait_bool2(op, in_left, in_right)
+			r, f, resolved := flo.wait_bool2(op, in_left, in_right)
 			if resolved {
 				if r == rum_WAIT {
 					return
 				}
 				continue
 			}
-			flow = flow.wait(f.seq)
+			flo = flo.wait(f.seq)
 
 			var b, is_null bool
 
@@ -977,7 +977,7 @@ func (flow *flow) bool2(
 				panic("impossible rummy of WAIT")
 			}
 
-			flow.put_bool(b, is_null, out)
+			flo.put_bool(b, is_null, out)
 		}
 	}()
 	return out
@@ -985,7 +985,7 @@ func (flow *flow) bool2(
 
 //  unqualified answer with empty non-null argv
 
-func (flow *flow) argv0() (out argv_chan) {
+func (flo *flow) argv0() (out argv_chan) {
 
 	out = make(argv_chan)
 
@@ -994,12 +994,12 @@ func (flow *flow) argv0() (out argv_chan) {
 
 		var argv [0]string
 
-		for flow = flow.get(); flow != nil; flow = flow.get() {
+		for flo = flo.get(); flo != nil; flo = flo.get() {
 
 			out <- &argv_value{
 				is_null: false,
 				argv:    argv[:],
-				flow:    flow,
+				flow:    flo,
 			}
 		}
 	}()
@@ -1008,7 +1008,7 @@ func (flow *flow) argv0() (out argv_chan) {
 
 //  direct answer of argv with single string
 
-func (flow *flow) argv1(in string_chan) (out argv_chan) {
+func (flo *flow) argv1(in string_chan) (out argv_chan) {
 
 	out = make(argv_chan)
 
@@ -1017,22 +1017,22 @@ func (flow *flow) argv1(in string_chan) (out argv_chan) {
 
 		var argv [1]string
 
-		for flow = flow.get(); flow != nil; flow = flow.get() {
+		for flo = flo.get(); flo != nil; flo = flo.get() {
 
-			sv, resolved := flow.wait_string(in)
+			sv, resolved := flo.wait_string(in)
 			if sv == nil {
 				if resolved {
 					continue
 				}
 				return
 			}
-			flow = flow.wait(sv.flow.seq)
+			flo = flo.wait(sv.flow.seq)
 
 			argv[0] = sv.string
 			out <- &argv_value{
 				is_null: sv.is_null,
 				argv:    argv[0:1],
-				flow:    flow,
+				flow:    flo,
 			}
 		}
 	}()
@@ -1042,7 +1042,7 @@ func (flow *flow) argv1(in string_chan) (out argv_chan) {
 //  read strings from multiple input channels and write assmbled argv[]
 //  any null value renders the whole argv[] null
 
-func (flow *flow) argv(in_args []string_chan) (out argv_chan) {
+func (flo *flow) argv(in_args []string_chan) (out argv_chan) {
 
 	//  track a received string and position in argv[]
 	type arg_value struct {
@@ -1093,7 +1093,7 @@ func (flow *flow) argv(in_args []string_chan) (out argv_chan) {
 			return
 		}()
 
-		for flow = flow.get(); flow != nil; flow = flow.get() {
+		for flo = flo.get(); flo != nil; flo = flo.get() {
 
 			av := make([]string, argc)
 			ac := uint8(0)
@@ -1112,19 +1112,19 @@ func (flow *flow) argv(in_args []string_chan) (out argv_chan) {
 				switch {
 
 				//  string value is same generation as flow.
-				case sv.flow.seq == flow.seq:
+				case sv.flow.seq == flo.seq:
 					if sv.is_null {
 						is_null = true
 					}
 
 				//  stale flow, just ignore
-				case sv.flow.seq < flow.seq:
+				case sv.flow.seq < flo.seq:
 					panic("stale flow")
 
 				//  impossible, since flow can't resolve
 				//  until argv[] is resolved.
 
-				case sv.flow.seq > flow.seq:
+				case sv.flow.seq > flo.seq:
 					panic("argv value from future")
 				}
 
@@ -1157,7 +1157,7 @@ func (flow *flow) argv(in_args []string_chan) (out argv_chan) {
 			out <- &argv_value{
 				argv:    av,
 				is_null: is_null,
-				flow:    flow,
+				flow:    flo,
 			}
 		}
 	}()
@@ -1167,30 +1167,30 @@ func (flow *flow) argv(in_args []string_chan) (out argv_chan) {
 
 //  send a string constant
 
-func (flow *flow) const_string(s string) (out string_chan) {
+func (flo *flow) const_string(s string) (out string_chan) {
 
 	out = make(string_chan)
 
 	go func() {
 		defer close(out)
 
-		for flow = flow.get(); flow != nil; flow = flow.get() {
-			flow.put_string(s, false, out)
+		for flo = flo.get(); flo != nil; flo = flo.get() {
+			flo.put_string(s, false, out)
 		}
 	}()
 
 	return out
 }
 
-func (flow *flow) const_bool(b bool) (out bool_chan) {
+func (flo *flow) const_bool(b bool) (out bool_chan) {
 
 	out = make(bool_chan)
 
 	go func() {
 		defer close(out)
 
-		for flow = flow.get(); flow != nil; flow = flow.get() {
-			flow.put_bool(b, false, out)
+		for flo = flo.get(); flo != nil; flo = flo.get() {
+			flo.put_bool(b, false, out)
 		}
 	}()
 
@@ -1199,23 +1199,23 @@ func (flow *flow) const_bool(b bool) (out bool_chan) {
 
 //  send a uint64 constant
 
-func (flow *flow) const_uint64(ui64 uint64) (out uint64_chan) {
+func (flo *flow) const_uint64(ui64 uint64) (out uint64_chan) {
 
 	out = make(uint64_chan)
 
 	go func() {
 		defer close(out)
 
-		for flow = flow.get(); flow != nil; flow = flow.get() {
+		for flo = flo.get(); flo != nil; flo = flo.get() {
 
-			flow.put_uint64(ui64, false, out)
+			flo.put_uint64(ui64, false, out)
 		}
 	}()
 
 	return out
 }
 
-func (flow *flow) call(
+func (flo *flow) call(
 	cmd *command,
 	osx_q os_exec_chan,
 	in_argv argv_chan,
@@ -1227,9 +1227,9 @@ func (flow *flow) call(
 	go func() {
 		defer close(out)
 
-		for flow = flow.get(); flow != nil; flow = flow.get() {
+		for flo = flo.get(); flo != nil; flo = flo.get() {
 
-			argv, when := flow.wait_fire(in_argv, in_when)
+			argv, when := flo.wait_fire(in_argv, in_when)
 			if argv == nil {
 				return
 			}
@@ -1246,7 +1246,7 @@ func (flow *flow) call(
 			case argv.is_null || when.is_null:
 				xv = &xdr_value{
 					is_null: true,
-					flow:    flow,
+					flow:    flo,
 				}
 
 			//  when is true and argv exists, so fire command
@@ -1256,9 +1256,9 @@ func (flow *flow) call(
 
 				xv = cmd.call(argv.argv, osx_q)
 				xv.wall_duration = Since(xv.start_time)
-				xv.flow = flow
-				xv.udig = flow.brr[brr_UDIG]
-				xv.flow_sequence = flow.seq
+				xv.flow = flo
+				xv.udig = flo.brr[brr_UDIG]
+				xv.flow_sequence = flo.seq
 
 			//  when clause is false.
 			//
@@ -1271,7 +1271,7 @@ func (flow *flow) call(
 			default:
 				xv = &xdr_value{
 					is_null: false,
-					flow:    flow,
+					flow:    flo,
 				}
 			}
 
@@ -1287,7 +1287,7 @@ func (flow *flow) call(
 //  fire an xdr record for an optimized command that always has an exit
 //  status of 0.
 
-func (flow *flow) call0(
+func (flo *flow) call0(
 	name string,
 	in_argv argv_chan,
 	in_when bool_chan,
@@ -1298,9 +1298,9 @@ func (flow *flow) call0(
 	go func() {
 		defer close(out)
 
-		for flow = flow.get(); flow != nil; flow = flow.get() {
+		for flo = flo.get(); flo != nil; flo = flo.get() {
 
-			argv, when := flow.wait_fire(in_argv, in_when)
+			argv, when := flo.wait_fire(in_argv, in_when)
 			if argv == nil {
 				return
 			}
@@ -1314,24 +1314,24 @@ func (flow *flow) call0(
 			case argv.is_null || when.is_null:
 				xv = &xdr_value{
 					is_null: true,
-					flow:    flow,
+					flow:    flo,
 				}
 
 			//  when is rule optimized "true" which does not invoke
 			//  a process
 
 			case when.bool:
-				udig := flow.brr[brr_UDIG]
+				udig := flo.brr[brr_UDIG]
 				xv = &xdr_value{
 					xdr: &xdr{
 						start_time:        Now(),
 						call_name:         name,
 						udig:              udig,
-						flow_sequence:     flow.seq,
+						flow_sequence:     flo.seq,
 						termination_class: "OK",
 						termination_code:  0,
 					},
-					flow: flow,
+					flow: flo,
 				}
 				xv.wall_duration = Since(xv.start_time)
 
@@ -1346,7 +1346,7 @@ func (flow *flow) call0(
 			default:
 				xv = &xdr_value{
 					is_null: false,
-					flow:    flow,
+					flow:    flo,
 				}
 			}
 
@@ -1359,7 +1359,7 @@ func (flow *flow) call0(
 	return out
 }
 
-func (flow *flow) log_xdr_error(
+func (flo *flow) log_xdr_error(
 	log_ch file_byte_chan,
 	in xdr_chan,
 ) (out xdr_chan) {
@@ -1411,7 +1411,7 @@ func (flow *flow) log_xdr_error(
 	return out
 }
 
-func (flow *flow) log_qdr_error(
+func (flo *flow) log_qdr_error(
 	log_ch file_byte_chan,
 	in qdr_chan,
 ) (out qdr_chan) {
@@ -1456,7 +1456,7 @@ func (flow *flow) log_qdr_error(
 	return out
 }
 
-func (flow *flow) log_xdr(
+func (flo *flow) log_xdr(
 	log_ch chan []byte,
 	in xdr_chan,
 ) (out xdr_chan) {
@@ -1466,7 +1466,7 @@ func (flow *flow) log_xdr(
 	go func() {
 		defer close(out)
 
-		for flow = flow.get(); flow != nil; flow = flow.get() {
+		for flo = flo.get(); flo != nil; flo = flo.get() {
 
 			xv := <-in
 			if xv == nil {
@@ -1737,7 +1737,7 @@ func (flo *flow) reduce(inx []xdr_chan, inq []qdr_chan) (out fdr_chan) {
 
 //  log the flow detail records
 
-func (flow *flow) log_fdr(
+func (flo *flow) log_fdr(
 	log_ch chan []byte,
 	in fdr_chan,
 ) (out fdr_chan) {
@@ -1747,7 +1747,7 @@ func (flow *flow) log_fdr(
 	go func() {
 		defer close(out)
 
-		for flow = flow.get(); flow != nil; flow = flow.get() {
+		for flo = flo.get(); flo != nil; flo = flo.get() {
 
 			fdr := <-in
 			if fdr == nil {
@@ -1875,7 +1875,7 @@ func (flo *flow) fanout_qdr(
 }
 
 //  cast uint64 into string
-func (flow *flow) cast_string(
+func (flo *flow) cast_string(
 	left uint64_chan,
 ) (out string_chan) {
 
@@ -1884,16 +1884,16 @@ func (flow *flow) cast_string(
 	go func() {
 		defer close(out)
 
-		for flow = flow.get(); flow != nil; flow = flow.get() {
+		for flo = flo.get(); flo != nil; flo = flo.get() {
 
-			uv, resolved := flow.wait_uint64(left)
+			uv, resolved := flo.wait_uint64(left)
 			if uv == nil {
 				if resolved {
 					continue
 				}
 				return
 			}
-			flow = flow.wait(uv.flow.seq)
+			flo = flo.wait(uv.flow.seq)
 
 			var is_null bool
 			var s string
@@ -1903,7 +1903,7 @@ func (flow *flow) cast_string(
 			} else {
 				s = strconv.FormatUint(uv.uint64, 10)
 			}
-			flow.put_string(s, is_null, out)
+			flo.put_string(s, is_null, out)
 		}
 	}()
 	return out
@@ -1912,7 +1912,7 @@ func (flow *flow) cast_string(
 //  a rule fires if and only if both the argv[] exists and
 //  the when clause is true.
 
-func (flow *flow) wait_fire(
+func (flo *flow) wait_fire(
 	in_argv argv_chan,
 	in_when bool_chan,
 ) (
@@ -1926,7 +1926,7 @@ func (flow *flow) wait_fire(
 			if argv == nil {
 				return nil, nil
 			}
-			if argv.flow.seq != flow.seq {
+			if argv.flow.seq != flo.seq {
 				panic("argv flow out of sequence")
 			}
 
@@ -1934,7 +1934,7 @@ func (flow *flow) wait_fire(
 			if when == nil {
 				return nil, nil
 			}
-			if when.flow.seq != flow.seq {
+			if when.flow.seq != flo.seq {
 				panic("when clause flow out of sequence")
 			}
 		}
@@ -1942,7 +1942,7 @@ func (flow *flow) wait_fire(
 	return
 }
 
-func (flow *flow) sql_query_row(
+func (flo *flow) sql_query_row(
 	q *sql_query_row,
 	in_argv argv_chan,
 	in_when bool_chan,
@@ -1953,9 +1953,9 @@ func (flow *flow) sql_query_row(
 	go func() {
 		defer close(out)
 
-		for flow = flow.get(); flow != nil; flow = flow.get() {
+		for flo = flo.get(); flo != nil; flo = flo.get() {
 
-			argv, when := flow.wait_fire(in_argv, in_when)
+			argv, when := flo.wait_fire(in_argv, in_when)
 
 			//  end of stream
 			if argv == nil {
@@ -1975,7 +1975,7 @@ func (flow *flow) sql_query_row(
 			case argv.is_null || when.is_null:
 				qv = &qdr_value{
 					is_null: true,
-					flow:    flow,
+					flow:    flo,
 				}
 
 			//  when predicate is true and argv exists, so
@@ -1986,9 +1986,9 @@ func (flow *flow) sql_query_row(
 				//  invoke sql query
 				qv = q.query_row(argv.argv)
 
-				qv.flow = flow
-				qv.udig = flow.brr[brr_UDIG]
-				qv.flow_sequence = flow.seq
+				qv.flow = flo
+				qv.udig = flo.brr[brr_UDIG]
+				qv.flow_sequence = flo.seq
 				qv.query_name = q.name
 
 			//  when clause is false.
@@ -2003,7 +2003,7 @@ func (flow *flow) sql_query_row(
 			default:
 				qv = &qdr_value{
 					is_null: false,
-					flow:    flow,
+					flow:    flo,
 				}
 			}
 			if qv.qdr != nil {
@@ -2020,7 +2020,7 @@ func (flow *flow) sql_query_row(
 	return out
 }
 
-func (flow *flow) sql_exec(
+func (flo *flow) sql_exec(
 	ex *sql_exec,
 	in_argv argv_chan,
 	in_when bool_chan,
@@ -2031,9 +2031,9 @@ func (flow *flow) sql_exec(
 	go func() {
 		defer close(out)
 
-		for flow = flow.get(); flow != nil; flow = flow.get() {
+		for flo = flo.get(); flo != nil; flo = flo.get() {
 
-			argv, when := flow.wait_fire(in_argv, in_when)
+			argv, when := flo.wait_fire(in_argv, in_when)
 			if argv == nil {
 				return
 			}
@@ -2052,7 +2052,7 @@ func (flow *flow) sql_exec(
 			case argv.is_null || when.is_null:
 				qv = &qdr_value{
 					is_null: true,
-					flow:    flow,
+					flow:    flo,
 				}
 
 			//  when predicate is true and argv exists, so
@@ -2063,9 +2063,9 @@ func (flow *flow) sql_exec(
 				//  invoke sql query
 				qv = ex.exec(argv.argv)
 
-				qv.flow = flow
-				qv.udig = flow.brr[brr_UDIG]
-				qv.flow_sequence = flow.seq
+				qv.flow = flo
+				qv.udig = flo.brr[brr_UDIG]
+				qv.flow_sequence = flo.seq
 				qv.query_name = ex.name
 
 			//  when clause is false.
@@ -2079,7 +2079,7 @@ func (flow *flow) sql_exec(
 			default:
 				qv = &qdr_value{
 					is_null: false,
-					flow:    flow,
+					flow:    flo,
 				}
 			}
 			if qv.qdr != nil {
@@ -2096,7 +2096,7 @@ func (flow *flow) sql_exec(
 	return out
 }
 
-func (flow *flow) sql_exec_txn(
+func (flo *flow) sql_exec_txn(
 	ex *sql_exec,
 	in_argv argv_chan,
 	in_when bool_chan,
@@ -2108,9 +2108,9 @@ func (flow *flow) sql_exec_txn(
 
 		defer close(out)
 
-		for flow = flow.get(); flow != nil; flow = flow.get() {
+		for flo = flo.get(); flo != nil; flo = flo.get() {
 
-			argv, when := flow.wait_fire(in_argv, in_when)
+			argv, when := flo.wait_fire(in_argv, in_when)
 			if argv == nil {
 				return
 			}
@@ -2128,7 +2128,7 @@ func (flow *flow) sql_exec_txn(
 			case argv.is_null || when.is_null:
 				qv = &qdr_value{
 					is_null: true,
-					flow:    flow,
+					flow:    flo,
 				}
 
 			//  when predicate is true and argv exists, so
@@ -2139,9 +2139,9 @@ func (flow *flow) sql_exec_txn(
 				//  invoke sql transaction
 				qv = ex.exec_txn(argv.argv)
 
-				qv.flow = flow
-				qv.udig = flow.brr[brr_UDIG]
-				qv.flow_sequence = flow.seq
+				qv.flow = flo
+				qv.udig = flo.brr[brr_UDIG]
+				qv.flow_sequence = flo.seq
 				qv.query_name = ex.name
 
 			//  when clause is false.
@@ -2155,7 +2155,7 @@ func (flow *flow) sql_exec_txn(
 			default:
 				qv = &qdr_value{
 					is_null: false,
-					flow:    flow,
+					flow:    flo,
 				}
 			}
 			if qv.qdr != nil {
