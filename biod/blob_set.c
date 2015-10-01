@@ -108,8 +108,7 @@ blob_set_exists(void *set, unsigned char *value, int size)
 
 	hash = djb(value, size) % s->size;
 	e = s->table[hash];
-	if (e) do
-	{
+	if (e) do {
 		if (size == e->size && memcmp(e->value, value, size) == 0)
 			return 1;
 	} while ((e = e->next));
