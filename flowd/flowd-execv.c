@@ -8,24 +8,30 @@
  *	echo /bin/true | flowd-execv
  *	echo /bin/false | flowd-execv
  *	echo /bin/date | flowd-execv
+ *	
+ *	A summary of the exit status of the process is written to standard out:
+ *	
+ *		# normal process exit
+ *		EXIT\t<exit-code>\t<user-seconds>\t<system-seconds>
+ *
+ *		# process was interupted by a signal
+ *		SIG\t<signal>\t<user-seconds>\t<system-seconds>
+ *
+ *		# process got the stop signal and was killed
+ *		STOP\t<stop-signal>\t<user-seconds>\t<system-seconds>
+ *
+ * 		A fatal error occured when execv'ing the process
+ *		ERROR\t<error description>
+ *	
+ *	Fatal errors for flowd-execv are written to standard out and
+ *	flowd-execv exits.
  *  Exit Status:
  *  	0	exit ok
  *  	1	exit error (written to standard error)
  *  Note:
- *	The read() from stdin is assumed to be atomic and terminated by a
- *	new-line char (\n).  This assumption makes sense when invoked by flowd,
- *	since coordination is stricly synchronized on i/o flow. This implies
- *	that the following command line invocation could fail:
- *
- *		flowd-execv <multi-line-test-file
- *
- *	This is a sad situation, since trivial testing from the shell will
- *	break.  However, the following command line invocation ought to never
- *	fail:
- *
- *		grep --line-buffered '.*' multi-line-test-file | flowd-execv
- *
  *	On ERROR, flowd-exec does not return user/system times.
+ *
+ *	Should the process be killed upon receiving a STOP signal?
  *
  *  Blame:
  *  	jmscott@setspace.com
@@ -280,9 +286,9 @@ fork_wait() {
 	} else if (WIFSIGNALED(status)) {
 		xclass = "SIG";
 		xstatus = WTERMSIG(status);
-	} else if (WIFSIGNALED(status)) {
+	} else if (WIFSTOPPED(status)) {
 		xclass = "STOP";
-		xstatus = status;
+		xstatus = WSTOPSIG(status);
 	} else
 		die("wait() exited with impossible value");
 
