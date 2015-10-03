@@ -1,38 +1,5 @@
 Synopsis:
 	A trivial protocol to manage immutable blobs over a network.
-Usage:
-	#  get a blob
-	$ nc blob.setspace.com 1797
-	> get sha:a0bc76c479b55b5af2e3c7c4a4d2ccf44e6c4e71
-	< To be, or not to be : that is the question:
-	< Whether 'tis nobler in the mind to suffer
-	< The slings and arrows of outrageous fortune,
-	< ...
-	<EOT>
-
-	#  put a blob to network
-	$ echo 'hello, world' | shasum
-	cd50d19784897085a8d0e3e413f8612b097c03f1  -
-	$ nc blob.setspace.com 1797
-	> put sha:cd50d19784897085a8d0e3e413f8612b097c03f1
-	> hello, world
-	< ok
-	<EOT>
-
-	# take a blob
-	$ nc blob.setspace.com 1797
-	> take sha:cd50d19784897085a8d0e3e413f8612b097c03f1
-	< ok
-	< hello, world
-	> ok
-	< ok
-	<EOT>
-
-	# does the blob still exist?
-	$ nc blob.setspace.com 1797
-	> get sha:cd50d19784897085a8d0e3e413f8612b097c03f1
-	< no
-	<EOT>
 
 Description:
 	The blobio environment implements a simple client/server protocol for 
@@ -176,8 +143,44 @@ Protocol Flow:
 	talks to untrusted code, due to the denial of service susceptibility
 	described above.
 
+Usage:
+	#  get a blob
+	$ nc blob.setspace.com 1797
+	> get sha:a0bc76c479b55b5af2e3c7c4a4d2ccf44e6c4e71
+	< To be, or not to be : that is the question:
+	< Whether 'tis nobler in the mind to suffer
+	< The slings and arrows of outrageous fortune,
+	< ...
+	<EOT>
+
+	#  put a blob to network
+	$ echo 'hello, world' | shasum
+	cd50d19784897085a8d0e3e413f8612b097c03f1  -
+	$ nc blob.setspace.com 1797
+	> put sha:cd50d19784897085a8d0e3e413f8612b097c03f1
+	> hello, world
+	< ok
+	<EOT>
+
+	# take a blob
+	$ nc blob.setspace.com 1797
+	> take sha:cd50d19784897085a8d0e3e413f8612b097c03f1
+	< ok
+	< hello, world
+	> ok
+	< ok
+	<EOT>
+
+	# does the blob still exist?
+	$ nc blob.setspace.com 1797
+	> get sha:cd50d19784897085a8d0e3e413f8612b097c03f1
+	< no
+	<EOT>
+
 Protocol Questions:
 	- what about forbidding ':' as a digest character?
+
+	- is requiring 32 ascii bytes too strict.  what about 24 bytes.
 
 	- should 'roll' with no udig return the last rolled udig?
 
