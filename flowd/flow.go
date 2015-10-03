@@ -13,6 +13,22 @@ import (
 	. "fmt"
 	. "time"
 )
+//  rummy records for temporal boolean states: true, false, null, waiting 
+//  There are known knowns ...
+
+type rummy uint8
+
+//  describe rummy states
+var rum2string = [16]string{
+	"0",
+	"WAIT",
+	"NULL",
+	"3",
+	"FALSE",
+	"5", "6", "7",
+	"TRUE",
+	"9", "10", "11", "12", "13", "14", "15",
+}
 
 // bool_value is result of AND, OR and relational operations
 type bool_value struct {
@@ -114,24 +130,13 @@ type flow struct {
 	//  the blob request record being "flowed"
 	brr *brr
 
-	//  count of go routines still flowing answers
+	//  count of go routines still flowing expressions
 	confluent_count int
 }
 
+//  the river of blobs
 type flow_chan chan *flow
 
-var rum2string = [16]string{
-	"0",
-	"WAIT",
-	"NULL",
-	"3",
-	"FALSE",
-	"5", "6", "7",
-	"TRUE",
-	"9", "10", "11", "12", "13", "14", "15",
-}
-
-type rummy uint8
 
 func (rum rummy) String() string {
 
@@ -142,7 +147,7 @@ func (rum rummy) String() string {
 }
 
 const (
-	//  will eventualluy resolve to true, false or null
+	//  will eventually resolve to true, false or null
 	rum_WAIT = rummy(0x1)
 
 	//  known to be null in the sql sense
