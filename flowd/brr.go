@@ -1,9 +1,18 @@
-//  Synopsis:
-//	Parse blob request records.
-//
-//  Blame:
-//	jmscott@setspace.com
-//	setspace@gmail.com
+/*
+Blob request records (brr) describe a single get/put request for a blob.
+
+The format of a single request record is a new-line terminated list of
+tab separated fields, i.e, the typical unixy ascii record:
+
+	start_time		#  YYYY-MM-DDThh:mm:ss.ns[+-]HH:MM
+	netflow			#  [a-z][a-z0-9]{0,7}~[[:graph:]]{1,128}
+	verb			#  get/put/take/give/eat/wrap/roll
+	algorithm:digest	#  udig of the blob in request
+	chat_history		#  ok/no handshake between server&client
+	blob_size		#  unsigned 64 bit long < 2^63
+	wall_duration		#  request wall duration in sec.ns>=0
+*/
+
 package main
 
 import (

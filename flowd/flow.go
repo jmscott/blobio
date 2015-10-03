@@ -256,7 +256,7 @@ type uint64_value struct {
 type uint64_chan chan *uint64_value
 
 //  a flow tracks the firing of rules over a single blob described in a
-//  blob request record (brr).
+//  blob request record (brr).  See brr.go
 
 type flow struct {
 
