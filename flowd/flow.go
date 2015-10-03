@@ -30,136 +30,7 @@ var rum2string = [16]string{
 	"9", "10", "11", "12", "13", "14", "15",
 }
 
-// bool_value is result of AND, OR and relational operations
-type bool_value struct {
-	bool
-	is_null bool
-
-	*flow
-}
-
-// bool_chan is channel of *bool_values;  nil indicates closure of channel
-type bool_chan chan *bool_value
-
-// string_value is result or projection.  See project_brr()
-type string_value struct {
-	string
-	is_null bool
-
-	*flow
-}
-
-//  string_chan is channel of *string_values;  nil indicates closure
-type string_chan chan *string_value
-
-//  argv_value represents a function or query string argument vector
-type argv_value struct {
-	argv    []string
-	is_null bool
-
-	*flow
-}
-
-//  argv_chan is channel of *argv_values;  nil indicates closure
-type argv_chan chan *argv_value
-
-//  xdr_value represents a process execution description record.
-//  the field output_256 may be null if no output occured during the processes
-//  execution.  err is error related to a failed execution of the process
-type xdr_value struct {
-	//  Note: a pointer to xdr?
-	*xdr
-	is_null bool
-
-	//  Note: change from 256 truncated to 255?
-
-	output_256 []byte
-	err        error
-
-	*flow
-}
-type xdr_chan chan *xdr_value
-
-type qdr_value struct {
-	//  Note: a pointer to qdr?
-	*qdr
-	is_null bool
-
-	//  query result bound to this qdr record
-	results []interface{}
-
-	//  error from sql.QueryRow().
-
-	err        error
-	err_driver string
-
-	*flow
-}
-type qdr_chan chan *qdr_value
-
-type fdr_value struct {
-	*fdr
-
-	*flow
-}
-type fdr_chan chan *fdr_value
-
-type uint64_value struct {
-	uint64
-	is_null bool
-
-	*flow
-}
-type uint64_chan chan *uint64_value
-
-type flow struct {
-
-	//  request a new flow from this channel,
-	//  reading reply on sent side-channel
-
-	next chan flow_chan
-
-	//  channel is closed when all call()/queries have been can make no
-	//  further progress
-
-	resolved chan struct{}
-
-	//  first, second, ... n-th brr flow
-	seq uint64
-
-	//  the blob request record being "flowed"
-	brr *brr
-
-	//  count of go routines still flowing expressions
-	confluent_count int
-}
-
-//  the river of blobs
-type flow_chan chan *flow
-
-
-func (rum rummy) String() string {
-
-	if rum < 16 {
-		return rum2string[rum]
-	}
-	return rum2string[rum>>4] + "|" + rum2string[rum&0x0F]
-}
-
-const (
-	//  will eventually resolve to true, false or null
-	rum_WAIT = rummy(0x1)
-
-	//  known to be null in the sql sense
-	rum_NULL = rummy(0x2)
-
-	//  known to be false
-	rum_FALSE = rummy(0x4)
-
-	//  known to be true
-	rum_TRUE = rummy(0x8)
-)
-
+//  state tables for logical and/or
 var and = [137]rummy{}
 var or = [137]rummy{}
 
@@ -301,6 +172,139 @@ func init() {
 	or[lf|rum_WAIT] = rum_WAIT
 	or[ln|rum_WAIT] = rum_WAIT
 }
+
+// bool_value is result of AND, OR and relational operations
+type bool_value struct {
+	bool
+	is_null bool
+
+	*flow
+}
+
+// bool_chan is channel of *bool_values;  nil indicates closure of channel
+type bool_chan chan *bool_value
+
+// string_value is result or projection.  See project_brr()
+type string_value struct {
+	string
+	is_null bool
+
+	*flow
+}
+
+//  string_chan is channel of *string_values;  nil indicates closure
+type string_chan chan *string_value
+
+//  argv_value represents a function or query string argument vector
+type argv_value struct {
+	argv    []string
+	is_null bool
+
+	*flow
+}
+
+//  argv_chan is channel of *argv_values;  nil indicates closure
+type argv_chan chan *argv_value
+
+//  xdr_value represents a process execution description record.
+//  the field output_256 may be null if no output occured during the processes
+//  execution.  err is error related to a failed execution of the process
+type xdr_value struct {
+	//  Note: a pointer to xdr?
+	*xdr
+	is_null bool
+
+	//  Note: change from 256 truncated to 255?
+
+	output_256 []byte
+	err        error
+
+	*flow
+}
+type xdr_chan chan *xdr_value
+
+type qdr_value struct {
+	//  Note: a pointer to qdr?
+	*qdr
+	is_null bool
+
+	//  query result bound to this qdr record
+	results []interface{}
+
+	//  error from sql.QueryRow().
+
+	err        error
+	err_driver string
+
+	*flow
+}
+type qdr_chan chan *qdr_value
+
+type fdr_value struct {
+	*fdr
+
+	*flow
+}
+type fdr_chan chan *fdr_value
+
+type uint64_value struct {
+	uint64
+	is_null bool
+
+	*flow
+}
+type uint64_chan chan *uint64_value
+
+//  a flow tracks the firing of rules over a single blob described in a
+//  blob request record (brr).
+
+type flow struct {
+
+	//  request a new flow from this channel,
+	//  reading reply on sent side-channel
+
+	next chan flow_chan
+
+	//  channel is closed when all call()/queries have been can make no
+	//  further progress
+
+	resolved chan struct{}
+
+	//  first, second, ... n-th brr flow
+	seq uint64
+
+	//  the blob request record being "flowed"
+	brr *brr
+
+	//  count of go routines still flowing expressions
+	confluent_count int
+}
+
+//  the river of blobs
+type flow_chan chan *flow
+
+
+func (rum rummy) String() string {
+
+	if rum < 16 {
+		return rum2string[rum]
+	}
+	return rum2string[rum>>4] + "|" + rum2string[rum&0x0F]
+}
+
+const (
+	//  will eventually resolve to true, false or null
+	rum_WAIT = rummy(0x1)
+
+	//  known to be null in the sql sense
+	rum_NULL = rummy(0x2)
+
+	//  known to be false
+	rum_FALSE = rummy(0x4)
+
+	//  known to be true
+	rum_TRUE = rummy(0x8)
+)
 
 func (bv *bool_value) rummy() rummy {
 
