@@ -436,7 +436,6 @@ func (flo *flow) project_xdr_exit_status(
 				}
 				return
 			}
-			flo = flo.wait(xv.flow.seq)
 
 			var is_null bool
 			var ui uint64
@@ -455,26 +454,15 @@ func (flo *flow) project_xdr_exit_status(
 	return out
 }
 
-func (flo *flow) wait(seq uint64) (f *flow) {
-
-	f = flo
-	for f.seq < seq {
-		reply := make(flow_chan)
-		f.next <- reply
-		f = <-reply
-	}
-	if f.seq > seq {
-		panic("flow from the future")
-	}
-	return
-}
-
 func (flo *flow) wait_qdr(in qdr_chan) (qv *qdr_value, resolved bool) {
 	for qv == nil {
 		select {
 		case qv = <-in:
-			if qv == nil || qv.flow.seq >= flo.seq {
+			if qv == nil || qv.flow.seq == flo.seq {
 				return
+			}
+			if qv.flow.seq > flo.seq {
+				panic("qdr value from the future")
 			}
 			qv = nil
 
@@ -491,8 +479,11 @@ func (flo *flow) wait_xdr(in xdr_chan) (xv *xdr_value, resolved bool) {
 	for xv == nil {
 		select {
 		case xv = <-in:
-			if xv == nil || xv.flow.seq >= flo.seq {
+			if xv == nil || xv.flow.seq == flo.seq {
 				return
+			}
+			if xv.flow.seq > flo.seq {
+				panic("xdr value from the future")
 			}
 			xv = nil
 
@@ -525,7 +516,6 @@ func (flo *flow) project_sql_query_row_bool(
 				}
 				return
 			}
-			flo = flo.wait(qv.flow.seq)
 
 			var is_null bool
 			var b bool
@@ -567,7 +557,6 @@ func (flo *flow) project_qdr_rows_affected(
 				}
 				return
 			}
-			flo = flo.wait(qv.flow.seq)
 
 			var is_null bool
 			var ui uint64
@@ -605,7 +594,6 @@ func (flo *flow) project_qdr_sqlstate(
 				}
 				return
 			}
-			flo = flo.wait(qv.flow.seq)
 
 			var is_null bool
 			var s string
@@ -642,7 +630,6 @@ func (flo *flow) eq_string(
 				}
 				return
 			}
-			flo = flo.wait(sv.flow.seq)
 
 			var b, is_null bool
 
@@ -677,7 +664,6 @@ func (flo *flow) eq_bool(
 				}
 				return
 			}
-			flo = flo.wait(bv.flow.seq)
 
 			var b, is_null bool
 
@@ -703,10 +689,15 @@ func (flo *flow) wait_string(in string_chan) (
 	for sv == nil {
 		select {
 		case sv = <-in:
-			if sv == nil || sv.flow.seq >= flo.seq {
+			if sv == nil || sv.flow.seq == flo.seq {
 				return
 			}
-			sv = nil //  stale flow from the past
+			if sv.flow.seq > flo.seq {
+				panic("string value from the future")
+			}
+
+			//  stale flow from the past
+			sv = nil
 
 		//  flow resolved, so move on to next flow
 		case <-flo.resolved:
@@ -726,10 +717,14 @@ func (flo *flow) wait_bool(in bool_chan) (
 	for bv == nil {
 		select {
 		case bv = <-in:
-			if bv == nil || bv.flow.seq >= flo.seq {
+			if bv == nil || bv.flow.seq == flo.seq {
 				return
 			}
-			bv = nil //  stale value from the past
+			if bv.flow.seq > flo.seq {
+				panic("bool value from the future")
+			}
+			//  stale value from the past
+			bv = nil
 
 		//  flow resolved, so move on to next flow
 		case <-flo.resolved:
@@ -748,8 +743,11 @@ func (flo *flow) wait_uint64(in uint64_chan) (
 		select {
 
 		case uv = <-in:
-			if uv == nil || uv.flow.seq >= flo.seq {
+			if uv == nil || uv.flow.seq == flo.seq {
 				return
+			}
+			if uv.flow.seq > flo.seq {
+				panic("uint64 value from the future")
 			}
 			uv = nil
 
@@ -778,7 +776,6 @@ func (flo *flow) cast_uint64(in string_chan) (out uint64_chan) {
 				}
 				return
 			}
-			flo = flo.wait(sv.flow.seq)
 
 			var is_null bool
 			var ui64 uint64
@@ -817,7 +814,6 @@ func (flo *flow) neq_string(
 				}
 				return
 			}
-			flo = flo.wait(sv.flow.seq)
 
 			var b, is_null bool
 
@@ -851,7 +847,6 @@ func (flo *flow) eq_uint64(
 				}
 				return
 			}
-			flo = flo.wait(uv.flow.seq)
 
 			var b, is_null bool
 
@@ -885,7 +880,6 @@ func (flo *flow) neq_uint64(
 				}
 				return
 			}
-			flo = flo.wait(uv.flow.seq)
 
 			var b, is_null bool
 
@@ -905,7 +899,6 @@ func (flo *flow) wait_bool2(
 	in_left, in_right bool_chan,
 ) (
 	next rummy,
-	_ *flow,
 	resolved bool,
 ) {
 	var lv, rv *bool_value
@@ -916,37 +909,51 @@ func (flo *flow) wait_bool2(
 		//  fetch left or right booleans.
 
 		select {
-		case lv = <-in_left:
+		case l := <-in_left:
+			switch {
+
 			//  end of stream
-			if lv == nil {
-				return rum_WAIT, flo, true
+			case l == nil:
+				return rum_WAIT, true
+
+			//  two lvals in row, impossible
+			case lv != nil:
+				panic("multiple left bool values seen")
+
+			//  first seen lval
+			case l.flow.seq == flo.seq:
+				lv = l
+
+			case l.flow.seq > flo.seq:
+				panic("left bool value from the future")
 			}
 
-			//  newer flow, so current flow is resolved
-			if lv.flow.seq > flo.seq {
-				if rv != nil && rv.flow.seq < lv.flow.seq {
-					rv = nil
-				}
-				flo = lv.flow
+		case r := <-in_right:
+			switch {
+
+			//  end of stream
+			case r == nil:
+				return rum_WAIT, true
+
+			//  two rvals in row, impossible
+			case rv != nil:
+				panic("multiple right bool values seen")
+
+			//  first seen lval
+			case r.flow.seq == flo.seq:
+				rv = r
+
+			case r.flow.seq > flo.seq:
+				panic("right bool value from the future")
 			}
 
-		case rv = <-in_right:
-			if rv == nil {
-				return rum_WAIT, flo, true
-			}
-			if rv.flow.seq > flo.seq {
-				if lv != nil && lv.flow.seq < rv.flow.seq {
-					lv = nil
-				}
-				flo = rv.flow
-			}
-
+		//  Note: rum_WAIT seems more reasonable than rum_NULL
 		case <-flo.resolved:
-			return rum_NULL, nil, true
+			return rum_NULL, true
 		}
 		next = op[(lv.rummy()<<4)|rv.rummy()]
 	}
-	return next, flo, false
+	return next, false
 }
 
 /*
@@ -966,18 +973,17 @@ func (flo *flow) bool2(
 
 		for flo = flo.get(); flo != nil; flo = flo.get() {
 
-			r, f, resolved := flo.wait_bool2(op, in_left, in_right)
+			rum, resolved := flo.wait_bool2(op, in_left, in_right)
 			if resolved {
-				if r == rum_WAIT {
+				if rum == rum_WAIT {
 					return
 				}
 				continue
 			}
-			flo = flo.wait(f.seq)
 
 			var b, is_null bool
 
-			switch r {
+			switch rum {
 			case rum_NULL:
 				is_null = true
 			case rum_TRUE:
@@ -992,6 +998,16 @@ func (flo *flow) bool2(
 	return out
 }
 
+func (flo *flow) put_argv(av []string, is_null bool, out argv_chan) {
+
+	//  Note: what about sending null when flow resolved?
+	out <- &argv_value{
+		is_null: is_null,
+		argv:    av,
+		flow:    flo,
+	}
+}
+
 //  unqualified answer with empty non-null argv
 
 func (flo *flow) argv0() (out argv_chan) {
@@ -1004,12 +1020,8 @@ func (flo *flow) argv0() (out argv_chan) {
 		var argv [0]string
 
 		for flo = flo.get(); flo != nil; flo = flo.get() {
-
-			out <- &argv_value{
-				is_null: false,
-				argv:    argv[:],
-				flow:    flo,
-			}
+			
+			flo.put_argv(argv[:], false, out)
 		}
 	}()
 	return out
@@ -1035,14 +1047,8 @@ func (flo *flow) argv1(in string_chan) (out argv_chan) {
 				}
 				return
 			}
-			flo = flo.wait(sv.flow.seq)
-
 			argv[0] = sv.string
-			out <- &argv_value{
-				is_null: sv.is_null,
-				argv:    argv[0:1],
-				flow:    flo,
-			}
+			flo.put_argv(argv[:], sv.is_null, out)
 		}
 	}()
 	return out
@@ -1128,7 +1134,7 @@ func (flo *flow) argv(in_args []string_chan) (out argv_chan) {
 
 				//  stale flow, just ignore
 				case sv.flow.seq < flo.seq:
-					panic("stale flow")
+					continue
 
 				//  impossible, since flow can't resolve
 				//  until argv[] is resolved.
@@ -1902,7 +1908,6 @@ func (flo *flow) cast_string(
 				}
 				return
 			}
-			flo = flo.wait(uv.flow.seq)
 
 			var is_null bool
 			var s string
