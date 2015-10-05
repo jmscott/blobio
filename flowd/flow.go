@@ -13,9 +13,9 @@ import (
 	. "fmt"
 	. "time"
 )
+
 //  rummy records for temporal boolean states: true, false, null, waiting 
 //  There are known knowns ...
-
 type rummy uint8
 
 //  describe rummy states
