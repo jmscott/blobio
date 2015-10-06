@@ -511,6 +511,7 @@ func (flo *flow) project_sql_query_row_bool(
 				}
 				return
 			}
+			flo = qv.flow
 
 			var is_null bool
 			var b bool
@@ -552,6 +553,7 @@ func (flo *flow) project_qdr_rows_affected(
 				}
 				return
 			}
+			flo = qv.flow
 
 			var is_null bool
 			var ui uint64
@@ -589,6 +591,7 @@ func (flo *flow) project_qdr_sqlstate(
 				}
 				return
 			}
+			flo = qv.flow
 
 			var is_null bool
 			var s string
