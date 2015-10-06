@@ -436,6 +436,7 @@ func (flo *flow) project_xdr_exit_status(
 				}
 				return
 			}
+			flo = xv.flow
 
 			var is_null bool
 			var ui uint64
@@ -458,11 +459,8 @@ func (flo *flow) wait_qdr(in qdr_chan) (qv *qdr_value, resolved bool) {
 	for qv == nil {
 		select {
 		case qv = <-in:
-			if qv == nil || qv.flow.seq == flo.seq {
+			if qv == nil || qv.flow.seq >= flo.seq {
 				return
-			}
-			if qv.flow.seq > flo.seq {
-				panic("qdr value from the future")
 			}
 			qv = nil
 
@@ -479,11 +477,8 @@ func (flo *flow) wait_xdr(in xdr_chan) (xv *xdr_value, resolved bool) {
 	for xv == nil {
 		select {
 		case xv = <-in:
-			if xv == nil || xv.flow.seq == flo.seq {
+			if xv == nil || xv.flow.seq >= flo.seq {
 				return
-			}
-			if xv.flow.seq > flo.seq {
-				panic("xdr value from the future")
 			}
 			xv = nil
 
@@ -630,6 +625,7 @@ func (flo *flow) eq_string(
 				}
 				return
 			}
+			flo = sv.flow
 
 			var b, is_null bool
 
@@ -664,6 +660,7 @@ func (flo *flow) eq_bool(
 				}
 				return
 			}
+			flo = bv.flow
 
 			var b, is_null bool
 
@@ -689,11 +686,8 @@ func (flo *flow) wait_string(in string_chan) (
 	for sv == nil {
 		select {
 		case sv = <-in:
-			if sv == nil || sv.flow.seq == flo.seq {
+			if sv == nil || sv.flow.seq >= flo.seq {
 				return
-			}
-			if sv.flow.seq > flo.seq {
-				panic("string value from the future")
 			}
 
 			//  stale flow from the past
@@ -717,11 +711,8 @@ func (flo *flow) wait_bool(in bool_chan) (
 	for bv == nil {
 		select {
 		case bv = <-in:
-			if bv == nil || bv.flow.seq == flo.seq {
+			if bv == nil || bv.flow.seq >= flo.seq {
 				return
-			}
-			if bv.flow.seq > flo.seq {
-				panic("bool value from the future")
 			}
 			//  stale value from the past
 			bv = nil
@@ -743,11 +734,8 @@ func (flo *flow) wait_uint64(in uint64_chan) (
 		select {
 
 		case uv = <-in:
-			if uv == nil || uv.flow.seq == flo.seq {
+			if uv == nil || uv.flow.seq >= flo.seq {
 				return
-			}
-			if uv.flow.seq > flo.seq {
-				panic("uint64 value from the future")
 			}
 			uv = nil
 
@@ -776,6 +764,7 @@ func (flo *flow) cast_uint64(in string_chan) (out uint64_chan) {
 				}
 				return
 			}
+			flo = sv.flow
 
 			var is_null bool
 			var ui64 uint64
@@ -814,6 +803,7 @@ func (flo *flow) neq_string(
 				}
 				return
 			}
+			flo = sv.flow
 
 			var b, is_null bool
 
@@ -847,6 +837,7 @@ func (flo *flow) eq_uint64(
 				}
 				return
 			}
+			flo = uv.flow
 
 			var b, is_null bool
 
@@ -880,6 +871,7 @@ func (flo *flow) neq_uint64(
 				}
 				return
 			}
+			flo = uv.flow
 
 			var b, is_null bool
 
@@ -916,6 +908,10 @@ func (flo *flow) wait_bool2(
 			case l == nil:
 				return rum_WAIT, true
 
+			// stale rval
+			case l.flow.seq < flo.seq:
+				continue
+
 			//  two lvals in row, impossible
 			case lv != nil:
 				panic("multiple left bool values seen")
@@ -934,6 +930,10 @@ func (flo *flow) wait_bool2(
 			//  end of stream
 			case r == nil:
 				return rum_WAIT, true
+
+			//  stale rval
+			case r.flow.seq < flo.seq:
+				continue
 
 			//  two rvals in row, impossible
 			case rv != nil:
@@ -1047,6 +1047,7 @@ func (flo *flow) argv1(in string_chan) (out argv_chan) {
 				}
 				return
 			}
+			flo = sv.flow
 			argv[0] = sv.string
 			flo.put_argv(argv[:], sv.is_null, out)
 		}
@@ -1617,6 +1618,7 @@ func (flo *flow) reduce(inx []xdr_chan, inq []qdr_chan) (out fdr_chan) {
 				panic("stale qdr")
 
 			//  sanity test
+			//  Note: obsolete?
 
 			case qv.flow.seq > f.seq:
 				panic("qdr from the future")
@@ -1908,6 +1910,7 @@ func (flo *flow) cast_string(
 				}
 				return
 			}
+			flo = uv.flow
 
 			var is_null bool
 			var s string
