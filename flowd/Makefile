@@ -38,8 +38,16 @@ GOSRC=									\
 	tail.go								\
 	xdr.go
 
+#  Do 'go tool compile' for list of compile time flags
+#
 #  Disable opimixations like function inline
-#GCFLAGS=-gcflags "-N -l"
+#	-B	disable bounds checking
+#	-l	disable inlining
+#	-N	disable optimizations
+#
+#  Disabling inlineing seems to prevent a liveliness issue.
+#  
+GCFLAGS=-gcflags "-B -l"
 
 all: $(EXEC)
 
