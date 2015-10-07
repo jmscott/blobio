@@ -177,8 +177,6 @@ const (
 	max_name_rune_count = 64
 )
 
-var tracing = false
-
 %}
 
 %union {
@@ -1161,27 +1159,19 @@ qualify:
 	|
 	  qualify  yy_AND  qualify
 	  {
-	  	if tracing {
-			$$ = (yylex.(*yyLexState)).trace_ast(yy_AND, $1, $3)
-		} else {
-			$$ = &ast {
-				yy_tok:	yy_AND,
-				left:	$1,
-				right:	$3,
-			}
+		$$ = &ast {
+			yy_tok:	yy_AND,
+			left:	$1,
+			right:	$3,
 		}
 	  }
 	|
 	  qualify  yy_OR  qualify
 	  {
-	  	if tracing {
-			$$ = (yylex.(*yyLexState)).trace_ast(yy_AND, $1, $3)
-		} else {
-			$$ = &ast {
-				yy_tok:	yy_OR,
-				left:	$1,
-				right:	$3,
-			}
+		$$ = &ast {
+			yy_tok:	yy_OR,
+			left:	$1,
+			right:	$3,
 		}
 	  }
 	;
@@ -2867,35 +2857,4 @@ func (l *yyLexState) put_sqlstate(code string) bool {
 		panic("put_sqlstate: impossible rule")
 	}
 	return true
-}
-
-func (l *yyLexState) trace_ast(tok int, left, right *ast) (*ast) {
-
-	var name string
-
-	switch {
-	case l.call != nil:
-		name = l.call.command.name
-	case l.sql_exec != nil:
-		name = l.sql_exec.name
-	case l.sql_query_row != nil:
-		name = l.sql_query_row.name
-	default:
-		panic("impossible nil rule in trace")
-	}
-
-	if tok != yy_AND && tok != yy_OR {
-		panic("impossible trace node")
-	}
-
-	return &ast {
-		yy_tok:	TRACE_BOOL,
-		string:	name,
-		left:	&ast{
-			yy_tok:	tok,
-			uint64:	l.line_no,
-			left:	left,
-			right:	right,
-		},
-	}
 }
