@@ -2653,6 +2653,10 @@ func (conf *config) parse(in io.RuneReader) (
 		return
 	}
 
+	//  make sure a tail is defined
+	if conf.tail == nil {
+		return nil, errors.New("tail{} not defined")
+	}
 	var depend_order []string
 
 	//  make sure dependecy graph of the invocations has no cycles
