@@ -183,7 +183,7 @@ func (t *tail) forever() (out chan string) {
 			//	docs.
 			in = bufio.NewReader(src.file)
 		}
-	}(open())
+	}(open())	//  should the open be asynchronous?
 
 	return out
 }
