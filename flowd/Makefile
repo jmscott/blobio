@@ -47,7 +47,7 @@ GOSRC=									\
 #
 #  Disabling inlineing seems to prevent a liveliness issue.
 #  
-GCFLAGS=-gcflags "-B -l"
+#GCFLAGS=-gcflags "-N -l"
 
 all: $(EXEC)
 
@@ -72,7 +72,7 @@ install: all
 		parser.y						\
 		$(GOSRC)						\
 		$(DIST_ROOT)/http/go/src/flowd
-	go install $(GO_BUILD_RACE) flowd
+	go install $(GCFLAGS) $(GO_BUILD_RACE) flowd
 	install -g $(DIST_GROUP) -o $(DIST_USER) -m ugo=rx		\
 		fdr2pg							\
 		fdr2psql						\
