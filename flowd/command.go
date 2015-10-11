@@ -15,6 +15,7 @@ import (
 	"strconv"
 
 	. "time"
+	. "fmt"
 )
 
 //  a command as defined in a flowd configuration file
@@ -182,11 +183,16 @@ func (in os_exec_chan) worker_flowd_execv() {
 
 	go func() {
 
-		reply, err := cmd_err.ReadString('\n');
-		if err != nil && err != io.EOF{
+		out, err := cmd_err.ReadString('\n');
+		if err != nil && err != io.EOF {
 			panic(err)
 		}
-		panic("flowd-execv exited unexpected: " + reply)
+		if len(out) > 0 {
+			panic(Sprintf("unexpected exit of flowd-execv: %s",out))
+		}
+
+		//  no output on stderr indicates a clean close due to
+		//  flowd-execv being cleanly shutdown.
 	}()
 
 	for req := range in {
