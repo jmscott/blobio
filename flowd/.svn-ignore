@@ -2,11 +2,11 @@ biod.brr
 doc
 etc
 flowd
+flowd-execv
 flowd*.fdr
+flowd-*.log
 flowd*.qdr
 flowd*.xdr
-flowd-*.log
-flowd-execv
 fork-bench
 lib
 log
