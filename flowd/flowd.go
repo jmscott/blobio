@@ -38,7 +38,6 @@ func main() {
 	conf := &config{
 		path:                 os.Args[2],
 		command:              make(map[string]*command),
-		call:                 make(map[*command]*call),
 		sql_database:         make(map[string]*sql_database),
 		sql_query_row:        make(map[string]*sql_query_row),
 		sql_exec:             make(map[string]*sql_exec),
@@ -49,7 +48,7 @@ func main() {
 		xdr_roll_duration:    24 * Hour,
 		fdr_roll_duration:    24 * Hour,
 		qdr_roll_duration:    24 * Hour,
-		heartbeat_duration:   15 * Second,
+		heartbeat_duration:   10 * Second,
 		memstats_duration:    15 * Minute,
 		log_directory:        "log",
 	}
@@ -84,4 +83,5 @@ func main() {
 	default:
 		croak("unknown action: %s", action)
 	}
+	os.Exit(0)
 }

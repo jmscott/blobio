@@ -58,6 +58,8 @@ type flow_worker struct {
 	seq_chan <-chan uint64
 }
 
+var server_leaving bool
+
 //  Synchronusly boot up the flowd server.
 
 func (conf *config) server(par *parse) {
@@ -91,6 +93,7 @@ func (conf *config) server(par *parse) {
 		c := make(chan os.Signal)
 		signal.Notify(c, syscall.SIGTERM)
 		s := <-c
+		server_leaving = true
 		WARN("caught signal: %s", s)
 		leave(1)
 	}()
@@ -330,7 +333,7 @@ func (conf *config) server(par *parse) {
 
 	memstat_tick := NewTicker(conf.memstats_duration)
 
-	info("flow starvation how busy count: %d", flow_starvation_how_busy)
+	info("flow starvation threshold: %d", flow_starvation_how_busy)
 	//  wait for all workers to finish
 	for active_count > 0 {
 		select {
@@ -456,15 +459,16 @@ func (conf *config) server(par *parse) {
 
 func (work *flow_worker) flow() {
 
-	flow0 := &flow{
-		seq:      uint64(work.id),
+	boot_seq := uint64(work.id)
+	flowA := &flow{
+		seq:      boot_seq,
 		next:     make(chan flow_chan),
 		resolved: make(chan struct{}),
 	}
 
 	cmpl := &compile{
 		parse:         work.parse,
-		flow:          flow0,
+		flow:          flowA,
 		os_exec_chan:  work.os_exec_chan,
 		fdr_log_chan:  work.fdr_log_chan,
 		xdr_log_chan:  work.xdr_log_chan,
@@ -472,73 +476,11 @@ func (work *flow_worker) flow() {
 		info_log_chan: work.info_log_chan,
 	}
 
-	//  flip_flow() both waits for a flow detail record on fB and
-	//  waits for all outstanding goroutines, waiting in qualfications,
-	//  to move from fA to fB.
-	//
-	//  A flow detail record can be generated before all the qualification
-	//  workers on that flow have finished.  For example, the 'when' clause
-	//
-	//	when
-	//		condition1
-	//		or
-	//		condition2
-	//
-	//  would always resolve to true if either condition1 or condition2 is
-	//  true, even if the other condition is null.
-	//
-	//  flip_flow() assumes upon entry that fA has resolved,
-	//  implying that the channel fA.resolved has been closed.
-	//  Also, flip_flow() assumes that fA may have outstanding
-	//  qualification goroutines, implying that possibly
-	//  fA.confluence_count > 0.
-	//
-	//  Upon exit of flip_flow() two conditions must be met.  fB
-	//  must read a new flow detail record and fA must have no
-	//  outstanding qualification goroutines.  After return from
-	//  flip_flow() the caller sets flow0 to flow1 and creates a new
-	//  flow1 for the newly read flow detail record.
-	//
-	//  and the beat goes on.
-
-	flip_flow := func(fc fdr_chan, fA, fB *flow) (fv *fdr_value) {
-
-		//  Note: wait for an fdr from flow1 and for all stragglers
-		//  from flow0 to terminate.
-
-		for fv == nil || fA.confluent_count > 0 {
-
-			select {
-
-			//  send flow1 to resolved goroutines which resolved
-			//  flow0
-
-			case reply := <-fA.next:
-				fA.confluent_count--
-				reply <- fB
-				fB.confluent_count++
-
-			//  flow1 has finished.
-			case fv = <-fc:
-				if fv == nil {
-					return nil
-				}
-
-				//  cheap sanity test to insure we are in sync
-
-				if fv.flow.seq != fB.seq {
-					panic("flow out of sync: zombie seen")
-				}
-				close(fv.flow.resolved)
-			}
-		}
-		return
-	}
-
 	fc := cmpl.compile()
 
+
 	//  first flow resolves immediately
-	close(flow0.resolved)
+	close(flowA.resolved)
 
 	sam := flow_worker_sample{
 		worker_id: int(work.id),
@@ -554,27 +496,37 @@ func (work *flow_worker) flow() {
 			panic(err)
 		}
 
-		flow1 := &flow{
+		flowB := &flow{
 			brr:      brr,
 			next:     make(chan flow_chan),
 			seq:      <-work.seq_chan,
 			resolved: make(chan struct{}),
 		}
 
-		//  flow0 is resolved, so wait for an fdr from flo1,
-		//  which implies flow1 has resolved, then flip flow1 to flow0.
+		//  move straglers in flowA to flowB
+		for flowA.confluent_count > 0 {
 
-		fv := flip_flow(fc, flow0, flow1)
+			reply := <- flowA.next
+			flowA.confluent_count--
+			reply <- flowB
+			flowB.confluent_count++
+		}
+
+		fv := <-fc
 		if fv == nil {
 			break
 		}
-		flow0 = flow1
+		close(fv.resolved)
+		if fv.flow.seq != flowB.seq {
+			panic("fdr out of sync with flowB")
+		}
 
 		sam.ok_count = uint64(fv.fdr.ok_count)
 		sam.fault_count = uint64(fv.fdr.fault_count)
 		sam.wall_duration = fv.fdr.wall_duration
-
 		work.flow_sample_chan <- sam
+
+		flowA = flowB
 	}
 
 	//  indicate termination by negating worker id

@@ -3,6 +3,10 @@
 //  Blame:
 //	jmscott@setspace.com
 //	setspace@gmail.com
+//  Note:
+//	A clean shutdown can trigger i/o panic() when flowd-execv catches INT
+//	signal.
+//
 package main
 
 import (
@@ -201,6 +205,9 @@ func (in os_exec_chan) worker_flowd_execv() {
 		//  write request to exec command to flowd-execv process
 		_, err := cmd_pipe_in.Write([]byte(reqs))
 		if err != nil {
+			if err == io.EOF {
+				return
+			}
 			panic(err)
 		}
 

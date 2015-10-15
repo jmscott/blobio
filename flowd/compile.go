@@ -33,7 +33,7 @@ func (cmpl *compile) compile() fdr_chan {
 
 	par := cmpl.parse
 	conf := par.config
-	flow := cmpl.flow
+	flo := cmpl.flow
 
 	//  map command xdr output onto list of broadcast channels
 	command2xdr := make(map[string]*call_output)
@@ -56,22 +56,25 @@ func (cmpl *compile) compile() fdr_chan {
 			return
 		}
 
+		//  track number of confluing go routines compile by each node
+		cc := 1
+
 		compile(a.left)
 		compile(a.right)
 
 		switch a.yy_tok {
 		case UINT64:
-			a2u[a] = flow.const_uint64(a.uint64)
+			a2u[a] = flo.const_uint64(a.uint64)
 		case CAST_UINT64:
-			a2u[a] = flow.cast_uint64(a2s[a.left])
+			a2u[a] = flo.cast_uint64(a2s[a.left])
 		case STRING:
-			a2s[a] = flow.const_string(a.string)
+			a2s[a] = flo.const_string(a.string)
 		case CAST_STRING:
-			a2s[a] = flow.cast_string(a2u[a.left])
+			a2s[a] = flo.cast_string(a2u[a.left])
 		case ARGV0:
-			a2a[a] = flow.argv0()
+			a2a[a] = flo.argv0()
 		case ARGV1:
-			a2a[a] = flow.argv1(a2s[a.left])
+			a2a[a] = flo.argv1(a2s[a.left])
 		case ARGV:
 			//  argv() needs a string_chan slice
 			in := make([]string_chan, a.uint64)
@@ -87,7 +90,7 @@ func (cmpl *compile) compile() fdr_chan {
 				in[i] = a2s[aa]
 				i++
 			}
-			a2a[a] = flow.argv(in)
+			a2a[a] = flo.argv(in)
 
 		case CALL0:
 			cmd := a.call.command
@@ -97,22 +100,25 @@ func (cmpl *compile) compile() fdr_chan {
 			//  like the borne shell.  the call() must
 			//  have no arguments
 
-			a2x[a] = flow.call0(cmd.name, a2a[a.left], a2b[a.right])
+			a2x[a] = flo.call0(cmd.name, a2a[a.left], a2b[a.right])
 
 			//  broadcast to all dependent rules plus log_xdr
 			command2xdr[cmd.name] =
 				&call_output{
-					out_chans: flow.fanout_xdr(
+					out_chans: flo.fanout_xdr(
 						a2x[a],
 						cmd.depend_ref_count+1,
 					),
 					next_chan: 1,
 				}
 
+			//  for the fanout_xdr()
+			cc++
+
 		//  call an os executable
 		case CALL:
 			cmd := a.call.command
-			a2x[a] = flow.call(
+			a2x[a] = flo.call(
 				cmd,
 				cmpl.os_exec_chan,
 				a2a[a.left],
@@ -122,15 +128,18 @@ func (cmpl *compile) compile() fdr_chan {
 			//  broadcast to all dependent rules plus log_xdr
 			command2xdr[cmd.name] =
 				&call_output{
-					out_chans: flow.fanout_xdr(
+					out_chans: flo.fanout_xdr(
 						a2x[a],
 						cmd.depend_ref_count+1,
 					),
 					next_chan: 1,
 				}
+
+			//  for the extra fanout_xdr()
+			cc++
 		case QUERY_ROW:
 			q := a.sql_query_row
-			a2q[a] = flow.sql_query_row(
+			a2q[a] = flo.sql_query_row(
 				q,
 				a2a[a.left],
 				a2b[a.right],
@@ -138,15 +147,17 @@ func (cmpl *compile) compile() fdr_chan {
 
 			//  broadcast to all dependent rules plus log_qdr
 			query2qdr[q.name] = &query_output{
-				out_chans: flow.fanout_qdr(
+				out_chans: flo.fanout_qdr(
 					a2q[a],
 					q.depend_ref_count+1,
 				),
 				next_chan: 1,
 			}
+			//  for the extra fanout_qdr()
+			cc++
 		case QUERY_EXEC:
 			ex := a.sql_exec
-			a2q[a] = flow.sql_exec(
+			a2q[a] = flo.sql_exec(
 				ex,
 				a2a[a.left],
 				a2b[a.right],
@@ -154,15 +165,16 @@ func (cmpl *compile) compile() fdr_chan {
 
 			//  broadcast to all dependent rules plus log_qdr
 			query2qdr[ex.name] = &query_output{
-				out_chans: flow.fanout_qdr(
+				out_chans: flo.fanout_qdr(
 					a2q[a],
 					ex.depend_ref_count+1,
 				),
 				next_chan: 1,
 			}
+			cc++
 		case QUERY_EXEC_TXN:
 			ex := a.sql_exec
-			a2q[a] = flow.sql_exec_txn(
+			a2q[a] = flo.sql_exec_txn(
 				ex,
 				a2a[a.left],
 				a2b[a.right],
@@ -170,18 +182,20 @@ func (cmpl *compile) compile() fdr_chan {
 
 			//  broadcast to all dependent rules plus log_qdr
 			query2qdr[ex.name] = &query_output{
-				out_chans: flow.fanout_qdr(
+				out_chans: flo.fanout_qdr(
 					a2q[a],
 					ex.depend_ref_count+1,
 				),
 				next_chan: 1,
 			}
+			cc++
 		case yy_TRUE:
-			a2b[a] = flow.const_bool(true)
+			a2b[a] = flo.const_bool(true)
 		case yy_FALSE:
-			a2b[a] = flow.const_bool(false)
+			a2b[a] = flo.const_bool(false)
 		case WHEN:
 			a2b[a] = a2b[a.left]
+			cc = 0
 		case PROJECT_XDR_EXIT_STATUS:
 			cx := command2xdr[a.string]
 
@@ -193,7 +207,7 @@ func (cmpl *compile) compile() fdr_chan {
 				panic("missing command -> xdr map for " +
 					a.command.name)
 			}
-			a2u[a] = flow.project_xdr_exit_status(
+			a2u[a] = flo.project_xdr_exit_status(
 				cx.out_chans[cx.next_chan],
 			)
 			cx.next_chan++
@@ -207,7 +221,7 @@ func (cmpl *compile) compile() fdr_chan {
 			if qq == nil {
 				panic("row_bool: query2qdr map is nil")
 			}
-			a2b[a] = flow.project_sql_query_row_bool(
+			a2b[a] = flo.project_sql_query_row_bool(
 				qq.out_chans[qq.next_chan],
 				a.uint8,
 			)
@@ -223,7 +237,7 @@ func (cmpl *compile) compile() fdr_chan {
 			if qq == nil {
 				panic("rows_affected: query2qdr map is nil")
 			}
-			a2u[a] = flow.project_qdr_rows_affected(
+			a2u[a] = flo.project_qdr_rows_affected(
 				qq.out_chans[qq.next_chan],
 			)
 			qq.next_chan++
@@ -237,30 +251,31 @@ func (cmpl *compile) compile() fdr_chan {
 			if qq == nil {
 				panic("sqlstate: query2qdr map is nil")
 			}
-			a2s[a] = flow.project_qdr_sqlstate(
+			a2s[a] = flo.project_qdr_sqlstate(
 				qq.out_chans[qq.next_chan],
 			)
 			qq.next_chan++
 
 		case PROJECT_BRR:
-			a2s[a] = flow.project_brr(a.brr_field)
+			a2s[a] = flo.project_brr(a.brr_field)
 		case EQ_UINT64:
-			a2b[a] = flow.eq_uint64(a.right.uint64, a2u[a.left])
+			a2b[a] = flo.eq_uint64(a.uint64, a2u[a.left])
 		case NEQ_UINT64:
-			a2b[a] = flow.neq_uint64(a.right.uint64, a2u[a.left])
+			a2b[a] = flo.neq_uint64(a.uint64, a2u[a.left])
 		case EQ_STRING:
-			a2b[a] = flow.eq_string(a.right.string, a2s[a.left])
+			a2b[a] = flo.eq_string(a.string, a2s[a.left])
 		case NEQ_STRING:
-			a2b[a] = flow.neq_string(a.right.string, a2s[a.left])
+			a2b[a] = flo.neq_string(a.string, a2s[a.left])
 		case EQ_BOOL:
-			a2b[a] = flow.eq_bool(a.right.bool, a2b[a.left])
+			a2b[a] = flo.eq_bool(a.bool, a2b[a.left])
 		case yy_OR:
-			a2b[a] = flow.bool2(or, a2b[a.left], a2b[a.right])
+			a2b[a] = flo.bool2(or, a2b[a.left], a2b[a.right])
 		case yy_AND:
-			a2b[a] = flow.bool2(and, a2b[a.left], a2b[a.right])
+			a2b[a] = flo.bool2(and, a2b[a.left], a2b[a.right])
 		default:
 			panic(Sprintf("impossible yy_tok in ast: %d", a.yy_tok))
 		}
+		flo.confluent_count += cc
 	}
 
 	//  compile nodes from least dependent to most dependent order
@@ -303,19 +318,21 @@ func (cmpl *compile) compile() fdr_chan {
 		//  Note:
 		//	why make log_xdr_error() wait on log_xdr()?
 
-		xdr_out[i] = flow.log_xdr_error(
+		xdr_out[i] = flo.log_xdr_error(
 			cmpl.info_log_chan,
-			flow.log_xdr(
+			flo.log_xdr(
 				cmpl.xdr_log_chan,
 				cx.out_chans[0],
 			))
 		i++
 	}
+	flo.confluent_count += i
+
 	//  Wait for all qdr to flow in before reducing the whole set
 	//  into a single fdr record
 
-	qdr_out := make([]qdr_chan, len(query2qdr))
 	i = 0
+	qdr_out := make([]qdr_chan, len(query2qdr))
 	for n, qq := range query2qdr {
 
 		//  cheap sanity test that all output channels have consumers
@@ -333,13 +350,16 @@ func (cmpl *compile) compile() fdr_chan {
 		//  Note:
 		//	why make log_qdr_error() wait on log_qdr()?
 
-		qdr_out[i] = flow.log_qdr_error(
+		qdr_out[i] = flo.log_qdr_error(
 			cmpl.info_log_chan,
-			flow.log_qdr(
+			flo.log_qdr(
 				cmpl.qdr_log_chan,
 				qq.out_chans[0],
 			))
 		i++
 	}
-	return flow.log_fdr(cmpl.fdr_log_chan, flow.reduce(xdr_out, qdr_out))
+	flo.confluent_count += i
+
+	flo.confluent_count += 2
+	return flo.log_fdr(cmpl.fdr_log_chan, flo.reduce(xdr_out, qdr_out))
 }

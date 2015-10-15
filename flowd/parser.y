@@ -42,6 +42,9 @@
  *	Second version allows adding more qualifications to OK.
  *
  *	How to index symbol array yyToknames[a.yy_tok-__MIN_YYTOK]?
+ *
+ *	Multiple statements in an sql exec imply a transaction.
+ *	Would an explicit keyword be better?
  */
 %{
 package main
@@ -117,9 +120,6 @@ type config struct {
 
 	//  all os commands{}
 	command          	map[string]*command
-
-	//  all call(...) when ...
-	call             	map[*command]*call
 
 	//  defaults to "log"
 	log_directory		string
@@ -1086,6 +1086,7 @@ qualify:
 				} else {
 					$2.yy_tok = NEQ_UINT64
 				}
+				$2.uint64 = $3.uint64
 			} else {
 				if $3.yy_tok != STRING {
 					l.error("%s.%s not compared to string",
@@ -1097,6 +1098,7 @@ qualify:
 				} else {
 					$2.yy_tok = NEQ_STRING
 				}
+				$2.string = $3.string
 			}
 		} else {
 			//  <command>.exit_status == ...
@@ -1112,39 +1114,46 @@ qualify:
 			} else {
 				$2.yy_tok = NEQ_UINT64
 			}
+			$2.uint64 = $3.uint64
 		}
 	  	$2.left = left;
-	  	$2.right = $3;
+	  	$2.right = nil
 
 		$$ = $2
 	  }
 	|
+	  //  Note: query_project needs to merge into projection rule
 	  query_project  rel_op  constant
 	  {
 		l := yylex.(*yyLexState)
 		q := $1.sql_query_row
 
+		//  Note: why only EQ?  Goofy.
+		if $$.yy_tok != EQ {
+			l.error("only == defined for query_projection")
+			return 0
+		}
 		switch {
 		case $1.is_bool() && $3.is_bool():
 			$$ = &ast{
 				yy_tok:		EQ_BOOL,
 
+				bool:		$3.bool,
 				left:		$1,
-				right:		$3,
 			}
 		case $1.is_uint64() && $3.is_uint64():
 			$$ = &ast{
 				yy_tok:		EQ_UINT64,
 
+				uint64:		$3.uint64,
 				left:		$1,
-				right:		$3,
 			}
 		case $1.is_string() && $3.is_string():
 			$$ = &ast{
 				yy_tok:		EQ_STRING,
 
+				string:		$3.string,
 				left:		$1,
-				right:		$3,
 			}
 		default:
 			l.error("%s: comparisons are different types", q.name)
@@ -1487,6 +1496,7 @@ query:
 			tok = ARGV
 		}
 
+		//  multiple statements imply a transaction
 		var q_tok int
 		if len(ex.statement) == 1 {
 			q_tok = QUERY_EXEC
@@ -2657,13 +2667,51 @@ func (conf *config) parse(in io.RuneReader) (
 	if conf.tail == nil {
 		return nil, errors.New("tail{} not defined")
 	}
-	var depend_order []string
 
-	//  make sure dependecy graph of the invocations has no cycles
-	depend_order = l.tsort()
+	root_depend := make(map[string]bool)
+
+	//  added unreferenced calls() to root depend list
+	var find_unreferenced_fire func(a *ast)
+
+	find_unreferenced_fire = func(a *ast) {
+		var name string
+
+		switch {
+		case a == nil:
+			return
+
+		case a.yy_tok == CALL:
+			cmd := a.call.command
+			if cmd.called && cmd.depend_ref_count == 0 {
+				name = cmd.name
+			}
+		case a.yy_tok == QUERY_ROW: 
+			q := a.sql_query_row
+			if q.called && q.depend_ref_count == 0 {
+				name = q.name
+			}
+		case a.yy_tok == QUERY_EXEC || a.yy_tok == QUERY_EXEC_TXN:
+			q := a.sql_exec
+			if q.called && q.depend_ref_count == 0 {
+				name = q.name
+			}
+		}
+		if name != "" {
+			root_depend[name] = true
+		}
+		find_unreferenced_fire(a.left)
+		find_unreferenced_fire(a.right)
+		find_unreferenced_fire(a.next)
+	}
+	find_unreferenced_fire(l.ast_root)
+
+	for n, _ := range root_depend {
+		l.depends = append(l.depends, Sprintf("%s %s", n, n))
+	}
+
+	depend_order := l.tsort()
 
 	//  reverse depend order so roots of the graph are first
-
 	for i, j := 0, len(depend_order) - 1;  i < j;  i, j = i + 1, j - 1 {
 		depend_order[i], depend_order[j] =
 			depend_order[j], depend_order[i]
@@ -2688,6 +2736,8 @@ func (a *ast) to_string(brief bool) string {
 		what = Sprintf("CALL0(%s)", a.call.command.name)
 	case CALL:
 		what = Sprintf("CALL(%s)", a.call.command.name)
+	case EQ_STRING:
+		what = Sprintf("EQ_STRING(\"%s\")", a.string)
 	case TAIL:
 		what = Sprintf("TAIL(%s)", a.tail.name)
 	case TAIL_REF:

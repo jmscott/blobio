@@ -18,7 +18,7 @@ GOPKG_OSARCH=$(GOHOSTOS)_$(GOHOSTARCH)
 #
 #  To enable race detection, uncomment GO_BUILD_RACE
 #
-GO_BUILD_RACE=-race
+#GO_BUILD_RACE=-race
 
 EXEC=flowd flowd-execv
 
@@ -44,10 +44,9 @@ GOSRC=									\
 #	-B	disable bounds checking
 #	-l	disable inlining
 #	-N	disable optimizations
-#
-#  Disabling inlineing seems to prevent a liveliness issue.
 #  
-GCFLAGS=-gcflags "-N -l"
+#GCFLAGS=-gcflags "-N -l"
+#GCFLAGS=-gcflags "-l"
 
 all: $(EXEC)
 
@@ -110,6 +109,7 @@ dev-links:
 	test -e log || ln -s . log
 	test -e run || ln -s . run
 	test -e sbin || ln -s . sbin
+	test -e spool || ln -s . spool
 	test -e profile || ln -s ../profile.example profile
 env:
 	env
