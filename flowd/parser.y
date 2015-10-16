@@ -1128,29 +1128,41 @@ qualify:
 		l := yylex.(*yyLexState)
 		q := $1.sql_query_row
 
-		//  Note: why only EQ?  Goofy.
-		if $2.yy_tok != EQ {
-			l.error("only == defined for query_projection")
-			return 0
-		}
+		rel_tok := $2.yy_tok
+
 		switch {
 		case $1.is_bool() && $3.is_bool():
+			if rel_tok == EQ {
+				rel_tok = EQ_BOOL
+			} else {
+				rel_tok = NEQ_BOOL
+			}
 			$$ = &ast{
-				yy_tok:		EQ_BOOL,
+				yy_tok:		rel_tok,
 
 				bool:		$3.bool,
 				left:		$1,
 			}
 		case $1.is_uint64() && $3.is_uint64():
+			if rel_tok == EQ {
+				rel_tok = EQ_UINT64
+			} else {
+				rel_tok = NEQ_UINT64
+			}
 			$$ = &ast{
-				yy_tok:		EQ_UINT64,
+				yy_tok:		rel_tok,
 
 				uint64:		$3.uint64,
 				left:		$1,
 			}
 		case $1.is_string() && $3.is_string():
+			if rel_tok == EQ {
+				rel_tok = EQ_STRING
+			} else {
+				rel_tok = NEQ_STRING
+			}
 			$$ = &ast{
-				yy_tok:		EQ_STRING,
+				yy_tok:		rel_tok,
 
 				string:		$3.string,
 				left:		$1,
