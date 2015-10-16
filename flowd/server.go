@@ -478,7 +478,6 @@ func (work *flow_worker) flow() {
 
 	fc := cmpl.compile()
 
-
 	//  first flow resolves immediately
 	close(flowA.resolved)
 
@@ -503,23 +502,31 @@ func (work *flow_worker) flow() {
 			resolved: make(chan struct{}),
 		}
 
-		//  move straglers in flowA to flowB
+		//  push flowA to flowB
+
 		for flowA.confluent_count > 0 {
 
-			reply := <- flowA.next
+			reply := <-flowA.next
 			flowA.confluent_count--
+
 			reply <- flowB
 			flowB.confluent_count++
 		}
 
+		//  wait for flowB to finish
 		fv := <-fc
 		if fv == nil {
 			break
 		}
 		close(fv.resolved)
+
+		//  cheap sanity test
+
 		if fv.flow.seq != flowB.seq {
 			panic("fdr out of sync with flowB")
 		}
+
+		//  send stats to server goroutine
 
 		sam.ok_count = uint64(fv.fdr.ok_count)
 		sam.fault_count = uint64(fv.fdr.fault_count)

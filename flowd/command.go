@@ -10,16 +10,16 @@
 package main
 
 import (
+	"bufio"
 	"errors"
+	"io"
 	"os/exec"
+	"strconv"
 	"strings"
 	"syscall"
-	"bufio"
-	"io"
-	"strconv"
 
-	. "time"
 	. "fmt"
+	. "time"
 )
 
 //  a command as defined in a flowd configuration file
@@ -56,7 +56,7 @@ type command struct {
 
 type os_exec_reply struct {
 	started         bool
-	output_256      []byte		//  process output
+	output_256      []byte //  process output
 	exit_status     uint8
 	signal          uint8
 	err             error
@@ -157,8 +157,8 @@ func (in os_exec_chan) worker_flowd_execv() {
 	}
 
 	cmd := &exec.Cmd{
-		Path:	flowd_execv_path,
-		Args:	[]string{"flowd-execv"},
+		Path: flowd_execv_path,
+		Args: []string{"flowd-execv"},
 	}
 
 	cmd_pipe_in, err := cmd.StdinPipe()
@@ -187,12 +187,12 @@ func (in os_exec_chan) worker_flowd_execv() {
 
 	go func() {
 
-		out, err := cmd_err.ReadString('\n');
+		out, err := cmd_err.ReadString('\n')
 		if err != nil && err != io.EOF {
 			panic(err)
 		}
 		if len(out) > 0 {
-			panic(Sprintf("unexpected exit of flowd-execv: %s",out))
+			panic(Sprintf("unexpected exit of flowd-execv: %s", out))
 		}
 
 		//  no output on stderr indicates a clean close due to
@@ -201,7 +201,7 @@ func (in os_exec_chan) worker_flowd_execv() {
 
 	for req := range in {
 
-		reqs := strings.Join(req.argv, "\t") + "\n";
+		reqs := strings.Join(req.argv, "\t") + "\n"
 		//  write request to exec command to flowd-execv process
 		_, err := cmd_pipe_in.Write([]byte(reqs))
 		if err != nil {
@@ -211,11 +211,11 @@ func (in os_exec_chan) worker_flowd_execv() {
 			panic(err)
 		}
 
-		reps, err := cmd_out.ReadString('\n');
+		reps, err := cmd_out.ReadString('\n')
 		if err != nil {
 			panic(err)
 		}
-		reps = strings.TrimSuffix(reps, "\n");
+		reps = strings.TrimSuffix(reps, "\n")
 
 		rep := strings.Split(reps, "\t")
 		reply := os_exec_reply{}
@@ -236,7 +236,7 @@ func (in os_exec_chan) worker_flowd_execv() {
 			panic(err)
 		}
 		if strings.Contains(rep[0], "+") {
-			reps, err = cmd_out.ReadString('\n');
+			reps, err = cmd_out.ReadString('\n')
 			if err != nil {
 				panic(err)
 			}
