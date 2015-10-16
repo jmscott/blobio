@@ -37,7 +37,7 @@ install: all
 		bio-more						\
 		bio-put							\
 		bio-put-file						\
-		bio-roll						\
+		bio-wrap-roll						\
 		bio-take						\
 		bio-unroll						\
 		bio-wrap						\
