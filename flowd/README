@@ -133,12 +133,7 @@ Note:
 	  ^[a-zA-Z0-9][a-zA-Z0-9_]{0,63}$.
 
 	- verify that all 64 bit counts and sequences are no bigger than
-	  2^63 - 1.
-
-	- should flowd write an [fqx]dr records summarizing the whole process
-	  activity?
-
-	- change timestamp to RFC3339Nano in [fqd]dr log files
+	  2^63 - 1
 
 	- log when a tailed file rolls.
 
