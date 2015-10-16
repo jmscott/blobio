@@ -1078,7 +1078,7 @@ func (a *ast) to_string(brief bool) string {
 			a.uint8,
 		)
 	case PROJECT_BRR:
-		what = Sprintf("PROJECT_BRR(%s:%d)",
+		what = Sprintf("PROJECT_BRR(%s[%d])",
 			a.brr_field.String(),
 			a.brr_field,
 		)
@@ -2558,7 +2558,7 @@ yydefault:
 			q := yyDollar[1].ast.sql_query_row
 
 			//  Note: why only EQ?  Goofy.
-			if yyVAL.ast.yy_tok != EQ {
+			if yyDollar[2].ast.yy_tok != EQ {
 				l.error("only == defined for query_projection")
 				return 0
 			}

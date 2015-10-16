@@ -1129,7 +1129,7 @@ qualify:
 		q := $1.sql_query_row
 
 		//  Note: why only EQ?  Goofy.
-		if $$.yy_tok != EQ {
+		if $2.yy_tok != EQ {
 			l.error("only == defined for query_projection")
 			return 0
 		}
@@ -2787,7 +2787,7 @@ func (a *ast) to_string(brief bool) string {
 				a.uint8,
 			)
 	case PROJECT_BRR:
-		what = Sprintf("PROJECT_BRR(%s:%d)",
+		what = Sprintf("PROJECT_BRR(%s[%d])",
 				a.brr_field.String(),
 				a.brr_field,
 			)
