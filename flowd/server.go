@@ -105,7 +105,6 @@ func (conf *config) server(par *parse) {
 		pid := os.Getpid()
 
 		pid_path := "run/flowd.pid"
-		info("process id %d", pid)
 
 		_, err := os.OpenFile(pid_path, os.O_RDONLY, 0)
 		if err == nil {
@@ -128,7 +127,7 @@ func (conf *config) server(par *parse) {
 		if err != nil {
 			panic(err)
 		}
-		info("process id written to file: %s", pid_path)
+		info("process id %d written to file: %s", pid, pid_path)
 	}
 	info("go version: %s", runtime.Version())
 	info("number of cpus: %d", runtime.NumCPU())
