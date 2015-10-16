@@ -28,8 +28,13 @@ const (
 	//  still workers exist.  implies possible thread starvation and
 	//  probably needs attention.  when all workers are idle but
 	//  request records are arriving then we are deadlocked.
+	//
+	//  Note: flow_starvation_how_busy needs to be a settable parameter in
+	//        in flow file.  Slow flows like large log crunching seem
+	//	  to be sensitive.
 
-	flow_starvation_how_busy = 4
+
+	flow_starvation_how_busy = 8
 )
 
 //  sample of flow activity for a particular worker
