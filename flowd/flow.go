@@ -14,7 +14,7 @@ import (
 	. "time"
 )
 
-//  A rummy records for temporal + tri-state logic: true, false, null, waiting 
+//  A rummy records for temporal + tri-state logic: true, false, null, waiting
 //  There are known knowns, there are known unknowns ...
 
 type rummy uint8
@@ -299,7 +299,6 @@ type flow struct {
 //  the river of blobs
 type flow_chan chan *flow
 
-
 func (rum rummy) String() string {
 
 	//  describe rummy states
@@ -348,12 +347,9 @@ func (flo *flow) get() *flow {
 	//  request another flow, sending reply channel to mother
 	flo.next <- reply
 
-	f := <- reply
-
 	//  return next flow
-	return f
+	return <-reply
 }
-
 
 //  project a field in the brr of this flow
 func (flo *flow) project_brr(field brr_field) (out string_chan) {
@@ -368,7 +364,7 @@ func (flo *flow) project_brr(field brr_field) (out string_chan) {
 			out <- &string_value{
 				string:  (*(flo.brr))[field],
 				is_null: false,
-				flow: flo,
+				flow:    flo,
 			}
 		}
 	}()
@@ -396,7 +392,7 @@ func (flo *flow) project_xdr_exit_status(
 		defer close(out)
 
 		for flo = flo.get(); flo != nil; flo = flo.get() {
-			xv := <- in
+			xv := <-in
 			if xv == nil {
 				return
 			}
@@ -436,7 +432,7 @@ func (flo *flow) project_sql_query_row_bool(
 
 		for flo = flo.get(); flo != nil; flo = flo.get() {
 
-			qv := <- in
+			qv := <-in
 			if qv == nil {
 				return
 			}
@@ -478,7 +474,7 @@ func (flo *flow) project_qdr_rows_affected(
 
 		for flo = flo.get(); flo != nil; flo = flo.get() {
 
-			qv := <- in
+			qv := <-in
 			if qv == nil {
 				return
 			}
@@ -516,7 +512,7 @@ func (flo *flow) project_qdr_sqlstate(
 
 		for flo = flo.get(); flo != nil; flo = flo.get() {
 
-			qv := <- in
+			qv := <-in
 			if qv == nil {
 				return
 			}
@@ -533,7 +529,7 @@ func (flo *flow) project_qdr_sqlstate(
 			out <- &string_value{
 				string:  s,
 				is_null: is_null,
-				flow: flo,
+				flow:    flo,
 			}
 		}
 	}()
@@ -553,7 +549,7 @@ func (flo *flow) eq_string(
 
 		for flo = flo.get(); flo != nil; flo = flo.get() {
 
-			sv := <- in
+			sv := <-in
 			if sv == nil {
 				return
 			}
@@ -588,7 +584,7 @@ func (flo *flow) eq_bool(
 
 		for flo = flo.get(); flo != nil; flo = flo.get() {
 
-			bv := <- in
+			bv := <-in
 			if bv == nil {
 				return
 			}
@@ -621,7 +617,7 @@ func (flo *flow) cast_uint64(in string_chan) (out uint64_chan) {
 
 		for flo = flo.get(); flo != nil; flo = flo.get() {
 
-			sv := <- in
+			sv := <-in
 			if sv == nil {
 				return
 			}
@@ -660,7 +656,7 @@ func (flo *flow) neq_string(
 
 		for flo = flo.get(); flo != nil; flo = flo.get() {
 
-			sv := <- in
+			sv := <-in
 			if sv == nil {
 				return
 			}
@@ -694,7 +690,7 @@ func (flo *flow) eq_uint64(
 
 		for flo = flo.get(); flo != nil; flo = flo.get() {
 
-			uv := <- in
+			uv := <-in
 			if uv == nil {
 				return
 			}
@@ -728,7 +724,7 @@ func (flo *flow) neq_uint64(
 
 		for flo = flo.get(); flo != nil; flo = flo.get() {
 
-			uv := <- in
+			uv := <-in
 			if uv == nil {
 				return
 			}
@@ -775,7 +771,7 @@ func (flo *flow) wait_bool2(
 
 		case r := <-in_right:
 			if r == nil {
-				return rummy(0)
+				return rum_NIL
 			}
 
 			// cheap sanity test.  will go away soon
@@ -787,15 +783,16 @@ func (flo *flow) wait_bool2(
 		next = op[(lv.rummy()<<4)|rv.rummy()]
 	}
 
-	//  drain unread channel in background so sender can move to next flow
+	//  drain unread channel.
+	//
+	//  Note: reading in the background causes a mutiple read of
+	//        same left/right hand side.  Why?  Shouldn't the flow
+	//	  block on current sequence until all qualfications converge?
+
 	if lv == nil {
-		go func() {
-			<- in_left
-		}()
+		<-in_left
 	} else if rv == nil {
-		go func() {
-			<- in_right
-		}()
+		<-in_right
 	}
 	return next
 }
@@ -851,7 +848,7 @@ func (flo *flow) argv0() (out argv_chan) {
 		var argv [0]string
 
 		for flo = flo.get(); flo != nil; flo = flo.get() {
-			
+
 			out <- &argv_value{
 				is_null: false,
 				argv:    argv[:],
@@ -875,7 +872,7 @@ func (flo *flow) argv1(in string_chan) (out argv_chan) {
 
 		for flo = flo.get(); flo != nil; flo = flo.get() {
 
-			sv := <- in
+			sv := <-in
 			if sv == nil {
 				return
 			}
@@ -955,15 +952,15 @@ func (flo *flow) argv(in_args []string_chan) (out argv_chan) {
 			//  the whole argv[] null
 
 			for ac < argc {
-				
-				a := <- merge
+
+				a := <-merge
 
 				//  Note: compile generates error for
 				//        arg_value{}
+
 				if a == (arg_value{}) {
 					return
 				}
-				ac++
 
 				sv := a.string_value
 				pos := a.position
@@ -975,21 +972,22 @@ func (flo *flow) argv(in_args []string_chan) (out argv_chan) {
 					is_null = true
 				}
 
-				//  cheap sanity test
+				//  cheap sanity test tp insure we don't
+				//  see the same argument twice
+				//
 				//  Note:
 				//	technically this implies an empty
 				//	string is not allowed which is probably
 				//	unreasonable
 
-				if av[pos] == "" {
-					av[pos] = sv.string
-					ac++
-				} else {
+				if av[pos] != "" {
 					panic("argv[] element not \"\"")
 				}
+				av[pos] = sv.string
+				ac++
 			}
 
-			//  feed the world our new, boundless argv[]
+			//  feed the hungry world our new, boundless argv[]
 			out <- &argv_value{
 				argv:    av,
 				is_null: is_null,
@@ -1014,7 +1012,7 @@ func (flo *flow) const_string(s string) (out string_chan) {
 			out <- &string_value{
 				string:  s,
 				is_null: false,
-				flow:	flo,
+				flow:    flo,
 			}
 		}
 	}()
@@ -1721,7 +1719,7 @@ func (flo *flow) cast_string(
 
 		for flo = flo.get(); flo != nil; flo = flo.get() {
 
-			uv := <- in
+			uv := <-in
 			if uv == nil {
 				return
 			}
@@ -1737,7 +1735,7 @@ func (flo *flow) cast_string(
 			out <- &string_value{
 				string:  s,
 				is_null: is_null,
-				flow:	flo,
+				flow:    flo,
 			}
 		}
 	}()
