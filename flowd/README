@@ -105,6 +105,9 @@ Blame:
 	setspace@gmail.com
 
 Note:
+	- think about an idle{} block added to flow language.  idle{}
+	  would execute code when no brr tuples are flowing
+
 	- should [fxq]dr logs be rolled on flow boundaries?
 
 	- think about defaulting to single defined database{} in query{}
