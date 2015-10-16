@@ -1,3 +1,4 @@
+#!/bin/bash
 #
 #  Synopsis:
 #	Get a blob into a local file named <udig>.

@@ -1,3 +1,4 @@
+#!/bin/bash
 #
 #  Synopsis:
 #	Eat a stream of blobs from either the command line or standard input
