@@ -1,5 +1,5 @@
 Synopsis:
-	Flow blob request records into a directed acylic graph of processes
+	Flow blob request records into a directed acylic graph of processes and SQL queries
 
 Description:
 	While reading blob request records the flowd server will order the
