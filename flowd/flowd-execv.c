@@ -317,6 +317,7 @@ main(int argc, char **argv)
 		die("wrong number of arguments");
 	(void)argv;
 
+	//  initialize static memory for x_args[] vector read from stdin
 	for (i = 0;  i < MAX_X_ARGC;  i++)
 		x_argv[i] = &args[i * (MAX_X_ARG + 1)];
 
