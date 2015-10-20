@@ -236,6 +236,8 @@ Memes:
 	- blob.io gives perpetual accuracy, rigorous participants in protocol,
 	   proof of retrievability
 To Do:
+	- Should wrapped brr records be moved from spool/wrap to data/wrap?
+
 	- Should the variable BLOBIO_ROOT be renamed BLOBIO_INSTALL or
 	  BLOBIO_DIST?  Currently BLOBIO_ROOT means the actual install 
 	  directory and not the parent, which is the correct root.
