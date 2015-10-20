@@ -1,6 +1,6 @@
 /*
  *  Synopsis:
- *	Execute command read from stdin and write summaries on standard out 
+ *	Execute command vectors read from stdin and write summaries on standard out 
  *  Usage:
  *	Invoked as a background worker by flowd server.
  *
