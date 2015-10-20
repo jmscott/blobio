@@ -74,7 +74,6 @@ static char	args[MAX_X_ARGC * (MAX_X_ARG + 1)];
  *  	_strcat(buf, sizeof buf, "good bye, cruel world");
  *  	write(2, buf, _strcat(buf, sizeof buf, "\n"));
  */
-
 static int
 _strcat(char *tgt, int tgtsize, char *src)
 {
@@ -136,7 +135,6 @@ die3(char *msg1, char *msg2, char *msg3)
 /*
  *  read() up to 'nbytes' from standard input, croaking upon error
  */
-
 static int
 _read(int fd, char *buf)
 {
