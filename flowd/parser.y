@@ -5,19 +5,6 @@
  *	jmscott@setspace.com
  *	setspace@gmail.com
  *  Note:
- *	A command/query not dependent on any other command/query/tail will
- *	never fire.  For example,
- *
- *		sql query empty_query {
- *			query = "select $1";
- *			result row is (
- *				answer string
- *			);
- *		}
- *		query empty_query("hello");
- *
- *	will never fire empty_query("hello"). 
- *
  *	Query arguments are always strings.  Not too much of a problem in
  *	the short run, since the cast can be added in the query, put
  *	eventually ought to be added to the sql query/exec definition.
