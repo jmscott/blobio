@@ -359,14 +359,17 @@ func (conf *config) server(par *parse) {
 		case <-heartbeat.C:
 
 			bl := len(brr_chan)
-			if sample_fdr_count == 0 {
-				info("next heartbeat in %.0f seconds", hb)
-				if bl > 1 {
-					WARN("brr channel not draining: %d", bl)
-				}
+			info("brr in queue: %d", bl)
+			switch {
+			case sample_fdr_count == 0 && bl == 0:
+				info("next heartbeat in %.0f sec", hb)
+				continue
+			case sample_fdr_count == 0:
+				WARN("no fdr samples seen in %.0f sec", hb)
+				WARN("all jobs may be running > %.0f sec")
+				WARN("perhaps increase heartbeat duration")
 				continue
 			}
-			info("brr in queue: %d", bl)
 			info("%s sample: wall rate=%s/flow",
 				conf.heartbeat_duration,
 				Duration(uint64(
@@ -429,6 +432,7 @@ func (conf *config) server(par *parse) {
 				total.ok_count,
 				total.fault_count,
 			)
+			info("brr in queue: %d", bl)
 		case <-memstat_tick.C:
 			var m runtime.MemStats
 
