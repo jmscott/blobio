@@ -67,11 +67,11 @@ func (sam flow_worker_sample) String() (s string) {
 		nano := (float64(sam.wall_duration) / float64(sam.fdr_count))
 		rate = Sprintf("%s", Duration(nano))
 	}
-	s = Sprintf("wall=%s/flow, fdr=%d, ok=%d, fault=%d",
-			rate,
+	s = Sprintf("fdr=%d, ok=%d, fault=%d, %s/flow",
 			sam.fdr_count,
 			sam.ok_count,
 			sam.fault_count,
+			rate,
 		)
 	if sam.worker_id == 0 {
 		return
@@ -102,6 +102,7 @@ var server_leaving bool
 
 func (conf *config) server(par *parse) {
 
+	start_time := Now()
 	//  start a rolled logger to flowd-Dow.log, rolled daily
 	info_log_ch := make(file_byte_chan)
 
@@ -110,15 +111,18 @@ func (conf *config) server(par *parse) {
 	roll_when_start := "yesterday"
 	roll_when_end := "today"
 
+	//  accullate per roll statistics on roll_sample channel.
+	//  burp those stats into end of closing log file and
+	//  start of new log file.
+
 	roll_sample := make(chan flow_worker_sample)
 	go func() {
 		sample := flow_worker_sample{}
 
-		log_entry := func(fws flow_worker_sample, when string) []byte {
+		roll_entry := func(msg string) []byte {
 			return []byte(Sprintf("%s: %s: %s\n",
 				Now().Format("2006/01/02 15:04:05"),
-				when,
-				fws,
+				msg,
 			))
 		}
 
@@ -129,21 +133,41 @@ func (conf *config) server(par *parse) {
 
 			//  rolling to new log file
 
+			//  closing old log file.
+			//  append stats before finally closing
+
 			case fr := <- roll_start:
 				if fr == nil {
 					return
 				}
-				entries[0] = log_entry(sample, roll_when_start)
-				fr.entries = entries[0:1]
+				entries[0] = roll_entry(Sprintf("%s: %s",
+						roll_when_start,
+						sample.String(),
+						))
+				entries[1] = roll_entry(Sprintf("uptime: %s",
+							Since(start_time)))
+				entries[2] = roll_entry(Sprintf("roll %s -> %s",
+						fr.open_path, fr.roll_path))
+				fr.entries = entries[:]
 				roll_start <- fr
 
 			//  finished rolling to new log file
+			//  open new log file with stats
 			case fr := <- roll_end:
 				if fr == nil {
 					return
 				}
-				entries[0] = log_entry(sample, roll_when_end)
-				fr.entries = entries[0:1]
+				entries[0] = roll_entry(Sprintf("%s: %s",
+						roll_when_end,
+						sample.String(),
+						))
+				entries[1] = roll_entry(Sprintf("uptime: %s",
+							Since(start_time)))
+				entries[2] = roll_entry(Sprintf(
+							"rolled %s -> %s",
+							fr.roll_path,
+							fr.open_path))
+				fr.entries = entries[0:2]
 				roll_end <- fr
 				sample = flow_worker_sample{}
 
@@ -443,12 +467,17 @@ func (conf *config) server(par *parse) {
 		case <-heartbeat.C:
 
 			bl := len(brr_chan)
-			info("brr in queue: %d", bl)
 
 			sfc := sample.fdr_count
 			switch {
+
+			//  no completed flows seen, no blob requests in queue
 			case sfc == 0 && bl == 0:
+				info("next heartbeat: %s",
+							conf.heartbeat_duration)
 				continue
+
+			//  no completed flows seen, but unresolved exist 
 			case sfc == 0:
 				WARN("no fdr samples seen in %.0f sec", hb)
 				WARN("all jobs may be running > %.0f sec")
