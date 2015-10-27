@@ -144,7 +144,7 @@ func (conf *config) server(par *parse) {
 						roll_when_start,
 						sample.String(),
 						))
-				z, off := start_time.Zone()
+				z, off := Now().Zone()
 				entries[1] = roll_entry(Sprintf(
 						"uptime: %s, time zone=%s %04d",
 						Since(start_time),
@@ -164,7 +164,7 @@ func (conf *config) server(par *parse) {
 						roll_when_end,
 						sample.String(),
 						))
-				z, off := start_time.Zone()
+				z, off := Now().Zone()
 				entries[1] = roll_entry(Sprintf(
 						"uptime: %s, time zone=%s %04d",
 						Since(start_time),
