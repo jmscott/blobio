@@ -144,8 +144,11 @@ func (conf *config) server(par *parse) {
 						roll_when_start,
 						sample.String(),
 						))
-				entries[1] = roll_entry(Sprintf("uptime: %s",
-							Since(start_time)))
+				z, off := start_time.Zone()
+				entries[1] = roll_entry(Sprintf(
+						"uptime: %s, time zone=%s %04d",
+						Since(start_time),
+						z, off))
 				entries[2] = roll_entry(Sprintf("roll %s -> %s",
 						fr.open_path, fr.roll_path))
 				fr.entries = entries[:]
@@ -161,8 +164,11 @@ func (conf *config) server(par *parse) {
 						roll_when_end,
 						sample.String(),
 						))
-				entries[1] = roll_entry(Sprintf("uptime: %s",
-							Since(start_time)))
+				z, off := start_time.Zone()
+				entries[1] = roll_entry(Sprintf(
+						"uptime: %s, time zone=%s %04d",
+						Since(start_time),
+						z, off))
 				entries[2] = roll_entry(Sprintf(
 							"rolled %s -> %s",
 							fr.roll_path,
