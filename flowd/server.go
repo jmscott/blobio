@@ -3,6 +3,18 @@
 //  Blame:
 //	jmscott@setspace.com
 //	setspace@gmail.com
+//  Note:
+//	Number of distinct udigs needs to be tracked.  Perhaps a udig malloc()
+//	would be appropriate, as well.
+//	
+//	When rolling a daily log file, a summary of stats should be append to
+//	end of previous day and prepended to new day.
+//
+//		distinct udr, fdr, xdr/comment and qdr/query ought to
+//		summarized.
+//
+//	Server log needs time zone on both bootup and log roll.
+//
 package main
 
 import (
@@ -24,6 +36,7 @@ import (
 const (
 	flow_sample_fmt       = "%0.1f flows/sec, wall=%f sec/flow, ok=%d, fault=%d"
 	total_flow_sample_fmt = "total: %d flows, wall=%f sec/flow, ok=%d, fault=%d"
+
 	//  grumble when at least one flow worker is this busy but idle
 	//  still workers exist.  implies possible thread starvation and
 	//  probably needs attention.  when all workers are idle but
@@ -41,9 +54,29 @@ const (
 type flow_worker_sample struct {
 	worker_id int
 
+	fdr_count     uint64
 	ok_count      uint64
 	fault_count   uint64
 	wall_duration Duration
+}
+
+func (sam flow_worker_sample) String() (s string) {
+
+	rate := "0"
+	if sam.fdr_count > 0 {
+		nano := (float64(sam.wall_duration) / float64(sam.fdr_count))
+		rate = Sprintf("%s", Duration(nano))
+	}
+	s = Sprintf("wall=%s/flow, fdr=%d, ok=%d, fault=%d",
+			rate,
+			sam.fdr_count,
+			sam.ok_count,
+			sam.fault_count,
+		)
+	if sam.worker_id == 0 {
+		return
+	}
+	return Sprintf("#%d: %s", sam.worker_id, s)
 }
 
 //  Note: think about tracking unique udigs
@@ -71,8 +104,58 @@ func (conf *config) server(par *parse) {
 
 	//  start a rolled logger to flowd-Dow.log, rolled daily
 	info_log_ch := make(file_byte_chan)
-	info_log_ch.roll_Dow(
-		Sprintf("%s/flowd", conf.log_directory), "log", false)
+
+	roll_start, roll_end := info_log_ch.roll_Dow(
+			Sprintf("%s/flowd", conf.log_directory), "log", true)
+	roll_when_start := "yesterday"
+	roll_when_end := "today"
+
+	roll_sample := make(chan flow_worker_sample)
+	go func() {
+		sample := flow_worker_sample{}
+
+		log_entry := func(fws flow_worker_sample, when string) []byte {
+			return []byte(Sprintf("%s: %s: %s\n",
+				Now().Format("2006/01/02 15:04:05"),
+				when,
+				fws,
+			))
+		}
+
+		for {
+			var entries [3][]byte
+
+			select {
+
+			//  rolling to new log file
+
+			case fr := <- roll_start:
+				if fr == nil {
+					return
+				}
+				entries[0] = log_entry(sample, roll_when_start)
+				fr.entries = entries[0:1]
+				roll_start <- fr
+
+			//  finished rolling to new log file
+			case fr := <- roll_end:
+				if fr == nil {
+					return
+				}
+				entries[0] = log_entry(sample, roll_when_end)
+				fr.entries = entries[0:1]
+				roll_end <- fr
+				sample = flow_worker_sample{}
+
+			// update per roll stats 
+			case sam := <- roll_sample:
+				sample.fdr_count += sam.fdr_count
+				sample.wall_duration += sam.wall_duration
+				sample.ok_count += sam.ok_count
+				sample.fault_count += sam.fault_count
+			}
+		}
+	}()
 
 	info := info_log_ch.info
 	WARN := info_log_ch.WARN
@@ -332,8 +415,6 @@ func (conf *config) server(par *parse) {
 	heartbeat := NewTicker(conf.heartbeat_duration)
 	hb := float64(conf.heartbeat_duration) / float64(Second)
 	total := flow_worker_sample{}
-	total_fdr_count := uint64(0)
-	sample_fdr_count := uint64(0)
 
 	memstat_tick := NewTicker(conf.memstats_duration)
 
@@ -349,38 +430,32 @@ func (conf *config) server(par *parse) {
 				active_count--
 				break
 			}
-			sample_fdr_count++
+			sample.fdr_count++
 			sample.ok_count += sam.ok_count
 			sample.fault_count += sam.fault_count
 			sample.wall_duration += sam.wall_duration
 			worker_stats[sam.worker_id-1]++
+
+			//  update roll level sample stats
+			roll_sample <- sam
 
 		//  burp out flow stats every heartbeat
 		case <-heartbeat.C:
 
 			bl := len(brr_chan)
 			info("brr in queue: %d", bl)
+
+			sfc := sample.fdr_count
 			switch {
-			case sample_fdr_count == 0 && bl == 0:
-				info("next heartbeat in %.0f sec", hb)
+			case sfc == 0 && bl == 0:
 				continue
-			case sample_fdr_count == 0:
+			case sfc == 0:
 				WARN("no fdr samples seen in %.0f sec", hb)
 				WARN("all jobs may be running > %.0f sec")
 				WARN("perhaps increase heartbeat duration")
 				continue
 			}
-			info("%s sample: wall rate=%s/flow",
-				conf.heartbeat_duration,
-				Duration(uint64(
-					sample.wall_duration)/sample_fdr_count),
-			)
-			info("%s sample: fdr=%d, ok=%d, fault=%d",
-				conf.heartbeat_duration,
-				sample_fdr_count,
-				sample.ok_count,
-				sample.fault_count,
-			)
+			info("%s sample: %s", conf.heartbeat_duration, sample)
 
 			//  help debug starvation of flow thread
 
@@ -413,25 +488,14 @@ func (conf *config) server(par *parse) {
 			}
 
 			//  update accumulated totals
-			total_fdr_count += sample_fdr_count
+			total.fdr_count += sfc
 			total.ok_count += sample.ok_count
 			total.fault_count += sample.fault_count
 			total.wall_duration += sample.wall_duration
 
-			sample_fdr_count = 0
-			sample.wall_duration = 0
-			sample.ok_count = 0
-			sample.fault_count = 0
+			sample = flow_worker_sample{}
 
-			info("total: wall rate=%s/flow",
-				Duration(uint64(
-					total.wall_duration)/total_fdr_count))
-
-			info("total: fdr=%d, ok=%d, fault=%d",
-				total_fdr_count,
-				total.ok_count,
-				total.fault_count,
-			)
+			info("total: %s", total)
 			info("brr in queue: %d", bl)
 		case <-memstat_tick.C:
 			var m runtime.MemStats

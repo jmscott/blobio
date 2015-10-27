@@ -36,7 +36,7 @@ type file_roll_notify struct {
 	roll_path string
 
 	//  write final or first entry to log before/after rolling
-	entry []byte
+	entries [][]byte
 }
 
 func (f *file) stat() {
@@ -267,10 +267,11 @@ func (in file_byte_chan) map_roll(
 					start <- fr
 					fr = <-start
 
-					//  write a final entry before rolling
-					if fr.entry != nil {
-						out.write(fr.entry)
+					//  write a final entries before rolling
+					for _, e := range fr.entries {
+						out.write(e)
 					}
+					fr.entries = nil
 				}
 				out.close()
 
@@ -299,8 +300,8 @@ func (in file_byte_chan) map_roll(
 					//  inform caller of end of roll event
 					end <- fr
 					fr = <-end
-					if fr.entry != nil {
-						out.write(fr.entry)
+					for _, e := range fr.entries {
+						out.write(e)
 					}
 				}
 			}
