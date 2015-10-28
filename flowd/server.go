@@ -35,7 +35,7 @@ import (
 
 const (
 	flow_sample_fmt       = "%0.1f flows/sec, wall=%f sec/flow, ok=%d, fault=%d"
-	total_flow_sample_fmt = "total: %d flows, wall=%f sec/flow, ok=%d, fault=%d"
+	total_flow_sample_fmt = "all: %d flows, wall=%f sec/flow, ok=%d, fault=%d"
 
 	//  grumble when at least one flow worker is this busy but idle
 	//  still workers exist.  implies possible thread starvation and
@@ -444,7 +444,7 @@ func (conf *config) server(par *parse) {
 
 	heartbeat := NewTicker(conf.heartbeat_duration)
 	hb := float64(conf.heartbeat_duration) / float64(Second)
-	total := flow_worker_sample{}
+	boot_sample := flow_worker_sample{}
 
 	memstat_tick := NewTicker(conf.memstats_duration)
 
@@ -523,14 +523,14 @@ func (conf *config) server(par *parse) {
 			}
 
 			//  update accumulated totals
-			total.fdr_count += sfc
-			total.ok_count += sample.ok_count
-			total.fault_count += sample.fault_count
-			total.wall_duration += sample.wall_duration
+			boot_sample.fdr_count += sfc
+			boot_sample.ok_count += sample.ok_count
+			boot_sample.fault_count += sample.fault_count
+			boot_sample.wall_duration += sample.wall_duration
 
 			sample = flow_worker_sample{}
 
-			info("total: %s", total)
+			info("boot: %s", boot_sample)
 			info("brr in queue: %d", bl)
 		case <-memstat_tick.C:
 			var m runtime.MemStats
