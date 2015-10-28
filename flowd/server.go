@@ -108,8 +108,8 @@ func (conf *config) server(par *parse) {
 
 	roll_start, roll_end := info_log_ch.roll_Dow(
 			Sprintf("%s/flowd", conf.log_directory), "log", true)
-	roll_when_start := "yesterday"
-	roll_when_end := "today"
+	roll_when_start := "today"
+	roll_when_end := "yesterday"
 
 	//  accullate per roll statistics on roll_sample channel.
 	//  burp those stats into end of closing log file and
@@ -120,7 +120,7 @@ func (conf *config) server(par *parse) {
 		sample := flow_worker_sample{}
 
 		roll_entry := func(msg string) []byte {
-			return []byte(Sprintf("%s: %s: %s\n",
+			return []byte(Sprintf("%s: %s\n",
 				Now().Format("2006/01/02 15:04:05"),
 				msg,
 			))
@@ -146,7 +146,7 @@ func (conf *config) server(par *parse) {
 						))
 				z, off := Now().Zone()
 				entries[1] = roll_entry(Sprintf(
-						"uptime: %s, time zone=%s %04d",
+						"uptime: %s, time zone=%s %d",
 						Since(start_time),
 						z, off))
 				entries[2] = roll_entry(Sprintf("roll %s -> %s",
@@ -166,7 +166,7 @@ func (conf *config) server(par *parse) {
 						))
 				z, off := Now().Zone()
 				entries[1] = roll_entry(Sprintf(
-						"uptime: %s, time zone=%s %04d",
+						"uptime: %s, time zone=%s %d",
 						Since(start_time),
 						z, off))
 				entries[2] = roll_entry(Sprintf(
