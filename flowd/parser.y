@@ -628,6 +628,7 @@ call_project:
 	  	$$ = &ast{
 			yy_tok:	PROJECT_XDR_EXIT_STATUS,
 			string:	$1.name,
+			command:$1,
 		}
 	  }
 	;
@@ -1091,9 +1092,8 @@ qualify:
 			//  <command>.exit_status == ...
 
 			if $3.yy_tok != UINT64 {
-				l.error(
-				  "%s.exit_status not compared to uint64",
-						  $1.command.name)
+				l.error("%s.exit_status not compared to uint64",
+						  $1.string)
 				return 0
 			}
 			if $2.yy_tok == EQ {

@@ -2067,13 +2067,14 @@ yydefault:
 			)
 
 			yyVAL.ast = &ast{
-				yy_tok: PROJECT_XDR_EXIT_STATUS,
-				string: yyDollar[1].command.name,
+				yy_tok:  PROJECT_XDR_EXIT_STATUS,
+				string:  yyDollar[1].command.name,
+				command: yyDollar[1].command,
 			}
 		}
 	case 26:
 		yyDollar = yyS[yypt-3 : yypt+1]
-		//line parser.y:637
+		//line parser.y:638
 		{
 			l := yylex.(*yyLexState)
 
@@ -2145,7 +2146,7 @@ yydefault:
 		}
 	case 27:
 		yyDollar = yyS[yypt-3 : yypt+1]
-		//line parser.y:708
+		//line parser.y:709
 		{
 			l := yylex.(*yyLexState)
 
@@ -2210,7 +2211,7 @@ yydefault:
 		}
 	case 28:
 		yyDollar = yyS[yypt-3 : yypt+1]
-		//line parser.y:772
+		//line parser.y:773
 		{
 			l := yylex.(*yyLexState)
 
@@ -2274,7 +2275,7 @@ yydefault:
 		}
 	case 29:
 		yyDollar = yyS[yypt-3 : yypt+1]
-		//line parser.y:835
+		//line parser.y:836
 		{
 			l := yylex.(*yyLexState)
 
@@ -2337,7 +2338,7 @@ yydefault:
 		}
 	case 30:
 		yyDollar = yyS[yypt-3 : yypt+1]
-		//line parser.y:897
+		//line parser.y:898
 		{
 			l := yylex.(*yyLexState)
 
@@ -2401,49 +2402,49 @@ yydefault:
 		}
 	case 31:
 		yyDollar = yyS[yypt-1 : yypt+1]
-		//line parser.y:962
+		//line parser.y:963
 		{
 			yyVAL.brr_field = brr_field(brr_UDIG)
 		}
 	case 32:
 		yyDollar = yyS[yypt-1 : yypt+1]
-		//line parser.y:967
+		//line parser.y:968
 		{
 			yyVAL.brr_field = brr_field(brr_CHAT_HISTORY)
 		}
 	case 33:
 		yyDollar = yyS[yypt-1 : yypt+1]
-		//line parser.y:972
+		//line parser.y:973
 		{
 			yyVAL.brr_field = brr_field(brr_START_TIME)
 		}
 	case 34:
 		yyDollar = yyS[yypt-1 : yypt+1]
-		//line parser.y:977
+		//line parser.y:978
 		{
 			yyVAL.brr_field = brr_field(brr_WALL_DURATION)
 		}
 	case 35:
 		yyDollar = yyS[yypt-1 : yypt+1]
-		//line parser.y:982
+		//line parser.y:983
 		{
 			yyVAL.brr_field = brr_field(brr_VERB)
 		}
 	case 36:
 		yyDollar = yyS[yypt-1 : yypt+1]
-		//line parser.y:987
+		//line parser.y:988
 		{
 			yyVAL.brr_field = brr_field(brr_NETFLOW)
 		}
 	case 37:
 		yyDollar = yyS[yypt-1 : yypt+1]
-		//line parser.y:992
+		//line parser.y:993
 		{
 			yyVAL.brr_field = brr_field(brr_BLOB_SIZE)
 		}
 	case 38:
 		yyDollar = yyS[yypt-2 : yypt+1]
-		//line parser.y:999
+		//line parser.y:1000
 		{
 			l := yylex.(*yyLexState)
 			l.error("%s: unknown tail attribute: %s", yyDollar[1].ast.tail.name, yyDollar[2].string)
@@ -2451,7 +2452,7 @@ yydefault:
 		}
 	case 39:
 		yyDollar = yyS[yypt-2 : yypt+1]
-		//line parser.y:1006
+		//line parser.y:1007
 		{
 			l := yylex.(*yyLexState)
 			l.error("%s: exit_status is not a tail attribute", yyDollar[1].ast.tail.name)
@@ -2459,7 +2460,7 @@ yydefault:
 		}
 	case 40:
 		yyDollar = yyS[yypt-2 : yypt+1]
-		//line parser.y:1013
+		//line parser.y:1014
 		{
 			yyDollar[1].ast.brr_field = yyDollar[2].brr_field
 
@@ -2484,7 +2485,7 @@ yydefault:
 		}
 	case 43:
 		yyDollar = yyS[yypt-3 : yypt+1]
-		//line parser.y:1046
+		//line parser.y:1047
 		{
 			l := yylex.(*yyLexState)
 			left := yyDollar[1].ast
@@ -2533,9 +2534,8 @@ yydefault:
 				//  <command>.exit_status == ...
 
 				if yyDollar[3].ast.yy_tok != UINT64 {
-					l.error(
-						"%s.exit_status not compared to uint64",
-						yyDollar[1].ast.command.name)
+					l.error("%s.exit_status not compared to uint64",
+						yyDollar[1].ast.string)
 					return 0
 				}
 				if yyDollar[2].ast.yy_tok == EQ {
