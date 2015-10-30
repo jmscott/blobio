@@ -110,6 +110,7 @@ func (conf *config) server(par *parse) {
 			Sprintf("%s/flowd", conf.log_directory), "log", true)
 	roll_when_start := "today"
 	roll_when_end := "yesterday"
+	boot_sample := flow_worker_sample{}
 
 	//  accullate per roll statistics on roll_sample channel.
 	//  burp those stats into end of closing log file and
@@ -117,7 +118,7 @@ func (conf *config) server(par *parse) {
 
 	roll_sample := make(chan flow_worker_sample)
 	go func() {
-		sample := flow_worker_sample{}
+		today_sample := flow_worker_sample{}
 
 		roll_entry := func(msg string) []byte {
 			return []byte(Sprintf("%s: %s\n",
@@ -127,7 +128,7 @@ func (conf *config) server(par *parse) {
 		}
 
 		for {
-			var entries [3][]byte
+			var entries [4][]byte
 
 			select {
 
@@ -142,14 +143,18 @@ func (conf *config) server(par *parse) {
 				}
 				entries[0] = roll_entry(Sprintf("%s: %s",
 						roll_when_start,
-						sample.String(),
+						today_sample.String(),
+						))
+				entries[1] = roll_entry(Sprintf("%s: %s",
+						"boot",
+						boot_sample.String(),
 						))
 				z, off := Now().Zone()
-				entries[1] = roll_entry(Sprintf(
+				entries[2] = roll_entry(Sprintf(
 						"uptime: %s, time zone=%s %d",
 						Since(start_time),
 						z, off))
-				entries[2] = roll_entry(Sprintf("roll %s -> %s",
+				entries[3] = roll_entry(Sprintf("roll %s -> %s",
 						fr.open_path, fr.roll_path))
 				fr.entries = entries[:]
 				roll_start <- fr
@@ -162,27 +167,31 @@ func (conf *config) server(par *parse) {
 				}
 				entries[0] = roll_entry(Sprintf("%s: %s",
 						roll_when_end,
-						sample.String(),
+						today_sample.String(),
+						))
+				entries[1] = roll_entry(Sprintf("%s: %s",
+						"boot",
+						boot_sample.String(),
 						))
 				z, off := Now().Zone()
-				entries[1] = roll_entry(Sprintf(
+				entries[2] = roll_entry(Sprintf(
 						"uptime: %s, time zone=%s %d",
 						Since(start_time),
 						z, off))
-				entries[2] = roll_entry(Sprintf(
+				entries[3] = roll_entry(Sprintf(
 							"rolled %s -> %s",
 							fr.roll_path,
 							fr.open_path))
-				fr.entries = entries[0:2]
+				fr.entries = entries[:]
 				roll_end <- fr
-				sample = flow_worker_sample{}
+				today_sample = flow_worker_sample{}
 
 			// update per roll stats 
 			case sam := <- roll_sample:
-				sample.fdr_count += sam.fdr_count
-				sample.wall_duration += sam.wall_duration
-				sample.ok_count += sam.ok_count
-				sample.fault_count += sam.fault_count
+				today_sample.fdr_count += sam.fdr_count
+				today_sample.wall_duration += sam.wall_duration
+				today_sample.ok_count += sam.ok_count
+				today_sample.fault_count += sam.fault_count
 			}
 		}
 	}()
@@ -444,7 +453,6 @@ func (conf *config) server(par *parse) {
 
 	heartbeat := NewTicker(conf.heartbeat_duration)
 	hb := float64(conf.heartbeat_duration) / float64(Second)
-	boot_sample := flow_worker_sample{}
 
 	memstat_tick := NewTicker(conf.memstats_duration)
 
