@@ -3411,7 +3411,7 @@ yydefault:
 				return 0
 			}
 			if len(q.result_row) == 0 {
-				l.error("sql query row: %s: missing results row", q.name)
+				l.error("sql query row: %s: missing result row", q.name)
 			}
 			l.config.sql_query_row[yyDollar[3].string] = l.sql_query_row
 			l.sql_query_row = nil
