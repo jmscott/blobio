@@ -130,7 +130,7 @@ func (conf *config) server(par *parse) {
 		for {
 			var entries [4][]byte
 
-			//  assemble final and intial log entries for both
+			//  assemble final and initial log entries for both
 			//  old and new log files.
 
 			roll_entries := func(when, old, new string) ([][]byte) {
