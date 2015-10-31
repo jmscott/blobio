@@ -130,6 +130,37 @@ func (conf *config) server(par *parse) {
 		for {
 			var entries [4][]byte
 
+			//  assemble final and intial log entries for both
+			//  old and new log files.
+
+			roll_entries := func(when, old, new string) ([][]byte) {
+
+				entries[0] = roll_entry(Sprintf("%s: %s",
+						when,
+						today_sample.String(),
+						))
+				entries[1] = roll_entry(Sprintf("%s: %s",
+						"boot",
+						boot_sample.String(),
+						))
+				z, off := Now().Zone()
+				entries[2] = roll_entry(Sprintf(
+						"uptime: %s, time zone=%s %d",
+						Since(start_time),
+						z, off))
+				tense := ""
+				if when == roll_when_end {
+					tense = "ed"
+				}
+				entries[3] = roll_entry(
+						Sprintf("roll%s %s -> %s",
+							tense,
+							old,
+							new,
+						))
+				return entries[:]
+			}
+
 			select {
 
 			//  rolling to new log file
@@ -141,52 +172,28 @@ func (conf *config) server(par *parse) {
 				if fr == nil {
 					return
 				}
-				entries[0] = roll_entry(Sprintf("%s: %s",
+				fr.entries = roll_entries(
 						roll_when_start,
-						today_sample.String(),
-						))
-				entries[1] = roll_entry(Sprintf("%s: %s",
-						"boot",
-						boot_sample.String(),
-						))
-				z, off := Now().Zone()
-				entries[2] = roll_entry(Sprintf(
-						"uptime: %s, time zone=%s %d",
-						Since(start_time),
-						z, off))
-				entries[3] = roll_entry(Sprintf("roll %s -> %s",
-						fr.open_path, fr.roll_path))
-				fr.entries = entries[:]
+						fr.open_path,
+						fr.roll_path)
 				roll_start <- fr
 
 			//  finished rolling to new log file
 			//  open new log file with stats
+
 			case fr := <- roll_end:
 				if fr == nil {
 					return
 				}
-				entries[0] = roll_entry(Sprintf("%s: %s",
-						roll_when_end,
-						today_sample.String(),
-						))
-				entries[1] = roll_entry(Sprintf("%s: %s",
-						"boot",
-						boot_sample.String(),
-						))
-				z, off := Now().Zone()
-				entries[2] = roll_entry(Sprintf(
-						"uptime: %s, time zone=%s %d",
-						Since(start_time),
-						z, off))
-				entries[3] = roll_entry(Sprintf(
-							"rolled %s -> %s",
-							fr.roll_path,
-							fr.open_path))
-				fr.entries = entries[:]
+				fr.entries = roll_entries(
+						roll_when_start,
+						fr.roll_path,
+						fr.open_path)
 				roll_end <- fr
 				today_sample = flow_worker_sample{}
 
-			// update per roll stats 
+			// update daily roll stats in between rolls
+
 			case sam := <- roll_sample:
 				today_sample.fdr_count += sam.fdr_count
 				today_sample.wall_duration += sam.wall_duration
