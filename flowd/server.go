@@ -195,7 +195,7 @@ func (conf *config) server(par *parse) {
 			// update daily roll stats in between rolls
 
 			case sam := <- roll_sample:
-				today_sample.fdr_count += sam.fdr_count
+				today_sample.fdr_count++
 				today_sample.wall_duration += sam.wall_duration
 				today_sample.ok_count += sam.ok_count
 				today_sample.fault_count += sam.fault_count
