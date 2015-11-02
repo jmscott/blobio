@@ -163,10 +163,8 @@ func (conf *config) server(par *parse) {
 
 			select {
 
-			//  rolling to new log file
-
-			//  closing old log file.
-			//  append stats before finally closing
+			//  rolling to new log file.  entries at end of old
+			//  log file.
 
 			case fr := <- roll_start:
 				if fr == nil {
@@ -178,8 +176,8 @@ func (conf *config) server(par *parse) {
 						fr.roll_path)
 				roll_start <- fr
 
-			//  finished rolling to new log file
-			//  open new log file with stats
+			//  closed previous log file, entries at begining of
+			//  new log file
 
 			case fr := <- roll_end:
 				if fr == nil {
@@ -189,6 +187,15 @@ func (conf *config) server(par *parse) {
 						roll_when_start,
 						fr.roll_path,
 						fr.open_path)
+
+				//  make last entry in previous same as first
+				//  entry in new current.
+				e4 := fr.entries[3]
+				fr.entries[3] = fr.entries[2]
+				fr.entries[2] = fr.entries[1]
+				fr.entries[1] = fr.entries[0]
+				fr.entries[0] = e4
+
 				roll_end <- fr
 				today_sample = flow_worker_sample{}
 
