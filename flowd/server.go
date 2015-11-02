@@ -6,14 +6,6 @@
 //  Note:
 //	Number of distinct udigs needs to be tracked.  Perhaps a udig malloc()
 //	would be appropriate, as well.
-//	
-//	When rolling a daily log file, a summary of stats should be append to
-//	end of previous day and prepended to new day.
-//
-//		distinct udr, fdr, xdr/comment and qdr/query ought to
-//		summarized.
-//
-//	Server log needs time zone on both bootup and log roll.
 //
 package main
 
