@@ -176,7 +176,7 @@ func (conf *config) server(par *parse) {
 					return
 				}
 				fr.entries = roll_entries(
-						roll_when_start,
+						roll_when_end,
 						fr.roll_path,
 						fr.open_path)
 
