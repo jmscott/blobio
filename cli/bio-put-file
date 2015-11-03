@@ -75,12 +75,15 @@ END
 		"command-line": {
 			"command":	"bio-put-file",
 			"udig":		"$UDIG",
-			"path":		"$(echo $FILE | escape_json)",
-			"hostname":	"$(hostname)"
+			"path":		"$(echo -n $FILE | escape_json)"
+		},
+		"hostname":	"$(hostname)",
+		"env": 		{
+					"USER":	"$USER"
 		},
 		"gnu-file":	"$(file $FILE | escape_json)",
-		"date":	"$(date)",
-		"stat":	"$(stat $FILE | escape_json)"
+		"date":		"$(date)",
+		"stat":		"$(stat $FILE | escape_json)"
 	}
 }
 END
