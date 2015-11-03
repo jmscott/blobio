@@ -14,9 +14,9 @@ PROG=$(basename $0)
 ALGORITHM=sha
 SERVICE=${BLOBIO_SERVICE:=localhost:1797}
 TMPDIR=${TMPDIR:=/tmp}
-XML=$TMPDIR/$PROG-$$.xml
+JSON=$TMPDIR/$PROG-$$.json
 
-trap "rm -f $XML" EXIT
+trap "rm -f $JSON" EXIT
 
 die()
 {
@@ -24,13 +24,14 @@ die()
 	exit 1
 }
 
-escape_xml()
+escape_json()
 {
-	sed 's/&/\&amp;/g'	|
-	sed 's/</\&gt;/g'	|
-	sed 's/>/\&lt;/g'	|
-	sed "s/'/\&apos;/g"	|
-	sed 's/"/\&quot;/g'
+	perl -p -e 's/([\\"])/\\$1/g'			|
+		perl -p -e 's/\n/\\n/g'			|
+		perl -p -e 's/\t/\\t/g'			|
+		perl -p -e 's/[\b]/\\b/g'		|
+		perl -p -e 's/\f/\\f/g'			|
+		perl -p -e 's/\r/\\r/g'
 }
 
 put_file()
@@ -66,52 +67,34 @@ END
 	esac
 
 	#
-	#  Put the meta description
+	#  Put the json meta description
 	#
-	(
-		cat <<END
-<?xml version="1.0" encoding="UTF-8" ?>
-<bio-put-file
-  udig="$(echo $UDIG | escape_xml)"
-  path="$(echo "$FILE" | escape_xml)"
-  pwd="$(pwd | escape_xml)"
-  hostname="$(hostname | escape_xml)"
->
- <file>
-<![CDATA[
+	cat <<END >$JSON
+{
+	"blobio": {
+		"command-line": {
+			"command":	"bio-put-file",
+			"udig":		"$UDIG",
+			"path":		"$(echo $FILE | escape_json)",
+			"hostname":	"$(hostname)"
+		},
+		"gnu-file":	"$(file $FILE | escape_json)",
+		"date":	"$(date)",
+		"stat":	"$(stat $FILE | escape_json)"
+	}
+}
 END
-		file "$FILE" | sed 's/]]>//'
-		cat <<END
-]]>
- </file>
- <date>
-<![CDATA[
-END
-		date | sed 's/]]>//'
-		cat <<END
-]]>
- </date>
- <stat>
-<![CDATA[
-END
-		stat "$FILE" | sed 's/]]>//'
-		cat <<END
-]]>
- </stat>
-</bio-put-file>
-END
-	) >$XML
-	test -s $XML || die "file has size of zero: $XML"
+	test -s $JSON || die "file has size of zero: $JSON"
 
-	DIGEST=$(blobio eat --algorithm $ALGORITHM --input-path $XML)
-	test -n "$DIGEST" || die "blobio eat failed: $XML"
+	DIGEST=$(blobio eat --algorithm $ALGORITHM --input-path $JSON)
+	test -n "$DIGEST" || die "blobio eat failed: $JSON"
 	UDIG=$ALGORITHM:$DIGEST
 	blobio eat --udig $UDIG --service $SERVICE
 	STATUS=$?
 	case $STATUS in
 	1)
-		blobio put --udig $UDIG --input-path $XML --service $SERVICE
-		test $? = 0 || die "blobio put failed: $XML"
+		blobio put --udig $UDIG --input-path $JSON --service $SERVICE
+		test $? = 0 || die "blobio put failed: $JSON"
 		cat <<END
 	>>$UDIG
 END
@@ -122,7 +105,7 @@ END
 END
 		;;
 	*)
-		die "blobio eat: unexpected exit status: $XML"
+		die "blobio eat: unexpected exit status: $JSON"
 		;;
 	esac
 }
