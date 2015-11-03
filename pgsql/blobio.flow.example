@@ -6,6 +6,11 @@
 #  Blame:
 #  	jmscott@setspace.com
 #  	setspace@gmail.com
+#  Note:
+#	add an append_setspace_brr() that writes to
+#	$SETSPACE_ROOT/schema/setspace/spool/biod.brr.
+#	This implies replicating $SETSPACE_ROOT/sbin/append-brr to
+#	$BLOBIO_ROOT/sbin.  Damn, namespaces are subtle.
 #
 
 boot
