@@ -105,6 +105,8 @@ Blame:
 	setspace@gmail.com
 
 Note:
+	- change tail{} to inbound{} and outbound{}.
+
 	- add to command{}
 
 		exit_status is true;
