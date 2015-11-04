@@ -30,7 +30,7 @@ command append_setspace_brr
 {
 	path = "sbin/append-brr";
 	argv = (
-		"../setspace/schema/spool/biod.brr"
+		"../setspace/schema/setspace/spool/biod.brr"
 	);
 }
 
