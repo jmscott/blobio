@@ -38,7 +38,6 @@ const (
 	//        in flow file.  Slow flows like large log crunching seem
 	//	  to be sensitive.
 
-
 	flow_starvation_how_busy = 8
 )
 
@@ -60,11 +59,11 @@ func (sam flow_worker_sample) String() (s string) {
 		rate = Sprintf("%s", Duration(nano))
 	}
 	s = Sprintf("fdr=%d, ok=%d, fault=%d, %s/flow",
-			sam.fdr_count,
-			sam.ok_count,
-			sam.fault_count,
-			rate,
-		)
+		sam.fdr_count,
+		sam.ok_count,
+		sam.fault_count,
+		rate,
+	)
 	if sam.worker_id == 0 {
 		return
 	}
@@ -99,7 +98,7 @@ func (conf *config) server(par *parse) {
 	info_log_ch := make(file_byte_chan)
 
 	roll_start, roll_end := info_log_ch.roll_Dow(
-			Sprintf("%s/flowd", conf.log_directory), "log", true)
+		Sprintf("%s/flowd", conf.log_directory), "log", true)
 	roll_when_start := "today"
 	roll_when_end := "yesterday"
 	boot_sample := flow_worker_sample{}
@@ -125,31 +124,31 @@ func (conf *config) server(par *parse) {
 			//  assemble final and initial log entries for both
 			//  old and new log files.
 
-			roll_entries := func(when, old, new string) ([][]byte) {
+			roll_entries := func(when, old, new string) [][]byte {
 
 				entries[0] = roll_entry(Sprintf("%s: %s",
-						when,
-						today_sample.String(),
-						))
+					when,
+					today_sample.String(),
+				))
 				entries[1] = roll_entry(Sprintf("%s: %s",
-						"boot",
-						boot_sample.String(),
-						))
+					"boot",
+					boot_sample.String(),
+				))
 				z, off := Now().Zone()
 				entries[2] = roll_entry(Sprintf(
-						"uptime: %s, time zone=%s %d",
-						Since(start_time),
-						z, off))
+					"uptime: %s, time zone=%s %d",
+					Since(start_time),
+					z, off))
 				tense := ""
 				if when == roll_when_end {
 					tense = "ed"
 				}
 				entries[3] = roll_entry(
-						Sprintf("roll%s %s -> %s",
-							tense,
-							old,
-							new,
-						))
+					Sprintf("roll%s %s -> %s",
+						tense,
+						old,
+						new,
+					))
 				return entries[:]
 			}
 
@@ -158,27 +157,27 @@ func (conf *config) server(par *parse) {
 			//  rolling to new log file.  entries at end of old
 			//  log file.
 
-			case fr := <- roll_start:
+			case fr := <-roll_start:
 				if fr == nil {
 					return
 				}
 				fr.entries = roll_entries(
-						roll_when_start,
-						fr.open_path,
-						fr.roll_path)
+					roll_when_start,
+					fr.open_path,
+					fr.roll_path)
 				roll_start <- fr
 
 			//  closed previous log file, entries at begining of
 			//  new log file
 
-			case fr := <- roll_end:
+			case fr := <-roll_end:
 				if fr == nil {
 					return
 				}
 				fr.entries = roll_entries(
-						roll_when_end,
-						fr.roll_path,
-						fr.open_path)
+					roll_when_end,
+					fr.roll_path,
+					fr.open_path)
 
 				//  make last entry in previous same as first
 				//  entry in new current.
@@ -193,7 +192,7 @@ func (conf *config) server(par *parse) {
 
 			// update daily roll stats in between rolls
 
-			case sam := <- roll_sample:
+			case sam := <-roll_sample:
 				today_sample.fdr_count++
 				today_sample.wall_duration += sam.wall_duration
 				today_sample.ok_count += sam.ok_count
@@ -494,10 +493,10 @@ func (conf *config) server(par *parse) {
 			//  no completed flows seen, no blob requests in queue
 			case sfc == 0 && bl == 0:
 				info("next heartbeat: %s",
-							conf.heartbeat_duration)
+					conf.heartbeat_duration)
 				continue
 
-			//  no completed flows seen, but unresolved exist 
+			//  no completed flows seen, but unresolved exist
 			case sfc == 0:
 				WARN("no fdr samples seen in %.0f sec", hb)
 				WARN("all jobs may be running > %.0f sec")

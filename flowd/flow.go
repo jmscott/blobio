@@ -389,7 +389,7 @@ func (flo *flow) project_brr(field brr_field) (out string_chan) {
 //		exist_status is OK when in {
 //			..
 //		}
-//	
+//
 //	and not when the command actually fails to execute.  In other words,
 //	valid exit codes are effectively reclassified as null, which seems
 //	wrong and counter intuitive.
@@ -413,7 +413,7 @@ func (flo *flow) project_xdr_exit_status(
 			var ui uint64
 
 			if xv.is_null || xv.xdr == nil ||
-			   xv.xdr.termination_class != "OK" {
+				xv.xdr.termination_class != "OK" {
 				is_null = true
 			} else {
 				ui = xv.xdr.termination_code
