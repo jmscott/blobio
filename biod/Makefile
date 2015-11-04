@@ -4,6 +4,8 @@
 #  Blame:
 #  	jmscott@setspace.com
 #  	setspace@gmail.com
+#  Note:
+#	Change gcc reference to $(CC)
 #
 include ../blobio.mk
 include ../local.mk
@@ -28,10 +30,11 @@ ifeq "$(UNAME)" "Linux"
 	RT_LINK=-lrt
 endif
 
-all: biod
+all: biod append-brr
 
 install: all
 	install -g $(DIST_GROUP) -o $(DIST_USER) -m u=rx,go=		\
+		append-brr						\
 		biod							\
 		biod_ctl						\
 		create-rrd						\
@@ -77,6 +80,9 @@ biod: $(OBJS) ../skein
 ../skein/skein.h:
 	cd ../skein && $(MAKE) skein.h
 
+append-brr: append-brr.c
+	gcc -o append-brr $(CFLAGS) append-brr.c
+	
 blobio: blobio.o
 	gcc -o blobio blobio.o
 
@@ -127,6 +133,6 @@ dev-links:
 clean-dev-links:
 	rm -rf sbin log data run
 clean:
-	rm -f $(OBJS) biod
+	rm -f $(OBJS) biod append-brr
 local.mk:
 	cp local.mk.example local.mk

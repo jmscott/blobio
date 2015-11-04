@@ -1,4 +1,5 @@
 *.o
+append-brr
 bin
 biod
 biod.brr

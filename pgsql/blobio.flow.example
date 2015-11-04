@@ -6,11 +6,6 @@
 #  Blame:
 #  	jmscott@setspace.com
 #  	setspace@gmail.com
-#  Note:
-#	add an append_setspace_brr() that writes to
-#	$SETSPACE_ROOT/schema/setspace/spool/biod.brr.
-#	This implies replicating $SETSPACE_ROOT/sbin/append-brr to
-#	$BLOBIO_ROOT/sbin.  Damn, namespaces are subtle.
 #
 
 boot
@@ -30,6 +25,24 @@ tail biod
 {
 	path = "spool/biod.brr";
 }
+
+command append_setspace_brr
+{
+	path = "sbin/append-brr";
+	argv = (
+		"../setspace/schema/spool/biod.brr"
+	);
+}
+
+call append_setspace_brr(
+	biod.start_time,
+	biod.netflow,
+	biod.verb,
+	biod.udig,
+	biod.chat_history,
+	biod.blob_size,
+	biod.wall_duration
+);
 
 command chat_ok
 {
