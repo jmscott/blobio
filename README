@@ -227,14 +227,6 @@ Billing Model Questions:
 	  different time to first byte than the receiver, as with the
 	  start_time.
 
-Memes:
-	- name the get/put/give/take/wrap/roll/eat protocol 'blob.io'.
-
-	- de-emphasize key/value, emphasize historical flow of events.
-	   never rediscover of facts is silly
-
-	- blob.io gives perpetual accuracy, rigorous participants in protocol,
-	   proof of retrievability
 To Do:
 	- Should wrapped brr records be moved from spool/wrap to data/wrap?
 
