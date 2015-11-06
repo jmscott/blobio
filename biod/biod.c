@@ -33,7 +33,7 @@
 
 #define BIOD_PORT		1797
 
-#define ACCEPT_TIMEOUT		3
+#define ACCEPT_TIMEOUT		5
 #define MAX_VERB_SIZE		5
 
 /*
