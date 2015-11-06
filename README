@@ -228,7 +228,7 @@ Billing Model Questions:
 	  start_time.
 
 To Do:
-	- Should wrapped brr records be moved from spool/wrap to data/wrap?
+	- move log/*.[fx]dr files to spool and, after wrapping, to data/
 
 	- Should the variable BLOBIO_ROOT be renamed BLOBIO_INSTALL or
 	  BLOBIO_DIST?  Currently BLOBIO_ROOT means the actual install 
@@ -240,12 +240,9 @@ To Do:
 
 	- add option to biod to limit size of accepted blob
 
-	- what about adding system/user duration to the brr record?
-	  need to do now.
-
 	- investigate linux splice() system call.
 
-	- create postgres types for at least brr timestamp and netflow.
+	- create postgres types for at least netflow.
 
 	- eliminate the sk: algorithm in a udig.  screws up case dependent
 	  mac os file system
@@ -305,8 +302,6 @@ To Do:
 	  subnet
 
 	- trivial bandwidth throttling
-
-	- move log/*.[fx]dr files to spool
 
 	- named pipes to flowd as another tail source
 
