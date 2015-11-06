@@ -234,8 +234,6 @@ To Do:
 	  BLOBIO_DIST?  Currently BLOBIO_ROOT means the actual install 
 	  directory and not the parent, which is the correct root.
 
-	- in biod is a three second socket accept timeout too quick?
-
 	- shasum on mac os is about 3 times quicker than 'blobio eat'. why?
 
 	- add option to biod to limit size of accepted blob
