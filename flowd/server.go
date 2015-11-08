@@ -499,7 +499,7 @@ func (conf *config) server(par *parse) {
 			//  no completed flows seen, but unresolved exist
 			case sfc == 0:
 				WARN("no fdr samples seen in %.0f sec", hb)
-				WARN("all jobs may be running > %.0f sec")
+				WARN("all jobs may be running > %.0f sec", hb)
 				WARN("perhaps increase heartbeat duration")
 				continue
 			}
