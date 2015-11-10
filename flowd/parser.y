@@ -1683,6 +1683,13 @@ sqldb_stmt_list:
 	;
 
 sql_decl_stmt:
+	  DATABASE  IS  NAME
+	  {
+		l := yylex.(*yyLexState)
+		l.error("unknown database: %s",  $3)
+		return 0
+	  }
+	|
 	  DATABASE  IS  SQL_DATABASE_REF
 	  {
 		l := yylex.(*yyLexState)
