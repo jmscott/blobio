@@ -171,9 +171,6 @@ Note:
 	- If rolling a log file for which a boot up occured, then
 	  write the sha of that file into next log file.
 
-	- why not only fire a particular flow once over a particular blob
-	  in a particular duration window?
-
 	- Should flowd serialize the firing of flow to a particular brr?
 	  For example, suppose the following 2 brr records.
 
