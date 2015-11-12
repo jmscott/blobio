@@ -1157,7 +1157,7 @@ main(int argc, char **argv)
 	 *  and removed from argv[].
 	 */
 	if (argc <= 1) {
-		error("no arguments");
+		error("no command line arguments");
 		leave(126);
 	}
 	ap = argv + 1;
