@@ -71,7 +71,7 @@ END
 	#
 	cat <<END >$JSON
 {
-	"blobio": {
+	"blobio.com": {
 		"command-line": {
 			"command":	"bio-put-file",
 			"udig":		"$UDIG",
