@@ -23,7 +23,7 @@
  * 		A fatal error occured when execv'ing the process
  *		ERROR\t<error description>
  *	
- *	Fatal errors for flowd-execv are written to standard out and
+ *	Fatal errors for flowd-execv are written to standard err and
  *	flowd-execv exits.
  *  Exit Status:
  *  	0	exit ok
