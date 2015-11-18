@@ -1,7 +1,5 @@
 Synopsis:
 	A trivial protocol to manage immutable blobs over a network.
-
-
 Description:
 	The blobio environment implements a simple client/server protocol for 
 	associating crypto hash digests as keys for immutable, binary large
@@ -92,7 +90,6 @@ Description:
 		<= 371 bytes
 
 	not including a trailing new-line spool/biod.brr or null character.
-
 Protocol Flow:
  	>get udig\n			# request for blob by udig
  	    <ok\n[bytes][close]		#   server sends bytes of blob
