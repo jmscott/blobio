@@ -140,7 +140,6 @@ Protocol Flow:
 	blobio protocol described above.  In other words, a biod server never
 	talks to untrusted code, due to the denial of service susceptibility
 	described above.
-
 Usage:
 	#  get a blob
 	$ nc blob.setspace.com 1797
@@ -174,7 +173,6 @@ Usage:
 	> get sha:cd50d19784897085a8d0e3e413f8612b097c03f1
 	< no
 	<EOT>
-
 Protocol Questions:
 	- what about forbidding ':' as a digest character?
 
@@ -200,7 +198,6 @@ Protocol Questions:
 	  	test $(blobio wrap <udigA>) = $(blobio wrap <udigB>)
 
 	  is always false, even when udigA = udigB.
-
 Billing Model Questions:
 	- what to measure per billing cycle:
 		total count of blobs stored
@@ -224,7 +221,6 @@ Billing Model Questions:
 	  observed on the network, sort of.  the sender will see a slightly
 	  different time to first byte than the receiver, as with the
 	  start_time.
-
 To Do:
 	- move log/*.[fx]dr files to spool and, after wrapping, to data/
 
@@ -303,7 +299,3 @@ To Do:
 
 	- signal handling needs to be pushed to main listen loop or cleaned
  	  up with sigaction().
-
-Blame:
- 	jmscott@setspace.com
- 	setspace@gmail.com
