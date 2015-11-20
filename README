@@ -1,5 +1,6 @@
 Synopsis:
 	A trivial protocol to manage immutable blobs over a network.
+
 Description:
 	The blobio environment implements a simple client/server protocol for 
 	associating crypto hash digests as keys for immutable, binary large
@@ -33,7 +34,7 @@ Description:
 		put <udig>		write a blob with a digest
 		take <udig>		get a blob that the server may forget
 		give <udig>		put a blob that the client may forget
-		eat <udig>		untrusted digest of a blob by remote server
+		eat <udig>		digest of a blob by remote server
 
 		wrap			bundle current unwrapped brr traffic
 					logs into a single blob and return
@@ -90,6 +91,7 @@ Description:
 		<= 371 bytes
 
 	not including a trailing new-line spool/biod.brr or null character.
+
 Protocol Flow:
  	>get udig\n			# request for blob by udig
  	    <ok\n[bytes][close]		#   server sends bytes of blob
@@ -140,6 +142,7 @@ Protocol Flow:
 	blobio protocol described above.  In other words, a biod server never
 	talks to untrusted code, due to the denial of service susceptibility
 	described above.
+
 Usage:
 	#  get a blob
 	$ nc blob.setspace.com 1797
@@ -173,6 +176,7 @@ Usage:
 	> get sha:cd50d19784897085a8d0e3e413f8612b097c03f1
 	< no
 	<EOT>
+
 Protocol Questions:
 	- what about forbidding ':' as a digest character?
 
@@ -198,6 +202,7 @@ Protocol Questions:
 	  	test $(blobio wrap <udigA>) = $(blobio wrap <udigB>)
 
 	  is always false, even when udigA = udigB.
+
 Billing Model Questions:
 	- what to measure per billing cycle:
 		total count of blobs stored
@@ -221,6 +226,7 @@ Billing Model Questions:
 	  observed on the network, sort of.  the sender will see a slightly
 	  different time to first byte than the receiver, as with the
 	  start_time.
+
 To Do:
 	- move log/*.[fx]dr files to spool and, after wrapping, to data/
 
