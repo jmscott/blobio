@@ -32,14 +32,6 @@
  *
  *	Multiple statements in an sql exec imply a transaction.
  *	Would an explicit keyword be better?
- *
- *	sql queries and commands need separate name space for attributes.
- *	for example, the following code breaks in wierd ways:
- *
- *		sql query abc row {
- *			result row is (is_xml bool)
- *			...
- *		command ls_xml { ...
  */
 %{
 package main
