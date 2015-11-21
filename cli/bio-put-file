@@ -78,7 +78,7 @@ END
 			"path":		"$(echo -n $FILE | escape_json)"
 		},
 		"hostname":	"$(hostname)",
-		"env": 		{
+		"environment": 		{
 					"USER":	"$USER"
 		},
 		"gnu-file":	"$(file $FILE | escape_json)",
