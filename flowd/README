@@ -105,7 +105,9 @@ Blame:
 	setspace@gmail.com
 
 Note:
-	- change tail{} to inbound{} and outbound{}.
+	- inbound{} ought to tie together various sources of brr records.
+
+	- should tail{} explcitly indicate a brr record.
 
 	- add to command{}
 
