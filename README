@@ -180,7 +180,8 @@ Usage:
 Protocol Questions:
 	- what about forbidding ':' as a digest character?
 
-	- is requiring 32 ascii bytes too strict.  what about 24 bytes.
+	- is requiring 32 ascii bytes id udig digest too strict.
+          what about 24 bytes.
 
 	- should 'roll' with no udig return the last rolled udig?
 
