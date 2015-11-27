@@ -1112,8 +1112,10 @@ func (flo *flow) call(
 				//  synchronous call to command{} process
 				//  always returns partially built xdr value
 
+				start_time := Now()
 				xv = cmd.call(argv.argv, osx_q)
-				xv.wall_duration = Since(xv.start_time)
+				xv.start_time = start_time;
+				xv.wall_duration = Since(start_time)
 				xv.flow = flo
 				xv.udig = flo.brr[brr_UDIG]
 				xv.flow_sequence = flo.seq

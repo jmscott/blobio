@@ -264,7 +264,6 @@ func (in os_exec_chan) worker_flowd_execv() {
 func (cmd *command) call(argv []string, osx_q os_exec_chan) (xv *xdr_value) {
 
 	xdr := &xdr{
-		start_time: Now(),
 		call_name:  cmd.name,
 	}
 
