@@ -109,6 +109,11 @@ Note:
 
 	- should tail{} explcitly indicate a brr record.
 
+		tail brr ss_inbound
+		{
+			...
+		}
+
 	- add to command{}
 
 		exit_status is true;
