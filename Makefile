@@ -92,6 +92,8 @@ ifdef DIST_ROOT
 	install -g $(DIST_GROUP) -o $(DIST_USER) 			\
 		-d $(DIST_ROOT)/spool/wrap
 	install -g $(DIST_GROUP) -o $(DIST_USER)			\
+		-d $(DIST_ROOT)/tmp
+	install -g $(DIST_GROUP) -o $(DIST_USER)			\
 		-d $(DIST_ROOT)/data
 	install -g $(DIST_GROUP) -o $(DIST_USER) 			\
 		-d $(DIST_ROOT)/data/sha_fs
