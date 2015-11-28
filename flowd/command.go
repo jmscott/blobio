@@ -301,6 +301,7 @@ func (cmd *command) call(argv []string, osx_q os_exec_chan) (xv *xdr_value) {
 	//
 	//  Note:
 	//	need to grumble about long running processes!
+	//	unfortunatly a timeout appears to be expensive in select{}
 
 	reply := <-req.reply
 
