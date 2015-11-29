@@ -1108,6 +1108,7 @@ func (flo *flow) call(
 				}
 
 			//  when is true and argv exists, so fire command
+
 			case when.bool:
 				//  synchronous call to command{} process
 				//  always returns partially built xdr value

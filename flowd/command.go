@@ -41,8 +41,7 @@ type command struct {
 	//  Codes not in the bitmap are classifed as "ERR" in the xdr record.
 	//
 	//  Note:
-	//	Why not an [32]byte.  Arrays seems to be faster to index
-	// 	than slices.
+	//	Why not an [32]byte.  Are arrays faster to index than slices.
 
 	OK_exit_status []byte
 
@@ -334,7 +333,7 @@ func (cmd *command) call(argv []string, osx_q os_exec_chan) (xv *xdr_value) {
 		return
 	}
 
-	//  process was interputed with a signal
+	//  process was interrupted with a signal
 
 	if reply.signal > 0 {
 		xdr.termination_class = "SIG"
