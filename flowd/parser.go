@@ -334,7 +334,7 @@ const yyEofCode = 1
 const yyErrCode = 2
 const yyMaxDepth = 200
 
-//line parser.y:2049
+//line parser.y:2050
 var keyword = map[string]int{
 	"and":                  yy_AND,
 	"argv":                 ARGV,
@@ -3201,7 +3201,8 @@ yydefault:
 			l := yylex.(*yyLexState)
 
 			if l.sql_query_row != nil {
-				l.error("sql query row: %s: transaction not allowed")
+				l.error("sql query row: %s: transaction not allowed",
+					l.sql_query_row.name)
 				return 0
 			}
 			ex := l.sql_exec
@@ -3217,7 +3218,7 @@ yydefault:
 		}
 	case 82:
 		yyDollar = yyS[yypt-3 : yypt+1]
-		//line parser.y:1780
+		//line parser.y:1781
 		{
 			l := yylex.(*yyLexState)
 
@@ -3240,7 +3241,7 @@ yydefault:
 		}
 	case 87:
 		yyDollar = yyS[yypt-1 : yypt+1]
-		//line parser.y:1812
+		//line parser.y:1813
 		{
 			l := yylex.(*yyLexState)
 			if l.seen_boot {
@@ -3252,7 +3253,7 @@ yydefault:
 		}
 	case 88:
 		yyDollar = yyS[yypt-5 : yypt+1]
-		//line parser.y:1823
+		//line parser.y:1824
 		{
 			yylex.(*yyLexState).in_boot = false
 			yyVAL.ast = &ast{
@@ -3261,7 +3262,7 @@ yydefault:
 		}
 	case 89:
 		yyDollar = yyS[yypt-8 : yypt+1]
-		//line parser.y:1832
+		//line parser.y:1833
 		{
 			l := yylex.(*yyLexState)
 			/*
@@ -3283,7 +3284,7 @@ yydefault:
 		}
 	case 90:
 		yyDollar = yyS[yypt-1 : yypt+1]
-		//line parser.y:1852
+		//line parser.y:1853
 		{
 			l := yylex.(*yyLexState)
 			if l.command != nil {
@@ -3295,13 +3296,13 @@ yydefault:
 		}
 	case 91:
 		yyDollar = yyS[yypt-3 : yypt+1]
-		//line parser.y:1860
+		//line parser.y:1861
 		{
 			yyDollar[2].command.name = yyDollar[3].string
 		}
 	case 92:
 		yyDollar = yyS[yypt-7 : yypt+1]
-		//line parser.y:1861
+		//line parser.y:1862
 		{
 			l := yylex.(*yyLexState)
 			if len(l.config.command) > 255 {
@@ -3325,7 +3326,7 @@ yydefault:
 		}
 	case 93:
 		yyDollar = yyS[yypt-2 : yypt+1]
-		//line parser.y:1884
+		//line parser.y:1885
 		{
 			yyDollar[1].ast.right = &ast{
 				yy_tok: WHEN,
@@ -3337,7 +3338,7 @@ yydefault:
 		}
 	case 94:
 		yyDollar = yyS[yypt-4 : yypt+1]
-		//line parser.y:1895
+		//line parser.y:1896
 		{
 			yyDollar[1].ast.right = &ast{
 				yy_tok: WHEN,
@@ -3347,7 +3348,7 @@ yydefault:
 		}
 	case 95:
 		yyDollar = yyS[yypt-2 : yypt+1]
-		//line parser.y:1904
+		//line parser.y:1905
 		{
 			yyDollar[1].ast.right = &ast{
 				yy_tok: WHEN,
@@ -3360,7 +3361,7 @@ yydefault:
 		}
 	case 96:
 		yyDollar = yyS[yypt-4 : yypt+1]
-		//line parser.y:1916
+		//line parser.y:1917
 		{
 			yyDollar[1].ast.right = &ast{
 				yy_tok: WHEN,
@@ -3371,7 +3372,7 @@ yydefault:
 		}
 	case 97:
 		yyDollar = yyS[yypt-3 : yypt+1]
-		//line parser.y:1926
+		//line parser.y:1927
 		{
 			l := yylex.(*yyLexState)
 			l.sql_database = &sql_database{
@@ -3380,7 +3381,7 @@ yydefault:
 		}
 	case 98:
 		yyDollar = yyS[yypt-7 : yypt+1]
-		//line parser.y:1932
+		//line parser.y:1933
 		{
 			l := yylex.(*yyLexState)
 			if l.sql_database.driver_name == "" {
@@ -3397,7 +3398,7 @@ yydefault:
 		}
 	case 99:
 		yyDollar = yyS[yypt-4 : yypt+1]
-		//line parser.y:1948
+		//line parser.y:1949
 		{
 			l := yylex.(*yyLexState)
 			l.sql_query_row = &sql_query_row{
@@ -3409,7 +3410,7 @@ yydefault:
 		}
 	case 100:
 		yyDollar = yyS[yypt-8 : yypt+1]
-		//line parser.y:1957
+		//line parser.y:1958
 		{
 			l := yylex.(*yyLexState)
 
@@ -3426,7 +3427,7 @@ yydefault:
 		}
 	case 101:
 		yyDollar = yyS[yypt-3 : yypt+1]
-		//line parser.y:1973
+		//line parser.y:1974
 		{
 			l := yylex.(*yyLexState)
 			l.sql_exec = &sql_exec{
@@ -3435,7 +3436,7 @@ yydefault:
 		}
 	case 102:
 		yyDollar = yyS[yypt-7 : yypt+1]
-		//line parser.y:1979
+		//line parser.y:1980
 		{
 			l := yylex.(*yyLexState)
 
@@ -3450,13 +3451,13 @@ yydefault:
 		}
 	case 103:
 		yyDollar = yyS[yypt-1 : yypt+1]
-		//line parser.y:1997
+		//line parser.y:1998
 		{
 			yyVAL.go_kind = reflect.Bool
 		}
 	case 104:
 		yyDollar = yyS[yypt-2 : yypt+1]
-		//line parser.y:2004
+		//line parser.y:2005
 		{
 			l := yylex.(*yyLexState)
 			q := l.sql_query_row
@@ -3482,13 +3483,13 @@ yydefault:
 		}
 	case 107:
 		yyDollar = yyS[yypt-1 : yypt+1]
-		//line parser.y:2037
+		//line parser.y:2038
 		{
 			yylex.(*yyLexState).ast_root = yyDollar[1].ast
 		}
 	case 108:
 		yyDollar = yyS[yypt-2 : yypt+1]
-		//line parser.y:2042
+		//line parser.y:2043
 		{
 			s := yyDollar[1].ast
 			for ; s.next != nil; s = s.next {

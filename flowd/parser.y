@@ -1762,7 +1762,8 @@ sql_decl_stmt:
 		l := yylex.(*yyLexState)
 
 		if l.sql_query_row != nil {
-			l.error("sql query row: %s: transaction not allowed")
+			l.error("sql query row: %s: transaction not allowed",
+				l.sql_query_row.name)
 			return 0
 		}
 		ex := l.sql_exec
