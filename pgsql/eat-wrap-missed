@@ -14,7 +14,7 @@
 #	blobio.service and, vice-a-versa, for any blob not in view blob.service
 #	a 'blobio get' call should fail.
 #
-#	Unfortunatly, for various reasons, the brr service can get out of sync
+#	Unfortunately, for various reasons, the brr service can get out of sync
 #	with the postgres database.  Fortunately, the brr logs can be replayed
 #	in any order - assuming the brrflow.conf is designed correctly - so this
 #	script issues a 'blobio eat' for all blobs unknown to the database,
