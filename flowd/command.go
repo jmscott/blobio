@@ -263,7 +263,7 @@ func (in os_exec_chan) worker_flowd_execv() {
 func (cmd *command) call(argv []string, osx_q os_exec_chan) (xv *xdr_value) {
 
 	xdr := &xdr{
-		call_name:  cmd.name,
+		call_name: cmd.name,
 	}
 
 	//  final argument vector sent to command looks like

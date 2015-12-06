@@ -1115,7 +1115,7 @@ func (flo *flow) call(
 
 				start_time := Now()
 				xv = cmd.call(argv.argv, osx_q)
-				xv.start_time = start_time;
+				xv.start_time = start_time
 				xv.wall_duration = Since(start_time)
 				xv.flow = flo
 				xv.udig = flo.brr[brr_UDIG]
