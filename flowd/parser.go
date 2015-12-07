@@ -334,7 +334,7 @@ const yyEofCode = 1
 const yyErrCode = 2
 const yyMaxDepth = 200
 
-//line parser.y:2050
+//line parser.y:2088
 var keyword = map[string]int{
 	"and":                  yy_AND,
 	"argv":                 ARGV,
@@ -3413,21 +3413,41 @@ yydefault:
 		//line parser.y:1958
 		{
 			l := yylex.(*yyLexState)
-
 			q := l.sql_query_row
-			if q.sql_database == nil {
-				l.error("sql query row: %s: missing database", q.name)
+
+			grump := func(format string, args ...interface{}) int {
+				l.error("sql query row: %s: %s", q.name,
+					Sprintf(format, args...))
 				return 0
 			}
+
+			if q.statement == "" {
+				return grump("missing statement declaration")
+			}
+
+			//  unambiguously determine which database to bind to query
+
+			if q.sql_database == nil {
+				switch {
+				case len(l.config.sql_database) == 1:
+					for _, db := range l.config.sql_database {
+						q.sql_database = db
+					}
+				case len(l.config.sql_database) == 0:
+					return grump("no database defined")
+				default:
+					return grump("can't determine database")
+				}
+			}
 			if len(q.result_row) == 0 {
-				l.error("sql query row: %s: missing result row", q.name)
+				grump("missing result row declaration")
 			}
 			l.config.sql_query_row[yyDollar[3].string] = l.sql_query_row
 			l.sql_query_row = nil
 		}
 	case 101:
 		yyDollar = yyS[yypt-3 : yypt+1]
-		//line parser.y:1974
+		//line parser.y:1994
 		{
 			l := yylex.(*yyLexState)
 			l.sql_exec = &sql_exec{
@@ -3436,14 +3456,32 @@ yydefault:
 		}
 	case 102:
 		yyDollar = yyS[yypt-7 : yypt+1]
-		//line parser.y:1980
+		//line parser.y:2000
 		{
 			l := yylex.(*yyLexState)
-
 			ex := l.sql_exec
-			if ex.sql_database == nil {
-				l.error("sql exec: %s: missing database", ex.name)
+
+			grump := func(format string, args ...interface{}) int {
+				l.error("sql exec: %s: %s", ex.name,
+					Sprintf(format, args...))
 				return 0
+			}
+
+			if len(ex.statement) == 0 {
+				return grump("missing statement declaration")
+			}
+
+			if ex.sql_database == nil {
+				switch {
+				case len(l.config.sql_database) == 1:
+					for _, db := range l.config.sql_database {
+						ex.sql_database = db
+					}
+				case len(l.config.sql_database) == 0:
+					return grump("no database defined")
+				default:
+					return grump("can't determine database")
+				}
 			}
 
 			l.config.sql_exec[yyDollar[3].string] = l.sql_exec
@@ -3451,13 +3489,13 @@ yydefault:
 		}
 	case 103:
 		yyDollar = yyS[yypt-1 : yypt+1]
-		//line parser.y:1998
+		//line parser.y:2036
 		{
 			yyVAL.go_kind = reflect.Bool
 		}
 	case 104:
 		yyDollar = yyS[yypt-2 : yypt+1]
-		//line parser.y:2005
+		//line parser.y:2043
 		{
 			l := yylex.(*yyLexState)
 			q := l.sql_query_row
@@ -3483,13 +3521,13 @@ yydefault:
 		}
 	case 107:
 		yyDollar = yyS[yypt-1 : yypt+1]
-		//line parser.y:2038
+		//line parser.y:2076
 		{
 			yylex.(*yyLexState).ast_root = yyDollar[1].ast
 		}
 	case 108:
 		yyDollar = yyS[yypt-2 : yypt+1]
-		//line parser.y:2043
+		//line parser.y:2081
 		{
 			s := yyDollar[1].ast
 			for ; s.next != nil; s = s.next {

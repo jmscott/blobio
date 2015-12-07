@@ -1959,14 +1959,34 @@ statement:
 	  }  '{'  sql_decl_stmt_list  '}'
 	  {
 		l := yylex.(*yyLexState)
-
 		q := l.sql_query_row
-		if q.sql_database == nil {
-			l.error("sql query row: %s: missing database", q.name)
+
+		grump := func(format string, args ...interface{}) int {
+			l.error("sql query row: %s: %s", q.name,
+						Sprintf(format, args...))
 			return 0
 		}
+
+		if q.statement == "" {
+			return grump("missing statement declaration")
+		}
+
+		//  unambiguously determine which database to bind to query
+
+		if q.sql_database == nil {
+			switch {
+			case len(l.config.sql_database) == 1:
+				for _, db := range l.config.sql_database {
+					q.sql_database = db
+				}
+			case len(l.config.sql_database) == 0:
+				return grump("no database defined")
+			default:
+				return grump("can't determine database")
+			}
+		}
 		if len(q.result_row) == 0 {
-			l.error("sql query row: %s: missing result row", q.name)
+			grump("missing result row declaration")
 		}
 		l.config.sql_query_row[$3] = l.sql_query_row
 		l.sql_query_row = nil
@@ -1981,11 +2001,29 @@ statement:
 	  }  '{'  sql_decl_stmt_list  '}'
 	  {
 		l := yylex.(*yyLexState)
-
 		ex := l.sql_exec
-		if ex.sql_database == nil {
-			l.error("sql exec: %s: missing database", ex.name)
+
+		grump := func(format string, args ...interface{}) int {
+			l.error("sql exec: %s: %s", ex.name,
+						Sprintf(format, args...))
 			return 0
+		}
+
+		if len(ex.statement) == 0 {
+			return grump("missing statement declaration")
+		}
+
+		if ex.sql_database == nil {
+			switch {
+			case len(l.config.sql_database) == 1:
+				for _, db := range l.config.sql_database {
+					ex.sql_database = db
+				}
+			case len(l.config.sql_database) == 0:
+				return grump("no database defined")
+			default:
+				return grump("can't determine database")
+			}
 		}
 
 		l.config.sql_exec[$3] = l.sql_exec
