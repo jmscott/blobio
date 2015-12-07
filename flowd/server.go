@@ -280,7 +280,7 @@ func (conf *config) server(par *parse) {
 	}
 
 	info("enumerated dependency order: %d commands/queries/tail",
-		len(par.depend_order))
+							len(par.depend_order))
 	for i, n := range par.depend_order {
 		info("	% 3d: %s", i, n)
 	}
