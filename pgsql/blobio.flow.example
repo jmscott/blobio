@@ -81,7 +81,6 @@ sql query blob_size_exists row
 	);
 	
 	`;
-	database is blobio;
 }
 
 sql exec merge_blob_size
@@ -99,7 +98,6 @@ sql exec merge_blob_size
 	;
 
 	`;
-	database is blobio;
 }
 
 sql query discover_older row
@@ -131,7 +129,6 @@ sql query discover_older row
 	;
 
 	`;
-	database is blobio;
 }
 
 sql exec upsert_discover
@@ -153,7 +150,6 @@ sql exec upsert_discover
 	;
 
 	`;
-	database is blobio;
 }
 
 sql query ok_newer row
@@ -193,7 +189,6 @@ sql query ok_newer row
 	;
 
 	`;
-	database is blobio;
 }
 
 sql exec upsert_ok_recent
@@ -216,7 +211,6 @@ sql exec upsert_ok_recent
 	;
 	
 	`;
-	database is blobio;
 }
 
 sql query no_newer row
@@ -252,14 +246,11 @@ sql query no_newer row
 	;
 
 	`;
-	database is blobio;
 }
 
 #  the most recently seen "no" for the blob
 sql exec upsert_no_recent
 {
-	database is blobio;
-
 	statement = `
 
 	INSERT into blobio.brr_no_recent as OLDER (
@@ -283,8 +274,6 @@ sql exec upsert_no_recent
 
 sql query roll_ok_exists row
 {
-	database is blobio;
-
 	result row is (
 		answer bool
 	);
@@ -305,8 +294,6 @@ sql query roll_ok_exists row
 
 sql exec merge_roll_ok
 {
-	database is blobio;
-
 	statement = `
 
 	INSERT into blobio.brr_roll_ok(
@@ -324,8 +311,6 @@ sql exec merge_roll_ok
 
 sql query wrap_ok_exists row
 {
-	database is blobio;
-
 	result row is (
 		answer bool
 	);
@@ -346,8 +331,6 @@ sql query wrap_ok_exists row
 
 sql exec merge_wrap_ok
 {
-	database is blobio;
-
 	statement = `
 
 	INSERT into blobio.brr_wrap_ok(
@@ -365,8 +348,6 @@ sql exec merge_wrap_ok
 
 sql query take_ok3_newer row
 {
-	database is blobio;
-
 	result row is (
 		is_newer bool,
 		row_exists bool
@@ -398,8 +379,6 @@ sql query take_ok3_newer row
 
 sql exec upsert_take_ok3_recent
 {
-	database is blobio;
-
 	statement = `
 
 	INSERT into blobio.brr_take_ok3_recent as OLDER (
