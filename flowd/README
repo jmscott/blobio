@@ -61,7 +61,7 @@ Process Execution Detail Record:
 	The format of an "xdr" is the typical unixy new-line separated row
 	of tab separated fields.  The layout of the fields are as follows:
 
-		start_time		#  YYYY-MM-DD hh:mm:ss.ns9 [+-]ZZZZ
+		start_time		#  YYYY-MM-DDThh:mm:ss.ns9[+-]ZZ:ZZ
 		flow_sequence		#  service flow sequence
 		command_name		#  command name in config file
 		termination_class	#  termination class: OK, ERR, SIG, NOPS
@@ -85,7 +85,7 @@ Query Detail Record:
 	A query detail record, abbreviated as "qdr", summarizes the
 	invocation of an sql database query 
 
-		start_time		#  YYYY-MM-DD hh:mm:ss.ns9 [+-]ZZZZ
+		start_time		#  YYYY-MM-DDThh:mm:ss.ns9[+-]ZZ:ZZ
 		flow_sequence		#  service flow sequence
 		query_name		#  name of query, unique across flow
 		termination_class	#  termination class: OK, ERR
