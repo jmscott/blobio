@@ -33,26 +33,17 @@ Flow Detail Record:
 	The format of an "fdr" is the typical unixy new-line separated row
 	of tab separated fields.  The layout of the fields are as follows:
 
-		start_time		#  YYYY-MM-DD hh:mm:ss.ns9 [+-]0000
-		udig			#  udig of the blob
-		ok_count		#  count of ok process exits <=2^63-1
-		fault_count		#  count of process faults <=2^63-1
-		wall_duration		#  wall clock duration seconds.nsec
-		sequence		#  service flow sequence, <= 2^63 - 1 
+		start_time	#  RFC3339Nano: YYYY-MM-DDThh:mm:ss.ns9[+-]ZZ:ZZ
+		udig		#  udig of the blob
+		ok_count	#  count of ok process exits <=2^63-1
+		fault_count	#  count of process faults <=2^63-1
+		wall_duration	#  wall clock duration seconds.nsec
+		sequence	#  service flow sequence, <= 2^63 - 1 
 
 	The combination of "start_time" and "sequence" can safely be assumed to
 	be unique for records associated with this service.  Unfortunatly, in
 	theory, the uniqueness constraint could be violated by EXTREMELY rapid
 	process bouncing.
-
-	The total number of processing events in the flow is ok_count +
-	fault_count.  Currently the flows only fire executable programs;
-	eventually, queries, forwarding a brr and, possibly, cache inquires
-	will become events within a flow.
-
-	ok and fault count are uint8.
-
-	Wall duration is float64 seconds formated as %20.9f.
 
 Process Execution Detail Record:
 	A process execution detail record, abbreviated as "xdr", summarizes
