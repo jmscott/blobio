@@ -195,6 +195,16 @@ Billing Model Questions:
 	  start_time.
 
 To Do:
+	- casting text to udig_sha failes when prefixed by sha:
+
+		--  OK
+		select '44e946a2889b295eeb0b9d95efe34625cc830dde'::udig_sha;
+
+		-- FAILS
+		select 'sha:44e946a2889b295eeb0b9d95efe34625cc830dde'::udig_sha;
+	
+	  why?
+
 	- move log/*.[fx]dr files to spool and, after wrapping, to data/
 
 	- Should the variable BLOBIO_ROOT be renamed BLOBIO_INSTALL or
