@@ -146,11 +146,6 @@ Protocol Flow:
 Protocol Questions:
 	- what about forbidding ':' as a digest character?
 
-	- is requiring 32 ascii bytes id udig digest too strict.
-          what about 24 bytes.
-
-	- should 'roll' with no udig return the last rolled udig?
-
         - think about a "prove" command that allows the server to formally prove
 	  the existence of a set of blobs, thus verifying the server is not
 	  lying about storage.  the obvious technique would be for the client
