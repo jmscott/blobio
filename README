@@ -1,6 +1,5 @@
 Synopsis:
 	A trivial protocol to manage immutable blobs over a network.
-
 Description:
 	The blobio environment implements a simple client/server protocol for 
 	associating crypto hash digests as keys for immutable, binary large
