@@ -239,8 +239,8 @@ die(char *msg)
 
 	/*
 	 *  Dieing implies either client error, timeout or fault.
-	 *  Therefore, an uncategorized error must "promoted" to a full fault;
-	 *  otherwise, leave(), not die() would have been invoked.
+	 *  Therefore, an uncategorized error must be "promoted" to a full
+	 *  fault; otherwise, leave(), not die() would have been invoked.
 	 */
 	if (request_pid && (request_exit_status & 0x3) == 0)
 		request_exit_status = (request_exit_status & 0xFC) | 0x1;
