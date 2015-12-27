@@ -112,10 +112,6 @@ ifdef DIST_ROOT
 		$(DIST_ROOT)/sbin
 
 	install -g $(DIST_GROUP) -o $(DIST_USER) -m ug=r,o=		\
-		flowd/schema.sql					\
-		$(DIST_ROOT)/lib/flowd-schema.sql
-
-	install -g $(DIST_GROUP) -o $(DIST_USER) -m ug=r,o=		\
 		crontab.example						\
 		profile.example						\
 		$(DIST_ROOT)/lib
