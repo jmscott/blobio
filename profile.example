@@ -35,3 +35,5 @@ export PGUSER=blobio
 export PGDATABASE=blobio
 
 PATH=$BLOBIO_ROOT/bin:$BLOBIO_ROOT/sbin:$PGROOT/bin:$PATH
+
+export PSQLRC=$BLOBIO_ROOT/etc/psqlrc

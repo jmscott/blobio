@@ -1,0 +1,8 @@
+/*
+ *  Synopsis:
+ *	Search path of typical blobio admin account.
+ *  Usage:
+ *	cp $BLOBIO_ROOT/lib/psqlrc.example $BLOBIO_ROOT/etc/psqlrc
+ *	export PSQLRC=$BLOBIO/etc/psqlrc
+ */
+set search_path to blobio,public;

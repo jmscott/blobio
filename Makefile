@@ -114,6 +114,7 @@ ifdef DIST_ROOT
 	install -g $(DIST_GROUP) -o $(DIST_USER) -m ug=r,o=		\
 		crontab.example						\
 		profile.example						\
+		psqlrc.example						\
 		$(DIST_ROOT)/lib
 	install -g $(DIST_GROUP) -o $(DIST_USER) -m ug=r,o=		\
 		README							\
