@@ -36,4 +36,7 @@ export PGDATABASE=blobio
 
 PATH=$BLOBIO_ROOT/bin:$BLOBIO_ROOT/sbin:$PGROOT/bin:$PATH
 
+#  Helps for development environments where BLOBIO_ROOT=$HOME/opt/blobio.
+HISTFILE=$BLOBIO_ROOT/.bash_history
+HISTSIZE=50000
 export PSQLRC=$BLOBIO_ROOT/etc/psqlrc
