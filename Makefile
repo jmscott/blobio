@@ -2,7 +2,7 @@
 #  Synopsis:
 #	Root makefile for blobio clients and servers.
 #  Depends:
-#	local.mk, derived from local-linux.mk.example  local-macosx.mk.example
+#	local.mk, derived from local-<os>.mk.example
 #  Blame:
 #  	jmscott@setspace.com
 #  	setspace@gmail.com
@@ -20,6 +20,8 @@
 #	appears to work correctly.
 #
 #	The 'http' directory must be renamed to 'www'
+#
+#	Need to specify client of 
 #
 include local.mk
 
@@ -112,6 +114,7 @@ ifdef DIST_ROOT
 		$(DIST_ROOT)/sbin
 
 	install -g $(DIST_GROUP) -o $(DIST_USER) -m ug=r,o=		\
+		bash_login.example					\
 		crontab.example						\
 		profile.example						\
 		psqlrc.example						\
