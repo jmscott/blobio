@@ -220,6 +220,8 @@ func (in os_exec_chan) worker_flowd_execv() {
 		reply := os_exec_reply{}
 
 		if rep[0] == "ERROR" {
+			//  Note:  reply ought to see more than on line of
+			//         error output.
 			reply.err = errors.New(rep[1])
 			req.reply <- reply
 			continue
