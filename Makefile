@@ -26,7 +26,6 @@
 include local.mk
 
 all:
-	cd skein;	$(MAKE) all
 	cd sha1;	$(MAKE) all
 ifdef DIST_ROOT
 	cd biod;	$(MAKE) all
@@ -36,7 +35,6 @@ endif
 
 clean:
 	cd sha1;	$(MAKE) clean
-	cd skein;	$(MAKE) clean
 	cd biod;	$(MAKE) clean
 	cd flowd;	$(MAKE) clean
 	cd cli;		$(MAKE) clean

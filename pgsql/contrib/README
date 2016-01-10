@@ -1,7 +1,7 @@
 Synopsis:
 	Install udig datatype to PostgreSQL
 Description:
-	PostgreSQL database type definitions for udig, udig_sk and udig_sha
+	PostgreSQL database type definitions for udig and udig_sha
 	types.  Code intended to run in postgresql source contrib directory.
 	After a successfull build of the postgresql distribution, do from this
 	directory

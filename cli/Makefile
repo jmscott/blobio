@@ -21,8 +21,7 @@ endif
 OBJS=			\
 	dump.o		\
 	module.o 	\
-	sha.o		\
-	sk.o
+	sha.o
 
 all: blobio
 
@@ -46,8 +45,7 @@ install: all
 		$(DIST_ROOT)/bin
 
 blobio: blobio.o $(OBJS)
-	gcc -o blobio blobio.o $(OBJS) ../sha1/sha1.o		\
-		-L../skein -lskein
+	gcc -o blobio blobio.o $(OBJS) ../sha1/sha1.o
 blobio.o: blobio.c blobio.h
 	gcc -g $(CFLAGS) -c blobio.c
 dump.o: dump.c blobio.h
@@ -56,10 +54,5 @@ module.o: module.c blobio.h
 	gcc $(CFLAGS) -c module.c
 sha.o: sha.c blobio.h
 	gcc $(CFLAGS) -c sha.c
-sk.o: sk.c blobio.h
-	gcc $(CFLAGS) -I../skein -c sk.c
 clean:
 	rm -f blobio blobio.o $(OBJS)
-
-skdigest: skdigest.c
-	gcc $(CFLAGS) -I../skein -o skdigest skdigest.c -L../skein -lskein

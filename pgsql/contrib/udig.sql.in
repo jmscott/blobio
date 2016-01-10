@@ -1,6 +1,6 @@
 /*
  *  Synopsis:
- *	Create PostgreSQL UDIG Data Types, including Skein, SHA1 and Text.
+ *	Create PostgreSQL UDIG Data Types, including SHA1.
  */
 \set ON_ERROR_STOP
 
@@ -26,28 +26,6 @@ CREATE TYPE udig_sha
 	input =			udig_sha_in,
 	output =		udig_sha_out,
 	internallength =	20
-);
-
-/*
- *  Skein Udig Core Type.
- */
-CREATE TYPE udig_sk;					-- temporay shell type
-
-CREATE OR REPLACE FUNCTION udig_sk_in(cstring)		-- cstring to internal
-RETURNS udig_sk
-AS 'MODULE_PATHNAME', 'udig_sk_in'
-IMMUTABLE STRICT LANGUAGE C;
-
-CREATE OR REPLACE FUNCTION udig_sk_out(udig_sk)		-- internal to cstring
-RETURNS cstring
-AS 'MODULE_PATHNAME', 'udig_sk_out'
-IMMUTABLE STRICT LANGUAGE C;
-
-CREATE TYPE udig_sk
-(
-	input =			udig_sk_in,
-	output =		udig_sk_out,
-	internallength =	32
 );
 
 /*
@@ -113,44 +91,6 @@ IMMUTABLE STRICT LANGUAGE C;
 CREATE OR REPLACE FUNCTION udig_sha_cmp(udig_sha, udig_sha)
 RETURNS integer
 AS 'MODULE_PATHNAME', 'udig_sha_cmp'
-IMMUTABLE STRICT LANGUAGE C;
-
-/*
- *  Functions for cross compare SHA-Skein data types.
- */
-CREATE OR REPLACE FUNCTION udig_sha_eq_sk(udig_sha, udig_sk)
-RETURNS boolean
-AS 'MODULE_PATHNAME', 'udig_sha_eq_sk'
-IMMUTABLE STRICT LANGUAGE C;
-
-CREATE OR REPLACE FUNCTION udig_sha_ne_sk(udig_sha, udig_sk)
-RETURNS boolean
-AS 'MODULE_PATHNAME', 'udig_sha_ne_sk'
-IMMUTABLE STRICT LANGUAGE C;
-
-CREATE OR REPLACE FUNCTION udig_sha_lt_sk(udig_sha, udig_sk)
-RETURNS boolean
-AS 'MODULE_PATHNAME', 'udig_sha_lt_sk'
-IMMUTABLE STRICT LANGUAGE C;
-
-CREATE OR REPLACE FUNCTION udig_sha_le_sk(udig_sha, udig_sk)
-RETURNS boolean
-AS 'MODULE_PATHNAME', 'udig_sha_le_sk'
-IMMUTABLE STRICT LANGUAGE C;
-
-CREATE OR REPLACE FUNCTION udig_sha_gt_sk(udig_sha, udig_sk)
-RETURNS boolean
-AS 'MODULE_PATHNAME', 'udig_sha_gt_sk'
-IMMUTABLE STRICT LANGUAGE C;
-
-CREATE OR REPLACE FUNCTION udig_sha_ge_sk(udig_sha, udig_sk)
-RETURNS boolean
-AS 'MODULE_PATHNAME', 'udig_sha_ge_sk'
-IMMUTABLE STRICT LANGUAGE C;
-
-CREATE OR REPLACE FUNCTION udig_sha_cmp_sk(udig_sha, udig_sk)
-RETURNS integer
-AS 'MODULE_PATHNAME', 'udig_sha_cmp_sk'
 IMMUTABLE STRICT LANGUAGE C;
 
 /*
@@ -274,75 +214,6 @@ CREATE OPERATOR <=
 );
 
 /*
- *  Cross Type SHA to Skein Comparison Operators
- */
-CREATE OPERATOR =					-- = (sha, sk)
-(
-	leftarg =		udig_sha,
-	rightarg =		udig_sk,
-	procedure =		udig_sha_eq_sk,
-	commutator =		=,
-	negator =		<>,
-	restrict =		eqsel,
-	join =			eqjoinsel
-);
-
-CREATE OPERATOR <>					-- <> (sha, sk)
-(
-	leftarg =		udig_sha,
-	rightarg =		udig_sk,
-	procedure =		udig_sha_ne_sk,
-	commutator =		<>,
-	negator =		=,
-	restrict =		neqsel,
-	join =			neqjoinsel
-);
-
-CREATE OPERATOR >					-- > (sha, sk)
-(
-	leftarg =		udig_sha,
-	rightarg =		udig_sk,
-	procedure =		udig_sha_gt_sk,
-	commutator =		<,
-	negator =		<=,
-	restrict =		scalargtsel,
-	join =			scalargtjoinsel
-);
-
-CREATE OPERATOR >=					-- >= (sha, sk)
-(
-	leftarg =		udig_sha,
-	rightarg =		udig_sk,
-	procedure =		udig_sha_ge_sk,
-	commutator =		<=,
-	negator =		<,
-	restrict =		scalargtsel,
-	join =			scalargtjoinsel
-);
-
-CREATE OPERATOR <					-- < (sha, sk)
-(
-	leftarg =		udig_sha,
-	rightarg =		udig_sk,
-	procedure =		udig_sha_lt_sk,
-	commutator =		>,
-	negator =		>=,
-	restrict =		scalarltsel,
-	join =			scalarltjoinsel
-);
-
-CREATE OPERATOR <=					-- <= (sha, sk)
-(
-	leftarg =		udig_sha,
-	rightarg =		udig_sk,
-	procedure =		udig_sha_le_sk,
-	commutator =		>=,
-	negator =		>,
-	restrict =		scalarltsel,
-	join =			scalarltjoinsel
-);
-
-/*
  *  Cross Type SHA to Udig Comparison Operators
  */
 CREATE OPERATOR =					-- = (sha, udig)
@@ -405,340 +276,6 @@ CREATE OPERATOR <=					-- <= (sha, udig)
 	leftarg =		udig_sha,
 	rightarg =		udig,
 	procedure =		udig_sha_le_udig,
-	commutator =		>=,
-	negator =		>,
-	restrict =		scalarltsel,
-	join =			scalarltjoinsel
-);
-
-/*
- *  Functions for Skein core types.
- */
-CREATE OR REPLACE FUNCTION udig_sk_eq(udig_sk, udig_sk)
-RETURNS boolean
-AS 'MODULE_PATHNAME', 'udig_sk_eq'
-IMMUTABLE STRICT LANGUAGE C;
-
-CREATE OR REPLACE FUNCTION udig_sk_ne(udig_sk, udig_sk)
-RETURNS boolean
-AS 'MODULE_PATHNAME', 'udig_sk_ne'
-IMMUTABLE STRICT LANGUAGE C;
-
-CREATE OR REPLACE FUNCTION udig_sk_lt(udig_sk, udig_sk)
-RETURNS boolean
-AS 'MODULE_PATHNAME', 'udig_sk_lt'
-IMMUTABLE STRICT LANGUAGE C;
-
-CREATE OR REPLACE FUNCTION udig_sk_le(udig_sk, udig_sk)
-RETURNS boolean
-AS 'MODULE_PATHNAME', 'udig_sk_le'
-IMMUTABLE STRICT LANGUAGE C;
-
-CREATE OR REPLACE FUNCTION udig_sk_gt(udig_sk, udig_sk)
-RETURNS boolean
-AS 'MODULE_PATHNAME', 'udig_sk_gt'
-IMMUTABLE STRICT LANGUAGE C;
-
-CREATE OR REPLACE FUNCTION udig_sk_ge(udig_sk, udig_sk)
-RETURNS boolean
-AS 'MODULE_PATHNAME', 'udig_sk_ge'
-IMMUTABLE STRICT LANGUAGE C;
-
-CREATE OR REPLACE FUNCTION udig_sk_cmp(udig_sk, udig_sk)
-RETURNS integer
-AS 'MODULE_PATHNAME', 'udig_sk_cmp'
-IMMUTABLE STRICT LANGUAGE C;
-
-/*
- *  Functions for cross compare Skein-SHA data types.
- */
-CREATE OR REPLACE FUNCTION udig_sk_eq_sha(udig_sk, udig_sha)
-RETURNS boolean
-AS 'MODULE_PATHNAME', 'udig_sk_eq_sha'
-IMMUTABLE STRICT LANGUAGE C;
-
-CREATE OR REPLACE FUNCTION udig_sk_ne_sha(udig_sk, udig_sha)
-RETURNS boolean
-AS 'MODULE_PATHNAME', 'udig_sk_ne_sha'
-IMMUTABLE STRICT LANGUAGE C;
-
-CREATE OR REPLACE FUNCTION udig_sk_lt_sha(udig_sk, udig_sha)
-RETURNS boolean
-AS 'MODULE_PATHNAME', 'udig_sk_lt_sha'
-IMMUTABLE STRICT LANGUAGE C;
-
-CREATE OR REPLACE FUNCTION udig_sk_le_sha(udig_sk, udig_sha)
-RETURNS boolean
-AS 'MODULE_PATHNAME', 'udig_sk_le_sha'
-IMMUTABLE STRICT LANGUAGE C;
-
-CREATE OR REPLACE FUNCTION udig_sk_gt_sha(udig_sk, udig_sha)
-RETURNS boolean
-AS 'MODULE_PATHNAME', 'udig_sk_gt_sha'
-IMMUTABLE STRICT LANGUAGE C;
-
-CREATE OR REPLACE FUNCTION udig_sk_ge_sha(udig_sk, udig_sha)
-RETURNS boolean
-AS 'MODULE_PATHNAME', 'udig_sk_ge_sha'
-IMMUTABLE STRICT LANGUAGE C;
-
-CREATE OR REPLACE FUNCTION udig_sk_cmp_sha(udig_sk, udig_sha)
-RETURNS integer
-AS 'MODULE_PATHNAME', 'udig_sk_cmp_sha'
-IMMUTABLE STRICT LANGUAGE C;
-
-/*
- *  Functions for cross compare Skein-UDIG data types.
- */
-CREATE OR REPLACE FUNCTION udig_sk_eq_udig(udig_sk, udig)
-RETURNS boolean
-AS 'MODULE_PATHNAME', 'udig_sk_eq_udig'
-IMMUTABLE STRICT LANGUAGE C;
-
-CREATE OR REPLACE FUNCTION udig_sk_ne_udig(udig_sk, udig)
-RETURNS boolean
-AS 'MODULE_PATHNAME', 'udig_sk_ne_udig'
-IMMUTABLE STRICT LANGUAGE C;
-
-CREATE OR REPLACE FUNCTION udig_sk_lt_udig(udig_sk, udig)
-RETURNS boolean
-AS 'MODULE_PATHNAME', 'udig_sk_lt_udig'
-IMMUTABLE STRICT LANGUAGE C;
-
-CREATE OR REPLACE FUNCTION udig_sk_le_udig(udig_sk, udig)
-RETURNS boolean
-AS 'MODULE_PATHNAME', 'udig_sk_le_udig'
-IMMUTABLE STRICT LANGUAGE C;
-
-CREATE OR REPLACE FUNCTION udig_sk_gt_udig(udig_sk, udig)
-RETURNS boolean
-AS 'MODULE_PATHNAME', 'udig_sk_gt_udig'
-IMMUTABLE STRICT LANGUAGE C;
-
-CREATE OR REPLACE FUNCTION udig_sk_ge_udig(udig_sk, udig)
-RETURNS boolean
-AS 'MODULE_PATHNAME', 'udig_sk_ge_udig'
-IMMUTABLE STRICT LANGUAGE C;
-
-CREATE OR REPLACE FUNCTION udig_sk_cmp_udig(udig_sk, udig)
-RETURNS integer
-AS 'MODULE_PATHNAME', 'udig_sk_cmp_udig'
-IMMUTABLE STRICT LANGUAGE C;
-
-/*
- *  Cast Skein to generic udig.
- */
-CREATE OR REPLACE FUNCTION udig_sk_cast(udig_sk)
-RETURNS udig
-AS 'MODULE_PATHNAME', 'udig_sk_cast'
-IMMUTABLE STRICT LANGUAGE C;
-
-CREATE CAST (udig_sk AS udig)
-  WITH FUNCTION udig_sk_cast(udig_sk)
-  AS IMPLICIT
-;
-
-/*
- *  Core Skein operator types.
- */
-CREATE OPERATOR =
-(
-	leftarg =		udig_sk,
-	rightarg =		udig_sk,
-	procedure =		udig_sk_eq,
-	commutator =		=,
-	negator =		<>,
-	restrict =		eqsel,
-	join =			eqjoinsel
-);
-
-CREATE OPERATOR <>
-(
-	leftarg =		udig_sk,
-	rightarg =		udig_sk,
-	procedure =		udig_sk_ne,
-	commutator =		<>,
-	negator =		=,
-	restrict =		neqsel,
-	join =			neqjoinsel
-);
-
-CREATE OPERATOR >
-(
-	leftarg =		udig_sk,
-	rightarg =		udig_sk,
-	procedure =		udig_sk_gt,
-	commutator =		<,
-	negator =		<=,
-	restrict =		scalargtsel,
-	join =			scalargtjoinsel
-);
-
-CREATE OPERATOR >=
-(
-	leftarg =		udig_sk,
-	rightarg =		udig_sk,
-	procedure =		udig_sk_ge,
-	commutator =		<=,
-	negator =		<,
-	restrict =		scalargtsel,
-	join =			scalargtjoinsel
-);
-
-CREATE OPERATOR <
-(
-	leftarg =		udig_sk,
-	rightarg =		udig_sk,
-	procedure =		udig_sk_lt,
-	commutator =		>,
-	negator =		>=,
-	restrict =		scalarltsel,
-	join =			scalarltjoinsel
-);
-
-CREATE OPERATOR <=
-(
-	leftarg =		udig_sk,
-	rightarg =		udig_sk,
-	procedure =		udig_sk_le,
-	commutator =		>=,
-	negator =		>,
-	restrict =		scalarltsel,
-	join =			scalarltjoinsel
-);
-
-/*
- *  Cross Skein, SHA operator types.
- */
-CREATE OPERATOR =
-(
-	leftarg =		udig_sk,
-	rightarg =		udig_sha,
-	procedure =		udig_sk_eq_sha,
-	commutator =		=,
-	negator =		<>,
-	restrict =		eqsel,
-	join =			eqjoinsel
-);
-
-CREATE OPERATOR <>
-(
-	leftarg =		udig_sk,
-	rightarg =		udig_sha,
-	procedure =		udig_sk_ne_sha,
-	commutator =		<>,
-	negator =		=,
-	restrict =		neqsel,
-	join =			neqjoinsel
-);
-
-CREATE OPERATOR >
-(
-	leftarg =		udig_sk,
-	rightarg =		udig_sha,
-	procedure =		udig_sk_gt_sha,
-	commutator =		<,
-	negator =		<=,
-	restrict =		scalargtsel,
-	join =			scalargtjoinsel
-);
-
-CREATE OPERATOR >=
-(
-	leftarg =		udig_sk,
-	rightarg =		udig_sha,
-	procedure =		udig_sk_ge_sha,
-	commutator =		<=,
-	negator =		<,
-	restrict =		scalargtsel,
-	join =			scalargtjoinsel
-);
-
-CREATE OPERATOR <
-(
-	leftarg =		udig_sk,
-	rightarg =		udig_sha,
-	procedure =		udig_sk_lt_sha,
-	commutator =		>,
-	negator =		>=,
-	restrict =		scalarltsel,
-	join =			scalarltjoinsel
-);
-
-CREATE OPERATOR <=
-(
-	leftarg =		udig_sk,
-	rightarg =		udig_sha,
-	procedure =		udig_sk_le_sha,
-	commutator =		>=,
-	negator =		>,
-	restrict =		scalarltsel,
-	join =			scalarltjoinsel
-);
-
-/*
- *  Cross Type Skein to Udig Comparison Operators
- */
-CREATE OPERATOR =					-- = (sk, udig)
-(
-	leftarg =		udig_sk,
-	rightarg =		udig,
-	procedure =		udig_sk_eq_udig,
-	commutator =		=,
-	negator =		<>,
-	restrict =		eqsel,
-	join =			eqjoinsel
-);
-
-CREATE OPERATOR <>					-- <> (sk, udig)
-(
-	leftarg =		udig_sk,
-	rightarg =		udig,
-	procedure =		udig_sk_ne_udig,
-	commutator =		<>,
-	negator =		=,
-	restrict =		neqsel,
-	join =			neqjoinsel
-);
-
-CREATE OPERATOR >					-- > (sk, udig)
-(
-	leftarg =		udig_sk,
-	rightarg =		udig,
-	procedure =		udig_sk_gt_udig,
-	commutator =		<,
-	negator =		<=,
-	restrict =		scalargtsel,
-	join =			scalargtjoinsel
-);
-
-CREATE OPERATOR >=					-- >= (sk, udig)
-(
-	leftarg =		udig_sk,
-	rightarg =		udig,
-	procedure =		udig_sk_ge_udig,
-	commutator =		<=,
-	negator =		<,
-	restrict =		scalargtsel,
-	join =			scalargtjoinsel
-);
-
-CREATE OPERATOR <					-- < (sk, udig)
-(
-	leftarg =		udig_sk,
-	rightarg =		udig,
-	procedure =		udig_sk_lt_udig,
-	commutator =		>,
-	negator =		>=,
-	restrict =		scalarltsel,
-	join =			scalarltjoinsel
-);
-
-CREATE OPERATOR <=					-- <= (sk, udig)
-(
-	leftarg =		udig_sk,
-	rightarg =		udig,
-	procedure =		udig_sk_le_udig,
 	commutator =		>=,
 	negator =		>,
 	restrict =		scalarltsel,
@@ -820,44 +357,6 @@ IMMUTABLE STRICT LANGUAGE C;
 CREATE OR REPLACE FUNCTION udig_cmp_sha(udig, udig_sha)
 RETURNS integer
 AS 'MODULE_PATHNAME', 'udig_cmp_sha'
-IMMUTABLE STRICT LANGUAGE C;
-
-/*
- *  Create Cross UDIG,Skein Functions
- */
-CREATE OR REPLACE FUNCTION udig_eq_sk(udig, udig_sk)
-RETURNS boolean
-AS 'MODULE_PATHNAME', 'udig_eq_sk'
-IMMUTABLE STRICT LANGUAGE C;
-
-CREATE OR REPLACE FUNCTION udig_ne_sk(udig, udig_sk)
-RETURNS boolean
-AS 'MODULE_PATHNAME', 'udig_ne_sk'
-IMMUTABLE STRICT LANGUAGE C;
-
-CREATE OR REPLACE FUNCTION udig_lt_sk(udig, udig_sk)
-RETURNS boolean
-AS 'MODULE_PATHNAME', 'udig_lt_sk'
-IMMUTABLE STRICT LANGUAGE C;
-
-CREATE OR REPLACE FUNCTION udig_le_sk(udig, udig_sk)
-RETURNS boolean
-AS 'MODULE_PATHNAME', 'udig_le_sk'
-IMMUTABLE STRICT LANGUAGE C;
-
-CREATE OR REPLACE FUNCTION udig_gt_sk(udig, udig_sk)
-RETURNS boolean
-AS 'MODULE_PATHNAME', 'udig_gt_sk'
-IMMUTABLE STRICT LANGUAGE C;
-
-CREATE OR REPLACE FUNCTION udig_ge_sk(udig, udig_sk)
-RETURNS boolean
-AS 'MODULE_PATHNAME', 'udig_ge_sk'
-IMMUTABLE STRICT LANGUAGE C;
-
-CREATE OR REPLACE FUNCTION udig_cmp_sk(udig, udig_sk)
-RETURNS integer
-AS 'MODULE_PATHNAME', 'udig_cmp_sk'
 IMMUTABLE STRICT LANGUAGE C;
 
 /*
@@ -999,75 +498,6 @@ CREATE OPERATOR <=
 );
 
 /*
- *  Cross Type UDIG,Skein Operators.
- */
-CREATE OPERATOR =
-(
-	leftarg =		udig,
-	rightarg =		udig_sk,
-	procedure =		udig_eq_sk,
-	commutator =		=,
-	negator =		<>,
-	restrict =		eqsel,
-	join =			eqjoinsel
-);
-
-CREATE OPERATOR <>
-(
-	leftarg =		udig,
-	rightarg =		udig_sk,
-	procedure =		udig_ne_sk,
-	commutator =		<>,
-	negator =		=,
-	restrict =		neqsel,
-	join =			neqjoinsel
-);
-
-CREATE OPERATOR >
-(
-	leftarg =		udig,
-	rightarg =		udig_sk,
-	procedure =		udig_gt_sk,
-	commutator =		<,
-	negator =		<=,
-	restrict =		scalargtsel,
-	join =			scalargtjoinsel
-);
-
-CREATE OPERATOR >=
-(
-	leftarg =		udig,
-	rightarg =		udig_sk,
-	procedure =		udig_ge_sk,
-	commutator =		<=,
-	negator =		<,
-	restrict =		scalargtsel,
-	join =			scalargtjoinsel
-);
-
-CREATE OPERATOR <
-(
-	leftarg =		udig,
-	rightarg =		udig_sk,
-	procedure =		udig_lt_sk,
-	commutator =		>,
-	negator =		>=,
-	restrict =		scalarltsel,
-	join =			scalarltjoinsel
-);
-
-CREATE OPERATOR <=
-(
-	leftarg =		udig,
-	rightarg =		udig_sk,
-	procedure =		udig_le_sk,
-	commutator =		>=,
-	negator =		>,
-	restrict =		scalarltsel,
-	join =			scalarltjoinsel
-);
-
-/*
  *  Define operator family 'udig_clan' according to
  *
  *	http://www.postgresql.org/docs/9.0/static/xindex.html
@@ -1075,7 +505,7 @@ CREATE OPERATOR <=
 CREATE OPERATOR FAMILY udig_clan USING btree;
 
 /*
- *  Core Operator Classes for generic udig, udig_sha andd udig_sk.
+ *  Core Operator Classes for generic udig, udig_sha.
  */
 CREATE OPERATOR CLASS udig_ops
   DEFAULT FOR TYPE udig USING btree FAMILY udig_clan AS
@@ -1096,29 +526,11 @@ CREATE OPERATOR CLASS udig_sha_ops
         FUNCTION        1       udig_sha_cmp
 					(udig_sha, udig_sha)
 ;
-CREATE OPERATOR CLASS udig_sk_ops
-  DEFAULT FOR TYPE udig_sk USING btree FAMILY udig_clan AS
-        OPERATOR        1       <	(udig_sk, udig_sk),
-        OPERATOR        2       <=	(udig_sk, udig_sk),
-        OPERATOR        3       =	(udig_sk, udig_sk),
-        OPERATOR        4       >=	(udig_sk, udig_sk),
-        OPERATOR        5       >	(udig_sk, udig_sk),
-        FUNCTION        1       udig_sk_cmp
-					(udig_sk, udig_sk)
-;
 
 /*
- *  Add cross type - sha/sk/generic udig - operator classes to udig_clan family.
+ *  Add cross type - sha/generic udig - operator classes to udig_clan family.
  */
 ALTER OPERATOR FAMILY udig_clan USING btree ADD
-
-  --  cross type for sha and sk
-  OPERATOR 1 	<	(udig_sha, udig_sk),
-  OPERATOR 2	<=	(udig_sha, udig_sk),
-  OPERATOR 3	=	(udig_sha, udig_sk),
-  OPERATOR 4	>=	(udig_sha, udig_sk),
-  OPERATOR 5	>	(udig_sha, udig_sk),
-  FUNCTION 1	udig_sha_cmp_sk	(udig_sha, udig_sk),
 
   --  cross type for sha and udig
   OPERATOR 1 	<	(udig_sha, udig),
@@ -1128,22 +540,6 @@ ALTER OPERATOR FAMILY udig_clan USING btree ADD
   OPERATOR 5	>	(udig_sha, udig),
   FUNCTION 1	udig_sha_cmp_udig	(udig_sha, udig),
 
-  --  cross type for sk and sha
-  OPERATOR 1 	<	(udig_sk, udig_sha),
-  OPERATOR 2	<=	(udig_sk, udig_sha),
-  OPERATOR 3	=	(udig_sk, udig_sha),
-  OPERATOR 4	>=	(udig_sk, udig_sha),
-  OPERATOR 5	>	(udig_sk, udig_sha),
-  FUNCTION 1	udig_sk_cmp_sha	(udig_sk, udig_sha),
-
-  --  cross type for sk and udig
-  OPERATOR 1 	<	(udig_sk, udig),
-  OPERATOR 2	<=	(udig_sk, udig),
-  OPERATOR 3	=	(udig_sk, udig),
-  OPERATOR 4	>=	(udig_sk, udig),
-  OPERATOR 5	>	(udig_sk, udig),
-  FUNCTION 1	udig_sk_cmp_udig	(udig_sk, udig),
-
   --  cross type for udig and sha
   OPERATOR 1 	<	(udig, udig_sha),
   OPERATOR 2	<=	(udig, udig_sha),
@@ -1151,14 +547,6 @@ ALTER OPERATOR FAMILY udig_clan USING btree ADD
   OPERATOR 4	>=	(udig, udig_sha),
   OPERATOR 5	>	(udig, udig_sha),
   FUNCTION 1	udig_cmp_sha	(udig, udig_sha),
-
-  --  cross type for udig and sk
-  OPERATOR 1 	<	(udig, udig_sk),
-  OPERATOR 2	<=	(udig, udig_sk),
-  OPERATOR 3	=	(udig, udig_sk),
-  OPERATOR 4	>=	(udig, udig_sk),
-  OPERATOR 5	>	(udig, udig_sk),
-  FUNCTION 1	udig_cmp_sk	(udig, udig_sk)
 ;
 
 CREATE OR REPLACE FUNCTION udig_algorithm(udig)

@@ -23,7 +23,7 @@
  * 		A fatal error occured when execv'ing the process
  *		ERROR\t<error description>
  *	
- *	Fatal errors for flowd-execv are written to standard err and
+ *	Fatal errors for flowd-execv are written to standard err and then
  *	flowd-execv exits.
  *  Exit Status:
  *  	0	exit ok
@@ -35,7 +35,6 @@
  *
  *  Blame:
  *  	jmscott@setspace.com
- *  	setspace@gmail.com
  */
 #include <sys/times.h>
 #include <sys/wait.h>

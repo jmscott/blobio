@@ -21,7 +21,6 @@ OBJS=				\
 	module.o		\
 	ps_title.o		\
 	sha_fs.o		\
-	sk_fs.o			\
 	signal.o
 
 #  Linux requires linking to realtime timer library
@@ -61,7 +60,6 @@ install: all
 		ps_title.c						\
 		sha_fs.c						\
 		signal.c						\
-		sk_fs.c							\
 		$(DIST_ROOT)/src/biod
 
 	install -g $(DIST_GROUP) -o $(DIST_USER) -m ug=r,o=		\
@@ -69,17 +67,10 @@ install: all
 		blobio.rc.template 					\
 		$(DIST_ROOT)/lib
 
-biod: $(OBJS) ../skein
-	ls biod.o
+biod: $(OBJS)
 	gcc -o biod $(OBJS)						\
 		$(RT_LINK)						\
-		../sha1/sha1.o						\
-		-L../skein -lskein
-../skein/libskein.a:
-	cd ../skein && $(MAKE) libskein.a
-../skein/skein.h:
-	cd ../skein && $(MAKE) skein.h
-
+		../sha1/sha1.o
 append-brr: append-brr.c
 	gcc -o append-brr $(CFLAGS) append-brr.c
 	
@@ -94,9 +85,6 @@ blob_set.o: blob_set.c biod.h
 
 sha_fs.o: sha_fs.c biod.h
 	gcc $(CFLAGS) -c sha_fs.c
-
-sk_fs.o: sk_fs.c biod.h ../skein/skein.h
-	gcc $(CFLAGS) -c -I../skein sk_fs.c
 
 io.o: io.c biod.h biod.h
 	gcc $(CFLAGS) -c io.c
@@ -129,7 +117,6 @@ dev-links:
 	test -e run || ln -s . run
 	test -e sbin || ln -s . sbin
 	test -e sha_fs || mkdir sha_fs
-	test -e sk_fs || mkdir sk_fs
 clean-dev-links:
 	rm -rf sbin log data run
 clean:

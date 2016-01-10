@@ -11,10 +11,6 @@
 extern struct digest_module		sha_fs_module;
 #endif
 
-#ifdef SK_FS_MODULE
-extern struct digest_module		sk_fs_module;
-#endif
-
 /*
  *  List of all digest modules.
  *  The module list should really be in a separate file, not here.
@@ -23,10 +19,6 @@ static struct digest_module		*modules[] =
 {
 #ifdef SHA_FS_MODULE 
 	&sha_fs_module,
-#endif
-
-#ifdef SK_FS_MODULE
-	&sk_fs_module,
 #endif
 };
 static int module_count;

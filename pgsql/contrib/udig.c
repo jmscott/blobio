@@ -1,6 +1,6 @@
 /*
  *  Synopsis:
- *	Implement PostgreSQL UDIG Data Types for Skein, SHA1 and Text.
+ *	Implement PostgreSQL UDIG Data Types for SHA1.
  *  Note:
  *	Can the operator functions be prevented from being called explicily?
  *	In other words, prevent the following query?
@@ -23,7 +23,6 @@
  *  Note: need to prefix these symbols with 'PG_'.
  */
 #define UDIG_SHA	1
-#define UDIG_SK		2
 
 PG_MODULE_MAGIC;
 
@@ -40,18 +39,6 @@ Datum	udig_sha_ge(PG_FUNCTION_ARGS);
 Datum	udig_sha_lt(PG_FUNCTION_ARGS);
 Datum	udig_sha_le(PG_FUNCTION_ARGS);
 Datum	udig_sha_cmp(PG_FUNCTION_ARGS);
-Datum	udig_sha_cmp_sk(PG_FUNCTION_ARGS);
-
-/*
- *  Cross type SHA -> SK(ein)
- */
-Datum	udig_sha_eq_sk(PG_FUNCTION_ARGS);
-Datum	udig_sha_ne_sk(PG_FUNCTION_ARGS);
-Datum	udig_sha_gt_sk(PG_FUNCTION_ARGS);
-Datum	udig_sha_ge_sk(PG_FUNCTION_ARGS);
-Datum	udig_sha_lt_sk(PG_FUNCTION_ARGS);
-Datum	udig_sha_le_sk(PG_FUNCTION_ARGS);
-Datum	udig_sha_cmp_sk(PG_FUNCTION_ARGS);
 
 /*
  *  Cross type SHA -> UDIG
@@ -64,48 +51,6 @@ Datum	udig_sha_lt_udig(PG_FUNCTION_ARGS);
 Datum	udig_sha_le_udig(PG_FUNCTION_ARGS);
 Datum	udig_sha_cmp_udig(PG_FUNCTION_ARGS);
 Datum	udig_sha_cast(PG_FUNCTION_ARGS);
-
-/*
- *  Core SK (Skein)
- */
-Datum	udig_sk_in(PG_FUNCTION_ARGS);
-Datum	udig_sk_out(PG_FUNCTION_ARGS);
-Datum	udig_sk_eq(PG_FUNCTION_ARGS);
-Datum	udig_sk_ne(PG_FUNCTION_ARGS);
-Datum	udig_sk_gt(PG_FUNCTION_ARGS);
-Datum	udig_sk_ge(PG_FUNCTION_ARGS);
-Datum	udig_sk_lt(PG_FUNCTION_ARGS);
-Datum	udig_sk_le(PG_FUNCTION_ARGS);
-Datum	udig_sk_cmp(PG_FUNCTION_ARGS);
-
-/*
- *  Cross Type SK -> SHA (Skein) functions.
- */
-Datum	udig_sk_in(PG_FUNCTION_ARGS);
-Datum	udig_sk_out(PG_FUNCTION_ARGS);
-Datum	udig_sk_eq_sha(PG_FUNCTION_ARGS);
-Datum	udig_sk_ne_sha(PG_FUNCTION_ARGS);
-Datum	udig_sk_gt_sha(PG_FUNCTION_ARGS);
-Datum	udig_sk_ge_sha(PG_FUNCTION_ARGS);
-Datum	udig_sk_lt_sha(PG_FUNCTION_ARGS);
-Datum	udig_sk_le_sha(PG_FUNCTION_ARGS);
-Datum	udig_sk_cmp_sha(PG_FUNCTION_ARGS);
-
-/*
- *  Cross type Skein (sk) -> UDIG
- */
-Datum	udig_sk_eq_udig(PG_FUNCTION_ARGS);
-Datum	udig_sk_ne_udig(PG_FUNCTION_ARGS);
-Datum	udig_sk_gt_udig(PG_FUNCTION_ARGS);
-Datum	udig_sk_ge_udig(PG_FUNCTION_ARGS);
-Datum	udig_sk_lt_udig(PG_FUNCTION_ARGS);
-Datum	udig_sk_le_udig(PG_FUNCTION_ARGS);
-Datum	udig_sk_cmp_udig(PG_FUNCTION_ARGS);
-
-/*
- *  Cross Type SK -> Genric Udig functions.
- */
-Datum	udig_sk_cast(PG_FUNCTION_ARGS);
 
 /*
  *  Core generic/text udig type.
@@ -133,16 +78,6 @@ Datum	udig_lt_sha(PG_FUNCTION_ARGS);
 Datum	udig_le_sha(PG_FUNCTION_ARGS);
 Datum	udig_cmp_sha(PG_FUNCTION_ARGS);
 
-/*
- *  Cross Type UDIG,Skein
- */
-Datum	udig_eq_sk(PG_FUNCTION_ARGS);
-Datum	udig_ne_sk(PG_FUNCTION_ARGS);
-Datum	udig_gt_sk(PG_FUNCTION_ARGS);
-Datum	udig_ge_sk(PG_FUNCTION_ARGS);
-Datum	udig_lt_sk(PG_FUNCTION_ARGS);
-Datum	udig_le_sk(PG_FUNCTION_ARGS);
-Datum	udig_cmp_sk(PG_FUNCTION_ARGS);
 
 /*
  *  Transform 40 char hex string to 20 byte sha binary.
@@ -330,71 +265,6 @@ udig_sha_cmp(PG_FUNCTION_ARGS)
 }
 
 /*
- *  Cross SHA, Skein (sk) Operators
- *	=		equal
- *	!=		not rqual
- *	>		greater than
- *	>=		greater than or equal
- *	<		less than
- *	<=		less than or equal
- */
-PG_FUNCTION_INFO_V1(udig_sha_eq_sk);
-
-Datum
-udig_sha_eq_sk(PG_FUNCTION_ARGS)
-{
-	PG_RETURN_BOOL(0);
-}
-
-PG_FUNCTION_INFO_V1(udig_sha_ne_sk);
-
-Datum
-udig_sha_ne_sk(PG_FUNCTION_ARGS)
-{
-	PG_RETURN_BOOL(1);
-}
-
-PG_FUNCTION_INFO_V1(udig_sha_gt_sk);
-
-Datum
-udig_sha_gt_sk(PG_FUNCTION_ARGS)
-{
-	PG_RETURN_BOOL(1);
-}
-
-PG_FUNCTION_INFO_V1(udig_sha_ge_sk);
-
-Datum
-udig_sha_ge_sk(PG_FUNCTION_ARGS)
-{
-	PG_RETURN_BOOL(1);
-}
-
-PG_FUNCTION_INFO_V1(udig_sha_lt_sk);
-
-Datum
-udig_sha_lt_sk(PG_FUNCTION_ARGS)
-{
-	PG_RETURN_BOOL(0);
-}
-
-PG_FUNCTION_INFO_V1(udig_sha_le_sk);
-
-Datum
-udig_sha_le_sk(PG_FUNCTION_ARGS)
-{
-	PG_RETURN_BOOL(0);
-}
-
-PG_FUNCTION_INFO_V1(udig_sha_cmp_sk);
-
-Datum
-udig_sha_cmp_sk(PG_FUNCTION_ARGS)
-{
-	PG_RETURN_INT32(1);
-}
-
-/*
  *  Cross SHA, Generic UDIG Operators
  *	=		equal
  *	!=		not rqual
@@ -417,8 +287,6 @@ _udig_sha_cmp_udig(unsigned char *a_operand, unsigned char *b_operand)
 	switch (b[0]) {
 	case UDIG_SHA:
 		return memcmp(a_operand, &b[1], 20);	/* sha versus sha */
-	case UDIG_SK:
-		return 1;				/* sha always > sk */
 	}
 	ereport(PANIC, (errcode(ERRCODE_DATA_CORRUPTED),
 		errmsg("_udig_sha_cmp_udig: corrupted udig internal type")));
@@ -526,481 +394,6 @@ udig_sha_cast(PG_FUNCTION_ARGS)
 }
 
 /*
- *  The following routines, sk2nab() and nab2sk(), transform a 32 byte/256 bit 
- *  binary digest to and from a c string expressed in the colloquial
- *  "nab" format.
- *
- *  Nab encoding uses the same character set as the common base64 except '+'
- *  and '/' are swapped with '_' and '@', making the encoded value 
- *  suitable for unix file paths, uri arguments and xml names.
- */
-static char n2a[] =
-{
-	'0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
-
-	'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N',
-	'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z',
-
-	'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n',
-	'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z',
-
-	'_', '@'
-};
-
-/*
- *  Convert 256 bit/32 byte digest to 43 ascii character "nab" format,
- *  a variation on base64 format.  The ascii string is null terminated.
- *
- *  Note:
- *	Note sure if the array lengths should be specified.
- *	A specific, grammatically correct ascii digest implies
- *	a particular byte length.
- */
-static void
-sk2nab(unsigned char *d32, char *ascii)
-{
-	char *a;
-	unsigned char *d, *d_end;
-
-	a = ascii;
-	d = d32;
-	d_end = &d32[30];
-	while (d < d_end) {
-		/*
-		 *  Convert 3 byte chunks to 4 ascii chars.
-		 *
-		 *  Text Value:          M       a	  n
-		 *  Byte Value:      01001101 01100001 01101110
-		 *   Nab Index:      [ 19 ][  22 ][  5  ][ 46 ]
-		 *  Base64 Enc:      [  J ][  M  ][  5  ][  k ] 
-		 *
-		 */
-
-		/*
-		 *  Most significant 6 bits of d[0] stored in a[0].
-		 */
-		*a++ = 	n2a[(d[0] & 0xfc) >> 2];
-
-		/*
-		 *  Least significant 2 bits of d[0] and
-		 *  MS 4 Bits of d[1] stored in a[1]
-		 */
-		*a++ =  n2a[((d[0] & 0x03) << 4) | ((d[1] & 0xf0) >> 4)];
-
-		/*
-		 *  LS 4 Bits of d[1] and MS 2 Bits of d[3] stored in a[2].
-		 */
-		*a++ =  n2a[((d[1] & 0x0f) << 2) | ((d[2] & 0xc0) >> 6)];
-
-		/*
-		 *  LS 6 bits of d[2] stored in a[3].
-		 */
-		*a++ =  n2a[d[2] & 0x3f];
-		d += 3;
-	}
-	/*
-	 *  MS 6 bits of d32[30] stored in ascii[40].
-	 */
-	*a++ = n2a[(d[0] & 0xfc) >> 2];
-
-	/*
-	 *  Least significant 2 bits of d32[30] and
-	 *  MS 4 Bits of d32[31] stored in ascii[41]
-	 */
-	*a++ = n2a[((d[0] & 0x03) << 4) | ((d[1] & 0xf0) >> 4)];
-
-	/*
-	 *  LS 4 Bits of d32[31] stored in ascii[42].
-	 */
-	*a++ = n2a[d[1] & 0x0f];
-	*a = 0;
-}
-
-static int
-asc2nab(char c, unsigned char *nab)
-{
-	if ('0' <=c&&c <= '9')
-		*nab = c - '0';
-	else if ('A' <=c&&c <= 'Z')
-		*nab = (c - 'A') + 10;
-	else if ('a' <=c&&c <= 'z')
-		*nab = (c - 'a') + 36;
-	else if (c == '_')
-		*nab = 62;
-	else if (c == '@')
-		*nab = 63;
-	else
-		return -1;
-	return 0;
-}
-
-/*
- *  Convert a 43 character "nab" format to a 32 byte.
- */
-static int
-nab2sk(char *ascii, unsigned char *digest)
-{
-	unsigned char n1, n2, n3, n4;
-	unsigned char *d;
-	char *a;
-	int i;
-
-	/*
-	 *  Decode the ascii nab string into a 32 byte/256 bit digest.
-	 */
-	a = ascii;
-	d = digest;
-	for (i = 0;  i < 40;  i += 4, a += 4, d += 3 ) {
-		if (asc2nab(a[0], &n1) || asc2nab(a[1], &n2) ||
-		    asc2nab(a[2], &n3) || asc2nab(a[3], &n4))
-			return -1;
-
-		d[0] = (n1 << 2) | (0x3 & (n2 >> 4));
-		d[1] = ((n2 & 0x3f) << 4) | (0xf & (n3 >> 2));
-		d[2] = ((n3 & 0x3) << 6) | n4;
-	}
-	/*
-	 *  Derive bytes 31 and 32 from last 3 
-	 *  ascii characters of the digest.
-	 */
-	if (asc2nab(a[0], &n1) || asc2nab(a[1], &n2) || asc2nab(a[2], &n3))
-		return -1;
-	d[0] = (n1 << 2) | (0x3 & (n2 >> 4));
-	d[1] = (n2 << 4) | (0xf & n3);
-	return 0;
-}
-
-/*
- *  Convert skein text digest in base64 "nab" format into binary 32 bytes.
- */
-PG_FUNCTION_INFO_V1(udig_sk_in);
-
-Datum
-udig_sk_in(PG_FUNCTION_ARGS)
-{
-	char *nab43 = PG_GETARG_CSTRING(0);
-	unsigned char *d32;
-
-	d32 = (unsigned char *)palloc(32);
-
-	/*
-	 *  Parse the skein udig digest.
-	 */
-	if (nab2sk(nab43, d32)) {
-		pfree(d32);
-		ereport(ERROR,
-			(errcode(ERRCODE_INVALID_TEXT_REPRESENTATION),
-			errmsg(
-			      "invalid input syntax for udig sk digest: \"%s\"",
-						nab43)));
-	}
-	PG_RETURN_POINTER(d32);
-}
-
-/*
- *  Convert binary, 32 byte digest into 43 character text nab format.
- */
-PG_FUNCTION_INFO_V1(udig_sk_out);
-
-Datum
-udig_sk_out(PG_FUNCTION_ARGS)
-{
-	unsigned char *d32 = (unsigned char *)PG_GETARG_POINTER(0);
-	char *nab43;
-
-	nab43 = (char *)palloc(44);
-
-	/*
-	 *  Parse the skein udig digest.
-	 */
-	sk2nab(d32, nab43);
-	PG_RETURN_CSTRING(nab43);
-}
-
-/*
- *  Core Skein Binary Operators:
- *	=		equal
- *	!=		not rqual
- *	>		greater than
- *	>=		greater than or equal
- *	<		less than
- *	<=		less than or equal
- */
-PG_FUNCTION_INFO_V1(udig_sk_eq);
-
-Datum
-udig_sk_eq(PG_FUNCTION_ARGS)
-{
-	unsigned char *a = (unsigned char *)PG_GETARG_POINTER(0);
-	unsigned char *b = (unsigned char *)PG_GETARG_POINTER(1);
-
-	PG_RETURN_BOOL(memcmp(a, b, 32) == 0);
-}
-
-PG_FUNCTION_INFO_V1(udig_sk_ne);
-
-Datum
-udig_sk_ne(PG_FUNCTION_ARGS)
-{
-	unsigned char *a = (unsigned char *)PG_GETARG_POINTER(0);
-	unsigned char *b = (unsigned char *)PG_GETARG_POINTER(1);
-
-	PG_RETURN_BOOL(memcmp(a, b, 32) != 0);
-}
-
-PG_FUNCTION_INFO_V1(udig_sk_gt);
-
-Datum
-udig_sk_gt(PG_FUNCTION_ARGS)
-{
-	unsigned char *a = (unsigned char *)PG_GETARG_POINTER(0);
-	unsigned char *b = (unsigned char *)PG_GETARG_POINTER(1);
-
-	PG_RETURN_BOOL(memcmp(a, b, 32) > 0);
-}
-
-PG_FUNCTION_INFO_V1(udig_sk_ge);
-
-Datum
-udig_sk_ge(PG_FUNCTION_ARGS)
-{
-	unsigned char *a = (unsigned char *)PG_GETARG_POINTER(0);
-	unsigned char *b = (unsigned char *)PG_GETARG_POINTER(1);
-
-	PG_RETURN_BOOL(memcmp(a, b, 32) >= 0);
-}
-
-PG_FUNCTION_INFO_V1(udig_sk_lt);
-
-Datum
-udig_sk_lt(PG_FUNCTION_ARGS)
-{
-	unsigned char *a = (unsigned char *)PG_GETARG_POINTER(0);
-	unsigned char *b = (unsigned char *)PG_GETARG_POINTER(1);
-
-	PG_RETURN_BOOL(memcmp(a, b, 32) < 0);
-}
-
-PG_FUNCTION_INFO_V1(udig_sk_le);
-
-Datum
-udig_sk_le(PG_FUNCTION_ARGS)
-{
-	unsigned char *a = (unsigned char *)PG_GETARG_POINTER(0);
-	unsigned char *b = (unsigned char *)PG_GETARG_POINTER(1);
-
-	PG_RETURN_BOOL(memcmp(a, b, 32) <= 0);
-}
-
-PG_FUNCTION_INFO_V1(udig_sk_cmp);
-
-Datum
-udig_sk_cmp(PG_FUNCTION_ARGS)
-{
-	unsigned char *a = (unsigned char *)PG_GETARG_POINTER(0);
-	unsigned char *b = (unsigned char *)PG_GETARG_POINTER(1);
-
-	PG_RETURN_INT32((int32)memcmp(a, b, 32));
-}
-
-/*
- *  Cross Skein (sk), SHA Operators
- *	=		equal
- *	!=		not rqual
- *	>		greater than
- *	>=		greater than or equal
- *	<		less than
- *	<=		less than or equal
- */
-PG_FUNCTION_INFO_V1(udig_sk_eq_sha);
-
-Datum
-udig_sk_eq_sha(PG_FUNCTION_ARGS)
-{
-	PG_RETURN_BOOL(0);
-}
-
-PG_FUNCTION_INFO_V1(udig_sk_ne_sha);
-
-Datum
-udig_sk_ne_sha(PG_FUNCTION_ARGS)
-{
-	PG_RETURN_BOOL(1);
-}
-
-PG_FUNCTION_INFO_V1(udig_sk_gt_sha);
-
-Datum
-udig_sk_gt_sha(PG_FUNCTION_ARGS)
-{
-	PG_RETURN_BOOL(0);
-}
-
-PG_FUNCTION_INFO_V1(udig_sk_ge_sha);
-
-Datum
-udig_sk_ge_sha(PG_FUNCTION_ARGS)
-{
-	PG_RETURN_BOOL(0);
-}
-
-PG_FUNCTION_INFO_V1(udig_sk_lt_sha);
-
-Datum
-udig_sk_lt_sha(PG_FUNCTION_ARGS)
-{
-	PG_RETURN_BOOL(1);
-}
-
-PG_FUNCTION_INFO_V1(udig_sk_le_sha);
-
-Datum
-udig_sk_le_sha(PG_FUNCTION_ARGS)
-{
-	PG_RETURN_BOOL(1);
-}
-
-PG_FUNCTION_INFO_V1(udig_sk_cmp_sha);
-
-Datum
-udig_sk_cmp_sha(PG_FUNCTION_ARGS)
-{
-	PG_RETURN_INT32(-1);
-}
-
-/*
- *  Compare sha and generic udig.
- */
-static int
-_udig_sk_cmp_udig(unsigned char *a_operand, unsigned char *b_operand)
-{
-	unsigned char *b;
-
-	b = UDIG_VARDATA(b_operand);
-
-	/*
-	 *  Consult the type byte in the variable length udig.
-	 */
-	switch (b[0]) {
-	case UDIG_SHA:
-		return -1;		/* any sk less than all sha */
-	case UDIG_SK:
-		return memcmp(a_operand, &b[1], 32);
-	}
-	ereport(PANIC,
-		(errcode(ERRCODE_INVALID_TEXT_REPRESENTATION),
-		errmsg("_udig_sk_cmp_udig: corrupted udig internal type byte"))
-	);
-	return -1;
-}
-
-/*
- *  Cross Type Skein (sk) -> UDIG
- */
-PG_FUNCTION_INFO_V1(udig_sk_eq_udig);
-
-Datum
-udig_sk_eq_udig(PG_FUNCTION_ARGS)
-{
-	unsigned char *a = (unsigned char *)PG_GETARG_POINTER(0);
-	unsigned char *b = (unsigned char *)PG_GETARG_POINTER(1);
-
-	PG_RETURN_BOOL(_udig_sk_cmp_udig(a, b) == 0);
-}
-
-PG_FUNCTION_INFO_V1(udig_sk_ne_udig);
-
-Datum
-udig_sk_ne_udig(PG_FUNCTION_ARGS)
-{
-	unsigned char *a = (unsigned char *)PG_GETARG_POINTER(0);
-	unsigned char *b = (unsigned char *)PG_GETARG_POINTER(1);
-
-	PG_RETURN_BOOL(_udig_sk_cmp_udig(a, b) != 0);
-}
-
-PG_FUNCTION_INFO_V1(udig_sk_gt_udig);
-
-Datum
-udig_sk_gt_udig(PG_FUNCTION_ARGS)
-{
-	unsigned char *a = (unsigned char *)PG_GETARG_POINTER(0);
-	unsigned char *b = (unsigned char *)PG_GETARG_POINTER(1);
-
-	PG_RETURN_BOOL(_udig_sk_cmp_udig(a, b) > 0);
-}
-
-PG_FUNCTION_INFO_V1(udig_sk_ge_udig);
-
-Datum
-udig_sk_ge_udig(PG_FUNCTION_ARGS)
-{
-	unsigned char *a = (unsigned char *)PG_GETARG_POINTER(0);
-	unsigned char *b = (unsigned char *)PG_GETARG_POINTER(1);
-
-	PG_RETURN_BOOL(_udig_sk_cmp_udig(a, b) >= 0);
-}
-
-PG_FUNCTION_INFO_V1(udig_sk_lt_udig);
-
-Datum
-udig_sk_lt_udig(PG_FUNCTION_ARGS)
-{
-	unsigned char *a = (unsigned char *)PG_GETARG_POINTER(0);
-	unsigned char *b = (unsigned char *)PG_GETARG_POINTER(1);
-
-	PG_RETURN_BOOL(_udig_sk_cmp_udig(a, b) < 0);
-}
-
-PG_FUNCTION_INFO_V1(udig_sk_le_udig);
-
-Datum
-udig_sk_le_udig(PG_FUNCTION_ARGS)
-{
-	unsigned char *a = (unsigned char *)PG_GETARG_POINTER(0);
-	unsigned char *b = (unsigned char *)PG_GETARG_POINTER(1);
-
-	PG_RETURN_BOOL(_udig_sk_cmp_udig(a, b) <= 0);
-}
-
-PG_FUNCTION_INFO_V1(udig_sk_cmp_udig);
-
-Datum
-udig_sk_cmp_udig(PG_FUNCTION_ARGS)
-{
-	unsigned char *a = (unsigned char *)PG_GETARG_POINTER(0);
-	unsigned char *b = (unsigned char *)PG_GETARG_POINTER(1);
-
-	PG_RETURN_INT32(_udig_sk_cmp_udig(a, b));
-}
-
-/*
- *  Cross Type SK to UDIG Functions.
- */
-PG_FUNCTION_INFO_V1(udig_sk_cast);
-
-/*
- *  Cast a udig_sk to a generic udig.
- */
-Datum
-udig_sk_cast(PG_FUNCTION_ARGS)
-{
-	unsigned char *src = (unsigned char *)PG_GETARG_POINTER(0);
-	Size size;
-	unsigned char *udig;
-
-	/*
-	 *  Length + udig type byte + 32 bytes for digest.
-	 */
-	size = VARHDRSZ + 1 + 32;
-	udig = palloc(size);
-	udig[VARHDRSZ] = UDIG_SK;
-	memcpy(udig + VARHDRSZ + 1, src, 32);
-	SET_VARSIZE(udig, size);
-	PG_RETURN_POINTER(udig);
-}
-
-/*
  *  Convert text udig in the format
  *
  *	algorithm:digest
@@ -1062,27 +455,9 @@ udig_in(PG_FUNCTION_ARGS)
 			(errcode(ERRCODE_INVALID_TEXT_REPRESENTATION),
 			errmsg(big_algo, udig)));
 	/*
-	 *  Store Skein and SHA digests in binary form.
+	 *  Store SHA digests in binary form.
 	 */
-	if (strcmp("sk", a16) == 0) {
-		/*
-		 *  Length + udig type byte + 32 bytes for digest.
-		 */
-		size = VARHDRSZ + 1 + 32;	/* size header + type + data */
-		d = palloc(size);
-		d[4] = UDIG_SK;			/* type */
-		/*
-		 *  Parse the skein udig digest.
-		 */
-		if (nab2sk(u, &d[VARHDRSZ + 1])) {
-			pfree(d);
-			ereport(ERROR,
-				(errcode(ERRCODE_INVALID_TEXT_REPRESENTATION),
-				errmsg(
-			      "invalid input syntax for udig sk digest: \"%s\"",
-								u)));
-		}
-	} else if (strcmp("sha", a16) == 0) {
+	if (strcmp("sha", a16) == 0) {
 		size = VARHDRSZ + 1 + 20;
 		d = palloc(size);
 		d[4] = UDIG_SHA;
@@ -1124,11 +499,6 @@ udig_out(PG_FUNCTION_ARGS)
 		strcpy(udig, "sha:");
 		sha2hex((unsigned char *)&d[1], udig + 4);
 		break;
-	case UDIG_SK:
-		udig = palloc(2 + 1 + 43 + 1);
-		strcpy(udig, "sk:");
-		sk2nab((unsigned char *)&d[1], udig + 3);
-		break;
 	default:
 		ereport(PANIC,
 			(errcode(ERRCODE_INVALID_TEXT_REPRESENTATION),
@@ -1163,21 +533,21 @@ _udig_cmp(unsigned char *a_operand, unsigned char *b_operand)
 		switch (a[0]) {
 		case UDIG_SHA:
 			return memcmp(&a[1], &b[1], 20);
-		case UDIG_SK:
-			return memcmp(&a[1], &b[1], 32);
 		default:
 			ereport(PANIC, (errcode(ERRCODE_DATA_CORRUPTED),
 						errmsg(BAD_TYPE_GCC_BUG)));
 		}
 	}
 	/*
-	 *  Operands differ, so either sha/sk or sk/sha
+	 *  Eventually operands differ.
+	 *
+	 *  Note:
+	 *  	This is legacay code when the skein digest existed.
+	 *  	Probably need to simplify.
 	 */
 	switch (a[0]) {
 	case UDIG_SHA:
-		return 1;		/* any sha > all sk */
-	case UDIG_SK:
-		return -1;		/* any sk < all sha */
+		return 1;		/* is a sha */
 	default:
 		ereport(PANIC, (errcode(ERRCODE_DATA_CORRUPTED),
 						errmsg(BAD_TYPE_GCC_BUG)));
@@ -1295,8 +665,6 @@ _udig_cmp_sha(unsigned char *a_operand, unsigned char *b_operand)
 	switch (a[0]) {
 	case UDIG_SHA:
 		return memcmp(&a[1], b_operand, 20);
-	case UDIG_SK:
-		return -1;
 	}
 	ereport(PANIC, (errcode(ERRCODE_INVALID_TEXT_REPRESENTATION),
 		errmsg("_udig_cmp_sha: corrupted udig internal type byte")));
@@ -1380,118 +748,6 @@ udig_cmp_sha(PG_FUNCTION_ARGS)
 	PG_RETURN_INT32(_udig_cmp_sha(a, b));
 }
 
-/*
- *  Cross Type UDIG, Skein Functions
- *	=		equal
- *	!=		not rqual
- *	>		greater than
- *	>=		greater than or equal
- *	<		less than
- *	<=		less than or equal
- */
-
-/*
- *  Compare text udig and sk.
- */
-static int
-_udig_cmp_sk(unsigned char *a_operand, unsigned char *b_operand)
-{
-	unsigned char *a;
-
-	a = UDIG_VARDATA(a_operand);
-	
-	/*
-	 *  Left operand is also sk type, so just compare bytes.
-	 */
-	switch (a[0]) {
-	case UDIG_SHA:			/* any sha  > all sk */
-		return 1;
-	case UDIG_SK:
-		return memcmp(&a[1], b_operand, 32);
-	}
-	ereport(PANIC,
-		(errcode(ERRCODE_INVALID_TEXT_REPRESENTATION),
-		errmsg("_udig_cmp_sk: corrupted udig internal type byte")));
-	return -1;
-}
-
-PG_FUNCTION_INFO_V1(udig_eq_sk);
-
-Datum
-udig_eq_sk(PG_FUNCTION_ARGS)
-{
-	unsigned char *a = (unsigned char *)PG_GETARG_POINTER(0);
-	unsigned char *b = (unsigned char *)PG_GETARG_POINTER(1);
-
-	PG_RETURN_BOOL(_udig_cmp_sk(a, b) == 0);
-}
-
-PG_FUNCTION_INFO_V1(udig_ne_sk);
-
-Datum
-udig_ne_sk(PG_FUNCTION_ARGS)
-{
-	unsigned char *a = (unsigned char *)PG_GETARG_POINTER(0);
-	unsigned char *b = (unsigned char *)PG_GETARG_POINTER(1);
-
-	PG_RETURN_BOOL(_udig_cmp_sk(a, b) != 0);
-}
-
-PG_FUNCTION_INFO_V1(udig_gt_sk);
-
-Datum
-udig_gt_sk(PG_FUNCTION_ARGS)
-{
-	unsigned char *a = (unsigned char *)PG_GETARG_POINTER(0);
-	unsigned char *b = (unsigned char *)PG_GETARG_POINTER(1);
-
-	PG_RETURN_BOOL(_udig_cmp_sk(a, b) > 0);
-}
-
-PG_FUNCTION_INFO_V1(udig_ge_sk);
-
-Datum
-udig_ge_sk(PG_FUNCTION_ARGS)
-{
-	unsigned char *a = (unsigned char *)PG_GETARG_POINTER(0);
-	unsigned char *b = (unsigned char *)PG_GETARG_POINTER(1);
-
-	PG_RETURN_BOOL(_udig_cmp_sk(a, b) >= 0);
-}
-
-PG_FUNCTION_INFO_V1(udig_lt_sk);
-
-Datum
-udig_lt_sk(PG_FUNCTION_ARGS)
-{
-	unsigned char *a = (unsigned char *)PG_GETARG_POINTER(0);
-	unsigned char *b = (unsigned char *)PG_GETARG_POINTER(1);
-
-	PG_RETURN_BOOL(_udig_cmp_sk(a, b) < 0);
-}
-
-PG_FUNCTION_INFO_V1(udig_le_sk);
-
-Datum
-udig_le_sk(PG_FUNCTION_ARGS)
-{
-	unsigned char *a = (unsigned char *)PG_GETARG_POINTER(0);
-	unsigned char *b = (unsigned char *)PG_GETARG_POINTER(1);
-
-	PG_RETURN_BOOL(_udig_cmp_sk(a, b) <= 0);
-}
-
-PG_FUNCTION_INFO_V1(udig_cmp_sk);
-
-Datum
-udig_cmp_sk(PG_FUNCTION_ARGS)
-{
-	unsigned char *a = (unsigned char *)PG_GETARG_POINTER(0);
-	unsigned char *b = (unsigned char *)PG_GETARG_POINTER(1);
-
-	PG_RETURN_INT32(_udig_cmp_sk(a, b));
-}
-
 PG_FUNCTION_INFO_V1(udig_algorithm);
 
 /*
@@ -1505,8 +761,6 @@ udig_algorithm(PG_FUNCTION_ARGS)
 	switch (a[0]) {
 	case UDIG_SHA:
 		PG_RETURN_CSTRING("sha");
-	case UDIG_SK:
-		PG_RETURN_CSTRING("sk");
 	}
 	ereport(PANIC,
 		(errcode(ERRCODE_INVALID_TEXT_REPRESENTATION),
@@ -1553,19 +807,7 @@ udig_can_cast(PG_FUNCTION_ARGS)
 		goto no;
 	if (a16[16] == ':')
 		goto no;
-	/*
-	 *  Store Skein and SHA digests in binary form.
-	 */
-	if (strcmp("sk", a16) == 0) {
-		unsigned char d[VARHDRSZ + 1 + 32];
-
-		d[4] = UDIG_SK;			/* type */
-		/*
-		 *  Parse the skein udig digest.
-		 */
-		if (nab2sk(u, &d[VARHDRSZ + 1]))
-			goto no;
-	} else if (strcmp("sha", a16) == 0) {
+	f (strcmp("sha", a16) == 0) {
 		unsigned char d[VARHDRSZ + 1 + 20];
 
 		d[4] = UDIG_SHA;
