@@ -9,8 +9,6 @@
 include ../blobio.mk
 include ../local.mk
 
-CFLAGS+= -I../libblobio
-
 #
 #  Added extra, overriding rules to local.mk
 #

@@ -1,7 +1,0 @@
-brg_types.h
-nab.o
-skein.h
-skein_port.h
-skein_debug.h
-SHA3api_ref.h
-brg_endian.h

@@ -99,10 +99,6 @@ ifdef DIST_ROOT
 		-d $(DIST_ROOT)/data/sha_fs
 	install -g $(DIST_GROUP) -o $(DIST_USER) 			\
 		-d $(DIST_ROOT)/data/sha_fs/tmp
-	install -g $(DIST_GROUP) -o $(DIST_USER) 			\
-		-d $(DIST_ROOT)/data/sk_fs
-	install -g $(DIST_GROUP) -o $(DIST_USER) 			\
-		-d $(DIST_ROOT)/data/sk_fs/tmp
 	install -g $(DIST_GROUP) -o $(DIST_USER) -m ugo=rx		\
 		pgsql/bio-merge-service					\
 		$(DIST_ROOT)/bin

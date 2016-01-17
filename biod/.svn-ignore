@@ -14,6 +14,5 @@ profile
 run
 sbin
 sha_fs
-sk_fs
 tmp
 wrap

@@ -264,8 +264,7 @@ done | awk -F'	' '
 	{
 		ulen = length($4);
 	}
-	((index($4, "sha:") == 1 && ulen == 44) ||
-	 (index($4, "sk:") == 1 && ulen == 46)) && !seen[$4]++ {
+	((index($4, "sha:") == 1 && ulen == 44) && !seen[$4]++ {
 		print $4
 	}' >unroll-all.udig
 STATUS="${PIPESTATUS[*]}"

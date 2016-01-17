@@ -529,29 +529,10 @@ _udig_cmp(unsigned char *a_operand, unsigned char *b_operand)
 	/*
 	 *  Operands have identical types.
 	 */
-	if (a[0] == b[0]) {
-		switch (a[0]) {
-		case UDIG_SHA:
-			return memcmp(&a[1], &b[1], 20);
-		default:
-			ereport(PANIC, (errcode(ERRCODE_DATA_CORRUPTED),
+	if (a[0] == b[0] && a[0] == UDIG_SHA)
+		return memcmp(&a[1], &b[1], 20);
+	ereport(PANIC, (errcode(ERRCODE_DATA_CORRUPTED),
 						errmsg(BAD_TYPE_GCC_BUG)));
-		}
-	}
-	/*
-	 *  Eventually operands differ.
-	 *
-	 *  Note:
-	 *  	This is legacay code when the skein digest existed.
-	 *  	Probably need to simplify.
-	 */
-	switch (a[0]) {
-	case UDIG_SHA:
-		return 1;		/* is a sha */
-	default:
-		ereport(PANIC, (errcode(ERRCODE_DATA_CORRUPTED),
-						errmsg(BAD_TYPE_GCC_BUG)));
-	}
 	/*NOTREACHED*/
 	return -1;
 }

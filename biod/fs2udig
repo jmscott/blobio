@@ -31,7 +31,7 @@ esac
 
 #
 #  Search for files in <algorithm>_fs/ not matching ^[^/]*/tmp/ or 
-#  sha/sk file blobs with dots in the file path.
+#  sha file blobs with dots in the file path.
 #
 #  Note:
 #	Need to positively match file blobs instead of filtering.
@@ -39,6 +39,5 @@ esac
 find *_fs -follow -type f -print			|
 	grep -v '^[^/]*/tmp/'				|
 	grep -v 'sha_fs\/.*[.]'				|
-	grep -v 'sk_fs\/.*[.]'				|
 	sed 's/_fs\//:/'				|
 	sed 's/\///g'

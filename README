@@ -213,9 +213,6 @@ To Do:
 
 	- create postgres types for at least netflow.
 
-	- eliminate the sk: algorithm in a udig.  screws up case dependent
-	  mac os file system
-
 	- think about separate biod processes sharing the same data/ file system
 	  but otherwise separate.  or, explore union file systems.
 
