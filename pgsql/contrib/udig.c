@@ -788,7 +788,7 @@ udig_can_cast(PG_FUNCTION_ARGS)
 		goto no;
 	if (a16[16] == ':')
 		goto no;
-	f (strcmp("sha", a16) == 0) {
+	if (strcmp("sha", a16) == 0) {
 		unsigned char d[VARHDRSZ + 1 + 20];
 
 		d[4] = UDIG_SHA;
