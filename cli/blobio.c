@@ -42,6 +42,8 @@
  *	chat histories or perhaps the exit status ought to also store the
  *	verb.  See exit status for child process requests in the blobio
  *	server.
+ *
+ *	--output-path /dev/null fails, which is problematic.
  */
 #include <sys/types.h>
 #include <sys/stat.h>
