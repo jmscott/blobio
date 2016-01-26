@@ -4,8 +4,6 @@
 #  Blame:
 #  	jmscott@setspace.com
 #  	setspace@gmail.com
-#  Note:
-#	Change gcc reference to $(CC)
 #
 include ../blobio.mk
 include ../local.mk
@@ -68,47 +66,47 @@ install: all
 		$(DIST_ROOT)/lib
 
 biod: $(OBJS)
-	gcc -o biod $(OBJS)						\
+	$(CC) -o biod $(OBJS)						\
 		$(RT_LINK)						\
 		../sha1/sha1.o
 append-brr: append-brr.c
-	gcc -o append-brr $(CFLAGS) append-brr.c
+	$(CC) -o append-brr $(CFLAGS) append-brr.c
 	
 blobio: blobio.o
-	gcc -o blobio blobio.o
+	$(CC) -o blobio blobio.o
 
 arbor.o: arbor.c biod.h
-	gcc $(CFLAGS) -c arbor.c
+	$(CC) $(CFLAGS) -c arbor.c
 
 blob_set.o: blob_set.c biod.h
-	gcc $(CFLAGS) -c blob_set.c
+	$(CC) $(CFLAGS) -c blob_set.c
 
 sha_fs.o: sha_fs.c biod.h
-	gcc $(CFLAGS) -c sha_fs.c
+	$(CC) $(CFLAGS) -c sha_fs.c
 
 io.o: io.c biod.h biod.h
-	gcc $(CFLAGS) -c io.c
+	$(CC) $(CFLAGS) -c io.c
 
 signal.o: signal.c biod.h biod.h
-	gcc $(CFLAGS) -c signal.c
+	$(CC) $(CFLAGS) -c signal.c
 
 is_sha_fs.o: is_sha_fs.c biod.h
-	gcc $(CFLAGS) -c is_sha_fs.c
+	$(CC) $(CFLAGS) -c is_sha_fs.c
 
 log.o: log.c biod.h
-	gcc $(CFLAGS) -c log.c
+	$(CC) $(CFLAGS) -c log.c
 
 macosx.o: macosx.c biod.h
-	gcc $(CFLAGS) -c macosx.c
+	$(CC) $(CFLAGS) -c macosx.c
 
 biod.o: biod.c biod.h
-	gcc $(CFLAGS) -c biod.c
+	$(CC) $(CFLAGS) -c biod.c
 
 brr.o: brr.c biod.h
-	gcc $(CFLAGS) -c brr.c
+	$(CC) $(CFLAGS) -c brr.c
 
 module.o: module.c biod.h
-	gcc $(CFLAGS) -c module.c
+	$(CC) $(CFLAGS) -c module.c
 
 dev-links:
 	test -e data || ln -s . data
