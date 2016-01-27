@@ -27,24 +27,14 @@ leave()
 trap leave EXIT
 
 while [ "$1" ]; do
-	case "$1" in
-	*:*)
-		UDIG=$1
-		;;
-	'')
-		die 'empty blob'
-		;;
-	*)
-		UDIG="$ALGORITHM:$1"
-		;;
-	esac
-	shift
-	rm -f $TMP_FILE
+	UDIG="$1";  shift
+
+	rm -f $TMP_FILE || die "rm -f $TMP_FILE failed: eit status=$?"
+
 	blobio get --udig $UDIG --service $SERVICE --output-path $TMP_FILE
 	STATUS=$?
 	case "$STATUS" in
 	0)
-		echo $UDIG
 		;;
 	1)
 		echo "?$UDIG"
@@ -54,5 +44,5 @@ while [ "$1" ]; do
 		die "blob get $UDIG $SERVICE failed"
 		;;
 	esac
-	echo "	$(file $TMP_FILE | sed 's/^[^:]*: *//')"
+	echo ">$UDIG	$(file --brief $TMP_FILE | sed 's/	/ /g')"
 done
