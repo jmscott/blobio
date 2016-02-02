@@ -407,7 +407,7 @@ take(struct request *rp, struct digest_module *mp)
 	int status;
 	char *reply;
 
-	rp->verb = "take_blob";
+	rp->verb = "take";
 	request_exit_status = (request_exit_status & 0x1C) |
 						(REQUEST_EXIT_STATUS_TAKE << 2);
 	/*
