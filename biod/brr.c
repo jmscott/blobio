@@ -442,7 +442,7 @@ blob2udig_set(char *blob, off_t size, void **udig_set, void **algo_set)
 {
 	char *b, *b_end;
 	char *udig_start, *digest_start;
-	void *uset, *aset;
+	void *uset = 0, *aset = 0;
 	int state;			/* parse state */
 	char *sn;			/* parse state name */
 	char ebuf[MSG_SIZE];
@@ -755,6 +755,10 @@ roll(struct request *rp, struct digest_module *mp)
 		snprintf(buf, sizeof buf, "%s: blob not udig set: %s:%s",
 						nm, rp->algorithm, rp->digest);
 		warn(buf);
+		if (write_no(rp)) {
+			error2(nm, "reply: write_no() failed");
+			return -1;
+		}
 		return -1;
 	}
 
