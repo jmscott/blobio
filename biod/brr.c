@@ -1,6 +1,6 @@
 /*
  *  Synopsis:
- *	Implement "wrap" and "roll" verbs of blob.io protocol.
+ *	Implement logger and "wrap and "roll" verbs for blob request records.
  *  Blame:
  *  	jmscott@setspace.com
  *  	setspace@gmail.com
@@ -473,7 +473,7 @@ blob2udig_set(char *blob, off_t size, void **udig_set, void **algo_set)
 	/*
 	 *  Parse the blob for udigs that match.
 	 *
-	 *	(algorithm{1,8}:digest{1,255}\n)*
+	 *	(algorithm{1,8}:digest{32,128}\n)*
 	 */
 	state = NEW_UDIG;
 	sn = "NEW_UDIG";
