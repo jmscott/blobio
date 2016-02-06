@@ -613,7 +613,7 @@ main(int argc, char **argv)
 				enot("output-path");
 			if (algorithm[0]) {
 				if (!digest[0])
-					no_opt("algorithm");
+					enot("algorithm");
 			} else
 				enot("udig");
 		} else if (digest[0])
