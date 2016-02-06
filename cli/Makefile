@@ -32,4 +32,4 @@ install: all
 	cd blobio;	$(MAKE) install
 
 clean:
-	rm -f blobio blobio.o $(OBJS)
+	cd blobio;  $(MAKE) clean
