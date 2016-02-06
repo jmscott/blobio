@@ -15,6 +15,12 @@
 
 #include "blobio.h"
 
+//  Note: where is HOST_NAME_MAX defined on OX X?
+
+#ifndef HOST_NAME_MAX
+#define HOST_NAME_MAX	64
+#endif
+
 #ifdef COMPILE_TRACE
 
 #define _TRACE(msg)		if (tracing) _trace(msg)
