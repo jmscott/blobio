@@ -30,7 +30,8 @@
  *
  *	--output-path /dev/null fails, which is problematic.
  *
- *	Would be nice to eliminate stdio dependencies.
+ *	Would be nice to eliminate stdio dependencies.  Currently stdio is
+ *	required by only trace.c.
  *
  *	--algorithm <name> needs a way to prepend the algorithm to the written
  *	digest, so that a full udig is written instead of the just the digest.
@@ -48,7 +49,6 @@
 #include <ctype.h>
 #include <netinet/in.h>
 #include <netdb.h> 
-#include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
 #include <signal.h>
@@ -168,7 +168,7 @@ leave(int status)
 static void
 help()
 {
-	fputs("Usage:\n\
+	static char blurb[] = "Usage:\n\
 	blobio [get|put|give|take|eat|wrap|roll|empty | help] [options]\n\
 Options:\n\
 	--service       request blob from service <name:end_point>\n\
@@ -190,7 +190,8 @@ Examples:\n\
 \n\
 	UDIG=$(blobio eat --algorithm sha --input-path resume.pdf)\n\
 	blobio put --udig $UD --input-path resume.pdf --service $S\n\
-",	stdout);
+";
+	write(1, blurb, strlen(blurb));
 	leave(0);
 }
 

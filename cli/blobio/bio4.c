@@ -9,7 +9,6 @@
 #include <errno.h>
 #include <string.h>
 #include <stdlib.h>
-#include <stdio.h>
 #include <netdb.h>
 #include <signal.h>
 #include <fcntl.h>
