@@ -1,0 +1,8 @@
+bio4.o
+blobio
+blobio.o
+digest.o
+service.o
+sha.o
+trace.o
+unistd.o

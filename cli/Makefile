@@ -1,6 +1,6 @@
 #
 #  Synopsis:
-#	Build blobio binary executable from C source
+#	Install client scripts
 #  Blame:
 #	jmscott@setspace.com
 # 	setspace@gmail.com
@@ -9,19 +9,8 @@
 include ../blobio.mk
 include ../local.mk
 
-#
-#  Added extra, overriding rules to local.mk
-#
-ifeq ($(wildcard local.mk), local.mk)
-	include local.mk
-endif
-
-OBJS=			\
-	dump.o		\
-	module.o 	\
-	sha.o
-
-all: blobio
+all:
+	cd blobio;	$(MAKE) all
 
 install: all
 	install -g $(DIST_GROUP) -o $(DIST_USER) -m ugo=rx		\
@@ -39,18 +28,8 @@ install: all
 		bio-unroll						\
 		bio-wrap						\
 		bio-zap							\
-		blobio 							\
 		$(DIST_ROOT)/bin
+	cd blobio;	$(MAKE) install
 
-blobio: blobio.o $(OBJS)
-	gcc -o blobio blobio.o $(OBJS) ../sha1/sha1.o
-blobio.o: blobio.c blobio.h
-	gcc -g $(CFLAGS) -c blobio.c
-dump.o: dump.c blobio.h
-	gcc $(CFLAGS) -c dump.c
-module.o: module.c blobio.h
-	gcc $(CFLAGS) -c module.c
-sha.o: sha.c blobio.h
-	gcc $(CFLAGS) -c sha.c
 clean:
 	rm -f blobio blobio.o $(OBJS)

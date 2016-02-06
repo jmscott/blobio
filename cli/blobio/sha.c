@@ -1,9 +1,8 @@
 /*
  *  Synopsis:
- *	blk_SHA1 client module interface routines.
- *  Blame:
- *	jmscott@setspace.com
- *	setspace@gmail.com
+ *	blk_SHA1 client digest module interface routines.
+ *  Note:
+ *  	Why does sha_request exist at all?
  */
 #ifdef SHA_FS_MODULE    
 
@@ -11,40 +10,49 @@
 #include <errno.h>
 #include <unistd.h>
 #include <stdlib.h>
-#include "../sha1/sha1.h"
+
+#include "../../sha1/sha1.h"
 #include "blobio.h"
 
-struct sha_request
-{
-	unsigned char		digest[20];
-	blk_SHA_CTX		ctx;
-};
+#ifdef COMPILE_TRACE
+
+#define _TRACE(msg)	if (tracing) _trace(msg)
+
+#else
+
+#define _TRACE(msg)
+
+#endif
+
+extern char	*verb;
+extern char	digest[];
+extern int	input_fd;
+
+static unsigned char	bin_digest[20];
+static blk_SHA_CTX	sha_ctx;
 
 static char	empty[]		= "da39a3ee5e6b4b0d3255bfef95601890afd80709";
 
-static int
-sha_open(struct request *rp)
+static char *
+sha_init()
 {
-	struct sha_request *sp;
 	char *d40, c;
 	unsigned char *d20;
 	unsigned int i;
-	static char nm[] = "sha: open";
+	static char nm[] = "sha: init";
 
-	sp = (struct sha_request *)malloc(sizeof *sp);
-	if (!sp)
-		return ENOMEM;
-	if (strcmp("roll", rp->verb)) {
-		blk_SHA1_Init(&sp->ctx);
+	if (strcmp("roll", verb)) {
+		blk_SHA1_Init(&sha_ctx);
 
 		/*
 		 *  Convert the 40 character hex signature to 20 byte binary.
 		 *  The ascii, hex version has already been scanned for 
 		 *  syntactic correctness.
 		 */
-		if (rp->digest[0]) {
-			d40 = rp->digest;
-			d20 = sp->digest;
+		if (digest[0]) {
+			d40 = digest;
+			d20 = bin_digest;
+
 			memset(d20, 0, 20);	/*  since nibs are or'ed in */
 			for (i = 0;  i < 40;  i++) {
 				unsigned char nib;
@@ -58,24 +66,27 @@ sha_open(struct request *rp)
 					nib <<= 4;
 				d20[i >> 1] |= nib;
 			}
+#ifdef COMPILE_TRACE
 			if (tracing) {
-				trace2(nm,
-					"dump of expected digest follows ...");
-				dump(sp->digest, 20, '=');
+				trace2(nm, "hex dump of 20 byte digest:");
+				dump(d20, 20, '=');
 			}
+#endif
 		}
 	}
-	rp->open_data = (void *)sp;
-	return 0;
+	return (char *)0;
 }
 
 /*
  *  Update the digest with a chunk of the blob being put to the server.
+ *  Return 0 if digest matches requested digest;  otherwise return 1.
  */
 static int
-chew(struct sha_request *sp, unsigned char *chunk, int size)
+chew(unsigned char *chunk, int size)
 {
 	static char nm[] = "sha: chew";
+
+	TRACE2(nm, "request to chew()");
 
 	/*
 	 *  Incremental digest.
@@ -83,18 +94,22 @@ chew(struct sha_request *sp, unsigned char *chunk, int size)
 	unsigned char tmp_digest[20];
 	blk_SHA_CTX tmp_ctx;
 
-	blk_SHA1_Update(&sp->ctx, chunk, size);
+	blk_SHA1_Update(&sha_ctx, chunk, size);
 	/*
 	 *  Copy current digest state to a temporary state,
 	 *  finalize and then compare to expected state.
 	 */
-	tmp_ctx = sp->ctx;
+	tmp_ctx = sha_ctx;
 	blk_SHA1_Final(tmp_digest, &tmp_ctx);
+
+#ifdef COMPILE_TRACE
 	if (tracing) {
 		trace2(nm, "dump of 20 byte digest follows ...");
 		dump(tmp_digest, 20, '=');
+		trace2(nm, "chew() done");
 	}
-	return memcmp(tmp_digest, sp->digest, 20) == 0 ? 0 : 1;
+#endif
+	return memcmp(tmp_digest, bin_digest, 20) == 0 ? 0 : 1;
 }
 
 /*
@@ -106,22 +121,21 @@ chew(struct sha_request *sp, unsigned char *chunk, int size)
  *	1	more to read, continue, blob not seen
  */
 static int
-sha_get_update(struct request *rp, unsigned char *src, int src_size)
+sha_get_update(unsigned char *src, int src_size)
 {
-	return chew((struct sha_request *)rp->open_data, src, src_size);
+	return chew(src, src_size);
 }
 
 static int
-sha_take_update(struct request *rp, unsigned char *src, int src_size)
+sha_take_update(unsigned char *src, int src_size)
 {
-	return sha_get_update(rp, src, src_size);
+	return chew(src, src_size);
 }
 
 static int
-sha_took(struct request *rp, char *reply)
+sha_took(char *reply)
 {
-	UNUSED_ARG(rp);
-	UNUSED_ARG(reply);
+	(void)reply;
 	return 0;
 }
 
@@ -134,32 +148,27 @@ sha_took(struct request *rp, char *reply)
  *	-1	chunk not part of the blob.
  */
 static int
-sha_put_update(struct request *rp, unsigned char *src, int src_size)
+sha_put_update(unsigned char *src, int src_size)
 {
-	return chew((struct sha_request *)rp->open_data, src, src_size);
+	return chew(src, src_size);
 }
 
 static int
-sha_give_update(struct request *rp, unsigned char *src, int src_size)
+sha_give_update(unsigned char *src, int src_size)
 {
-	return sha_put_update(rp, src, src_size);
+	return sha_put_update(src, src_size);
 }
 
 static int
-sha_gave(struct request *rp, char *reply)
+sha_gave(char *reply)
 {
-	UNUSED_ARG(rp);
 	UNUSED_ARG(reply);
 	return 0;
 }
 
 static int
-sha_close(struct request *rp)
+sha_close()
 {
-	struct sha_request *sp = (struct sha_request *)rp->open_data;
-
-	free((void *)sp);
-	rp->open_data = (void *)0;
 	return 0;
 }
 
@@ -167,7 +176,7 @@ sha_close(struct request *rp)
  *  blk_SHA1 digest is 40 characters of 0-9 or a-f.
  */
 static int
-sha_is_digest(char *digest)
+sha_syntax()
 {
 	char *p, c;
 
@@ -186,24 +195,10 @@ sha_is_digest(char *digest)
  *  da39a3ee5e6b4b0d3255bfef95601890afd80709 
  */
 static int
-sha_is_empty(char *digest)
+sha_empty()
 {
 	return strcmp("da39a3ee5e6b4b0d3255bfef95601890afd80709", digest) == 0?
 						1 : 0;
-}
-
-static int
-_read(int fd, unsigned char *buf, int buf_size)
-{
-	int nread;
-again:
-	nread = read(fd, buf, buf_size);
-	if (nread < 0) {
-		if (errno == EAGAIN || errno == EINTR)
-			goto again;
-		return -1;
-	}
-	return nread;
 }
 
 static char nib2hex[] =
@@ -212,27 +207,32 @@ static char nib2hex[] =
 	'a', 'b', 'c', 'd', 'e', 'f'
 };
 
+static void
+_trace(char *msg)
+{
+	trace2("sha", msg);
+}
 
 /*
- *  Digest data on input and generate ascii digest.
+ *  Digest data on input and update the global digest[129] array.
  */
-static int
-sha_eat(struct request *rp)
+static char *
+sha_eat_input()
 {
-	struct sha_request *sp;
-	unsigned char buf[1024 * 64], *q, *q_end;
+	unsigned char buf[PIPE_MAX], *q, *q_end;
 	char *p;
 	int nread;
 
-	sp = (struct sha_request *)rp->open_data;
-	while ((nread = _read(rp->in_fd, buf, sizeof buf)) > 0)
-		blk_SHA1_Update(&sp->ctx, buf, nread);
-	if (nread < 0)
-		return -1;
-	blk_SHA1_Final(sp->digest, &sp->ctx);
+	_TRACE("request to sha_eat_input()");
 
-	p = rp->digest;
-	q = sp->digest;
+	while ((nread = uni_read(input_fd, buf, sizeof buf)) > 0)
+		blk_SHA1_Update(&sha_ctx, buf, nread);
+	if (nread < 0)
+		return strerror(errno);
+	blk_SHA1_Final(bin_digest, &sha_ctx);
+
+	p = digest;
+	q = bin_digest;
 	q_end = q + 20;
 
 	while (q < q_end) {
@@ -241,14 +241,16 @@ sha_eat(struct request *rp)
 		q++;
 	}
 	*p = 0;
-	return 0;
+
+	_TRACE("sha_eat_input() done");
+	return (char *)0;
 }
 
-struct module	sha_module =
+struct digest	sha_digest =
 {
 	.algorithm	=	"sha",
 
-	.open		=	sha_open,
+	.init		=	sha_init,
 	.get_update	=	sha_get_update,
 	.take_update	=	sha_take_update,
 	.took		=	sha_took,
@@ -257,10 +259,10 @@ struct module	sha_module =
 	.gave		=	sha_gave,
 	.close		=	sha_close,
 
-	.eat		=	sha_eat,
+	.eat_input	=	sha_eat_input,
 
-	.is_digest	=	sha_is_digest,
-	.is_empty	=	sha_is_empty
+	.syntax		=	sha_syntax,
+	.empty		=	sha_empty
 };
 
 #endif
