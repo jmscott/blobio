@@ -69,7 +69,7 @@ sha_init()
 #ifdef COMPILE_TRACE
 			if (tracing) {
 				trace2(nm, "hex dump of 20 byte digest:");
-				dump(d20, 20, '=');
+				hexdump(d20, 20, '=');
 			}
 #endif
 		}
@@ -104,8 +104,8 @@ chew(unsigned char *chunk, int size)
 
 #ifdef COMPILE_TRACE
 	if (tracing) {
-		trace2(nm, "dump of 20 byte digest follows ...");
-		dump(tmp_digest, 20, '=');
+		trace2(nm, "hex dump of 20 byte digest follows ...");
+		hexdump(tmp_digest, 20, '=');
 		trace2(nm, "chew() done");
 	}
 #endif

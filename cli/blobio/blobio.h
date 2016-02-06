@@ -138,7 +138,7 @@ extern void	trace(char *);
 extern void	trace2(char *, char *);
 extern void	trace3(char *, char *, char *);
 extern void	trace4(char *, char *, char *, char *);
-extern void	dump(unsigned char *buf, int buf_size, char direction);
+extern void	hexdump(unsigned char *buf, int buf_size, char direction);
 
 extern int	uni_close(int fd);
 extern ssize_t	uni_write(int fd, const void *buf, size_t count);

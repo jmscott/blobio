@@ -356,9 +356,9 @@ _write(int fd, unsigned char *buf, int buf_size)
 		return strerror(errno);
 
 #ifdef COMPILE_TRACE
-	_TRACE("write() ok, dump follows ...");
+	_TRACE("write() ok, hex dump follows ...");
 	if (tracing)
-		dump(buf, buf_size, '<');
+		hexdump(buf, buf_size, '<');
 #endif
 	_TRACE("write() done");
 	return (char *)0;
@@ -392,8 +392,8 @@ _read(int fd, unsigned char *buf, int buf_size, int *nread)
 #ifdef COMPILE_TRACE
 	if (tracing) {
 		if (nr > 0) {
-			_trace("read() ok, dump follows ...");
-			dump(buf, nr, '>');
+			_trace("read() ok, hex dump follows ...");
+			hexdump(buf, nr, '>');
 		} else
 			_trace("read() returned 0 bytes");
 	}
@@ -591,7 +591,7 @@ bio4_put(int *ok_no)
 			_trace("write ok");
 			if (more)
 				_TRACE("more data to digest");
-			dump(buf, nread, '<');
+			hexdump(buf, nread, '<');
 		}
 #endif
 	}

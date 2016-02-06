@@ -134,7 +134,7 @@ _cksum(unsigned char *buf, int size)
  *  	https://github.com/akfullfo
  */
 void
-dump(unsigned char *src, int src_size, char direction)
+hexdump(unsigned char *src, int src_size, char direction)
 {
 	char *t;
 	unsigned char *s, *s_end;
@@ -144,7 +144,7 @@ dump(unsigned char *src, int src_size, char direction)
 	char buf[1024];
 
 	if (src_size == 0) {
-		static char zero[] = "dump: 0 bytes in source buffer\n";
+		static char zero[] = "hexdump: 0 bytes in source buffer\n";
 		_write(zero);
 		return;
 	}
@@ -174,7 +174,7 @@ dump(unsigned char *src, int src_size, char direction)
 	 */
 	if (need > tgt_size) {
 		snprintf(tgt, tgt_size,
-			"dump: source bigger than target: %d > %d\n", need,
+			"hexdump: source bigger than target: %d > %d\n", need,
 				tgt_size);
 		_write(tgt);
 		return;
@@ -233,6 +233,7 @@ dump(unsigned char *src, int src_size, char direction)
 	}
 	tgt[need - 1] = 0;
 
+	//  Note:  this is the only reference to stdio, i believe.
 	snprintf(buf, sizeof buf,
 			"\ndump of %d bytes, cksum %hu\n",
 				src_size, _cksum(src, src_size));
