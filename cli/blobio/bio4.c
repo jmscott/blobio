@@ -560,9 +560,12 @@ bio4_eat(int *ok_no)
 	char *err;
 
 	_TRACE("request to eat()");
+
 	err = request(ok_no);
 	if (err)
 		return err;
+
+	_TRACE("eat() done");
 	return (char *)0;
 }
 
