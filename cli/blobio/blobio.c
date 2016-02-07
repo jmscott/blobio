@@ -585,8 +585,9 @@ main(int argc, char **argv)
 	 *  verb: wrap
 	 *	no --{input,output}-path, --udig
 	 *	--algorithm required
+	 *  Note:
+	 *	Convert if/else if/ tests to switch.
 	 */
-
 	if (*verb == 'g' || *verb == 'p' || *verb == 't' || *verb == 'r') {
 		if (!service)
 			no_opt("service");
@@ -735,6 +736,8 @@ main(int argc, char **argv)
 
 
 	//  invoke the service callback
+	//
+	//  Note: Convert if/else if/ tests to switch.
 
 	if (*verb == 'g') {
 
