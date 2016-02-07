@@ -271,8 +271,13 @@ bio4_open()
 static char *
 bio4_close()
 {
+	_TRACE("request to close()");
+
 	if (server_fd >= 0 && uni_close(server_fd))
 		return strerror(errno);
+
+	_TRACE("close() done");
+
 	return (char *)0;
 }
 
