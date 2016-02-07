@@ -24,6 +24,28 @@
 
 my $PROG = 'udig2fs';
 
+sub udig2fs
+{
+	my $udig = $_[0];
+
+	$udig =~ s/^\s+|\s+$//g;
+
+	die "unrecognized udig: $udig"
+			unless $udig =~ /^([a-z]{1,8}):([[:graph:]]{32,128})$/;
+	my ($algorithm, $digest) = ($1, $2);
+
+	die "unknown algorithm: $algorithm" unless $algorithm eq 'sha';
+
+	my $fs = 'sha_fs';
+	die "unexpected sha digest: $digest" unless $digest =~ /^[0-9a-f]{40}$/;
+
+	# sha path: 0/3c/c0cb/347e4f88/642e5470c76d0747/21f18c741
+
+	my $path = $digest;
+	$path =~ s/(.)(..)(....)(.{8})(.{16})(.{9})/$1\/$2\/$3\/$4\/$5\/$6/;
+	print $udig, "\t", $fs, '/', $path, "\n";
+}
+
 my $line_count = 0;
 
 $SIG{__DIE__} = sub
@@ -36,28 +58,15 @@ $SIG{__DIE__} = sub
 	exit 1;
 };
 
+#  udigs on the command line
+
+if (@ARGV > 0) {
+	udig2fs $_ for (@ARGV) ;
+	exit 0;
+}
+
 while (my $udig = <STDIN>) {
 	$line_count++;
 	chop $udig;
-	die "unrecognized udig at line count $line_count: $udig"
-			unless $udig =~ /^([a-z]{1,8}):([[:graph:]]{32,128})$/;
-	my ($algorithm, $digest) = ($1, $2);
-
-	my ($fs, $path);
-
-	if ($algorithm eq 'sha') {
-
-		$fs = 'sha_fs';
-		die "unexpected sha digest: $digest"
-				unless $digest =~ /^[0-9a-f]{40}$/;
-
-		# sha path: 0/3c/c0cb/347e4f88/642e5470c76d0747/21f18c741
-
-		$path = $digest;
-		$path =~
-		     s/(.)(..)(....)(.{8})(.{16})(.{9})/$1\/$2\/$3\/$4\/$5\/$6/;
-	} else {
-		die "unknown algorithm: $algorithm";
-	}
-	print $udig, "\t", "$fs/$path", "\n";
+	udig2fs $udig;
 }
