@@ -577,7 +577,6 @@ bio4_put(int *ok_no)
 	int nread, more;
 	unsigned char buf[PIPE_MAX];
 
-	(void)ok_no;
 	_TRACE("request to put()");
 
 	//  write the put request to the remote server
