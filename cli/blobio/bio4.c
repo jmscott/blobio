@@ -312,7 +312,7 @@ copy_request(char *command)
 	return c - command;
 }
 
-void
+static void
 die_ALRM(char *func)
 {
 	char buf[PIPE_MAX];
