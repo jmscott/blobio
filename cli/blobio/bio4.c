@@ -95,6 +95,8 @@ bio4_end_point_syntax(char *end_point)
 {
 	char *cp, *colon;
 
+	_TRACE("request to end_point_syntax()");
+
 	//  find colon in host:port
 
 	colon = strchr(end_point, ':');
@@ -127,6 +129,9 @@ bio4_end_point_syntax(char *end_point)
 
 	if (atoi(colon + 1) > 65535)
 		return "port > 65535";
+
+	_TRACE("end_point_syntax() done");
+
 	return (char *)0;
 }
 
