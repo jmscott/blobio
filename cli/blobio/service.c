@@ -7,9 +7,11 @@
 #include "blobio.h"
 
 extern struct service	bio4_service;
+extern struct service	rofs_service;
 
 struct service *services[] =
 {
 	&bio4_service,
+	&rofs_service,
 	(struct service *)0
 };
