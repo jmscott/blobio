@@ -19,6 +19,10 @@
  *	--input-path <path/to/file>
  *	--output-path <path/to/file>
  *  Note:
+ *	--trace only activates after the option has been scanned, which implies
+ *	certain options with tracing, like end_point_syntax() may not trace,
+ *	depending upon the order of the options.
+ *
  *	A shared library service might be interesting.
  *
  *	Add the exit status codes to the usage output (dork).
