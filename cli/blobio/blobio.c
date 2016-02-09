@@ -148,6 +148,7 @@ leave(int status)
 	//  Note: what about closing the digest?
 
 	//  unlink() file created by --output-path, grumbling if unlink() fails.
+
 	if (status && output_path != NULL && unlink(output_path))
 		if (errno != ENOENT) {
 			static char panic[] =
@@ -471,10 +472,10 @@ main(int argc, char **argv)
 			int j;
 			char *n;
 
-			if (algorithm[0])
-				emany("algorithm");
 			if (digest[0])
 				eopt("algorithm", "option --udig conflicts");
+			if (algorithm[0])
+				emany("algorithm");
 			if (++i == argc)
 				eopt("algorithm", "missing <name>");
 
@@ -578,10 +579,12 @@ main(int argc, char **argv)
 	 *
 	 *  	--service required
 	 *  	--udig required
-	 *  	no --{input,output}-path for verb roll
-	 *  	no --output-path for verb give
-	 *  	no --input-path for verb take
-	 *
+	 *  verb: roll
+	 *  	no --{input,output}-path
+	 *  verb: give
+	 *  	no --output-path
+	 *  verb: take, get
+	 *  	no --input-path
 	 *  verb: eat
 	 *  	no --output-path
 	 *	--service requires --udig and 
@@ -605,6 +608,9 @@ main(int argc, char **argv)
 		} else if (verb[1] == 'i') {
 			if (output_path)
 				enot("output-path");
+		} else if (verb[1] == 'e') {
+			if (input_path)
+				enot("input-path");
 		} else if (verb[1] == 'a') {
 			if (input_path)
 				enot("input-path");

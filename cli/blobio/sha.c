@@ -246,6 +246,47 @@ sha_eat_input()
 	return (char *)0;
 }
 
+/*
+ *  Convert a ascii digest to a file system path.
+ */
+static char *
+sha_fs_path(char *file_path, int size)
+{
+	char *dp, *fp;
+
+	if (size < 46)
+		return "file path size too small: size < 46 bytes";
+
+	dp = digest;
+	fp = file_path;
+
+	*fp++ = *dp++;
+
+	*fp++ = '/';
+	*fp++ = *dp++; *fp++ = *dp++;
+
+	*fp++ = '/';
+	*fp++ = *dp++; *fp++ = *dp++; *fp++ = *dp++; *fp++ = *dp++;
+
+	*fp++ = '/';
+	*fp++ = *dp++; *fp++ = *dp++; *fp++ = *dp++; *fp++ = *dp++;
+	*fp++ = *dp++; *fp++ = *dp++; *fp++ = *dp++; *fp++ = *dp++;
+
+	*fp++ = '/';
+	*fp++ = *dp++; *fp++ = *dp++; *fp++ = *dp++; *fp++ = *dp++;
+	*fp++ = *dp++; *fp++ = *dp++; *fp++ = *dp++; *fp++ = *dp++;
+	*fp++ = *dp++; *fp++ = *dp++; *fp++ = *dp++; *fp++ = *dp++;
+	*fp++ = *dp++; *fp++ = *dp++; *fp++ = *dp++; *fp++ = *dp++;
+
+	*fp++ = '/';
+	*fp++ = *dp++; *fp++ = *dp++; *fp++ = *dp++; *fp++ = *dp++;
+	*fp++ = *dp++; *fp++ = *dp++; *fp++ = *dp++; *fp++ = *dp++;
+	*fp++ = *dp++;
+	*fp = 0;
+
+	return (char *)0;
+}
+
 struct digest	sha_digest =
 {
 	.algorithm	=	"sha",
@@ -262,7 +303,9 @@ struct digest	sha_digest =
 	.eat_input	=	sha_eat_input,
 
 	.syntax		=	sha_syntax,
-	.empty		=	sha_empty
+	.empty		=	sha_empty,
+
+	.fs_path	=	sha_fs_path
 };
 
 #endif

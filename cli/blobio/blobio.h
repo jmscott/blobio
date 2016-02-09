@@ -106,6 +106,11 @@ struct digest
 	int	(*empty)();
 
 	int	(*close)();
+
+	/*
+	 *  Convert the ascii digest to file system path.
+	 */
+	char	*(*fs_path)(char *path, int size);
 };
 
 struct service
