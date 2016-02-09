@@ -8,14 +8,12 @@
 #  Blame:
 #  	jmscott@setspace.com
 #	setspace@gmail.com
-#  Note:
-#	For some reason, the cli program 'blobio give' does not remove the
-#	file after a successfull give.  Why not?
 #
 
 PROG=$(basename $0)
 ALGORITHM=${BLOBIO_ALGORITHM:=sha}
-SERVICE=${BLOBIO_SERVICE:=localhost:1797}
+GIVE_SERVICE=${BLOBIO_GIVE_SERVICE:=$BLOBIO_SERVICE}
+EAT_SERVICE=${BLOBIO_EAT_SERVICE:=$BLOBIO_SERVICE}
 
 die()
 {
@@ -35,14 +33,15 @@ give_file()
 	#
 	#  Verify if the blob exists.
 	#
-	blobio eat --udig $UDIG --service $SERVICE
+	blobio eat --udig $UDIG --service $EAT_SERVICE
 	STATUS=$?
 	case $STATUS in
 	1)
 		#
 		#  Give the new blob
 		#
-		blobio give --udig $UDIG --input-path "$FILE" --service $SERVICE
+		blobio give --udig $UDIG --input-path "$FILE" 		\
+			--service $GIVE_SERVICE
 		STATUS=$?
 		test $STATUS = 0 ||
 			die "blobio give failed: exit status=$STATUS: $FILE"
@@ -56,12 +55,12 @@ END
 $FILE
 	@$UDIG
 END
+		unlink "$FILE" || die "unlink $FILE failed"
 		;;
 	*)
 		die "blobio eat: unexpected exit status: $STATUS"
 		;;
 	esac
-	unlink "$FILE" || die "unlink $FILE failed"
 	cat <<END
 	-$FILE
 END

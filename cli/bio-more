@@ -5,6 +5,7 @@
 #  Blame:
 #  	jmscott@setspace.com
 #	setspace@gmail.com
+#
 HELP=$(cat <<'END'
 
 SYNOPSIS:
@@ -15,7 +16,7 @@ END
 )
 
 PROG=$(basename $0)
-SERVICE=${BLOBIO_SERVICE:=localhost:1797}
+SERVICE=${BLOBIO_GET_SERVICE:=$BLOBIO_SERVICE}
 
 trap '' PIPE
 
@@ -53,7 +54,7 @@ while [ "$1" ]; do
 	#
 	#  Fetch the file from the blob server.
 	#
-	blobio get --udig $UDIG --service $BLOBIO_SERVICE
+	blobio get --udig $UDIG --service $SERVICE
 	STATUS=$?
 	case $STATUS in
 	0)

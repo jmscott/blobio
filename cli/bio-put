@@ -12,7 +12,8 @@
 
 PROG=$(basename $0)
 ALGORITHM=sha
-SERVICE=${BLOBIO_SERVICE:=localhost:1797}
+PUT_SERVICE=${BLOBIO_PUT_SERVICE:=$BLOBIO_SERVICE}
+EAT_SERVICE=${BLOBIO_EAT_SERVICE:=$BLOBIO_SERVICE}
 
 die()
 {
@@ -30,11 +31,12 @@ put_file()
 	STATUS=$?
 	test -n "$DIGEST" -o $STATUS != 0 || die "blobio eat failed"
 	UDIG=$ALGORITHM:$DIGEST
-	blobio eat --udig $UDIG --service $SERVICE
+	blobio eat --udig $UDIG --service $EAT_SERVICE
 	STATUS=$?
 	case $STATUS in
 	1)
-		blobio put --udig $UDIG --input-path "$FILE" --service $SERVICE
+		blobio put --udig $UDIG --input-path "$FILE"		\
+				--service $PUT_SERVICE
 		test $? = 0 || die "blobio put failed: $FILE"
 		cat <<END
 $FILE

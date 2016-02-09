@@ -149,23 +149,26 @@ leave(int status)
 
 	//  unlink() file created by --output-path, grumbling if unlink() fails.
 
-	if (status && output_path != NULL && unlink(output_path))
-		if (errno != ENOENT) {
-			static char panic[] =
-				"PANIC: unlink(output_path) failed: ";
-			char buf[PIPE_MAX];
-			char *err;
+	if (status && status != EXIT_BAD_ARG && output_path != NULL) {
+		if (unlink(output_path))
+			if (errno != ENOENT) {
+				static char panic[] =
+					"PANIC: unlink(output_path) failed: ";
+				char buf[PIPE_MAX];
+				char *err;
 
-			err = strerror(errno);
+				err = strerror(errno);
 
-			//  assemble error message about failed unlink()
+				//  assemble error message about failed
+				//  unlink()
 
-			buf[0] = 0;
-			ecat(buf, sizeof buf, panic);
-			bufcat(buf, sizeof buf, err);
-			bufcat(buf, sizeof buf, "\n");
+				buf[0] = 0;
+				ecat(buf, sizeof buf, panic);
+				bufcat(buf, sizeof buf, err);
+				bufcat(buf, sizeof buf, "\n");
 
-			uni_write(2, buf, strlen(buf));
+				uni_write(2, buf, strlen(buf));
+			}
 		}
 	_exit(status);
 }

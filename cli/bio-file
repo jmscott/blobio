@@ -7,7 +7,7 @@
 #	setspace@gmail.com
 #
 PROG=$(basename $0)
-SERVICE=${BLOBIO_SERVICE:=localhost:1797}
+SERVICE=${BLOBIO_GET_SERVICE:=$BLOBIO_SERVICE}
 ALGORITHM=sha
 TMP_FILE=${TMPDIR:=/tmp}/$PROG.$$
 
