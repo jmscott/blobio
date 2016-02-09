@@ -8,7 +8,6 @@
 #  	jmscott@setspace.com
 #	setspace@gmail.com
 #  Note:
-#	Default service is localhost:1797
 #	SIGPIPE needs to be ignored.
 #
 PROG=$(basename $0)

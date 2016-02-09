@@ -5,7 +5,8 @@
 #  Usage:
 #	eat-wrap-missed <wrap udig>
 #	eat-wrap-missed sha:e0b4a80cbb216958d5f47839dc99b7776e58af45
-#	eat-wrap-missed $(blobio wrap --algorithm sha --service localhost:1797)
+#	eat-wrap-missed $(blobio wrap	\
+#				--algorithm sha --service bio4:localhost:1797)
 #
 #  Description:
 #	In real time, the brrflow server syncs the blobs with the blobio

@@ -16,7 +16,7 @@ END
 )
 
 PROG=$(basename $0)
-SERVICE=${BLOBIO_SERVICE:=localhost:1797}
+SERVICE=${BLOBIO_SERVICE:=bio4:localhost:1797}
 
 help()
 {

@@ -6,7 +6,7 @@
 #  	setspace@gmail.com
 #
 BLOBIO_ROOT=/usr/local/blobio
-BLOBIO_SERVICE=localhost:1797
+BLOBIO_SERVICE=bio4:localhost:1797
 
 #
 #  What:

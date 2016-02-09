@@ -192,10 +192,10 @@ comment on table brr_roll_ok
 
 /*
  *  Fetchable blobs with regard to the blobio network service.
- *  In other words, for, say, service localhost:1797, if <udig> is in the table
- *  service.blob then
+ *  In other words, for, say, service bio4:localhost:1797,
+ *  if <udig> is in the table service.blob then
  *
- *	blobio get --udig <udig> --service localhost:1797
+ *	blobio get --udig <udig> --service bio4:localhost:1797
  *
  *  fetches a living blob.
  */
