@@ -19,6 +19,9 @@
  *	--input-path <path/to/file>
  *	--output-path <path/to/file>
  *  Note:
+ *  	Options desparatley need to be folding into a data structure.
+ *  	We refuse to use getopts.
+ *
  *	--trace only activates after the option has been scanned, which implies
  *	certain options with tracing, like end_point_syntax() may not trace,
  *	depending upon the order of the options.
@@ -89,6 +92,7 @@ extern int			h_errno;
 extern int			errno;
 
 static struct service		*service = 0;
+static struct digest		*digest_module;
 
 static char		usage[] =
    "usage: blobio [help | get|put|give|take|eat|wrap|roll|empty] [options]\n";
@@ -389,13 +393,14 @@ enot(char *option)
 	eopt(option, "not needed");
 }
 
-int
-main(int argc, char **argv)
+/*
+ *  Parse the command line arguments.
+ */
+static void
+parse_argv(int argc, char **argv)
 {
 	int i;
-	struct digest *dig = 0;
 	char *err;
-	int exit_status = -1, ok_no;
 
 	if (argc == 1) {
 		uni_write(2, usage, strlen(usage));
@@ -470,7 +475,7 @@ main(int argc, char **argv)
 
 			if (digest[0] && d->syntax() == 0)
 				eopt2("udig", "bad digest syntax", digest);
-			dig = d;
+			digest_module = d;
 		} else if (strcmp("algorithm", a) == 0) {
 			int j;
 			char *n;
@@ -492,7 +497,7 @@ main(int argc, char **argv)
 			if (!digests[j])
 				eopt2("algorithm", "unknown algorithm", n);
 			strcpy(algorithm, digests[j]->algorithm);
-			dig = digests[j];
+			digest_module = digests[j];
 		} else if (strcmp("input-path", a) == 0) {
 			if (input_path)
 				emany("input-path");
@@ -567,16 +572,15 @@ main(int argc, char **argv)
 		} else
 			die2(EXIT_BAD_ARG, "unknown option", argv[i]);
 	}
+}
 
-	if (service) {
-		TRACE2("service name", service->name);
-		TRACE2("end point", end_point);
-	}
-
-#ifndef COMPILE_TRACE
-	tracing = 0;
-#endif
-
+/*
+ *  Insure no options cross conflict.  For example, --output-path is not needed
+ *  with the verb "put".
+ */
+static void
+xref_args()
+{
 	/*
 	 *  verb: get/give/put/take/roll
 	 *
@@ -608,32 +612,50 @@ main(int argc, char **argv)
 				enot("input-path");
 			else if (output_path)
 				enot("output-path");
-		} else if (verb[1] == 'i') {
+		} else if (verb[1] == 'i') {		// verb: "give"
 			if (output_path)
 				enot("output-path");
-		} else if (verb[1] == 'e') {
+		} else if (verb[1] == 'e') {		//  verb: "get"
 			if (input_path)
 				enot("input-path");
-		} else if (verb[1] == 'a') {
+		} else if (verb[1] == 'a') {		//  verb: "take"
 			if (input_path)
 				enot("input-path");
-		} else if (*verb == 'p') {
+		} else if (*verb == 'p') {		//  verb: "put"
 			if (output_path)
 				enot("output-path");
 		}
 	} else if (*verb == 'e') {
-		if (service) {
+
+		//  verbs: "eat" or "empty"
+
+		//  verb: "eat" or "empty"
+
+		if (verb[1] == 'a') {
+			if (service) {
+				if (output_path)
+					enot("output-path");
+				if (algorithm[0]) {
+					if (!digest[0])
+						enot("algorithm");
+				} else
+					no_opt("udig");
+			} else if (digest[0])
+				no_opt("service");
+			else if (!algorithm[0])
+				no_opt("algorithm");
+		} else {
 			if (output_path)
 				enot("output-path");
-			if (algorithm[0]) {
-				if (!digest[0])
-					enot("algorithm");
-			} else
-				enot("udig");
-		} else if (digest[0])
-			no_opt("service");
-		else if (!algorithm[0])
-			no_opt("algorithm");
+			if (input_path)
+				enot("input-path");
+			if (algorithm[0] && !digest[0])
+				enot("algorithm");
+			if (!digest[0])
+				no_opt("udig");
+			if (service)
+				enot("service");
+		}
 	} else if (*verb == 'w') {
 		if (!service)
 			no_opt("service");
@@ -646,6 +668,20 @@ main(int argc, char **argv)
 		if (algorithm[0])
 			enot("algorithm");
 	}
+}
+
+int
+main(int argc, char **argv)
+{
+	char *err;
+	int exit_status = -1, ok_no;
+
+	parse_argv(argc, argv);
+
+#ifndef COMPILE_TRACE
+	tracing = 0;
+#endif
+	xref_args();
 
 	//  the input path must exist
 
@@ -670,12 +706,14 @@ main(int argc, char **argv)
 			eopt2("output-path", strerror(errno), output_path);
 	}
 
-	if (service)
-		service->digest = dig;
+	if (service) {
+		service->digest = digest_module;
+		TRACE2("end point", end_point);
+	}
 
 	//  initialize the digest
 
-	if (dig && (err = dig->init()))
+	if (digest_module && (err = digest_module->init()))
 		die(EXIT_BAD_DIG, err);
 
 	//  open the blob service
@@ -778,26 +816,32 @@ main(int argc, char **argv)
 			exit_status = ok_no;
 		}
 	} else if (*verb == 'e') {
-		if (service) {
-			if ((err = service->eat(&ok_no)))
-				die2(EXIT_BAD_SER, "eat(service) failed", err);
-			exit_status = ok_no;
-		} else {
-			char buf[128 + 1];
+		if (verb[1] == 'a') {
+			if (service) {
+				if ((err = service->eat(&ok_no)))
+					die2(EXIT_BAD_SER,
+						"eat(service) failed", err);
+				exit_status = ok_no;
+			} else {
+				char buf[128 + 1];
 
-			if ((err = dig->eat_input()))
-				die2(EXIT_BAD_SER, "eat(input) failed", err);
+				if ((err = digest_module->eat_input()))
+					die2(EXIT_BAD_SER,
+						"eat(input) failed", err);
 
-			//  write the ascii digest
+				//  write the ascii digest
 
-			buf[0] = 0;
-			bufcat(buf, sizeof buf, digest);
-			bufcat(buf, sizeof buf, "\n");
-			if (uni_write_buf(output_fd, buf, strlen(buf)))
-				die2(EXIT_BAD_UNI, "write(digest) failed",
-							strerror(errno));
-			exit_status = 0;
-		}
+				buf[0] = 0;
+				bufcat(buf, sizeof buf, digest);
+				bufcat(buf, sizeof buf, "\n");
+				if (uni_write_buf(output_fd, buf, strlen(buf)))
+					die2(EXIT_BAD_UNI,
+					"write(digest) failed",
+					strerror(errno));
+				exit_status = 0;
+			}
+		} else
+			exit_status = digest_module->empty() == 1 ? 0 : 1;
 	} else if (*verb == 'p') {
 		if ((err = service->put(&ok_no)))
 			die2(EXIT_BAD_SER, "put() failed", err);
