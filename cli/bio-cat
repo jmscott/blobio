@@ -11,7 +11,7 @@
 #	SIGPIPE needs to be ignored.
 #
 PROG=$(basename $0)
-SERVICE=${BLOBIO_GET_SERVICE:=BLOBIO_SERVICE}
+SERVICE=${BLOBIO_GET_SERVICE:=$BLOBIO_SERVICE}
 
 die()
 {
