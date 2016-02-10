@@ -27,6 +27,10 @@ Description:
 		echo 'hello, world' | shasum
 		cd50d19784897085a8d0e3e413f8612b097c03f1  -
 
+	The maximum size of an algorithm is 8 characters.  The maximum size
+	of a digest is 128 characters, making the maximum size of a udig =
+	8 + 128 + 1 (colon).
+
 	The network protocol implements 7 verbs
 	
 		get <udig>		get a blob with a particular digest
@@ -143,6 +147,8 @@ Protocol Flow:
 	described above.
 
 Protocol Questions:
+	- should wrap send the algorithm?
+
 	- what about forbidding ':' as a digest character?
 
         - think about a "prove" command that allows the server to formally prove
