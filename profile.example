@@ -20,9 +20,9 @@ export BLOBIO_ROOT=${BLOBIO_ROOT:=/usr/local/blobio}
 #
 
 export BLOBIO_BIOD_PORT=${BLOBIO_BIOD_PORT:=1797}
+
 export BLOBIO_SERVICE=${BLOBIO_SERVICE:=bio4:localhost:$BLOBIO_BIOD_PORT}
-export BLOBIO_GET_SERVICE=${BLOBIO_GET_SERVICE:=rofs:$BLOBIO_ROOT}
-export BLOBIO_EAT_SERVICE=${BLOBIO_EAT_SERVICE:=rofs:$BLOBIO_ROOT}
+export BLOBIO_RO_SERVICE=${BLOBIO_RO_SERVICE:=rofs:$BLOBIO_ROOT}
 
 #
 #  The default digest algorithm to use when new blobs must be generated.

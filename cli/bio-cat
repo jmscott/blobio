@@ -11,13 +11,15 @@
 #	SIGPIPE needs to be ignored.
 #
 PROG=$(basename $0)
-SERVICE=${BLOBIO_GET_SERVICE:=$BLOBIO_SERVICE}
+SERVICE=${BLOBIO_RO_SERVICE:=$BLOBIO_SERVICE}
 
 die()
 {
 	echo "$PROG: ERROR: $@" >&2
 	exit 1
 }
+
+test -n "$SERVICE" || die 'env variable not defined: BLOBIO_SERVICE'
 
 while [ "$1" ]; do
 	ARG="$1"

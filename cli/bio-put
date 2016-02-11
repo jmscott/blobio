@@ -12,14 +12,15 @@
 
 PROG=$(basename $0)
 ALGORITHM=sha
-PUT_SERVICE=${BLOBIO_PUT_SERVICE:=$BLOBIO_SERVICE}
-EAT_SERVICE=${BLOBIO_EAT_SERVICE:=$BLOBIO_SERVICE}
+EAT_SERVICE=${BLOBIO_RO_SERVICE:=$BLOBIO_SERVICE}
 
 die()
 {
 	echo "$PROG: $@" >&2
 	exit 1
 }
+
+test -n "BLOBIO_SERVICE" || die 'env variable not defined: BLOBIO_SERVICE'
 
 put_file()
 {
@@ -36,7 +37,7 @@ put_file()
 	case $STATUS in
 	1)
 		blobio put --udig $UDIG --input-path "$FILE"		\
-				--service $PUT_SERVICE
+				--service $BLOBIO_SERVICE
 		test $? = 0 || die "blobio put failed: $FILE"
 		cat <<END
 $FILE

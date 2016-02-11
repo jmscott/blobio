@@ -1,19 +1,11 @@
 #!/bin/bash
 #
 #  Synopsis:
-#	Put a file meta blob and the file itself as a blob
-#  Blame:
-#  	jmscott@setspace.com
-#	setspace@gmail.com
-#  Note:
-#	Very large blobs give no feedback while calculating the digest,
-#	which can be confusing.
+#	Put both the file and a json meta blob to the blob service.
 #
 
 PROG=$(basename $0)
-ALGORITHM=sha
-EAT_SERVICE=${BLOBIO_EAT_SERVICE:=$BLOBIO_SERVICE}
-PUT_SERVICE=${BLOBIO_PUT_SERVICE:=$BLOBIO_SERVICE}
+EAT_SERVICE=${BLOBIO_RO_SERVICE:=$BLOBIO_SERVICE}
 TMPDIR=${TMPDIR:=/tmp}
 JSON=$TMPDIR/$PROG-$$.json
 
@@ -24,6 +16,9 @@ die()
 	echo "$PROG: $@" >&2
 	exit 1
 }
+
+test -n "BLOBIO_SERVICE" || die 'env variable not defined: BLOBIO_SERVICE'
+test -n "BLOBIO_ALGORITHM" || die 'env variable not defined: BLOBIO_ALGORITHM'
 
 escape_json()
 {
@@ -42,15 +37,15 @@ put_file()
 	test -d "$FILE" && die "$FILE is a directory"
 	test -r "$FILE" || die "can't read $FILE"
 
-	DIGEST=$(blobio eat --algorithm $ALGORITHM --input-path "$FILE")
+	DIGEST=$(blobio eat --algorithm $BLOBIO_ALGORITHM --input-path "$FILE")
 	test -n "$DIGEST" || die "blobio eat failed"
-	UDIG=$ALGORITHM:$DIGEST
+	UDIG=$BLOBIO_ALGORITHM:$DIGEST
 	blobio eat --udig $UDIG --service $EAT_SERVICE
 	STATUS=$?
 	case $STATUS in
 	1)
 		blobio put --udig $UDIG --input-path "$FILE" 		\
-						--service $PUT_SERVICE
+						--service $BLOBIO_SERVICE
 		test $? = 0 || die "blobio put failed: $FILE"
 		cat <<END
 $FILE
@@ -91,15 +86,15 @@ END
 END
 	test -s $JSON || die "file has size of zero: $JSON"
 
-	DIGEST=$(blobio eat --algorithm $ALGORITHM --input-path $JSON)
+	DIGEST=$(blobio eat --algorithm $BLOBIO_ALGORITHM --input-path $JSON)
 	test -n "$DIGEST" || die "blobio eat failed: $JSON"
-	UDIG=$ALGORITHM:$DIGEST
+	UDIG=$BLOBIO_ALGORITHM:$DIGEST
 	blobio eat --udig $UDIG --service $EAT_SERVICE
 	STATUS=$?
 	case $STATUS in
 	1)
 		blobio put --udig $UDIG --input-path $JSON 		\
-				--service $PUT_SERVICE
+				--service $BLOBIO_SERVICE
 		test $? = 0 || die "blobio put failed: $JSON"
 		cat <<END
 	>>$UDIG

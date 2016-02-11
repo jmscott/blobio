@@ -7,13 +7,15 @@
 #	setspace@gmail.com
 #
 ALGORITHM=sha
-SERVICE=${BLOBIO_GET_SERVICE:=$BLOBIO_SERVICE}
+SERVICE=${BLOBIO_RO_SERVICE:=$BLOBIO_SERVICE}
 
 die()
 {
 	echo "$0: $@" >&2
 	exit 1
 }
+
+test -n "$SERVICE" || die 'env variable not defined: BLOBIO_SERVICE'
 
 while [ "$1" ]; do
 	case "$1" in

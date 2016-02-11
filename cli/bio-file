@@ -7,7 +7,7 @@
 #	setspace@gmail.com
 #
 PROG=$(basename $0)
-SERVICE=${BLOBIO_GET_SERVICE:=$BLOBIO_SERVICE}
+SERVICE=${BLOBIO_RO_SERVICE:=$BLOBIO_SERVICE}
 ALGORITHM=sha
 TMP_FILE=${TMPDIR:=/tmp}/$PROG.$$
 
@@ -25,6 +25,8 @@ leave()
 }
 
 trap leave EXIT
+
+test -n "$SERVICE" || die 'env variable not defined: BLOBIO_SERVICE'
 
 while [ "$1" ]; do
 	UDIG="$1";  shift
