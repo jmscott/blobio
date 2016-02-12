@@ -778,14 +778,6 @@ main(int argc, char **argv)
 	}
 
 
-	//  close unneeded std{in,out}.  files are a precious resource
-
-	if (input_fd != 0 && uni_close(0))
-		die2(EXIT_BAD_UNI, "close(stdin) failed", strerror(errno));
-	if (output_fd != 1 && uni_close(1))
-		die2(EXIT_BAD_UNI, "close(stdout) failed", strerror(errno));
-
-
 	//  invoke the service callback
 	//
 	//  Note: Convert if/else if/ tests to switch.
