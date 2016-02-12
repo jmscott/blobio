@@ -457,7 +457,7 @@ read_ok_no(int *reply)
 }
 
 /*
- *  Send a get/put/give/take/roll command to the remote server and
+ *  Send a get/wrap/roll command to the remote server and
  *  read the reply.  Return 0 if 'ok' is reply, 1 if 'no' is reply,
  *  -1 otherwise.
  */
@@ -578,7 +578,7 @@ static char *
 bio4_put(int *ok_no)
 {
 	char *err;
-	char req[4 + 8 + 1 + 128 + 1 + 1];
+	char req[5 + 8 + 1 + 128 + 1 + 1];
 	int nread, more;
 	unsigned char buf[PIPE_MAX];
 
