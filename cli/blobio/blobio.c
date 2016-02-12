@@ -303,7 +303,7 @@ parse_udig(char *udig)
 			}
 			else {
 				if (a - algorithm >= 8)
-					return "algorithm > 8 chars";
+					return "no colon at end of <algorithm>";
 				*a++ = c;
 			}
 		} else {
