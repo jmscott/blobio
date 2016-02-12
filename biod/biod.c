@@ -803,7 +803,7 @@ request()
 	if (nread < 0)
 		die_NO("read_buf(request) failed");
 	if (state == STATE_SCAN_VERB && v_next == verb)
-		die_NO("empty read_buf()");
+		die_NO("empty read_buf(verb)");
 
 	/*
 	 *  Write out the blob request record if the verb halted "normally".
