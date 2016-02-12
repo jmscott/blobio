@@ -174,6 +174,7 @@ leave(int status)
 				uni_write(2, buf, strlen(buf));
 			}
 		}
+	TRACE("good bye, cruel world");
 	_exit(status);
 }
 
@@ -568,7 +569,7 @@ parse_argv(int argc, char **argv)
 			if (tracing)
 				emany("trace");
 			tracing = 1;
-			TRACE("trace enabled");
+			TRACE("hello, world");
 		} else
 			die2(EXIT_BAD_ARG, "unknown option", argv[i]);
 	}
