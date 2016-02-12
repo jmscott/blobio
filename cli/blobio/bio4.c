@@ -458,14 +458,18 @@ read_ok_no(int *reply)
 
 /*
  *  Send a get/wrap/roll command to the remote server and
- *  read the reply.  Return 0 if 'ok' is reply, 1 if 'no' is reply,
+ *  read the reply.
+ *
+ *	give sha:f6e723cc3642009cb74c740bd14317b207d05923\n	
+ *
+ *  Return 0 if 'ok' is reply, 1 if 'no' is reply,
  *  -1 otherwise.
  */
 static char *
 request(int *ok_no)
 {
 	char *err;
-	char req[4 + 8 + 1 + 128 + 1 + 1];
+	char req[5 + 8 + 1 + 128 + 1 + 1];
 
 	if ((err = _write(server_fd, (unsigned char *)req, copy_request(req))))
 		return err;
