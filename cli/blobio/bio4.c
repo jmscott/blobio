@@ -48,7 +48,7 @@ extern int	output_fd;
 extern char	*input_path;
 extern int	input_fd;
 
-static int server_fd;
+static int server_fd = -1;
 static unsigned int timeout =	25;
 
 struct service bio4_service;
@@ -544,22 +544,27 @@ bio4_get(int *ok_no)
 static char *
 bio4_open_output()
 {
-	output_fd = uni_open_mode(
+	int fd;
+	fd = uni_open_mode(
 			output_path,
 			O_WRONLY | O_EXCL | O_CREAT,
 			S_IRUSR | S_IRGRP
 		);
-	if (output_fd == -1)
+	if (fd == -1)
 		return strerror(errno);
+	output_fd = fd;
 	return (char *)0;
 }
 
 static char *
 bio4_open_input()
 {
-	input_fd = uni_open(input_path, O_RDONLY);
-	if (output_fd == -1)
+	int fd;
+
+	fd = uni_open(input_path, O_RDONLY);
+	if (fd == -1)
 		return strerror(errno);
+	input_fd = fd;
 	return (char *)0;
 }
 
