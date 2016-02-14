@@ -1,19 +1,15 @@
 #
 #  Synopsis:
 #	Example bash_login used during code development
-#  Usage:
-#	BLOBIO_ROOT=$HOME/opt/blobio
-#	cd $BLOBIO_ROOT
-#	sed "s@^BLOBIO_ROOT=.*@BLOBIO_ROOT=$BLOBIO_ROOT@" 	\
-#				lib/bash_login.example >etc/bash_login
-#	. etc/bash_login
-#  See:
-#	lib/profile.example
-#	https://github.com/jmscott/work/xtitle
 #
 export BLOBIO_ROOT=$HOME/opt/blobio
+
 PS1='blob@opt> '
 
 cd $BLOBIO_ROOT || exit 1
+
+#  unset environment BLOBIO_* variables, except BLOBIO_ROOT
+
+unset $(env | grep '^BLOBIO_' | grep -v '^BLOBIO_ROOT=' | cut -d= -f1)
 
 . etc/profile
