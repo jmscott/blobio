@@ -108,7 +108,7 @@ ifdef DIST_ROOT
 		$(DIST_ROOT)/sbin
 
 	install -g $(DIST_GROUP) -o $(DIST_USER) -m ug=r,o=		\
-		bash_login.example					\
+		bash_login-dev.example					\
 		crontab.example						\
 		profile.example						\
 		psqlrc.example						\

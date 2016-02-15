@@ -1,9 +1,12 @@
 #
 #  Synopsis:
-#	Environment for typical blobio user
-#  Blame:
-#  	jmscott@setspace.com
-#  	setspace@gmail.com
+#	Bash profile for typical blobio server admin 
+#  Usage:
+#	Sourced by flowd startup scripts and bash_login.
+#  Note:
+#	Ought to be named profile-bash.example
+#
+#	Also ought to document all required variables.
 #
 export BLOBIO_ROOT=${BLOBIO_ROOT:=/usr/local/blobio}
 
@@ -22,25 +25,28 @@ export BLOBIO_ROOT=${BLOBIO_ROOT:=/usr/local/blobio}
 export BLOBIO_BIOD_PORT=${BLOBIO_BIOD_PORT:=1797}
 
 export BLOBIO_SERVICE=${BLOBIO_SERVICE:=bio4:localhost:$BLOBIO_BIOD_PORT}
-export BLOBIO_RO_SERVICE=${BLOBIO_RO_SERVICE:=rofs:$BLOBIO_ROOT}
 
 #
 #  The default digest algorithm to use when new blobs must be generated.
 #
 export BLOBIO_ALGORITHM=${BLOBIO_ALGORITHM:=sha}
 
-export PGROOT=/usr/local/pgsql
-export PGDATA=$PGROOT/data
-export PGHOST=/tmp
-export PGPORT=5432
-export PGUSER=blobio
-export PGDATABASE=blobio
+#  set postgresql variables
+
+export PGHOME=${PGHOME:=/usr/local/pgsql}
+export PGDATA=${PGDATA:=$PGHOME/data}
+export PGHOST=${PGHOST:=/tmp}
+export PGPORT=${PGPORT:=5432}
+export PGUSER=${PGUSER:=postgres}
+export PGPASSWORD=${PGPASSWORD:=}
+export PGDATABASE=${PGDATABASE:=blobio}
+
+#  golang libpq gripes about PGSYSCONFDIR
+unset PGSYSCONFDIR
 
 PATH=$BLOBIO_ROOT/bin:$BLOBIO_ROOT/sbin:$PGROOT/bin:$PATH
 
-#  Help for development environments where BLOBIO_ROOT=$HOME/opt/blobio.
-#  Note: move these to bash_login.example
-
-HISTFILE=$BLOBIO_ROOT/.bash_history
-HISTSIZE=50000
-export PSQLRC=$BLOBIO_ROOT/etc/psqlrc
+export TMPDIR=$BLOBIO_ROOT/tmp
+if [ ! -e $TMPDIR ];  then
+	mkdir -p $TMPDIR/tmp || exit 1
+fi

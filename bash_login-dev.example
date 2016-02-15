@@ -1,0 +1,44 @@
+#
+#  Synopsis:
+#	Interactive bash_login used during code development only.
+#  Usage:
+#	export BLOBIO_ROOT=$HOME/opt/blobio
+#	cd $BLOBIO_ROOT
+#	cp lib/bash_login-dev.example .bash_login
+#	. .bash_login
+#
+
+#  unset all environment BLOBIO_* variables, except BLOBIO_ROOT
+
+unset $(env | grep '^BLOBIO_' | grep -v '^BLOBIO_ROOT=' | cut -d= -f1)
+
+#  point to home dev directory in opt/blobio and set listening port to 1796
+
+export BLOBIO_ROOT=$HOME/opt/blobio
+export BLOBIO_BIOD_PORT=1796
+
+PS1='blob@opt> '
+
+cd $BLOBIO_ROOT || exit 1
+
+#  override the postgres variables
+
+export PGUSER=$USER
+export PGPASSWORD=
+export PGDATABASE=$USER
+
+#  pick up all runtime variables not defined above
+
+. etc/profile
+
+#  prefered bash history defaults of jmscott.  change at will.
+
+export HISTFILE=$BLOBIO_ROOT/.bash_history
+export HISTSIZE=1000
+export HISTFILESIZE=100000
+HISTCONTROL=ignoreboth
+
+#  postgresql psql defaults of jmscott. change at will.
+#  not required by runtime.
+
+export PSQLRC=$BLOBIO_ROOT/etc/psqlrc
