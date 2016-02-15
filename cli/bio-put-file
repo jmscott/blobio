@@ -17,8 +17,8 @@ die()
 	exit 1
 }
 
-test -n "BLOBIO_SERVICE" || die 'env variable not defined: BLOBIO_SERVICE'
-test -n "BLOBIO_ALGORITHM" || die 'env variable not defined: BLOBIO_ALGORITHM'
+test -n "$BLOBIO_SERVICE" || die 'env variable not defined: BLOBIO_SERVICE'
+test -n "$BLOBIO_ALGORITHM" || die 'env variable not defined: BLOBIO_ALGORITHM'
 
 escape_json()
 {
