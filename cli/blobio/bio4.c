@@ -512,12 +512,16 @@ bio4_get(int *ok_no)
 	 *  verifying the signature.
 	 */
 	more = 1;
-	while (more && (err = _read(server_fd, buf, sizeof buf, &nread)) == 0){
+	while (more) {
+
+		err = _read(server_fd, buf, sizeof buf, &nread);
+		if (err)
+			return err;
+
+		more = bio4_service.digest->get_update(buf, nread);
 
 		if (nread == 0)
 			break;
-
-		more = bio4_service.digest->get_update(buf, nread);
 
 		/*
 		 *  Partial blob verified, so write() to output.
@@ -533,6 +537,8 @@ bio4_get(int *ok_no)
 		}
 #endif
 	}
+	if (err)
+		return err;
 	if (more)
 		return "blob does not match digest";
 
