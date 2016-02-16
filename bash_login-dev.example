@@ -8,9 +8,9 @@
 #	. .bash_login
 #
 
-#  unset all environment BLOBIO_* variables, except BLOBIO_ROOT
+#  unset all environment BLOBIO_* variables
 
-unset $(env | grep '^BLOBIO_' | grep -v '^BLOBIO_ROOT=' | cut -d= -f1)
+unset $(env | grep '^BLOBIO_' | cut -d= -f1)
 
 #  point to home dev directory in opt/blobio and set listening port to 1796
 
