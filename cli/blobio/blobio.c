@@ -634,6 +634,8 @@ xref_args()
 
 		if (verb[1] == 'a') {
 			if (service) {
+				if (input_path)
+					enot("input-path");
 				if (output_path)
 					enot("output-path");
 				if (algorithm[0]) {
