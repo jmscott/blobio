@@ -489,7 +489,7 @@ request(int *ok_no)
  *  Get a blob from the server.
  */
 static char *
-bio4_get(int *ok_no)
+_get(int *ok_no, int in_take)
 {
 	unsigned char buf[PIPE_MAX];
 	char *err;
@@ -504,7 +504,7 @@ bio4_get(int *ok_no)
 
 	//  blob server replied with no.
 
-	if (*ok_no == 1)
+	if (*ok_no == 1 || (in_take && bio4_service.digest->empty()))
 		return (char *)0;
 
 	/*
@@ -545,6 +545,12 @@ bio4_get(int *ok_no)
 	_TRACE("ok, got blob that matched digest");
 	_TRACE("get() done");
 	return (char *)0;
+}
+
+static char *
+bio4_get(int *ok_no)
+{
+	return _get(ok_no, 0);
 }
 
 static char *
@@ -605,12 +611,16 @@ bio4_put(int *ok_no)
 		return err;
 
 	more = 1;
-	while (more && (err = _read(input_fd, buf, sizeof buf, &nread)) == 0) {
+	while (more) {
+
+		err = _read(input_fd, buf, sizeof buf, &nread);
+		if (err)
+			return err;
+
+		more = bio4_service.digest->get_update(buf, nread);
 
 		if (nread == 0)
 			break;
-
-		more = bio4_service.digest->get_update(buf, nread);
 
 		/*
 		 *  Partial blob verified locally, so write() to server.
@@ -648,7 +658,7 @@ bio4_take(int *ok_no)
 
 	//  write "take <udig>\n and read back reply and possibly the blob
 
-	if ((err = bio4_get(ok_no))) {
+	if ((err = _get(ok_no, 1))) {
 		uni_write_buf(server_fd, "no\n", 3);
 		return err;
 	}
