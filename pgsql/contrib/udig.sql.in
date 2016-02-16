@@ -546,7 +546,7 @@ ALTER OPERATOR FAMILY udig_clan USING btree ADD
   OPERATOR 3	=	(udig, udig_sha),
   OPERATOR 4	>=	(udig, udig_sha),
   OPERATOR 5	>	(udig, udig_sha),
-  FUNCTION 1	udig_cmp_sha	(udig, udig_sha),
+  FUNCTION 1	udig_cmp_sha	(udig, udig_sha)
 ;
 
 CREATE OR REPLACE FUNCTION udig_algorithm(udig)
