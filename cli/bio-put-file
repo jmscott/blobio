@@ -2,6 +2,9 @@
 #
 #  Synopsis:
 #	Put both the file and a json meta blob to the blob service.
+#  Usage:
+#	bio-put-file invoice-20160215.pdf
+#	find . -name '*.pdf' -print | bio-put-file
 #
 
 PROG=$(basename $0)
