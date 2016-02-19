@@ -234,10 +234,18 @@ rofs_get(int *ok_no)
 
 	//  Note:  think about linux splice()
 
-	if ((blob_fd = uni_open(fs_path, O_RDONLY)) < 0)
-		return strerror(errno);
+	if ((blob_fd = uni_open(fs_path, O_RDONLY)) < 0) {
 
-	//  Note: stat size?
+		//  blob does not exist
+
+		if (errno == ENOENT) {
+			*ok_no = 1;
+			return (char *)0;
+		}
+		return strerror(errno);
+	}
+
+	//  Note: stat size to compare empty file to well known empty digest.
 
 	while ((nread = uni_read(blob_fd, buf, sizeof buf)) > 0)
 		if (uni_write_buf(output_fd, buf, nread))
