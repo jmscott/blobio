@@ -5,6 +5,7 @@
 #	export BLOBIO_ROOT=$HOME/opt/blobio
 #	cd $BLOBIO_ROOT
 #	cp lib/bash_login-dev.example .bash_login
+#	chmod +w .bash_login
 #	. .bash_login
 #
 
