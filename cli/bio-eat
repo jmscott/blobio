@@ -18,7 +18,6 @@
 #	Think about a script called bio-digest which eats a local file.
 #
 PROG=$(basename $0)
-SERVICE=${BLOBIO_RO_SERVICE:=$BLOBIO_SERVICE}
 
 die()
 {
@@ -26,13 +25,13 @@ die()
 	exit 1
 }
 
-test -n "$SERVICE" || die 'env variable not defined: BLOBIO_SERVICE'
+test -n "$BLOBIO_SERVICE" || die 'env variable not defined: BLOBIO_SERVICE'
 
 bio_eat()
 {
 	UDIG="$1"
 
-	blobio eat --udig $UDIG --service $SERVICE
+	blobio eat --udig $UDIG --service $BLOBIO_SERVICE
 	STATUS=$?
 	case $STATUS in
 	0)
@@ -46,8 +45,6 @@ bio_eat()
 		;;
 	esac
 }
-
-test -n "$SERVICE" || die 'env variable not defined: BLOBIO_SERVICE'
 
 case $# in
 0)

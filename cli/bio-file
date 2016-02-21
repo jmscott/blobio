@@ -7,8 +7,7 @@
 #	setspace@gmail.com
 #
 PROG=$(basename $0)
-SERVICE=${BLOBIO_RO_SERVICE:=$BLOBIO_SERVICE}
-ALGORITHM=sha
+ALGORITHM=${BLOBIO_ALGORITHM:=sha}
 TMP_FILE=${TMPDIR:=/tmp}/$PROG.$$
 
 die()
@@ -26,14 +25,17 @@ leave()
 
 trap leave EXIT
 
-test -n "$SERVICE" || die 'env variable not defined: BLOBIO_SERVICE'
+test -n "$BLOBIO_SERVICE" || die 'env variable not defined: BLOBIO_SERVICE'
 
 while [ "$1" ]; do
 	UDIG="$1";  shift
 
 	rm -f $TMP_FILE || die "rm -f $TMP_FILE failed: eit status=$?"
 
-	blobio get --udig $UDIG --service $SERVICE --output-path $TMP_FILE
+	blobio get 							\
+		--udig $UDIG
+		--output-path $TMP_FILE					\
+		--service $BLOBIO_SERVICE
 	STATUS=$?
 	case "$STATUS" in
 	0)
@@ -43,7 +45,7 @@ while [ "$1" ]; do
 		continue
 		;;
 	*)
-		die "blob get $UDIG $SERVICE failed"
+		die "blob get $UDIG $BLOBIO_SERVICE failed"
 		;;
 	esac
 	echo ">$UDIG	$(file --brief $TMP_FILE | sed 's/	/ /g')"

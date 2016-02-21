@@ -8,7 +8,6 @@
 #
 
 PROG=$(basename $0)
-EAT_SERVICE=${BLOBIO_RO_SERVICE:=$BLOBIO_SERVICE}
 TMPDIR=${TMPDIR:=/tmp}
 JSON=$TMPDIR/$PROG-$$.json
 
@@ -43,7 +42,7 @@ put_file()
 	DIGEST=$(blobio eat --algorithm $BLOBIO_ALGORITHM --input-path "$FILE")
 	test -n "$DIGEST" || die "blobio eat failed"
 	UDIG=$BLOBIO_ALGORITHM:$DIGEST
-	blobio eat --udig $UDIG --service $EAT_SERVICE
+	blobio eat --udig $UDIG --service $BLOBIO_SERVICE
 	STATUS=$?
 	case $STATUS in
 	1)
@@ -93,7 +92,7 @@ END
 	DIGEST=$(blobio eat --algorithm $BLOBIO_ALGORITHM --input-path $JSON)
 	test -n "$DIGEST" || die "blobio eat failed: $JSON"
 	UDIG=$BLOBIO_ALGORITHM:$DIGEST
-	blobio eat --udig $UDIG --service $EAT_SERVICE
+	blobio eat --udig $UDIG --service $BLOBIO_SERVICE
 	STATUS=$?
 	case $STATUS in
 	1)

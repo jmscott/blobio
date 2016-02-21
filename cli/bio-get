@@ -6,8 +6,7 @@
 #  	jmscott@setspace.com
 #	setspace@gmail.com
 #
-ALGORITHM=sha
-SERVICE=${BLOBIO_RO_SERVICE:=$BLOBIO_SERVICE}
+ALGORITHM=${BLOBIO_ALGORITHM:=sha}
 
 die()
 {
@@ -15,7 +14,7 @@ die()
 	exit 1
 }
 
-test -n "$SERVICE" || die 'env variable not defined: BLOBIO_SERVICE'
+test -n "$BLOBIO_SERVICE" || die 'env variable not defined: BLOBIO_SERVICE'
 
 while [ "$1" ]; do
 	case "$1" in
@@ -43,7 +42,7 @@ while [ "$1" ]; do
 	#
 	#  Fetch the file from the blob server.
 	#
-	blobio get --udig $UDIG --service $SERVICE  --output-path $FILE
+	blobio get --udig $UDIG --service $BLOBIO_SERVICE --output-path $FILE
 	STATUS=$?
 	case $STATUS in
 	0)
@@ -53,7 +52,7 @@ while [ "$1" ]; do
 		echo "?$UDIG"
 		;;
 	*)
-		die "blobio get $UDIG $SERVICE $FILE failed: status=$STATUS"
+		die "blobio get $UDIG $FILE failed: status=$STATUS"
 		;;
 	esac
 done

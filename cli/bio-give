@@ -12,7 +12,6 @@
 
 PROG=$(basename $0)
 ALGORITHM=${BLOBIO_ALGORITHM:=sha}
-EAT_SERVICE=${BLOBIO_RO_SERVICE:=$BLOBIO_SERVICE}
 
 die()
 {
@@ -34,7 +33,7 @@ give_file()
 	#
 	#  Verify if the blob exists.
 	#
-	blobio eat --udig $UDIG --service $EAT_SERVICE
+	blobio eat --udig $UDIG --service $BLOBIO_SERVICE
 	STATUS=$?
 	case $STATUS in
 	1)

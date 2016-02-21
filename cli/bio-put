@@ -11,8 +11,7 @@
 #
 
 PROG=$(basename $0)
-ALGORITHM=sha
-EAT_SERVICE=${BLOBIO_RO_SERVICE:=$BLOBIO_SERVICE}
+ALGORITHM=${BLOBIO_ALGORITHM:=sha}
 
 die()
 {
@@ -32,7 +31,7 @@ put_file()
 	STATUS=$?
 	test -n "$DIGEST" -o $STATUS != 0 || die "blobio eat failed"
 	UDIG=$ALGORITHM:$DIGEST
-	blobio eat --udig $UDIG --service $EAT_SERVICE
+	blobio eat --udig $UDIG --service $BLOBIO_SERVICE
 	STATUS=$?
 	case $STATUS in
 	1)
