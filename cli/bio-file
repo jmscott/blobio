@@ -33,7 +33,7 @@ while [ "$1" ]; do
 	rm -f $TMP_FILE || die "rm -f $TMP_FILE failed: eit status=$?"
 
 	blobio get 							\
-		--udig $UDIG
+		--udig $UDIG						\
 		--output-path $TMP_FILE					\
 		--service $BLOBIO_SERVICE
 	STATUS=$?
