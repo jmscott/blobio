@@ -30,7 +30,7 @@ test -n "$BLOBIO_SERVICE" || die 'env variable not defined: BLOBIO_SERVICE'
 while [ "$1" ]; do
 	UDIG="$1";  shift
 
-	rm -f $TMP_FILE || die "rm -f $TMP_FILE failed: eit status=$?"
+	rm -f $TMP_FILE || die "rm -f $TMP_FILE failed: exit status=$?"
 
 	blobio get 							\
 		--udig $UDIG						\
