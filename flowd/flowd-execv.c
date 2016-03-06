@@ -22,7 +22,7 @@
  *
  * 		A fatal error occured when execv'ing the process
  *		ERROR\t<error description>
- *	
+ *
  *	Fatal errors for flowd-execv are written to standard err and then
  *	flowd-execv exits.
  *  Exit Status:
@@ -207,7 +207,8 @@ again:
 	}
 }
 
-//  drain child and copy first line of output into buf.
+//  drain child output and copy first line of output into buf.
+//  Note: need to drain more than one line of output!
 
 static int
 drain(int child_fd, char *child_out) {
@@ -269,14 +270,17 @@ fork_wait() {
 	}
 
 	//  in parent
+
 	_close(merge[1]);
 	olen = drain(merge[0], buf);
 	_close(merge[0]);
 
 	//  reap the dead
+
 	_wait4(pid, &status, &ru);
 
 	//  Note: what about core dumps
+
 	if (WIFEXITED(status)) {
 		xclass = "EXIT";
 		xstatus = WEXITSTATUS(status);
