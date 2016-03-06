@@ -201,6 +201,7 @@ func (in os_exec_chan) worker_flowd_execv() {
 	for req := range in {
 
 		reqs := strings.Join(req.argv, "\t") + "\n"
+
 		//  write request to exec command to flowd-execv process
 		_, err := cmd_pipe_in.Write([]byte(reqs))
 		if err != nil {
@@ -220,7 +221,7 @@ func (in os_exec_chan) worker_flowd_execv() {
 		reply := os_exec_reply{}
 
 		if rep[0] == "ERROR" {
-			//  Note:  reply ought to see more than on line of
+			//  Note:  reply ought to see more than one line of
 			//         error output.
 			reply.err = errors.New(rep[1])
 			req.reply <- reply
