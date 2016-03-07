@@ -136,7 +136,7 @@ func (conf *config) server(par *parse) {
 				))
 				z, off := Now().Zone()
 				entries[2] = roll_entry(Sprintf(
-					"uptime: %s, time zone=%s %d",
+					"uptime: %s, time (zone=%s offset=%d)",
 					Since(start_time),
 					z, off))
 				tense := ""
