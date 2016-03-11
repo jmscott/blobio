@@ -1,14 +1,13 @@
 #!/bin/bash
 #
 #  Synopsis:
-#	Cat a list of blobs
+#	Cancatenate a list of blobs given on the command line
 #  Usage:
-#	bio-cat [--service host:port] udig1 [udig2 ...]
-#  Blame:
-#  	jmscott@setspace.com
-#	setspace@gmail.com
-#  Note:
-#	SIGPIPE needs to be ignored.
+#	bio-cat <udig1> [udig2 ...]
+#	bio-cat sha:a0bc76c479b55b5af2e3c7c4a4d2ccf44e6c4e71
+#  Environment:
+#	BLOBIO_SERVICE
+#	BLOBIO_GET_SERVICE
 #
 PROG=$(basename $0)
 
@@ -19,36 +18,24 @@ die()
 }
 
 test -n "$BLOBIO_SERVICE" || die 'env variable not defined: BLOBIO_SERVICE'
+SERVICE=${BLOBIO_GET_SERVICE:=$BLOBIO_SERVICE}
 
 while [ "$1" ]; do
-	ARG="$1"
-	case "$ARG" in
-	*:*)
-		UDIG=$ARG
-		;;
-	'')
-		die 'empty blob'
-		;;
-	--*)
-		die "unknown option: $ARG"
-		;;
-	*)
-		die "unknown argument: $ARG"
-		;;
-	esac
+	UDIG="$1"
+
 	#
 	#  Fetch the file from the blob server.
 	#
-	blobio get --udig $UDIG --service $BLOBIO_SERVICE
+	blobio get --udig "$UDIG" --service $SERVICE
 	STATUS=$?
 	case $STATUS in
 	0)
 		;;
 	1)
-		echo "$PROG: ?$UDIG" >&2
+		die "no such blob: $UDIG"
 		;;
 	*)
-		die "blobio get $UDIG $SERVICE failed: status=$STATUS"
+		die "blobio get $UDIG $SERVICE failed: exit status=$STATUS"
 		;;
 	esac
 	shift

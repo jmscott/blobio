@@ -5,13 +5,13 @@
 #  Usage:
 #	bio-give <file1> <file2> ...
 #	find . -type f -print | bio-give
-#  Blame:
-#  	jmscott@setspace.com
-#	setspace@gmail.com
+#  Environment:
+#	BLOBIO_SERVICE
+#	BLOBIO_GIVE_SERVICE
+#	BLOBIO_EAT_SERVICE
 #
 
 PROG=$(basename $0)
-ALGORITHM=${BLOBIO_ALGORITHM:=sha}
 
 die()
 {
@@ -19,7 +19,12 @@ die()
 	exit 1
 }
 
-test -n "BLOBIO_SERVICE" || die 'env variable not defined: BLOBIO_SERVICE'
+test -n "$BLOBIO_SERVICE" || die 'env variable not defined: BLOBIO_SERVICE'
+GIVE_SERVICE:=${BLOBIO_GIVE_SERVICE:=$BLOBIO_SERVICE}
+EAT_SERVICE:=${BLOBIO_EAT_SERVICE:=$BLOBIO_SERVICE}
+
+test -n "$BLOBIO_ALGORITHM" || die 'env variable not defined: BLOBIO_ALGORITHM'
+ALGORITHM=$BLOBIO_ALGORITHM
 
 give_file()
 {
@@ -33,15 +38,17 @@ give_file()
 	#
 	#  Verify if the blob exists.
 	#
-	blobio eat --udig $UDIG --service $BLOBIO_SERVICE
+	blobio eat --udig $UDIG --service $EAT_SERVICE
 	STATUS=$?
 	case $STATUS in
 	1)
 		#
 		#  Give the new blob
 		#
-		blobio give --udig $UDIG --input-path "$FILE" 		\
-			--service $BLOBIO_SERVICE
+		blobio give						\
+			--udig $UDIG					\
+			--input-path "$FILE"		 		\
+			--service $GIVE_SERVICE
 		STATUS=$?
 		test $STATUS = 0 ||
 			die "blobio give failed: exit status=$STATUS: $FILE"

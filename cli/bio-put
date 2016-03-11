@@ -5,21 +5,25 @@
 #  Usage:
 #	bio-put <file1> <file2> ...
 #	find . -type f -print | bio-put
-#  Blame:
-#  	jmscott@setspace.com
-#	setspace@gmail.com
+#  Environment:
+#	BLOBIO_SERVICE
+#	BLOBIO_PUT_SERVICE
+#	BLOBIO_ALGORITHM
 #
 
 PROG=$(basename $0)
-ALGORITHM=${BLOBIO_ALGORITHM:=sha}
 
 die()
 {
-	echo "$PROG: $@" >&2
+	echo "$PROG: ERROR: $@" >&2
 	exit 1
 }
 
 test -n "BLOBIO_SERVICE" || die 'env variable not defined: BLOBIO_SERVICE'
+SERVICE=${BLOBIO_PUT_SERVICE:=$BLOBIO_SERVICE}
+
+test -n "BLOBIO_ALGORITHM" || die 'env variable not defined: BLOBIO_ALGORITHM'
+ALGORITHM=$BLOBIO_ALGORITHM
 
 put_file()
 {

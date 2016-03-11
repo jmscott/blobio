@@ -1,20 +1,20 @@
 #!/bin/bash
 #
 #  Synopsis:
-#	Eat a stream of blobs from either the command line or standard input
+#	Eat a stream of blobs passed on command line.
 #  Exit Status:
 #	0	all blob request to eat suceeded, both existing or not
 #	1	request to eat a blob failed, some blobs may not be digested
 #  Environment:
 #	BLOBIO_SERVICE
+#	BLOBIO_EAT_SERVICE
 #  Usage:
 #	bio-eat <large.udig
 #	bio-eat sha:7884029948e18cb1f5d442a46b7721d0178ccc39 ...
 #	xargs bio-eat <large.udig
-#  Blame:
-#  	jmscott@setspace.com
-#	setspace@gmail.com
 #  Note:
+#	Zap the reads from standard input.  xargs is better approach.
+#
 #	Think about a script called bio-digest which eats a local file.
 #
 PROG=$(basename $0)
@@ -26,12 +26,13 @@ die()
 }
 
 test -n "$BLOBIO_SERVICE" || die 'env variable not defined: BLOBIO_SERVICE'
+SERVICE=${BLOBIO_EAT_SERVICE:=$BLOBIO_SERVICE}
 
 bio_eat()
 {
 	UDIG="$1"
 
-	blobio eat --udig $UDIG --service $BLOBIO_SERVICE
+	blobio eat --udig $UDIG --service $SERVICE
 	STATUS=$?
 	case $STATUS in
 	0)
@@ -41,7 +42,7 @@ bio_eat()
 		echo "?$UDIG"
 		;;
 	*)
-		die "blobio eat $UDIG failed: exit status=$STATUS: "
+		die "blobio eat $SERVICE $UDIG failed: exit status=$STATUS: "
 		;;
 	esac
 }

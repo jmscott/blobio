@@ -2,11 +2,9 @@
 #
 #  Synopsis:
 #	Get a blob into a local file named <udig>.
-#  Blame:
-#  	jmscott@setspace.com
-#	setspace@gmail.com
+#  Usage:
+#	bio-get sha:a0bc76c479b55b5af2e3c7c4a4d2ccf44e6c4e71
 #
-ALGORITHM=${BLOBIO_ALGORITHM:=sha}
 
 die()
 {
@@ -15,34 +13,24 @@ die()
 }
 
 test -n "$BLOBIO_SERVICE" || die 'env variable not defined: BLOBIO_SERVICE'
+SERVICE=${BLOBIO_GET_SERVICE:=$BLOBIO_SERVICE}
 
 while [ "$1" ]; do
-	case "$1" in
-	*:*)
-		UDIG=$1
-		;;
-	'')
-		die 'empty blob'
-		;;
-	*)
-		die "unexpected udig: $UDIG"
-		;;
-	esac
+	UDIG="$1"
 	shift
-
-	FILE=$UDIG
+	FILE="$UDIG"
 
 	#
 	#  Skip if file exists.  
 	#
-	if [ -f $FILE ];  then
+	if [ -f "$FILE" ];  then
 		echo "@$UDIG"
 		continue
 	fi
 	#
 	#  Fetch the file from the blob server.
 	#
-	blobio get --udig $UDIG --service $BLOBIO_SERVICE --output-path $FILE
+	blobio get --udig "$UDIG" --service $SERVICE --output-path "$FILE"
 	STATUS=$?
 	case $STATUS in
 	0)
@@ -52,7 +40,7 @@ while [ "$1" ]; do
 		echo "?$UDIG"
 		;;
 	*)
-		die "blobio get $UDIG $FILE failed: status=$STATUS"
+		die "blobio get $UDIG $SERVICE failed: status=$STATUS"
 		;;
 	esac
 done

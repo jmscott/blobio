@@ -1,15 +1,15 @@
 #!/bin/bash
 #
 #  Synopsis:
-#	Take blobs from a server
+#	Take blobs from the service
 #  Usage:
 #	bio-take <file1> <file2> ...
 #	bio-take <blob-set.txt
-#  Blame:
-#	jmscott@setspace.com
-#	setspace@gmail.com
+#  Environment:
+#	BLOBIO_SERVICE
+#	BLOBIO_TAKE_SERVICE
 #  Note:
-#	Need to add '--service host:port' option!!
+#	Need to eliminate the --save option.  Use bio-zap instead.
 #
 
 PROG=$(basename $0)
