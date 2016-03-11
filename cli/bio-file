@@ -2,12 +2,12 @@
 #
 #  Synopsis:
 #	Unix 'file' command run on a blob
-#  Blame:
-#  	jmscott@setspace.com
-#	setspace@gmail.com
+#  Environment Variables:
+#	BLOBIO_SERVICE
+#	BLOBIO_GET_SERVICE
+#	TMPDIR
 #
 PROG=$(basename $0)
-ALGORITHM=${BLOBIO_ALGORITHM:=sha}
 TMP_FILE=${TMPDIR:=/tmp}/$PROG.$$
 
 die()
@@ -26,16 +26,19 @@ leave()
 trap leave EXIT
 
 test -n "$BLOBIO_SERVICE" || die 'env variable not defined: BLOBIO_SERVICE'
+SERVICE=${BLOBIO_GET_SERVICE:=$BLOBIO_SERVICE}
 
 while [ "$1" ]; do
 	UDIG="$1";  shift
+
+	#  blobio command will refuse to overwrite existing file
 
 	rm -f $TMP_FILE || die "rm -f $TMP_FILE failed: exit status=$?"
 
 	blobio get 							\
 		--udig $UDIG						\
 		--output-path $TMP_FILE					\
-		--service $BLOBIO_SERVICE
+		--service $SERVICE
 	STATUS=$?
 	case "$STATUS" in
 	0)
@@ -45,7 +48,7 @@ while [ "$1" ]; do
 		continue
 		;;
 	*)
-		die "blob get $UDIG $BLOBIO_SERVICE failed"
+		die "blob get $SERVICE $UDIG failed: exit status=$STATUS"
 		;;
 	esac
 	echo ">$UDIG	$(file --brief $TMP_FILE | sed 's/	/ /g')"
