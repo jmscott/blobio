@@ -36,7 +36,7 @@ bio_eat()
 	STATUS=$?
 	case $STATUS in
 	0)
-		echo "=$UDIG"
+		echo "@$UDIG"
 		;;
 	1)
 		echo "?$UDIG"
