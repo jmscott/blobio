@@ -848,7 +848,7 @@ func (flo *flow) bool2(
 	return out
 }
 
-//  unqualified answer with empty non-null argv
+//  empty non-null argv sends immediatly
 
 func (flo *flow) argv0() (out argv_chan) {
 
