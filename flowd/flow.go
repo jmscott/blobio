@@ -1648,7 +1648,7 @@ func (flo *flow) fanout_xdr(
 		out[i] = make(xdr_chan)
 	}
 
-	put := func(f *flow, xv *xdr_value, xc xdr_chan) {
+	put := func(xv *xdr_value, xc xdr_chan) {
 
 		xc <- xv
 	}
@@ -1670,7 +1670,7 @@ func (flo *flow) fanout_xdr(
 
 			//  broadcast to channels in slice
 			for _, xc := range out {
-				go put(flo, xv, xc)
+				go put(xv, xc)
 			}
 		}
 	}()
@@ -1692,7 +1692,7 @@ func (flo *flow) fanout_qdr(
 		out[i] = make(qdr_chan)
 	}
 
-	put := func(f *flow, qv *qdr_value, qc qdr_chan) {
+	put := func(qv *qdr_value, qc qdr_chan) {
 
 		qc <- qv
 	}
@@ -1715,7 +1715,7 @@ func (flo *flow) fanout_qdr(
 			//  broadcast to channels in slice
 			//  Note: wait for the fanout to complete?
 			for _, qc := range out {
-				go put(flo, qv, qc)
+				go put(qv, qc)
 			}
 		}
 	}()
