@@ -115,7 +115,7 @@ struct digest
 	/*
 	 *  Maximum length file system path to digest.
 	 */
-	char	*(*fs_path)(char *path, int size);
+	char	*(*fs_path_length)(char *path, int size);
 };
 
 struct service
