@@ -37,7 +37,7 @@ Description:
 		put <udig>		write a blob with a digest
 		take <udig>		get a blob that the server may forget
 		give <udig>		put a blob that the client may forget
-		eat <udig>		digest of a blob by remote server
+		eat <udig>		untrusted digest of a blob by remote server
 
 		wrap			bundle current unwrapped brr traffic
 					logs into a single blob and return
