@@ -2,6 +2,7 @@
  *  Synopsis:
  *	Implement PostgreSQL UDIG Data Types for SHA1.
  *  Note:
+ *	udig algorithm is assumed to be 16 ascii chars.  spec says 8 chars.
  *	Can the operator functions be prevented from being called explicily?
  *	In other words, prevent the following query?
  *
