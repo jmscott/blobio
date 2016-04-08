@@ -37,7 +37,7 @@ Description:
 		put <udig>		write a blob with a digest
 		take <udig>		get a blob that the server may forget
 		give <udig>		put a blob that the client may forget
-		eat <udig>		untrusted digest of a blob by remote server
+		eat <udig>		untrusted digest of a blob by server
 
 		wrap			bundle current unwrapped blob traffic
 					logs into a single blob and return
@@ -57,7 +57,7 @@ Description:
 					the next wrap set as a "roll" blob
 					request record.
 
-	and replys comprised of sequences of 'ok' and 'no'.
+	and replys comprised of sequences of 'ok' and 'no'.  
 
 	On the blob server, named "biod", for each correct client request a
 	single traffic record describing the request is written to the file
