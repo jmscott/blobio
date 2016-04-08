@@ -111,6 +111,11 @@ struct digest
 	 *  Convert the ascii digest to file system path.
 	 */
 	char	*(*fs_path)(char *path, int size);
+
+	/*
+	 *  Maximum length file system path to digest.
+	 */
+	char	*(*fs_path)(char *path, int size);
 };
 
 struct service

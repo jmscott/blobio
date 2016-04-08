@@ -57,7 +57,9 @@ Description:
 					the next wrap set as a "roll" blob
 					request record.
 
-	and replys comprised of sequences of 'ok' and 'no'.  
+	After the initial request by the client, all request replies are just
+	'ok' or 'no', where 'no' is always the last reply. See below for the
+	exact protocol.
 
 	On the blob server, named "biod", for each correct client request a
 	single traffic record describing the request is written to the file

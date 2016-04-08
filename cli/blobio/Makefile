@@ -11,13 +11,14 @@ include ../../blobio.mk
 include ../../local.mk
 
 OBJS=			\
+	bio4.o		\
 	digest.o 	\
+	fs.o		\
 	rofs.o		\
 	service.o	\
 	sha.o		\
 	trace.o		\
-	unistd.o	\
-	bio4.o
+	unistd.o
 
 all: blobio
 
@@ -40,6 +41,8 @@ digest.o: digest.c blobio.h
 	$(CC) $(CFLAGS) -c digest.c
 rofs.o: rofs.c blobio.h
 	$(CC) $(CFLAGS) -c rofs.c
+fs.o: fs.c blobio.h
+	$(CC) $(CFLAGS) -c fs.c
 sha.o: sha.c blobio.h
 	$(CC) $(CFLAGS) -c sha.c
 service.o: service.c blobio.h
