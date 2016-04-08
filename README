@@ -81,7 +81,7 @@ Description:
 		blob_size		#  unsigned 64 bit long < 2^63
 		wall_duration		#  request wall duration in sec.ns>=0
 
-	All,characters are in ascii.  Most important is that each client request
+	All characters are in ascii.  Most important is that each client request
 	is associated with a request for a single blob described by a udig.
 	Also, BRR records are always syntactally correct as described above.  For
 	example, a request for a syntactically incorrect udig or an unknown verb
