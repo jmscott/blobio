@@ -39,34 +39,39 @@ Description:
 		give <udig>		put a blob that the client may forget
 		eat <udig>		untrusted digest of a blob by remote server
 
-		wrap			bundle current unwrapped brr traffic
+		wrap			bundle current unwrapped blob traffic
 					logs into a single blob and return
 					udig of the set of all blobs wrapped
-					after the previous roll. the wrapped
+					since the previous roll. the wrapped
 					<udig>, returned to client, will
 					be in the next wrap, which allows
 					perpetual chaining.
 
-		roll <udig>		forget all wrapped BRR logs in the
-					udig set described by <udig>.
+		roll <udig>		forget all wrapped blob traffic logs in
+					the udig set described by <udig>.
 					subsequent wrap/rolls will probably
-					never see these BRR sets again.
-					however, the blobs themselves will exist
-					and be gettable.  the <udig> of the
-					rolled udig will be in the next wrap set
-					as a "roll" blob request record.
+					never see these blob sets again.
+					however, the blobs themselves will
+					exist and probably be gettable.  the
+					<udig> of the rolled udig will be in
+					the next wrap set as a "roll" blob
+					request record.
 
 	and replys comprised of sequences of 'ok' and 'no'.
 
 	On the blob server, named "biod", for each correct client request a
-	single record describing the request is written to the file
+	single traffic record describing the request is written to the file
 
 		server:$BLOBIO_ROOT/spool/biod.brr
 
-	Those records are named "Blob Request Records" and abbreiviated as BRR.
+	Those traffic records are named "Blob Request Records" and abbreiviated
+	as BRR.  The BRR record format is modeled after the Call Detail Record
+	from the telecommunications industry:
 
-	The format of a single request record is a new-line terminated list of
-	tab separated fields, i.e, the typical unixy ascii record:
+		https://en.wikipedia.org/wiki/Call_detail_record
+
+	The format of a single brr record is a line of tab separated fields,
+	i.e, the typical unixy ascii record:
 
 		start_time		#  YYYY-MM-DDThh:mm:ss.ns[+-]HH:MM
 		netflow			#  [a-z][a-z0-9]{0,7}~[[:graph:]]{1,128}
@@ -93,7 +98,9 @@ Description:
 
 		<= 371 bytes
 
-	not including a trailing new-line spool/biod.brr or null character.
+	not including a trailing new-line or terminating null character.
+	Being <= 371 bytes allows easy broadcast in an UDP packet.
+	The BRR format is cast in stone.
 
 Protocol Flow:
  	>get udig\n			# request for blob by udig
