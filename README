@@ -81,10 +81,11 @@ Description:
 		blob_size		#  unsigned 64 bit long < 2^63
 		wall_duration		#  request wall duration in sec.ns>=0
 
-	Most important is that each client request is associated with a single
-	blob described by a udig. Also, BRR records are always syntactally
-	correct as described above.  For example, a request for a syntactically
-	incorrect udig or an unknown verb will not generate a BRR record.
+	All,characters are in ascii.  Most important is that each client request
+	is associated with a request for a single blob described by a udig.
+	Also, BRR records are always syntactally correct as described above.  For
+	example, a request for a syntactically incorrect udig or an unknown verb
+	will not generate a BRR record.
 
 	The maximum size of a blob request record is 371 bytes.
 	
@@ -125,7 +126,7 @@ Protocol Flow:
   		>no[close]		#     client might remember the blob
   	    <no\n[close]		#   server rejects blob request
 
-	>eat udig\n			# client requests to verify blob
+	>eat udig\n			# client requests server to verify blob
 	    <ok\n			#   blob exists and has been verified
 	    <no\n			#   server was unable to digest the blob
 
