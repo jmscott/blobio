@@ -101,7 +101,7 @@ fs_open()
 
 	_TRACE2("blob root directory", end_point);
 
-	//  verify permissons
+	//  verify permissons to blobio root directory
 
 	if (access(end_point, X_OK)) {
 		if (errno == ENOENT)
@@ -129,10 +129,7 @@ fs_open()
 	//  verify existence and permission of path to data directory.
 	//  path looks like <root_dir>/data/<algorithm>_fs
 
-	_TRACE2("blob data directory", fs_path);
-
-	//  verify permissons
-
+	_TRACE2("blob data/ directory", fs_path);
 	if (access(fs_path, X_OK)) {
 		if (errno == ENOENT)
 			return "blob data directory does not exist";
@@ -149,16 +146,6 @@ fs_open()
 		return "blob data directory is not a directory";
 
 	_TRACE("open() done");
-
-	return (char *)0;
-}
-
-static char *
-fs_open_input()
-{
-	_TRACE("request to open_input()");
-
-	_TRACE("open_input() done");
 
 	return (char *)0;
 }
@@ -350,7 +337,6 @@ struct service fs_service =
 	.close			=	fs_close,
 	.get			=	fs_get,
 	.open_output		=	fs_open_output,
-	.open_input		=	fs_open_input,
 	.eat			=	fs_eat,
 	.put			=	fs_put,
 	.take			=	fs_take,

@@ -1,6 +1,6 @@
 /*
  *  Synopsis:
- *	A very paranoid blobio service over TCP4.
+ *	A client driver for the very paranoid blobio service 'bio4' over TCP/IP4
  */
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -569,18 +569,6 @@ bio4_open_output()
 }
 
 static char *
-bio4_open_input()
-{
-	int fd;
-
-	fd = uni_open(input_path, O_RDONLY);
-	if (fd == -1)
-		return strerror(errno);
-	input_fd = fd;
-	return (char *)0;
-}
-
-static char *
 bio4_eat(int *ok_no)
 {
 	char *err;
@@ -779,7 +767,6 @@ struct service bio4_service =
 	.close			=	bio4_close,
 	.get			=	bio4_get,
 	.open_output		=	bio4_open_output,
-	.open_input		=	bio4_open_input,
 	.eat			=	bio4_eat,
 	.put			=	bio4_put,
 	.take			=	bio4_take,

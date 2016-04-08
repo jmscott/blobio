@@ -125,7 +125,7 @@ struct service
 
 	char		*(*end_point_syntax)(char *end_point);
 	char		*(*open_output)();
-	char		*(*open_input)();
+
 	char		*(*open)();
 	char		*(*close)();
 	char		*(*get)(int *ok_no);

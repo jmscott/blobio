@@ -131,7 +131,7 @@ rofs_open()
 
 	_TRACE2("blob data directory", fs_path);
 
-	//  verify permissons
+	//  reverify permissons on data/ directory
 
 	if (access(fs_path, X_OK)) {
 		if (errno == ENOENT)
@@ -149,16 +149,6 @@ rofs_open()
 		return "blob data directory is not a directory";
 
 	_TRACE("open() done");
-
-	return (char *)0;
-}
-
-static char *
-rofs_open_input()
-{
-	_TRACE("request to open_input()");
-
-	_TRACE("open_input() done");
 
 	return (char *)0;
 }
@@ -350,7 +340,6 @@ struct service rofs_service =
 	.close			=	rofs_close,
 	.get			=	rofs_get,
 	.open_output		=	rofs_open_output,
-	.open_input		=	rofs_open_input,
 	.eat			=	rofs_eat,
 	.put			=	rofs_put,
 	.take			=	rofs_take,

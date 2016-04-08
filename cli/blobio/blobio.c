@@ -735,20 +735,13 @@ main(int argc, char **argv)
 	//  open the input path
 
 	if (input_path) {
-		if (service) {
-			err = service->open_input();
-			if (err)
-				die3(EXIT_BAD_SER, "service open(input) failed",
-							err, input_path);
-		} else {
-			int fd;
+		int fd;
 
-			fd = uni_open(input_path, O_RDONLY);
-			if (fd == -1)
-				die3(EXIT_BAD_SER, "open(input) failed",
-							err, strerror(errno));
-			input_fd = fd;
-		}
+		fd = uni_open(input_path, O_RDONLY);
+		if (fd == -1)
+			die3(EXIT_BAD_SER, "open(input) failed",
+						err, strerror(errno));
+		input_fd = fd;
 	}
 
 	//  open the output path
