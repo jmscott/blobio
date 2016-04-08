@@ -1,6 +1,6 @@
 /*
  *  Synopsis:
- *	TCP4 blobio/biod service
+ *	A very paranoid blobio service over TCP4.
  */
 #include <sys/types.h>
 #include <sys/stat.h>
