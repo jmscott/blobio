@@ -111,44 +111,49 @@ func (conf *config) server(par *parse) {
 	go func() {
 		today_sample := flow_worker_sample{}
 
-		roll_entry := func(msg string) []byte {
+		roll_entry := func(format string, args ...interface{}) []byte {
 			return []byte(Sprintf("%s: %s\n",
 				Now().Format("2006/01/02 15:04:05"),
-				msg,
+				Sprintf(format, args...),
 			))
 		}
 
 		for {
-			var entries [4][]byte
+			var entries [5][]byte
 
 			//  assemble final and initial log entries for both
 			//  old and new log files.
 
 			roll_entries := func(when, old, new string) [][]byte {
 
-				entries[0] = roll_entry(Sprintf("%s: %s",
-					when,
-					today_sample.String(),
-				))
-				entries[1] = roll_entry(Sprintf("%s: %s",
-					"boot",
-					boot_sample.String(),
-				))
+				entries[0] = roll_entry(
+						"%s: %s",
+						when,
+						today_sample.String(),
+				)
+				entries[1] = roll_entry(
+						"%s: %s",
+						"boot",
+						boot_sample.String(),
+				)
 				z, off := Now().Zone()
-				entries[2] = roll_entry(Sprintf(
+				entries[2] = roll_entry(
 					"uptime: %s, time (zone=%s offset=%d)",
 					Since(start_time),
-					z, off))
+					z, off)
 				tense := ""
 				if when == roll_when_end {
 					tense = "ed"
 				}
 				entries[3] = roll_entry(
-					Sprintf("roll%s %s -> %s",
+						"roll%s %s -> %s",
 						tense,
 						old,
 						new,
-					))
+					)
+				entries[4] = roll_entry("go version: %s",
+							runtime.Version())
+
 				return entries[:]
 			}
 
