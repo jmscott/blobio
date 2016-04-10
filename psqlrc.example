@@ -5,4 +5,5 @@
  *	cp $BLOBIO_ROOT/lib/psqlrc.example $BLOBIO_ROOT/etc/psqlrc
  *	export PSQLRC=$BLOBIO/etc/psqlrc
  */
+\set timing on
 set search_path to blobio,public;
