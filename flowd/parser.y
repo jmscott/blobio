@@ -572,14 +572,6 @@ call_project:
 	  {
 		l := yylex.(*yyLexState)
 
-		//  the call() must occur before the reference to exit_status
-		if $1.called == false {
-			l.error(
-			     "command referenced before called: %s.exit_status",
-			     $1.name,
-			)
-		}
-
 		//  record dependency between call_project and statement.
 		//
 		//  gnu tsort treats nodes that point to themselves as islands,
@@ -645,13 +637,6 @@ query_project:
 			return 0
 		}
 
-		//  the query() qualification must occur before the reference
-		if $1.called == false {
-			l.error("sql query row referenced before called: %s.%s",
-							$1.name, $3)
-			return 0
-		}
-
 		//  record dependency between query_project and statement.
 		//
 		//  gnu tsort treats nodes that point to themselves as islands,
@@ -708,13 +693,6 @@ query_project:
 	  SQL_QUERY_ROW_REF  '.'  ROWS_AFFECTED
 	  {
 		l := yylex.(*yyLexState)
-
-		//  the query() qualification must occur before the reference
-		if $1.called == false {
-			l.error("sql query row referenced before called: %s",
-							$1.name)
-			return 0
-		}
 
 		//  record dependency between query_project and statement.
 		//
@@ -773,13 +751,6 @@ query_project:
 	  {
 		l := yylex.(*yyLexState)
 
-		//  the query() qualification must occur before the reference
-		if $1.called == false {
-			l.error("sql query row referenced before called: %s",
-							$1.name)
-			return 0
-		}
-
 		//  record dependency between query_project and statement.
 		//
 		//  gnu tsort treats nodes that point to themselves as islands,
@@ -836,12 +807,6 @@ query_project:
 	  {
 		l := yylex.(*yyLexState)
 
-		//  the exec() qualification must occur before the reference
-		if $1.called == false {
-			l.error("sql exec referenced before called: %s",$1.name)
-			return 0
-		}
-
 		//  record dependency between query_project and statement.
 		//
 		//  gnu tsort treats nodes that point to themselves as islands,
@@ -897,13 +862,6 @@ query_project:
 	  SQL_EXEC_REF  '.'  SQLSTATE
 	  {
 		l := yylex.(*yyLexState)
-
-		//  the exec() qualification must occur before the reference
-		if $1.called == false {
-			l.error("sql exec referenced before called: %s",
-								$1.name)
-			return 0
-		}
 
 		//  record dependency between query_project and statement.
 		//
