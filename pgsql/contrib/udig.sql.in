@@ -155,7 +155,8 @@ CREATE OPERATOR =
 	commutator =		=,
 	negator =		<>,
 	restrict =		eqsel,
-	join =			eqjoinsel
+	join =			eqjoinsel,
+	merge
 );
 
 CREATE OPERATOR <>
@@ -224,7 +225,8 @@ CREATE OPERATOR =					-- = (sha, udig)
 	commutator =		=,
 	negator =		<>,
 	restrict =		eqsel,
-	join =			eqjoinsel
+	join =			eqjoinsel,
+	merge
 );
 
 CREATE OPERATOR <>					-- <> (sha, udig)
