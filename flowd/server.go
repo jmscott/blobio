@@ -127,14 +127,14 @@ func (conf *config) server(par *parse) {
 			roll_entries := func(when, old, new string) [][]byte {
 
 				entries[0] = roll_entry(
-						"%s: %s",
-						when,
-						today_sample.String(),
+					"%s: %s",
+					when,
+					today_sample.String(),
 				)
 				entries[1] = roll_entry(
-						"%s: %s",
-						"boot",
-						boot_sample.String(),
+					"%s: %s",
+					"boot",
+					boot_sample.String(),
 				)
 				z, off := Now().Zone()
 				entries[2] = roll_entry(
@@ -146,13 +146,13 @@ func (conf *config) server(par *parse) {
 					tense = "ed"
 				}
 				entries[3] = roll_entry(
-						"roll%s %s -> %s",
-						tense,
-						old,
-						new,
-					)
+					"roll%s %s -> %s",
+					tense,
+					old,
+					new,
+				)
 				entries[4] = roll_entry("go version: %s",
-							runtime.Version())
+					runtime.Version())
 
 				return entries[:]
 			}
