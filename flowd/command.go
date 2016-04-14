@@ -1,12 +1,9 @@
-//  Synopsis:
+//Synopsis:
 //	Exec commands as separate processes
-//  Blame:
-//	jmscott@setspace.com
-//	setspace@gmail.com
-//  Note:
+//Note:
 //	A clean shutdown can trigger i/o panic() when flowd-execv catches INT
 //	signal.
-//
+
 package main
 
 import (
