@@ -1,8 +1,6 @@
-//  Synopsis:
+//Synopsis:
 //	Flow ops for PostgreSQL queries.
-//  Blame:
-//	jmscott@setspace.com
-//	setspace@gmail.com
+
 package main
 
 import (

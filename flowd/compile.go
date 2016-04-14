@@ -1,8 +1,9 @@
-//  Synopsis:
+//Synopsis:
 //	Compile a flow configuration into a network of channels.
-//  Blame:
+//Blame:
 //	jmscott@setspace.com
 //	setspace@gmail.com
+
 package main
 
 import (

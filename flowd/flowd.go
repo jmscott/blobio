@@ -1,8 +1,6 @@
-//  Synopsis:
+//Synopsis:
 //	flowd command main()
-//  Blame:
-//	jmscott@setspace.com
-//	setspace@gmail.com
+
 package main
 
 import (

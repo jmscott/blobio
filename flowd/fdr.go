@@ -1,8 +1,6 @@
-//  Synopsis:
+//Synopsis:
 //	Flow Detail Record
-//  Blame:
-//	jmscott@setspace.com
-//	setspace@gmail.com
+
 package main
 
 import (

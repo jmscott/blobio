@@ -1,8 +1,6 @@
-//  Synopsis:
-//	Flow instructions
-//  Blame:
-//	jmscott@setspace.com
-//	setspace@gmail.com
+//Synopsis:
+//	OpCodes for flow engine
+
 package main
 
 import (

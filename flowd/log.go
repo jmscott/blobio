@@ -1,8 +1,6 @@
-//  Synopsis:
+//Synopsis:
 //	Logging for info/WARN/ERROR
-//  Blame:
-//	jmscott@setspace.com
-//	setspace@gmail.com
+
 package main
 
 import (

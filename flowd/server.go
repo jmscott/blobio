@@ -1,12 +1,9 @@
-//  Synopsis:
+//Synopsis:
 //	Server action for flowd.
-//  Blame:
-//	jmscott@setspace.com
-//	setspace@gmail.com
 //  Note:
-//	Number of distinct udigs needs to be tracked.  Perhaps a udig malloc()
-//	would be appropriate, as well.
-//
+//	Number of distinct udigs needs to be tracked.  Sounds like a job for
+//	bloom filter.
+
 package main
 
 import (

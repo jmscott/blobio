@@ -1,8 +1,6 @@
-//  Synopsis:
+//Synopsis:
 //	Process Executation Detail Record
-//  Blame:
-//	jmscott@setspace.com
-//	setspace@gmail.com
+
 package main
 
 import (
