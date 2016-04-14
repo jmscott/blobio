@@ -23,19 +23,20 @@ GOPKG_OSARCH=$(GOHOSTOS)_$(GOHOSTARCH)
 EXEC=flowd flowd-execv
 
 GOSRC=									\
-	flowd.go							\
 	brr.go								\
 	command.go							\
 	compile.go							\
 	fdr.go								\
 	file.go								\
 	flow.go								\
+	flowd.go							\
 	log.go								\
 	parser.go							\
 	qdr.go								\
 	server.go							\
 	sql.go								\
 	tail.go								\
+	tsort.go							\
 	xdr.go
 
 #  Do 'go tool compile' for list of compile time flags
