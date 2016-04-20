@@ -1,12 +1,11 @@
-//  toplogically sort a directed graph using the kahn algorithm.
-//  return the order or nil.
+//topological sort of arc pairs, using the kahn algorithm
 //
 //	https://en.wikipedia.org/wiki/Topological_sorting#Kahn.27s_algorithm
 //
-//  the graph is a list of edges.  each edge is a pair of nodes separated by a
-//  space character.
+//  the graph is a list of arc pairs.  the two nodes in the arc are separated by
+//  a single space character.
 //
-//  eventually need to return a cycle, to aid debuging.
+//  upon failure, we eventually need to return a example cycle, to aid debuging.
 
 package main
 
@@ -27,7 +26,7 @@ func tsort(graph []string) (order []string) {
 
 		source := pair[0]
 		target := pair[1]
-		
+
 		node[source] = true
 		node[target] = true
 		if source != target {
