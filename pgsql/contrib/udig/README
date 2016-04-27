@@ -13,3 +13,6 @@ Description:
 		cd $PGDIST/contrib/udig
 		make install
 		cp udig.sql ..
+
+Note:
+	Convert this to an extension, damn it!
