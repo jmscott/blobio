@@ -11,7 +11,7 @@ include ../local.mk
 install:
 	install -g $(DIST_GROUP) -o $(DIST_USER) -m ug=r,o=		\
 		blobio.flow.example					\
-		contrib/udig.sql.in					\
+		contrib/udig/udig.sql.in				\
 		eat-unroll.sql						\
 		eat-wrap-missed.sql					\
 		schema.sql						\
