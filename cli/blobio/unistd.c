@@ -1,6 +1,6 @@
 /*
  *  Synopsis:
- *	Wrapper layer around common posix/unixish routines.
+ *	Wrapper around restartable posix/unixish routines, with errno untouched.
  */
 
 #include <errno.h>
@@ -32,8 +32,11 @@ uni_write(int fd, const void *buf, size_t count)
 	ssize_t nwrite;
 again:
 	nwrite = write(fd, buf, count);
-	if (nwrite >= 0)
+	if (nwrite > 0)
 		return nwrite;
+
+	//  write of zero only occurs on interupted system call?
+
 	if (errno == EINTR || errno == EAGAIN)
 		goto again;
 	return -1;
@@ -78,12 +81,12 @@ again:
 }
 
 int
-uni_open(const char *pathname, int flags)
+uni_open(const char *path, int flags)
 {
 	int fd;
 
 again:
-	fd = open(pathname, flags);
+	fd = open(path, flags);
 	if (fd >= 0)
 		return fd;
 	if (errno == EINTR || errno == EAGAIN)
@@ -92,12 +95,12 @@ again:
 }
 
 int
-uni_open_mode(const char *pathname, int flags, int mode)
+uni_open_mode(const char *path, int flags, int mode)
 {
 	int fd;
 
 again:
-	fd = open(pathname, flags, mode);
+	fd = open(path, flags, mode);
 	if (fd >= 0)
 		return fd;
 	if (errno == EINTR || errno == EAGAIN)

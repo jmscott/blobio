@@ -113,6 +113,11 @@ struct digest
 	char	*(*fs_path)(char *path, int size);
 
 	/*
+	 *  Make a file system path from the ascii digest.
+	 */
+	char	*(*fs_mkdir)(char *root);
+
+	/*
 	 *  Maximum length file system path to digest.
 	 */
 	char	*(*fs_path_length)(char *path, int size);
@@ -140,7 +145,7 @@ struct service
 };
 
 extern void	die(int status, char *msg);
-extern void	bufcat(char *tgt, int tgtsize, const char *src);
+extern char	*bufcat(char *tgt, int tgtsize, const char *src);
 extern void	ecat(char *buf, int size, char *msg);
 
 extern int	tracing;

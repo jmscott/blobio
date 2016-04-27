@@ -6,7 +6,9 @@
  */
 #ifdef SHA_FS_MODULE    
 
+#include <sys/stat.h>
 #include <string.h>
+#include <limits.h>
 #include <errno.h>
 #include <unistd.h>
 #include <stdlib.h>
@@ -247,19 +249,20 @@ sha_eat_input()
 }
 
 /*
- *  Convert a ascii digest to a file system path.
+ *  Convert an ascii digest to a file system path.
  */
 static char *
 sha_fs_path(char *file_path, int size)
 {
 	char *dp, *fp;
 
-	if (size < 46)
-		return "file path size too small: size < 46 bytes";
+	if (size < 47)
+		return "file path size too small: size < 47 bytes";
 
 	dp = digest;
 	fp = file_path;
 
+	*fp++ = '/';
 	*fp++ = *dp++;
 
 	*fp++ = '/';
@@ -287,6 +290,70 @@ sha_fs_path(char *file_path, int size)
 	return (char *)0;
 }
 
+static int
+_mkdir(char *path, int len)
+{
+	path[len] = 0;
+	if (mkdir(path, 0777) == 0 || errno == EEXIST)
+		return 0;
+	return -1;
+}
+
+/*
+ *  Make the directory path to a file system blob an append to full_path.
+ */
+static char *
+sha_fs_mkdir(char *root)
+{
+	char path[PATH_MAX];
+	char *dp, *dirp;
+
+	dp = digest;
+	*path = 0;
+
+	dirp = bufcat(path, sizeof path, root);
+	*dirp++ = '/';
+
+	//  first level directory: one char
+
+	*dirp++ = *dp++;
+	if (_mkdir(path, dirp - path))
+		return strerror(errno);
+	*dirp++ = '/';
+
+	//  second level directory: two chars
+
+	*dirp++ = *dp++; *dirp++ = *dp++;
+	if (_mkdir(path, dirp - path))
+		return strerror(errno);
+	*dirp++ = '/';
+
+	//  third level directory: four chars
+
+	*dirp++ = *dp++; *dirp++ = *dp++; *dirp++ = *dp++; *dirp++ = *dp++;
+	if (_mkdir(path, dirp - path))
+		return strerror(errno);
+	*dirp++ = '/';
+
+	//  fourth level directory: eight chars
+
+	*dirp++ = *dp++; *dirp++ = *dp++; *dirp++ = *dp++; *dirp++ = *dp++;
+	*dirp++ = *dp++; *dirp++ = *dp++; *dirp++ = *dp++; *dirp++ = *dp++;
+	if (_mkdir(path, dirp - path))
+		return strerror(errno);
+	*dirp++ = '/';
+
+	//  fifth level directory: 16 chars
+	*dirp++ = *dp++; *dirp++ = *dp++; *dirp++ = *dp++; *dirp++ = *dp++;
+	*dirp++ = *dp++; *dirp++ = *dp++; *dirp++ = *dp++; *dirp++ = *dp++;
+	*dirp++ = *dp++; *dirp++ = *dp++; *dirp++ = *dp++; *dirp++ = *dp++;
+	*dirp++ = *dp++; *dirp++ = *dp++; *dirp++ = *dp++; *dirp++ = *dp++;
+	if (_mkdir(path, dirp - path))
+		return strerror(errno);
+
+	return (char *)0;
+}
+
 struct digest	sha_digest =
 {
 	.algorithm	=	"sha",
@@ -305,7 +372,8 @@ struct digest	sha_digest =
 	.syntax		=	sha_syntax,
 	.empty		=	sha_empty,
 
-	.fs_path	=	sha_fs_path
+	.fs_path	=	sha_fs_path,
+	.fs_mkdir	=	sha_fs_mkdir
 };
 
 #endif

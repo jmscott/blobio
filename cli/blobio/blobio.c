@@ -1,6 +1,6 @@
 /*
  *  Synopsis:
- *	Client to get/put/give/take/eat/wrap/roll blobs via a blobio service.
+ *	Client to get/put/give/take/eat/wrap/roll blobs to a blobio service.
  *  Exit Status:
  *  	0	request succeed - ok
  *  	1	request denied. blob may not exist or is not empty -
@@ -66,7 +66,7 @@
 #define EXIT_NO		1	//  request not satisfied
 #define EXIT_BAD_ARG	2	//  missing or invalid command line argument
 #define EXIT_BAD_DIG	16	//  unexpetced error in digest
-#define EXIT_BAD_SER	17	//  unexpected error in blob service
+#define EXIT_BAD_SRV	17	//  unexpected error in blob service
 #define EXIT_BAD_UNI	18	//  unexpected error in unix system call
 
 static char	*progname = "blobio";
@@ -82,6 +82,8 @@ char	digest[129] = {};
 char	*output_path = 0;
 char	*input_path = 0;
 char	end_point[129] = {};
+
+// standard in/out must remain open before calling leave()
 
 int	input_fd = 0;
 int	output_fd = 1;
@@ -107,7 +109,7 @@ static char		usage[] =
  *  	bufcat(buf, sizeof buf, ": ");
  *  	bufcat(buf, sizeof buf, "good bye, cruel world");
  */
-void
+char *
 bufcat(char *tgt, int tgtsize, const char *src)
 {
 	//  find null terminated end of target buffer
@@ -121,6 +123,8 @@ bufcat(char *tgt, int tgtsize, const char *src)
 
 	// target always null terminated
 	*tgt = 0;
+
+	return tgt;
 }
 
 void
@@ -576,8 +580,9 @@ parse_argv(int argc, char **argv)
 }
 
 /*
- *  Insure no options cross conflict.  For example, --output-path is not needed
- *  with the verb "put".
+ *  Cross reference command line arguments to insure no conflicts.
+ *  For example, the command line arg --output-path is not needed with the
+ *  verb "put".
  */
 static void
 xref_args()
@@ -629,8 +634,6 @@ xref_args()
 	} else if (*verb == 'e') {
 
 		//  verbs: "eat" or "empty"
-
-		//  verb: "eat" or "empty"
 
 		if (verb[1] == 'a') {
 			if (service) {
@@ -686,7 +689,7 @@ main(int argc, char **argv)
 #endif
 	xref_args();
 
-	//  the input path must exist
+	//  the input path must always exist in the file system.
 
 	if (input_path) {
 		struct stat st;
@@ -698,7 +701,7 @@ main(int argc, char **argv)
 		}
 	}
 
-	//  the output path must not exist
+	//  the output path must not exist in the file system.
 
 	if (output_path) {
 		struct stat st;
@@ -714,7 +717,7 @@ main(int argc, char **argv)
 		TRACE2("end point", end_point);
 	}
 
-	//  initialize the digest
+	//  initialize the digest module
 
 	if (digest_module && (err = digest_module->init()))
 		die(EXIT_BAD_DIG, err);
@@ -724,22 +727,21 @@ main(int argc, char **argv)
 	if (service && (err = service->open())) {
 		char buf[PIPE_MAX];
 
-
 		buf[0] = 0;
 		bufcat(buf, sizeof buf, "service open(");
 		bufcat(buf, sizeof buf, end_point);
 		bufcat(buf, sizeof buf, ") failed");
-		die2(EXIT_BAD_SER, buf, err);
+		die2(EXIT_BAD_SRV, buf, err);
 	}
 
-	//  open the input path
+	//  open the input path in the file system
 
 	if (input_path) {
 		int fd;
 
 		fd = uni_open(input_path, O_RDONLY);
 		if (fd == -1)
-			die3(EXIT_BAD_SER, "open(input) failed",
+			die3(EXIT_BAD_SRV, "open(input) failed",
 						err, strerror(errno));
 		input_fd = fd;
 	}
@@ -750,7 +752,7 @@ main(int argc, char **argv)
 		if (service) {
 			err = service->open_output();
 			if (err)
-				die3(EXIT_BAD_SER,
+				die3(EXIT_BAD_SRV,
 					"service open(output) failed",
 					err,
 					output_path
@@ -764,7 +766,7 @@ main(int argc, char **argv)
 				S_IRUSR | S_IRGRP
 			);
 			if (fd == -1)
-				die3(EXIT_BAD_SER,
+				die3(EXIT_BAD_SRV,
 					"open(output) failed",
 					strerror(errno),
 					output_path
@@ -784,11 +786,11 @@ main(int argc, char **argv)
 
 		if (verb[1] == 'e') {
 			if ((err = service->get(&ok_no)))
-				die2(EXIT_BAD_SER, "get failed", err);
+				die2(EXIT_BAD_SRV, "get failed", err);
 			exit_status = ok_no;
 		} else {
 			if ((err = service->give(&ok_no)))
-				die2(EXIT_BAD_SER, "give failed", err);
+				die2(EXIT_BAD_SRV, "give failed", err);
 
 			//  remove input path upon successful "give"
 
@@ -807,14 +809,14 @@ main(int argc, char **argv)
 		if (verb[1] == 'a') {
 			if (service) {
 				if ((err = service->eat(&ok_no)))
-					die2(EXIT_BAD_SER,
+					die2(EXIT_BAD_SRV,
 						"eat(service) failed", err);
 				exit_status = ok_no;
 			} else {
 				char buf[128 + 1];
 
 				if ((err = digest_module->eat_input()))
-					die2(EXIT_BAD_SER,
+					die2(EXIT_BAD_SRV,
 						"eat(input) failed", err);
 
 				//  write the ascii digest
@@ -832,19 +834,19 @@ main(int argc, char **argv)
 			exit_status = digest_module->empty() == 1 ? 0 : 1;
 	} else if (*verb == 'p') {
 		if ((err = service->put(&ok_no)))
-			die2(EXIT_BAD_SER, "put() failed", err);
+			die2(EXIT_BAD_SRV, "put() failed", err);
 		exit_status = ok_no;
 	} else if (*verb == 't') {
 		if ((err = service->take(&ok_no)))
-			die2(EXIT_BAD_SER, "take() failed", err);
+			die2(EXIT_BAD_SRV, "take() failed", err);
 		exit_status = ok_no;
 	} else if (*verb == 'w') {
 		if ((err = service->wrap(&ok_no)))
-			die2(EXIT_BAD_SER, "wrap() failed", err);
+			die2(EXIT_BAD_SRV, "wrap() failed", err);
 		exit_status = ok_no;
 	} else if (*verb == 'r') {
 		if ((err = service->roll(&ok_no)))
-			die2(EXIT_BAD_SER, "roll() failed", err);
+			die2(EXIT_BAD_SRV, "roll() failed", err);
 		exit_status = ok_no;
 	}
 

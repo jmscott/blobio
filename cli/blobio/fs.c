@@ -34,7 +34,6 @@ extern int	output_fd;
 extern char	*input_path;
 extern int	input_fd;
 
-//  Note: rename as fs_path
 static char	fs_path[PATH_MAX + 1];
 
 struct service fs_service;
@@ -90,7 +89,11 @@ fs_end_point_syntax(char *root_dir)
 
 /*
  *  Verify the root directory of the blob file system.
- *  Directory must be readable.
+ *  Both root directory and the data directory must be searchable.
+ *
+ *  Note:
+ *	Too many stats()!  Why stat() both root/ and data/ directories? 
+ *	Can we do a single stat()?
  */
 static char *
 fs_open()
@@ -111,7 +114,7 @@ fs_open()
 		return strerror(errno);
 	}
 			
-	//  verify the end point is, in fact, a directory
+	//  verify the end point (root directory) is, in fact, a directory.
 
 	if (stat(end_point, &st))
 		return strerror(errno);
@@ -153,10 +156,6 @@ fs_open()
 static char *
 fs_open_output()
 {
-	_TRACE("request to open_output()");
-
-	_TRACE("open_output() done");
-
 	return (char *)0;
 }
 
@@ -170,21 +169,58 @@ fs_close()
 	return (char *)0;
 }
 
+static char *
+fs_copy(char *in_path, char *out_path)
+{
+	int in = -1, out = -1;
+	int nr;
+	int e;
+	unsigned char buf[PIPE_MAX];
+
+	//  open input path or point to standard input
+
+	if (in_path) {
+		in = uni_open(in_path, O_RDONLY);
+		if (in < 0)
+			return strerror(errno);
+	} else
+		in = input_fd;
+
+	//  open output path or point to standard out
+
+	if (out_path) {
+		out = uni_open(out_path, O_WRONLY);
+		if (out < 0)
+			return strerror(errno);
+	} else
+		out = output_fd;
+
+	while ((nr = uni_read(in, buf, sizeof buf)) > 0)
+		if (uni_write_buf(out, buf, nr) < 0)
+			break;
+	e = errno;
+	if (in != -1)
+		uni_close(in);
+	if (out != -1)
+		uni_close(out);
+	if (e != 0)
+		return strerror(e);
+	return (char *)0;
+}
+
 /*
  *  Get a blob.
  *
- *  If output path exists then the output path to the blob path;
- *  otherwise copy the file to the output
+ *  If output path exists then link the output path to the blob path.
+ *  Copy the input to the output if the blobs are on different devices.
  */
 static char *
 fs_get(int *ok_no)
 {
 	char *err;
-	int len, blob_fd;
-	unsigned char buf[PIPE_MAX];
-	ssize_t nread;
+	int len;
 
-	_TRACE("request to get()");
+	*ok_no = 1;
 
 	//  build path to source blob file
 
@@ -202,47 +238,33 @@ fs_get(int *ok_no)
 	//  link output path to source blob file
 	
 	if (output_path) {
-		_TRACE("hard link to source blob file");
 
-		if (link(fs_path, output_path)) {
-			if (errno == ENOENT) {
-				*ok_no = 1;
-				return (char *)0;
-			}
-			return strerror(errno);
-		}
-		*ok_no = 0;
-		return (char *)0;
-	}
+		_TRACE("attempt hard link to source blob file");
 
-	//  no output path so copy blob to output file
-	
-	_TRACE("copying blob to output stream");
-
-	//  Note:  think about linux splice()
-
-	if ((blob_fd = uni_open(fs_path, O_RDONLY)) < 0) {
-
-		//  blob does not exist
-
-		if (errno == ENOENT) {
-			*ok_no = 1;
+		if (link(fs_path, output_path) == 0) {
+			*ok_no = 0;
 			return (char *)0;
 		}
-		return strerror(errno);
-	}
 
-	//  Note: stat size to compare empty file to well known empty digest.
+		//  blob file does not exist
 
-	while ((nread = uni_read(blob_fd, buf, sizeof buf)) > 0)
-		if (uni_write_buf(output_fd, buf, nread))
+		if (errno == ENOENT)
+			return (char *)0;
+
+		//  error is NOT link() across file systems
+
+		if (errno != EXDEV)
 			return strerror(errno);
-	if (nread < 0)
-		return strerror(errno);
-	if (uni_close(blob_fd))
-		return strerror(blob_fd);
 
-	_TRACE("get() done");
+		_TRACE("source blob on different file system, so copy");
+
+	}
+	if ((err = fs_copy(fs_path, output_path))) {
+		if (errno == ENOENT)
+			return (char *)0;
+		return err;
+	}
+	*ok_no = 0;
 	return (char *)0;
 }
 
@@ -289,44 +311,75 @@ fs_eat(int *ok_no)
 #endif
 
 	return (char *)0;
-
-
-	return (char *)0;
 }
 
 static char *
 fs_put(int *ok_no)
 {
-	(void)ok_no;
-	return "\"put\" not in read only file system service";
+	char *err;
+	int len;
+
+	*ok_no = 1;
+
+	//  make the full directory path
+
+	err = fs_service.digest->fs_mkdir(fs_path);
+	if (err)
+		return err;
+
+	len = strlen(fs_path);
+	err = fs_service.digest->fs_path(fs_path + len, PATH_MAX - len);
+	if (err)
+		return err;
+	_TRACE2("path to blob", fs_path);
+
+	//  try to link the target blob to the source blob
+
+	if (input_path) {
+		if (link(input_path, fs_path) == 0 || errno == EEXIST) {
+			*ok_no = 0;
+			return (char *)0;
+		}
+		if (errno != EPERM)
+			return strerror(errno);
+	}
+
+	//  link failed so attempt to copy the blob
+
+	err = fs_copy(input_path, fs_path);
+	if (err && errno != EEXIST)
+		return err;
+	
+	*ok_no = 0;
+	return (char *)0;
 }
 
 static char *
 fs_take(int *ok_no)
 {
 	(void)ok_no;
-	return "\"take\" not in read only file system service";
+	return "\"take\" not implemented (yet) in \"fs\" service";
 }
 
 static char *
 fs_give(int *ok_no)
 {
 	(void)ok_no;
-	return "\"give\" not in read only file system service";
+	return "\"give\" not implemented (yet) in \"fs\" service";
 }
 
 static char *
 fs_roll(int *ok_no)
 {
 	(void)ok_no;
-	return "\"roll\" not in read only file system service";
+	return "\"roll\" not implemented (yet) in \"fs\" service";
 }
 
 static char *
 fs_wrap(int *ok_no)
 {
 	(void)ok_no;
-	return "\"wrap\" not in read only file system service";
+	return "\"wrap\" not implemented (yet) in \"fs\" service";
 }
 
 struct service fs_service =
