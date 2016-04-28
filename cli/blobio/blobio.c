@@ -4,7 +4,6 @@
  *  Exit Status:
  *  	0	request succeed - ok
  *  	1	request denied. blob may not exist or is not empty -
- *  	2	
  *	2	missing or invalid command line argument
  *	16	unexpected hash digest error
  *	17	unexpected blobio service error
@@ -19,12 +18,11 @@
  *	--input-path <path/to/file>
  *	--output-path <path/to/file>
  *  Note:
- *  	Options desparatley need to be folding into a data structure.
+ *  	Options desperately need to be folding into a data structure.
  *  	We refuse to use getopts.
  *
- *	--trace only activates after the option has been scanned, which implies
- *	certain options with tracing, like end_point_syntax() may not trace,
- *	depending upon the order of the options.
+ *	activation of --trace depends upon the order the options are given on
+ *	the command line.
  *
  *	A shared library service might be interesting.
  *
@@ -33,7 +31,7 @@
  *	Also, the take&give exit statuses ought to reflect the various ok/no
  *	chat histories or perhaps the exit status ought to also store the
  *	verb.  See exit status for child process requests in the blobio
- *	server.
+ *	server.  a bit map may be interesting.
  *
  *	--output-path /dev/null fails, which is problematic.
  *
@@ -158,7 +156,7 @@ leave(int status)
 	//  unlink() file created by --output-path, grumbling if unlink() fails.
 
 	if (status && status != EXIT_BAD_ARG && output_path != NULL) {
-		if (unlink(output_path))
+		if (uni_unlink(output_path))
 			if (errno != ENOENT) {
 				static char panic[] =
 					"PANIC: unlink(output_path) failed: ";
@@ -701,13 +699,13 @@ main(int argc, char **argv)
 		}
 	}
 
-	//  the output path must not exist in the file system.
+	//  the output path must never exist in the file system.
 
 	if (output_path) {
 		struct stat st;
 
 		if (stat(output_path, &st) == 0)
-			eopt2("output-path", "file exists", output_path);
+			eopt2("output-path", "refuse to overwrite",output_path);
 		if (errno != ENOENT)
 			eopt2("output-path", strerror(errno), output_path);
 	}
@@ -795,7 +793,7 @@ main(int argc, char **argv)
 			//  remove input path upon successful "give"
 
 			if (ok_no == 0 && input_path) {
-				int status = unlink(input_path);
+				int status = uni_unlink(input_path);
 
 				if (status == -1 && errno != ENOENT)
 					die2(EXIT_BAD_UNI,

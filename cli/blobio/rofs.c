@@ -207,7 +207,7 @@ rofs_get(int *ok_no)
 	if (output_path) {
 		_TRACE("hard link to source blob file");
 
-		if (link(fs_path, output_path)) {
+		if (uni_link(fs_path, output_path)) {
 			if (errno == ENOENT) {
 				*ok_no = 1;
 				return (char *)0;

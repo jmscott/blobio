@@ -691,7 +691,7 @@ bio4_give(int *ok_no)
 	//  so remove the local input.
 
 	if (input_path) {
-		int status = unlink(input_path);
+		int status = uni_unlink(input_path);
 
 		if (status == -1 && errno != ENOENT) {
 

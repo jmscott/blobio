@@ -1,6 +1,8 @@
 /*
  *  Synopsis:
  *	A driver for a trusting posix file system blobio service.
+ *  Note:
+ *  	Long (>= PATH_MAX) file paths are still problematic.
  */
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -20,8 +22,8 @@
 
 #else
 
-#define _TRACE(msg)
-#define _TRACE2(msg1,msg2)
+#define _TRACE(msg)		0
+#define _TRACE2(msg1,msg2)	0
 
 #endif
 
@@ -88,12 +90,8 @@ fs_end_point_syntax(char *root_dir)
 }
 
 /*
- *  Verify the root directory of the blob file system.
- *  Both root directory and the data directory must be searchable.
- *
- *  Note:
- *	Too many stats()!  Why stat() both root/ and data/ directories? 
- *	Can we do a single stat()?
+ *  Verify that the root and data directories of the blob file system
+ *  are at least searchable.
  */
 static char *
 fs_open()
@@ -114,15 +112,6 @@ fs_open()
 		return strerror(errno);
 	}
 			
-	//  verify the end point (root directory) is, in fact, a directory.
-
-	if (stat(end_point, &st))
-		return strerror(errno);
-	if (!S_ISDIR(st.st_mode))
-		return "root blob directory is not a directory";
-
-	//  assemble the path to the data directory
-
 	fs_path[0] = 0;
 	bufcat(fs_path, sizeof fs_path, end_point);
 	bufcat(fs_path, sizeof fs_path, "/data/");
@@ -132,15 +121,15 @@ fs_open()
 	//  verify existence and permission of path to data directory.
 	//  path looks like <root_dir>/data/<algorithm>_fs
 
-	_TRACE2("blob data/ directory", fs_path);
+	_TRACE2("data directory", fs_path);
 	if (access(fs_path, X_OK)) {
 		if (errno == ENOENT)
-			return "blob data directory does not exist";
+			return "missing entry in blob data directory";
 		if (errno == EPERM)
 			return "no permission to search blob data directory";
 		return strerror(errno);
 	}
-			
+
 	//  verify the data directory is, in fact, a directory
 
 	if (stat(fs_path, &st))
@@ -152,6 +141,10 @@ fs_open()
 
 	return (char *)0;
 }
+
+//   Note:  assume that service-open() has been called.
+
+//  verify that the temp directory exists in the target root directory.
 
 static char *
 fs_open_output()
@@ -189,7 +182,11 @@ fs_copy(char *in_path, char *out_path)
 	//  open output path or point to standard out
 
 	if (out_path) {
-		out = uni_open(out_path, O_WRONLY);
+		out = uni_open_mode(
+				out_path,
+				O_WRONLY | O_CREAT, 
+				S_IRUSR | S_IRGRP
+		);
 		if (out < 0)
 			return strerror(errno);
 	} else
@@ -203,6 +200,7 @@ fs_copy(char *in_path, char *out_path)
 		uni_close(in);
 	if (out != -1)
 		uni_close(out);
+	errno = e;
 	if (e != 0)
 		return strerror(e);
 	return (char *)0;
@@ -224,7 +222,6 @@ fs_get(int *ok_no)
 
 	//  build path to source blob file
 
-	bufcat(fs_path, sizeof fs_path, "/");
 	len = strlen(fs_path);
 	err = fs_service.digest->fs_path(
 				fs_path + len,
@@ -233,15 +230,16 @@ fs_get(int *ok_no)
 	if (err)
 		return err;
 
-	_TRACE2("blob file path", fs_path);
+	_TRACE2("source blob file path", fs_path);
 
 	//  link output path to source blob file
 	
 	if (output_path) {
 
-		_TRACE("attempt hard link to source blob file");
+		_TRACE("attempt hard link target to source blob file");
 
-		if (link(fs_path, output_path) == 0) {
+		if (uni_link(fs_path, output_path) == 0) {
+			_TRACE("hard link to target succeeded");
 			*ok_no = 0;
 			return (char *)0;
 		}
@@ -331,20 +329,23 @@ fs_put(int *ok_no)
 	err = fs_service.digest->fs_path(fs_path + len, PATH_MAX - len);
 	if (err)
 		return err;
-	_TRACE2("path to blob", fs_path);
+	_TRACE2("path to target blob", fs_path);
 
 	//  try to link the target blob to the source blob
 
 	if (input_path) {
-		if (link(input_path, fs_path) == 0 || errno == EEXIST) {
+		_TRACE2("hard link source blob to target", input_path);
+		if (uni_link(input_path, fs_path) == 0 || errno == EEXIST) {
+			errno = 0;
 			*ok_no = 0;
 			return (char *)0;
 		}
+
 		if (errno != EPERM)
 			return strerror(errno);
-	}
-
-	//  link failed so attempt to copy the blob
+		_TRACE("no permisson to hard link to target, so copy");
+	} else
+		_TRACE("no input path, so copy from standard input");
 
 	err = fs_copy(input_path, fs_path);
 	if (err && errno != EEXIST)
@@ -357,15 +358,21 @@ fs_put(int *ok_no)
 static char *
 fs_take(int *ok_no)
 {
-	(void)ok_no;
-	return "\"take\" not implemented (yet) in \"fs\" service";
+	char *err = (char *)0;
+
+	err = fs_get(ok_no);
+	if (err || *ok_no == 1)
+		return err;
+	_TRACE2("unlinking source blob", fs_path);
+	if (uni_unlink(fs_path) != 0 && errno != ENOENT)
+		return strerror(errno);
+	return (char *)0;
 }
 
 static char *
 fs_give(int *ok_no)
 {
-	(void)ok_no;
-	return "\"give\" not implemented (yet) in \"fs\" service";
+	return fs_put(ok_no);
 }
 
 static char *
