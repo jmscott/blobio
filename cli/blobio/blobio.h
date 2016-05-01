@@ -32,7 +32,6 @@
 
 #endif
 
-
 struct digest
 {
 	char	*algorithm;
@@ -59,6 +58,7 @@ struct digest
 	 *	more needs to be read, < 0 if an error occured.
 	 */
 	int	(*put_update)(unsigned char *src, int src_size);
+
 	/*
 	 *  take:
 	 *	Update the local digest with a portion of the blob read from a 
@@ -108,7 +108,12 @@ struct digest
 	int	(*close)();
 
 	/*
-	 *  Convert the ascii digest to file system path.
+	 *  Convert the ascii digest to name of a file
+	 */
+	char	*(*fs_name)(char *name, int size);
+
+	/*
+	 *  Convert the ascii digest to a path to the file.
 	 */
 	char	*(*fs_path)(char *path, int size);
 
@@ -116,11 +121,6 @@ struct digest
 	 *  Make a file system path from the ascii digest.
 	 */
 	char	*(*fs_mkdir)(char *root);
-
-	/*
-	 *  Maximum length file system path to digest.
-	 */
-	char	*(*fs_path_length)(char *path, int size);
 };
 
 struct service
