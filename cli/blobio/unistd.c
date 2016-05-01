@@ -57,6 +57,7 @@ uni_write_buf(int fd, const void *buf, size_t count)
 {
 	size_t nwrite = 0;
 
+	errno = 0;
 	while (nwrite < count) {
 
 		ssize_t nw;
