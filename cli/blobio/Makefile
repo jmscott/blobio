@@ -30,6 +30,18 @@ install: all
 	install -g $(DIST_GROUP) -o $(DIST_USER) -m ugo=rx		\
 		blobio							\
 		$(DIST_ROOT)/bin
+	install -g $(DIST_GROUP) -o $(DIST_USER) -m u=rx,go=		\
+		bio4.c							\
+		blobio.h						\
+		buf.c							\
+		digest.c 						\
+		fs.c							\
+		rofs.c							\
+		service.c						\
+		sha.c							\
+		trace.c							\
+		unistd.c						\
+		$(DIST_ROOT)/src/blobio
 
 blobio: blobio.o $(OBJS) ../../sha1/sha1.c
 	$(CC) -o blobio blobio.o $(OBJS) ../../sha1/sha1.o
