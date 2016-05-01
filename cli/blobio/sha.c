@@ -252,40 +252,21 @@ sha_eat_input()
  *  Convert an ascii digest to a file system path.
  */
 static char *
-sha_fs_path(char *file_path, int size)
+sha_fs_name(char *name, int size)
 {
-	char *dp, *fp;
+	char *dp, *np;
 
-	if (size < 47)
-		return "file path size too small: size < 47 bytes";
+	if (size < 10)
+		return "file name size too small: size < 10 bytes";
 
-	dp = digest;
-	fp = file_path;
+	dp = digest + 31;
+	np = name;
 
-	*fp++ = '/';
-	*fp++ = *dp++;
+	*np++ = *dp++;  *np++ = *dp++;  *np++ = *dp++;  *np++ = *dp++;
+	*np++ = *dp++;  *np++ = *dp++;  *np++ = *dp++;  *np++ = *dp++;
+	*np++ = *dp++;
 
-	*fp++ = '/';
-	*fp++ = *dp++; *fp++ = *dp++;
-
-	*fp++ = '/';
-	*fp++ = *dp++; *fp++ = *dp++; *fp++ = *dp++; *fp++ = *dp++;
-
-	*fp++ = '/';
-	*fp++ = *dp++; *fp++ = *dp++; *fp++ = *dp++; *fp++ = *dp++;
-	*fp++ = *dp++; *fp++ = *dp++; *fp++ = *dp++; *fp++ = *dp++;
-
-	*fp++ = '/';
-	*fp++ = *dp++; *fp++ = *dp++; *fp++ = *dp++; *fp++ = *dp++;
-	*fp++ = *dp++; *fp++ = *dp++; *fp++ = *dp++; *fp++ = *dp++;
-	*fp++ = *dp++; *fp++ = *dp++; *fp++ = *dp++; *fp++ = *dp++;
-	*fp++ = *dp++; *fp++ = *dp++; *fp++ = *dp++; *fp++ = *dp++;
-
-	*fp++ = '/';
-	*fp++ = *dp++; *fp++ = *dp++; *fp++ = *dp++; *fp++ = *dp++;
-	*fp++ = *dp++; *fp++ = *dp++; *fp++ = *dp++; *fp++ = *dp++;
-	*fp++ = *dp++;
-	*fp = 0;
+	*np = 0;
 
 	return (char *)0;
 }
@@ -354,6 +335,48 @@ sha_fs_mkdir(char *root)
 	return (char *)0;
 }
 
+/*
+ *  Convert an ascii digest to a file system path.
+ */
+static char *
+sha_fs_path(char *file_path, int size)
+{
+	char *dp, *fp;
+
+	if (size < 47)
+		return "file path size too small: size < 47 bytes";
+
+	dp = digest;
+	fp = file_path;
+
+	*fp++ = '/';
+	*fp++ = *dp++;
+
+	*fp++ = '/';
+	*fp++ = *dp++; *fp++ = *dp++;
+
+	*fp++ = '/';
+	*fp++ = *dp++; *fp++ = *dp++; *fp++ = *dp++; *fp++ = *dp++;
+
+	*fp++ = '/';
+	*fp++ = *dp++; *fp++ = *dp++; *fp++ = *dp++; *fp++ = *dp++;
+	*fp++ = *dp++; *fp++ = *dp++; *fp++ = *dp++; *fp++ = *dp++;
+
+	*fp++ = '/';
+	*fp++ = *dp++; *fp++ = *dp++; *fp++ = *dp++; *fp++ = *dp++;
+	*fp++ = *dp++; *fp++ = *dp++; *fp++ = *dp++; *fp++ = *dp++;
+	*fp++ = *dp++; *fp++ = *dp++; *fp++ = *dp++; *fp++ = *dp++;
+	*fp++ = *dp++; *fp++ = *dp++; *fp++ = *dp++; *fp++ = *dp++;
+
+	*fp++ = '/';
+	*fp++ = *dp++; *fp++ = *dp++; *fp++ = *dp++; *fp++ = *dp++;
+	*fp++ = *dp++; *fp++ = *dp++; *fp++ = *dp++; *fp++ = *dp++;
+	*fp++ = *dp++;
+	*fp = 0;
+
+	return (char *)0;
+}
+
 struct digest	sha_digest =
 {
 	.algorithm	=	"sha",
@@ -372,8 +395,9 @@ struct digest	sha_digest =
 	.syntax		=	sha_syntax,
 	.empty		=	sha_empty,
 
-	.fs_path	=	sha_fs_path,
-	.fs_mkdir	=	sha_fs_mkdir
+	.fs_name	=	sha_fs_name,
+	.fs_mkdir	=	sha_fs_mkdir,
+	.fs_path	=	sha_fs_path
 };
 
 #endif
