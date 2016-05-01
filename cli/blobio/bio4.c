@@ -330,8 +330,7 @@ die_ALRM(char *func)
 	_TRACE2(func, "caught timeout alarm");
 
 	buf[0] = 0;
-	bufcat(buf, sizeof buf, func);
-	bufcat(buf, sizeof buf, "() timed out");
+	buf2cat(buf, sizeof buf, func, "() timed out");
 
 	die(17, buf);
 }

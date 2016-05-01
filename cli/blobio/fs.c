@@ -3,6 +3,8 @@
  *	A driver for a trusting posix file system blobio service.
  *  Note:
  *  	Long (>= PATH_MAX) file paths are still problematic.
+ *
+ *	The input stream is not drained when the blob exists during a put/give.
  */
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -37,6 +39,7 @@ extern char	*input_path;
 extern int	input_fd;
 
 static char	fs_path[PATH_MAX + 1];
+static char	tmp_path[PATH_MAX + 1];
 
 struct service fs_service;
 
@@ -102,27 +105,16 @@ fs_open()
 
 	_TRACE2("blob root directory", end_point);
 
-	//  verify permissons to blobio root directory
+	//  build the path to the $BLOBIO_ROOT/data/<algo>_fs/ directory
 
-	if (access(end_point, X_OK)) {
-		if (errno == ENOENT)
-			return "blob root directory does not exist";
-		if (errno == EPERM)
-			return "no permission to search blob root directory";
-		return strerror(errno);
-	}
-			
 	fs_path[0] = 0;
-	bufcat(fs_path, sizeof fs_path, end_point);
-	bufcat(fs_path, sizeof fs_path, "/data/");
-	bufcat(fs_path, sizeof fs_path, algorithm);
-	bufcat(fs_path, sizeof fs_path, "_fs");
+	buf4cat(fs_path, sizeof fs_path, end_point, "/data/", algorithm, "_fs");
 
 	//  verify existence and permission of path to data directory.
 	//  path looks like <root_dir>/data/<algorithm>_fs
 
 	_TRACE2("data directory", fs_path);
-	if (access(fs_path, X_OK)) {
+	if (uni_access(fs_path, X_OK)) {
 		if (errno == ENOENT)
 			return "missing entry in blob data directory";
 		if (errno == EPERM)
@@ -290,7 +282,7 @@ fs_eat(int *ok_no)
 
 	//  insure we can read the file.
 
-	if (access(fs_path, R_OK)) {
+	if (uni_access(fs_path, R_OK)) {
 		if (errno == ENOENT) {
 			_TRACE("blob does not exists");
 			*ok_no = 1;
@@ -317,7 +309,12 @@ fs_put(int *ok_no)
 	char *err;
 	int len;
 
+	//  3 + 1 + 8 + 1 + 21 + 1 + 21 + 1
+	//char tmp_id[57];	//  tmp/<verb>-<epoch>.<pid>
+
 	*ok_no = 1;
+
+	buf2cat(tmp_path, sizeof tmp_path, fs_path, "/tmp");
 
 	//  make the full directory path
 
@@ -325,18 +322,30 @@ fs_put(int *ok_no)
 	if (err)
 		return err;
 
+	//  append the path to the blob
+
 	len = strlen(fs_path);
 	err = fs_service.digest->fs_path(fs_path + len, PATH_MAX - len);
 	if (err)
 		return err;
 	_TRACE2("path to target blob", fs_path);
 
+	//  if the blob file exists then we are done
+
+	if (uni_access(fs_path, F_OK) == 0) {
+		*ok_no = 0;
+
+		//  Note: what about draining the input not bound to a file?
+		return (char *)0;
+	}
+	if (errno != ENOENT)
+		return strerror(errno);
+
 	//  try to link the target blob to the source blob
 
 	if (input_path) {
 		_TRACE2("hard link source blob to target", input_path);
 		if (uni_link(input_path, fs_path) == 0 || errno == EEXIST) {
-			errno = 0;
 			*ok_no = 0;
 			return (char *)0;
 		}
@@ -346,6 +355,8 @@ fs_put(int *ok_no)
 		_TRACE("no permisson to hard link to target, so copy");
 	} else
 		_TRACE("no input path, so copy from standard input");
+
+	buf2cat(tmp_path, sizeof tmp_path, fs_path, "/tmp");
 
 	err = fs_copy(input_path, fs_path);
 	if (err && errno != EEXIST)

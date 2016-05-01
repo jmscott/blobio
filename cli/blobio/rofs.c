@@ -103,7 +103,7 @@ rofs_open()
 
 	//  verify permissons
 
-	if (access(end_point, X_OK)) {
+	if (uni_access(end_point, X_OK)) {
 		if (errno == ENOENT)
 			return "blob root directory does not exist";
 		if (errno == EPERM)
@@ -121,10 +121,7 @@ rofs_open()
 	//  assemble the path to the data directory
 
 	fs_path[0] = 0;
-	bufcat(fs_path, sizeof fs_path, end_point);
-	bufcat(fs_path, sizeof fs_path, "/data/");
-	bufcat(fs_path, sizeof fs_path, algorithm);
-	bufcat(fs_path, sizeof fs_path, "_fs");
+	buf4cat(fs_path, sizeof fs_path, end_point, "/data/", algorithm, "_fs");
 
 	//  verify existence and permission of path to data directory.
 	//  path looks like <root_dir>/data/<algorithm>_fs
@@ -133,7 +130,7 @@ rofs_open()
 
 	//  reverify permissons on data/ directory
 
-	if (access(fs_path, X_OK)) {
+	if (uni_access(fs_path, X_OK)) {
 		if (errno == ENOENT)
 			return "blob data directory does not exist";
 		if (errno == EPERM)
@@ -193,10 +190,7 @@ rofs_get(int *ok_no)
 
 	bufcat(fs_path, sizeof fs_path, "/");
 	len = strlen(fs_path);
-	err = rofs_service.digest->fs_path(
-				fs_path + len,
-				PATH_MAX - len
-	);
+	err = rofs_service.digest->fs_path( fs_path + len, PATH_MAX - len);
 	if (err)
 		return err;
 
@@ -262,10 +256,7 @@ rofs_eat(int *ok_no)
 
 	bufcat(fs_path, sizeof fs_path, "/");
 	len = strlen(fs_path);
-	err = rofs_service.digest->fs_path(
-				fs_path + len,
-				PATH_MAX - len
-	);
+	err = rofs_service.digest->fs_path(fs_path + len, PATH_MAX - len);
 	if (err)
 		return err;
 
@@ -273,7 +264,7 @@ rofs_eat(int *ok_no)
 
 	//  insure we can read the file.
 
-	if (access(fs_path, R_OK)) {
+	if (uni_access(fs_path, R_OK)) {
 		if (errno == ENOENT) {
 			_TRACE("blob does not exists");
 			*ok_no = 1;

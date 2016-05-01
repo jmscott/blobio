@@ -48,6 +48,9 @@ again:
 /*
  *  Write a full buffer or return error.
  *  Caller can depend on correct value of errno.
+ *
+ *  Note:
+ *	Ought to be renamed uni_write_all().
  */
 int
 uni_write_buf(int fd, const void *buf, size_t count)
@@ -133,6 +136,18 @@ uni_unlink(const char *path)
 again:
 	errno = 0;
 	if (unlink(path) == 0)
+		return 0;
+	if (errno == EINTR || errno == EAGAIN)
+		goto again;
+	return -1;
+}
+
+int
+uni_access(const char *path, int mode)
+{
+again:
+	errno = 0;
+	if (access(path, mode) == 0)
 		return 0;
 	if (errno == EINTR || errno == EAGAIN)
 		goto again;

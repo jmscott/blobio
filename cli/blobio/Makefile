@@ -12,6 +12,7 @@ include ../../local.mk
 
 OBJS=			\
 	bio4.o		\
+	buf.o		\
 	digest.o 	\
 	fs.o		\
 	rofs.o		\
@@ -35,6 +36,9 @@ blobio: blobio.o $(OBJS) ../../sha1/sha1.c
 
 bio4.o: bio4.c blobio.h
 	$(CC) $(CFLAGS) -c bio4.c
+
+buf.o: buf.c
+	$(CC) $(CFLAGS) -c buf.c
 blobio.o: blobio.c blobio.h
 	$(CC) -g $(CFLAGS) -c blobio.c
 digest.o: digest.c blobio.h

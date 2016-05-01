@@ -1,12 +1,15 @@
 /*
  *  Synopsis:
  *  	Trace/debug service flow with --trace command line option.
+ *  Note:
+ *	Only trace.c refers to stdio, I (jmscott) believe.
  */
 #include <errno.h>
 #include <string.h>
 #include <ctype.h>
 #include <unistd.h>
 #include <stdio.h>
+
 #include "blobio.h"
 
 extern char	*verb;
@@ -22,10 +25,8 @@ trace(char *msg)
 	buf[0] = 0;
 
 	bufcat(buf, sizeof buf, "TRACE: ");
-	if (verb) {
-		bufcat(buf, sizeof buf, verb);
-		bufcat(buf, sizeof buf, ": ");
-	}
+	if (verb)
+		buf2cat(buf, sizeof buf, verb, ": ");
 	if (msg)
 		bufcat(buf, sizeof buf, msg);
 	bufcat(buf, sizeof buf, "\n");
@@ -42,10 +43,8 @@ trace2(char *msg1, char *msg2)
 
 		buf[0] = 0;
 		bufcat(buf, sizeof buf, msg1);
-		if (msg2) {
-			bufcat(buf, sizeof buf, ": ");
-			bufcat(buf, sizeof buf, msg2);
-		}
+		if (msg2)
+			buf2cat(buf, sizeof buf, ": ", msg2);
 		trace(buf);
 	} else
 		trace(msg2);
@@ -59,10 +58,8 @@ trace3(char *msg1, char *msg2, char *msg3)
 
 		buf[0] = 0;
 		bufcat(buf, sizeof buf, msg1);
-		if (msg2) {
-			bufcat(buf, sizeof buf, ": ");
-			bufcat(buf, sizeof buf, msg2);
-		}
+		if (msg2)
+			buf2cat(buf, sizeof buf, ": ", msg2);
 		trace2(buf, msg3);
 	} else 
 		trace2(msg2, msg3);
@@ -76,10 +73,8 @@ trace4(char *msg1, char *msg2, char *msg3, char *msg4)
 
 		buf[0] = 0;
 		bufcat(buf, sizeof buf, msg1);
-		if (msg2) {
-			bufcat(buf, sizeof buf, ": ");
-			bufcat(buf, sizeof buf, msg2);
-		}
+		if (msg2)
+			buf2cat(buf, sizeof buf, ": ", msg2);
 		trace3(buf, msg3, msg4);
 	} else 
 		trace3(msg2, msg3, msg4);
@@ -129,6 +124,7 @@ _cksum(unsigned char *buf, int size)
 
 /*
  *  Ye'ol hex dump.
+ *
  *  Derived from a hexdump written by Andy Fullford, eons ago.
  *
  *  	https://github.com/akfullfo
@@ -233,7 +229,6 @@ hexdump(unsigned char *src, int src_size, char direction)
 	}
 	tgt[need - 1] = 0;
 
-	//  Note:  this is the only reference to stdio, i believe.
 	snprintf(buf, sizeof buf,
 			"\ndump of %d bytes, cksum %hu\n",
 				src_size, _cksum(src, src_size));

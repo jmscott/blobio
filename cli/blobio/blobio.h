@@ -144,10 +144,16 @@ struct service
 	struct digest	*digest;
 };
 
-extern void	die(int status, char *msg);
 extern char	*bufcat(char *tgt, int tgtsize, const char *src);
-extern void	ecat(char *buf, int size, char *msg);
+extern char	*buf2cat(char *tgt, int tgtsize,
+				const char *src, const char *src2);
+extern char	*buf3cat(char *tgt, int tgtsize,
+			const char *src, const char *src2, const char *src3);
+extern char	*buf4cat(char *tgt, int tgtsize,
+			const char *src, const char *src2,
+			const char *src3, const char *src4);
 
+extern void	die(int status, char *msg);
 extern int	tracing;
 extern void	trace(char *);
 extern void	trace2(char *, char *);
@@ -163,6 +169,7 @@ extern int	uni_open(const char *pathname, int flags);
 extern int	uni_open_mode(const char *pathname, int flags, int mode);
 extern int	uni_link(const char *oldpath, const char *newpath);
 extern int	uni_unlink(const char *path);
+extern int	uni_access(const char *path, int mode);
 
 //  suppress unused arg warning arcross both gcc and clang
 #define UNUSED_ARG(x)	(void)(x)

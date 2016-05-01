@@ -97,48 +97,15 @@ static struct digest		*digest_module;
 static char		usage[] =
    "usage: blobio [help | get|put|give|take|eat|wrap|roll|empty] [options]\n";
 
-
-/*
- * Synopsis:
- *  	Fast, safe and simple string concatenator
- *  Usage:
- *  	buf[0] = 0
- *  	bufcat(buf, sizeof buf, "hello, world");
- *  	bufcat(buf, sizeof buf, ": ");
- *  	bufcat(buf, sizeof buf, "good bye, cruel world");
- */
-char *
-bufcat(char *tgt, int tgtsize, const char *src)
-{
-	//  find null terminated end of target buffer
-	while (*tgt++)
-		--tgtsize;
-	--tgt;
-
-	//  copy non-null src bytes, leaving room for trailing null
-	while (--tgtsize > 0 && *src)
-		*tgt++ = *src++;
-
-	// target always null terminated
-	*tgt = 0;
-
-	return tgt;
-}
-
-void
+static void
 ecat(char *buf, int size, char *msg)
 {
 	bufcat(buf, size, progname);
-	if (verb) {
-		bufcat(buf, size, ": ");
-		bufcat(buf, size, verb);
-	}
-	if (service) {
-		bufcat(buf, size, ": ");
-		bufcat(buf, size, service->name);
-	}
-	bufcat(buf, size, ": ERROR: ");
-	bufcat(buf, size, msg);
+	if (verb)
+		buf2cat(buf, size, ": ", verb);
+	if (service)
+		buf2cat(buf, size, ": ", service->name);
+	buf2cat(buf, size, ": ERROR: ", msg);
 }
 
 static void
@@ -170,8 +137,7 @@ leave(int status)
 
 				buf[0] = 0;
 				ecat(buf, sizeof buf, panic);
-				bufcat(buf, sizeof buf, err);
-				bufcat(buf, sizeof buf, "\n");
+				buf2cat(buf, sizeof buf, err, "\n");
 
 				uni_write(2, buf, strlen(buf));
 			}
@@ -254,14 +220,11 @@ die3(int status, char *msg1, char *msg2, char *msg3)
 	char buf[PIPE_MAX];
 
 	buf[0] = 0;
-	if (msg1 && msg1[0]) {
+	if (msg1) {
 		bufcat(buf, sizeof buf, msg1);
-		
-		if (msg2 && msg2[0]) {
-			bufcat(buf, sizeof buf, ": ");
-			bufcat(buf, sizeof buf, msg2);
-		}
-	} else if (msg2 && msg2[0])
+		if (msg2)
+			buf2cat(buf, sizeof buf, ": ", msg2);
+	} else if (msg2)
 		bufcat(buf, sizeof buf, msg2);
 	die2(status, buf, msg3);
 }
@@ -331,13 +294,11 @@ eopt(const char *option, char *why)
 
 	buf[0] = 0;
 
-	bufcat(buf, sizeof buf, "option --");
-	bufcat(buf, sizeof buf, option);
+	buf2cat(buf, sizeof buf, "option --", option);
 
-	if (why) {
-		bufcat(buf, sizeof buf, ": ");
-		bufcat(buf, sizeof buf, why);
-	} else
+	if (why)
+		buf2cat(buf, sizeof buf, ": ", why);
+	else
 		bufcat(buf, sizeof buf, "<null why message>");
 	die(EXIT_BAD_ARG, buf);
 }
@@ -373,8 +334,7 @@ no_opt(char *option)
 	char buf[PIPE_MAX];
 
 	buf[0] = 0;
-	bufcat(buf, sizeof buf, "missing required option: --");
-	bufcat(buf, sizeof buf, option);
+	buf2cat(buf, sizeof buf, "missing required option: --", option);
 
 	die(EXIT_BAD_ARG, buf);
 }
@@ -385,8 +345,7 @@ emany(char *option)
 	char buf[PIPE_MAX];
 
 	buf[0] = 0;
-	bufcat(buf, sizeof buf, "option given more than once: --");
-	bufcat(buf, sizeof buf, option);
+	buf2cat(buf, sizeof buf, "option given more than once: --", option);
 	die(EXIT_BAD_ARG, buf);
 }
 
@@ -725,10 +684,8 @@ main(int argc, char **argv)
 	if (service && (err = service->open())) {
 		char buf[PIPE_MAX];
 
-		buf[0] = 0;
-		bufcat(buf, sizeof buf, "service open(");
-		bufcat(buf, sizeof buf, end_point);
-		bufcat(buf, sizeof buf, ") failed");
+		*buf = 0;
+		buf3cat(buf, sizeof buf, "service open(", end_point,") failed");
 		die2(EXIT_BAD_SRV, buf, err);
 	}
 
@@ -820,12 +777,11 @@ main(int argc, char **argv)
 				//  write the ascii digest
 
 				buf[0] = 0;
-				bufcat(buf, sizeof buf, digest);
-				bufcat(buf, sizeof buf, "\n");
+				buf2cat(buf, sizeof buf, digest, "\n");
 				if (uni_write_buf(output_fd, buf, strlen(buf)))
 					die2(EXIT_BAD_UNI,
-					"write(digest) failed",
-					strerror(errno));
+						"write(digest) failed",
+						strerror(errno));
 				exit_status = 0;
 			}
 		} else
