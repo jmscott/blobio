@@ -21,18 +21,6 @@
 //  does the verb imply a possible write to the file system?
 #define IS_WRITE_VERB()	(*verb == 'p' || (*verb == 'g' && *verb == 'i'))
 
-#ifdef COMPILE_TRACE
-
-#define _TRACE(msg)		if (tracing) _trace(msg)
-#define _TRACE2(msg1,msg2)	if (tracing) _trace2(msg1,msg2)
-
-#else
-
-#define _TRACE(msg)		0
-#define _TRACE2(msg1,msg2)	0
-
-#endif
-
 extern char	*verb;
 extern char	algorithm[9];
 extern char	digest[129];
@@ -47,18 +35,6 @@ static char	tmp_path[PATH_MAX + 1];
 
 struct service fs_service;
 
-static void
-_trace(char *msg)
-{
-	trace2("fs", msg);
-}
-
-static void
-_trace2(char *msg1, char *msg2)
-{
-	trace3("fs", msg1, msg2);
-}
-
 /*
  *  The end point is the root directory of the source blobio file system.
  *  No non-ascii or '?' characters are allowed in root file path.
@@ -70,8 +46,6 @@ static char *
 fs_end_point_syntax(char *root_dir)
 {
 	char *p = root_dir, c;
-
-	_TRACE("request to end_point_syntax()");
 
 	while ((c = *p++)) {
 		if (!isascii(c))
@@ -90,9 +64,6 @@ fs_end_point_syntax(char *root_dir)
 	 */
 	if (p - root_dir >= (PATH_MAX - 59))
 		return "too many chars in root directory path";
-
-	_TRACE("end_point_syntax() done");
-
 	return (char *)0;
 }
 
@@ -103,10 +74,6 @@ fs_end_point_syntax(char *root_dir)
 static char *
 fs_open()
 {
-	_TRACE("request to open()");
-
-	_TRACE2("blob root directory", end_point);
-
 	//  build the path to the $BLOBIO_ROOT/data/<algo>_fs/ directory
 
 	*fs_path = 0;
@@ -124,8 +91,6 @@ fs_open()
 		buf2cat(tmp_path, sizeof tmp_path, fs_path, "/tmp");
 	}
 
-	_TRACE("open() done");
-
 	return (char *)0;
 }
 
@@ -140,10 +105,6 @@ fs_open_output()
 static char *
 fs_close()
 {
-	_TRACE("request to close()");
-
-	_TRACE("close() done");
-
 	return (char *)0;
 }
 
@@ -215,16 +176,11 @@ fs_get(int *ok_no)
 	if (err)
 		return err;
 
-	_TRACE2("source blob file path", fs_path);
-
 	//  link output path to source blob file
 	
 	if (output_path) {
 
-		_TRACE("attempt hard link target to source blob file");
-
 		if (uni_link(fs_path, output_path) == 0) {
-			_TRACE("hard link to target succeeded");
 			*ok_no = 0;
 			return (char *)0;
 		}
@@ -239,7 +195,6 @@ fs_get(int *ok_no)
 		if (errno != EXDEV)
 			return strerror(errno);
 
-		_TRACE("source blob on different file system, so copy");
 
 	}
 	if ((err = fs_copy(fs_path, output_path))) {
@@ -260,8 +215,6 @@ fs_eat(int *ok_no)
 	char *err;
 	int len;
 
-	_TRACE("request to eat()");
-
 	bufcat(fs_path, sizeof fs_path, "/");
 	len = strlen(fs_path);
 	err = fs_service.digest->fs_path(
@@ -271,27 +224,16 @@ fs_eat(int *ok_no)
 	if (err)
 		return err;
 
-	_TRACE2("blob file path", fs_path);
-
 	//  insure we can read the file.
 
 	if (uni_access(fs_path, R_OK)) {
 		if (errno == ENOENT) {
-			_TRACE("blob does not exists");
 			*ok_no = 1;
 			return (char *)0;
 		}
 		return strerror(errno);
 	}
-
 	*ok_no = 0;
-
-#ifdef COMPILE_TRACE
-	if (tracing) {
-		TRACE("blob is readable");
-		TRACE("eat() done");
-	}
-#endif
 
 	return (char *)0;
 }
@@ -317,7 +259,6 @@ fs_put(int *ok_no)
 	err = fs_service.digest->fs_mkdir(fs_path, PATH_MAX - strlen(fs_path));
 	if (err)
 		return err;
-	_TRACE2("full directory path to blob", fs_path);
 
 	//  append the path to the blob, starting at the 
 
@@ -325,14 +266,12 @@ fs_put(int *ok_no)
 	err = fs_service.digest->fs_name(np, PATH_MAX - (np - fs_path));
 	if (err)
 		return err;
-	_TRACE2("file path to target blob", fs_path);
 
 	//  if the blob file already exists then we are done
 
 	if (uni_access(fs_path, F_OK) == 0) {
 		*ok_no = 0;
 
-		_TRACE("blob exists, so doing nothing");
 		//  Note: what about draining the input not bound to a file?
 		return (char *)0;
 	}
@@ -342,7 +281,6 @@ fs_put(int *ok_no)
 	//  try to link the target blob to the existing source blob
 
 	if (input_path) {
-		_TRACE2("hard link source blob to target", input_path);
 		if (uni_link(input_path, fs_path) == 0 || errno == EEXIST) {
 			*ok_no = 0;
 			return (char *)0;
@@ -350,15 +288,12 @@ fs_put(int *ok_no)
 
 		if (errno != EXDEV)
 			return strerror(errno);
-		_TRACE("can't link across devices, so copying blobs");
 	} else
-		_TRACE("no input path, so copy from standard input");
 
 	//  build path to temporary file which will accumulate the blob.
 
 	snprintf(tmp_name, sizeof tmp_name, "/%s.%ul", verb, getpid());
 	bufcat(tmp_path, sizeof tmp_path, tmp_name);
-	_TRACE2("tmp_path", tmp_path);
 
 	//  open input file.  may be standard input
 
@@ -380,28 +315,22 @@ fs_put(int *ok_no)
 		return strerror(errno);
 
 	//  copy the blob to temporary path.
-	//  need extra TRACE to help debug when temp blob is broken.
 
-	_TRACE2("copy input to temp blob", tmp_path);
 	while ((nr = uni_read(in_fd, buf, sizeof buf)) > 0)
 		if (uni_write_buf(tmp_fd, buf, nr) < 0) {
 			err = strerror(errno);
-			_TRACE2("error while writing temp blob", tmp_path); 
 			break;
 		}
 	if (nr < 0) {
 		err = strerror(errno);
-		_TRACE("error reading while writing to temp blob");
 	}
 
 	//  copy successfull so link temp and final blob.
 
 	if (err == (char *)0) {
-		_TRACE2("linking temp blob to target blob", fs_path);
 
 		if (uni_link(tmp_path, fs_path) && errno != EEXIST) {
 			err = strerror(errno);
-			_TRACE2("link of tmp to fs blob failed", fs_path);
 		} else
 			*ok_no = 0;
 	}
@@ -419,7 +348,6 @@ fs_take(int *ok_no)
 	err = fs_get(ok_no);
 	if (err || *ok_no == 1)
 		return err;
-	_TRACE2("unlinking source blob", fs_path);
 	if (uni_unlink(fs_path) != 0 && errno != ENOENT)
 		return strerror(errno);
 	return (char *)0;
