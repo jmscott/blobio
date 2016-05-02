@@ -281,19 +281,19 @@ _mkdir(char *path, int len)
 }
 
 /*
- *  Make the directory path to a file system blob an append to full_path.
+ *  Make the directory path to a file system blob.
  */
 static char *
-sha_fs_mkdir(char *root)
+sha_fs_mkdir(char *path, int size)
 {
-	char path[PATH_MAX];
 	char *dp, *dirp;
 
-	dp = digest;
-	*path = 0;
+	if (size < 37)
+		return "fs_mkdir: size < 37 bytes";
 
-	dirp = bufcat(path, sizeof path, root);
-	*dirp++ = '/';
+	dp = digest;
+
+	dirp = bufcat(path, size, "/");
 
 	//  first level directory: one char
 

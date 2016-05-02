@@ -14,8 +14,12 @@
 #include <string.h>
 #include <stdlib.h>
 #include <fcntl.h>
+#include <stdio.h>
 
 #include "blobio.h"
+
+//  does the verb imply a possible write to the file system?
+#define IS_WRITE_VERB()	(*verb == 'p' || (*verb == 'g' && *verb == 'i'))
 
 #ifdef COMPILE_TRACE
 
@@ -99,44 +103,33 @@ fs_end_point_syntax(char *root_dir)
 static char *
 fs_open()
 {
-	struct stat st;
-
 	_TRACE("request to open()");
 
 	_TRACE2("blob root directory", end_point);
 
 	//  build the path to the $BLOBIO_ROOT/data/<algo>_fs/ directory
 
-	fs_path[0] = 0;
-	buf4cat(fs_path, sizeof fs_path, end_point, "/data/", algorithm, "_fs");
+	*fs_path = 0;
+	buf4cat(fs_path, sizeof fs_path,
+				end_point,
+				"/data/",
+				algorithm,
+				"_fs"
+	);
 
-	//  verify existence and permission of path to data directory.
-	//  path looks like <root_dir>/data/<algorithm>_fs
+	//  if writing a blob then build path to temporary directory.
 
-	_TRACE2("data directory", fs_path);
-	if (uni_access(fs_path, X_OK)) {
-		if (errno == ENOENT)
-			return "missing entry in blob data directory";
-		if (errno == EPERM)
-			return "no permission to search blob data directory";
-		return strerror(errno);
+	if (IS_WRITE_VERB()) {
+		*tmp_path = 0;
+		buf2cat(tmp_path, sizeof tmp_path, fs_path, "/tmp");
 	}
-
-	//  verify the data directory is, in fact, a directory
-
-	if (stat(fs_path, &st))
-		return strerror(errno);
-	if (!S_ISDIR(st.st_mode))
-		return "blob data directory is not a directory";
 
 	_TRACE("open() done");
 
 	return (char *)0;
 }
 
-//   Note:  assume that service-open() has been called.
-
-//  verify that the temp directory exists in the target root directory.
+//   Note:  assume that fs_open() has been called.
 
 static char *
 fs_open_output()
@@ -306,42 +299,47 @@ fs_eat(int *ok_no)
 static char *
 fs_put(int *ok_no)
 {
-	char *err;
-	int len;
+	char *err = (char *)0;
+	char *np;
+	int in_fd, tmp_fd;
+	int nr;
+	unsigned char buf[PIPE_MAX];
 
-	//  3 + 1 + 8 + 1 + 21 + 1 + 21 + 1
-	//char tmp_id[57];	//  tmp/<verb>-<epoch>.<pid>
+	//  Name of temporary file
+	//  size: 1 + 8 + 1 + 21 + 1 + 21 + 1
+
+	char tmp_name[57];	//  /<verb>-<epoch>.<pid>\0
 
 	*ok_no = 1;
 
-	buf2cat(tmp_path, sizeof tmp_path, fs_path, "/tmp");
+	//  make the full directory path to the blob
 
-	//  make the full directory path
-
-	err = fs_service.digest->fs_mkdir(fs_path);
+	err = fs_service.digest->fs_mkdir(fs_path, PATH_MAX - strlen(fs_path));
 	if (err)
 		return err;
+	_TRACE2("full directory path to blob", fs_path);
 
-	//  append the path to the blob
+	//  append the path to the blob, starting at the 
 
-	len = strlen(fs_path);
-	err = fs_service.digest->fs_path(fs_path + len, PATH_MAX - len);
+	np = bufcat(fs_path, sizeof fs_path, "/");
+	err = fs_service.digest->fs_name(np, PATH_MAX - (np - fs_path));
 	if (err)
 		return err;
-	_TRACE2("path to target blob", fs_path);
+	_TRACE2("file path to target blob", fs_path);
 
-	//  if the blob file exists then we are done
+	//  if the blob file already exists then we are done
 
 	if (uni_access(fs_path, F_OK) == 0) {
 		*ok_no = 0;
 
+		_TRACE("blob exists, so doing nothing");
 		//  Note: what about draining the input not bound to a file?
 		return (char *)0;
 	}
 	if (errno != ENOENT)
 		return strerror(errno);
 
-	//  try to link the target blob to the source blob
+	//  try to link the target blob to the existing source blob
 
 	if (input_path) {
 		_TRACE2("hard link source blob to target", input_path);
@@ -350,20 +348,67 @@ fs_put(int *ok_no)
 			return (char *)0;
 		}
 
-		if (errno != EPERM)
+		if (errno != EXDEV)
 			return strerror(errno);
-		_TRACE("no permisson to hard link to target, so copy");
+		_TRACE("can't link across devices, so copying blobs");
 	} else
 		_TRACE("no input path, so copy from standard input");
 
-	buf2cat(tmp_path, sizeof tmp_path, fs_path, "/tmp");
+	//  build path to temporary file which will accumulate the blob.
 
-	err = fs_copy(input_path, fs_path);
-	if (err && errno != EEXIST)
-		return err;
-	
-	*ok_no = 0;
-	return (char *)0;
+	snprintf(tmp_name, sizeof tmp_name, "/%s.%ul", verb, getpid());
+	bufcat(tmp_path, sizeof tmp_path, tmp_name);
+	_TRACE2("tmp_path", tmp_path);
+
+	//  open input file.  may be standard input
+
+	if (input_path) {
+		in_fd = uni_open(input_path, O_RDONLY);
+		if (in_fd < 0)
+			return strerror(errno);
+	} else
+		in_fd = input_fd;
+
+	//  open tempory file to for incoming blob
+
+	tmp_fd = uni_open_mode(
+			tmp_path,
+			O_WRONLY | O_CREAT, 
+			S_IRUSR | S_IRGRP
+	);
+	if (tmp_fd < 0)
+		return strerror(errno);
+
+	//  copy the blob to temporary path.
+	//  need extra TRACE to help debug when temp blob is broken.
+
+	_TRACE2("copy input to temp blob", tmp_path);
+	while ((nr = uni_read(in_fd, buf, sizeof buf)) > 0)
+		if (uni_write_buf(tmp_fd, buf, nr) < 0) {
+			err = strerror(errno);
+			_TRACE2("error while writing temp blob", tmp_path); 
+			break;
+		}
+	if (nr < 0) {
+		err = strerror(errno);
+		_TRACE("error reading while writing to temp blob");
+	}
+
+	//  copy successfull so link temp and final blob.
+
+	if (err == (char *)0) {
+		_TRACE2("linking temp blob to target blob", fs_path);
+
+		if (uni_link(tmp_path, fs_path) && errno != EEXIST) {
+			err = strerror(errno);
+			_TRACE2("link of tmp to fs blob failed", fs_path);
+		} else
+			*ok_no = 0;
+	}
+
+	uni_close(tmp_fd);
+	uni_unlink(tmp_path);
+	return err;
 }
 
 static char *

@@ -119,8 +119,10 @@ struct digest
 
 	/*
 	 *  Make a file system path from the ascii digest.
+	 *  Path points to the parent of the first directory
+	 *  build from the hash digest.
 	 */
-	char	*(*fs_mkdir)(char *root);
+	char	*(*fs_mkdir)(char *path, int size);
 };
 
 struct service
