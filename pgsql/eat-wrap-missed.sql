@@ -9,24 +9,24 @@
 \pset tuples_only
 \pset format unaligned
 
-create temporary table wrapped
+CREATE TEMPORARY TABLE wrapped
 (
 	blob	udig
-			primary key
+			PRIMARY KEY
 );
 
 \copy wrapped from pstdin
 
-vacuum analyze wrapped;
+VACUUM ANALYZE WRAPPED;
 
-select
+SELECT
 	w.blob
-  from
+  FROM
   	wrapped w
-	  left outer join blobio.brr_discover dis on (dis.blob = w.blob)
-	  left outer join blobio.brr_no_recent no on (no.blob = w.blob)
+	  LEFT OUTER JOIN blobio.brr_discover dis ON (dis.blob = w.blob)
+	  LEFT OUTER JOIN blobio.brr_no_recent no ON (no.blob = w.blob)
   where
-  	dis.blob is null
+  	dis.blob is NULL
 	and
-	no.blob is null
+	no.blob is NULL
 ;
