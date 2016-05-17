@@ -5,6 +5,11 @@
  *  	Long (>= PATH_MAX) file paths are still problematic.
  *
  *	The input stream is not drained when the blob exists during a put/give.
+ *
+ *	A typo in the BLOBIO_SERVICE yields a "blob not found error", which
+ *	is confusing.  Instead, the existence of the data directory ought to
+ *	tested for a more clear error message.  An earlier version of fs did
+ *	just this test.
  */
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -19,6 +24,7 @@
 #include "blobio.h"
 
 //  does the verb imply a possible write to the file system?
+
 #define IS_WRITE_VERB()	(*verb == 'p' || (*verb == 'g' && *verb == 'i'))
 
 extern char	*verb;
