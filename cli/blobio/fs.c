@@ -266,7 +266,7 @@ fs_put(int *ok_no)
 	if (err)
 		return err;
 
-	//  append the path to the blob, starting at the 
+	//  append /<blob-file-name> to the path to the blob
 
 	np = bufcat(fs_path, sizeof fs_path, "/");
 	err = fs_service.digest->fs_name(np, PATH_MAX - (np - fs_path));
