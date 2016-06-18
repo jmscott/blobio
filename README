@@ -66,7 +66,7 @@ Description:
 
 		server:$BLOBIO_ROOT/spool/biod.brr
 
-	Those traffic records are named "Blob Request Records" and abbreiviated
+	Those traffic records are named "Blob Request Records" and abbreviated
 	as BRR.  The BRR record format is modeled after the Call Detail Record
 	from the telecommunications industry:
 
