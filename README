@@ -35,8 +35,8 @@ Description:
 	
 		get <udig>		get a blob with a particular digest
 		put <udig>		write a blob with a digest
-		take <udig>		get a blob that the server may forget
-		give <udig>		put a blob that the client may forget
+		take <udig>		get a blob that the source may forget
+		give <udig>		put a blob that the source may forget
 		eat <udig>		untrusted digest of a blob by server
 
 		wrap			bundle current unwrapped blob traffic
