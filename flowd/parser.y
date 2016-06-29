@@ -2597,7 +2597,7 @@ func (conf *config) parse(in io.RuneReader) (
 
 	depend_order := tsort(l.depends)
 	if depend_order == nil {
-		err = errors.New("cyle exists between call/query graphs")
+		err = errors.New("cycle exists between call/query graphs")
 	} else {
 		for i, j := 0, len(depend_order) - 1;  i<j;  i, j = i+1, j-1 {
 			depend_order[i], depend_order[j] =
