@@ -292,7 +292,7 @@ func (cmpl *compile) compile() fdr_chan {
 			root = par.query2ast[n]
 		}
 		if root == nil {
-			panic(Sprintf("no ast node (is %n invoked?): %s", n))
+			panic(Sprintf("no ast node (or not invoked?): %s", n))
 		}
 		compile(root)
 	}
