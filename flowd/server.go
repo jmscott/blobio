@@ -521,7 +521,7 @@ func (conf *config) server(par *parse) {
 					worker_stats[i] = 0
 					idle_count--
 				} else {
-					info("	#%d idle", i+1)
+					info("	#%d: idle", i+1)
 				}
 			}
 
