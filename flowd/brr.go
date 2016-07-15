@@ -90,9 +90,12 @@ func (*brr) parse(s string) (*brr, error) {
 	b := strings.Split(s, "\t")
 
 	if len(b) != 7 {
-		return nil, errors.New(
-			"wrong number of brr fields: expected 7, got " +
-				strconv.Itoa(len(b)))
+		msg := Sprintf(
+			"wrong number of brr fields: expected 7, got %d: %s",
+			len(b),
+			s,
+		)
+		return nil, errors.New(msg)
 	}
 
 	// start time of the request
