@@ -1,18 +1,18 @@
 #!/bin/bash
+
 HELP=$(cat <<'END'
 
 Synopsis:
-	Unroll all wrapped sets into a set of udigs
+	Unroll all wrapped sets into a set of uncached udigs.
 Usage:
 	bio-unroll
 	bio-unroll --cache-dir
 Exit Status:
 	0	Ok, set of all wraps has been blobified
 	1	Missing non-empty wrap blob encountered
-	255	System Error
-Blame:
-	jmscott@setspace.com
-	setspace@gmail.com
+	64	System Error
+Note:
+	Fill in this documentation!
 END
 )
 PROG=$(basename $0)
@@ -36,7 +36,7 @@ trap leave EXIT
 die()
 {
 	echo "$PROG: ERROR: $@" >&2
-	exit 255
+	exit 64
 }
 
 cache_blob()
