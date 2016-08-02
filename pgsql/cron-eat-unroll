@@ -2,9 +2,9 @@
 #
 #  Synopsis:
 #	Eat all unrolled blobs
-#  Blame:
-#  	jmscott@setspace.com
-#  	setspace@gmail.com
+#  Note:
+#	Fill in this documentation!
+#
 
 HELP=$(cat <<'END'
 Synopsis:
@@ -92,6 +92,7 @@ cd $WORK_DIR || die "cd $WORK_DIR failed: exit status=$?"
 #  Setup the blob cache dir for bio-unroll.
 #
 CACHE_DIR=$BLOBIO_ROOT/cache/cron-eat-unroll
+
 #
 #  Keep two sets of caches, since first read indicates blob has been processed.
 #
