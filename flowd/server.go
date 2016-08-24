@@ -228,7 +228,7 @@ func (conf *config) server(par *parse) {
 		signal.Notify(c, syscall.SIGTERM)
 		s := <-c
 		server_leaving = true
-		WARN("caught signal: %s", s)
+		info("caught signal: %s", s)
 		leave(1)
 	}()
 
