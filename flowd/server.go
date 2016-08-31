@@ -484,8 +484,29 @@ func (conf *config) server(par *parse) {
 			//  update roll level sample stats
 			roll_sample <- sam
 
-		//  burp out flow stats every heartbeat
+		//  burp out stats every heartbeat
+
 		case <-heartbeat.C:
+
+			//  dump open database count
+
+			for n, sql := range conf.sql_database {
+				db := sql.opendb
+				msg := "no open connections"
+				if db != nil {
+					tense := "s"
+
+					oc := db.Stats().OpenConnections
+					if oc == 1{
+						tense = ""
+					}
+					msg = Sprintf("%d connection%s",
+						oc,
+						tense,
+					)
+				}
+				info("sql database: %s: %s", n, msg)
+			}
 
 			bl := len(brr_chan)
 
@@ -494,8 +515,6 @@ func (conf *config) server(par *parse) {
 
 			//  no completed flows seen, no blob requests in queue
 			case sfc == 0 && bl == 0:
-				info("next heartbeat: %s",
-					conf.heartbeat_duration)
 				continue
 
 			//  no completed flows seen, but unresolved exist
