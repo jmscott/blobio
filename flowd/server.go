@@ -3,6 +3,7 @@
 //  Note:
 //	Number of distinct udigs needs to be tracked.  Sounds like a job for
 //	bloom filter.
+//
 
 package main
 
@@ -500,7 +501,7 @@ func (conf *config) server(par *parse) {
 					if oc == 1{
 						tense = ""
 					}
-					msg = Sprintf("%d connection%s",
+					msg = Sprintf("%d open connection%s",
 						oc,
 						tense,
 					)
@@ -515,6 +516,7 @@ func (conf *config) server(par *parse) {
 
 			//  no completed flows seen, no blob requests in queue
 			case sfc == 0 && bl == 0:
+				info("blob requests in queue: 0")
 				continue
 
 			//  no completed flows seen, but unresolved exist
@@ -565,7 +567,7 @@ func (conf *config) server(par *parse) {
 			sample = flow_worker_sample{}
 
 			info("boot: %s", boot_sample)
-			info("brr in queue: %d", bl)
+			info("blob requests in queue: %d", bl)
 		case <-memstat_tick.C:
 			var m runtime.MemStats
 
