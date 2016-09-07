@@ -79,31 +79,6 @@ trace4(char *msg1, char *msg2, char *msg3, char *msg4)
 	} else 
 		trace3(msg2, msg3, msg4);
 }
-/*
- *  Synopsis:
- *	Format a byte buffer into ascii/hex suitable for debuging network flow.
- *  Example:
- *
-     0  >  67 65 74 20 70 69 6e 67 3a 61 62 63 64 65 66 0a  get ping:abcdef.   
-    16  >  3a 35 34 20 43 44 54 09 31 32 37 2e 30 2e 30 2e  :54 CDT.127.0.0.
-    32  >  01 02 03                                         ... 
-
-0.........1.........2.........3.........4.........5.........6.........7.........
-
- *	Each formattedd line is 76 chars plus new line.
- *	The characters '>' and '<' represent either read or write direction,
- *	respectively. 
- *
- *  Note:
- *	If the source buffer requires more space than the target buffer
- *	can provide, then none of the source buffer is formated,
- *	which is hosed.  This is a mistake.  Instead, the source
- *	should be truncated and a truncation message should be written
- *	to the target.
- *  Blame:
- *	jmscott@setspace.com
- *	setspace@gmail.com
- */
 
 static void
 _write(char *buf)
@@ -123,7 +98,22 @@ _cksum(unsigned char *buf, int size)
 }
 
 /*
- *  Ye'ol hex dump.
+ *  Synopsis:
+ *	Write ye old hexdump to file trace_fd.
+ *
+ *  Description:
+ *	Hexdump a buffer to the file trace_fd stream.
+ *
+ *	Each 16 bytes of the source buffer is formated and written as 76 chars
+ *	plus new line.	The characters '>' and '<' represent either read or
+ *	write direction, respectively. 
+ *
+     0  >  67 65 74 20 70 69 6e 67 3a 61 62 63 64 65 66 0a  get ping:abcdef.   
+    16  >  3a 35 34 20 43 44 54 09 31 32 37 2e 30 2e 30 2e  :54 CDT.127.0.0.
+    32  >  01 02 03                                         ... 
+
+0.........1.........2.........3.........4.........5.........6.........7.........
+
  *
  *  Derived from a hexdump written by Andy Fullford, eons ago.
  *
