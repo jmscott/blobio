@@ -2,7 +2,7 @@
  *  Synopsis:
  *	Manage log file for server PANIC|ERROR|WARN or info messages
  *  Description:
- *	Typical process logging with 4 tagged levels, PANIC|ERROR|WARN|TRACE,
+ *	Typical process logging with 4 tagged levels, PANIC|ERROR|WARN,
  *	and one untagged INFO level to a reliable, rolled file.  The levels 
  *	are interpreted as follows:
  *
@@ -10,11 +10,8 @@
  *		ERROR:	client ERROR
  *		 WARN:	unusual event that does not need immediate attention
  *
- *	The log file is rolled to log/biod-DOW.log roughly at midnight in
- *	localtime zone.
- *  Blame:
- *  	jmscott@setspace.com
- *  	setspace@gmail.com
+ *	The log file is rolled to $BLOBIO_ROOT/log/biod-Dow.log roughly at
+ *	midnight in localtime zone.
  *  Note:
  *	Really, really need syslog support!
  *
