@@ -1,5 +1,10 @@
 //Synopsis:
 //	OpCodes for flow engine
+//  See:
+//
+//	For rumsfeld's source see:
+//
+//		https://en.m.wikipedia.org/wiki/Four_stages_of_competence
 
 package main
 
