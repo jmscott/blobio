@@ -5,7 +5,7 @@
  *  	jmscott@setspace.com
  *  	setspace@gmail.com
  */
-#ifdef __APPLE__
+#if __APPLE__ == 1 && __ENVIRONMENT_MAC_OS_X_VERSION_MIN_REQUIRED__ < 101200
 
 #pragma weak clock_gettime
 
@@ -57,6 +57,6 @@ int clock_gettime(clockid_t id, struct timespec *tp)
 	return 0;
 }
 
-#endif // __APPLE__
+#endif // __APPLE__ && __ENVIRONMENT_MAC_OS_X_VERSION_MIN_REQUIRED__
 
 /* EOF */
