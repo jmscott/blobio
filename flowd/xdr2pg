@@ -180,6 +180,7 @@ test $STATUS -eq 0 || die "blobio put xdr-udig-set failed: exit status=$STATUS"
 
   <hostname>$(hostname -f)</hostname>
   <user>$USER</user>
+  <logname>$LOGNAME</logname>
   <directory>$(pwd)</directory>
 
   <shell pid="$$">

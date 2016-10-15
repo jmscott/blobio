@@ -79,7 +79,8 @@ END
 		},
 		"hostname":	"$(hostname)",
 		"environment": 		{
-					"USER":	"$USER"
+					"USER":	"$USER",
+					"LOGNAME":	"$LOGNAME",
 		},
 		"gnu-file":	"$(file "$FILE" | escape_json)",
 		"date":		"$(date)",
