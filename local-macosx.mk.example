@@ -30,12 +30,18 @@
 #  Note:
 #	Initialize DIST_USER=$(USER)
 #
+#	Xcode8 is broken on El Capitan (10.11).  In particular, a reference to
+#	clock_gettime() exists, so the complication succeeds, but no underlying
+#	library for clock_gettime() exists, so the run time link fails.
+#	Never ends.
+#
 
 #  where to install entire blobio distribution
+#  in dev environment set to $(HOME)/opt/blobio
 DIST_ROOT=/usr/local/blobio
 
 #  user/group for installed distribution dir/files
-DIST_USER=blobio
+DIST_USER=$(USER)
 DIST_GROUP=staff
 
 #  where is go distribution installed
