@@ -50,3 +50,5 @@ export TMPDIR=$BLOBIO_ROOT/tmp
 if [ ! -e $TMPDIR ];  then
 	mkdir -p $TMPDIR/tmp || exit 1
 fi
+
+USER=${USER:=$LOGNAME}
