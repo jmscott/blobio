@@ -114,11 +114,9 @@ bye:
 static int
 trim_blob_dir(char *dir_path)
 {
-	char *slash, *p;
+	char *slash;
 	static char nm[] = "trim_blob_dir";
 	int count = 0;
-
-	p = dir_path;
 
 	/*
 	 *   Start at the deepest directory.
