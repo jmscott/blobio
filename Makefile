@@ -19,10 +19,6 @@
 #
 #	appears to work correctly.
 #
-#	The 'http' directory must be renamed to 'www'
-#
-#	Need to specify client of 
-#
 include local.mk
 
 all:
@@ -32,6 +28,7 @@ ifdef DIST_ROOT
 endif
 	cd cli;		$(MAKE) all
 	cd flowd;	$(MAKE) all
+	cd www;		$(MAKE) all
 
 clean:
 	cd sha1;	$(MAKE) clean
@@ -53,6 +50,7 @@ endif
 
 ifdef DIST_ROOT
 	cd flowd;	$(MAKE) distclean
+	cd www;	$(MAKE) distclean
 	rm -rf $(DIST_ROOT)/bin
 	rm -rf $(DIST_ROOT)/lib
 	rm -rf $(DIST_ROOT)/sbin
@@ -62,7 +60,7 @@ endif
 install: all
 ifdef PREFIX
 	echo "Installing to $(PREFIX)"
-	test -d /usr/local/bin && cp cli/blobio $(PREFIX)/bin
+	test -d $(PREFIX)/bin && cp cli/blobio $(PREFIX)/bin
 endif
 
 	#  setup the directories
@@ -97,6 +95,8 @@ ifdef DIST_ROOT
 		-d $(DIST_ROOT)/tmp
 	install -g $(DIST_GROUP) -o $(DIST_USER)			\
 		-d $(DIST_ROOT)/data
+	install -g $(DIST_GROUP) -o $(DIST_USER)			\
+		-d $(DIST_ROOT)/www
 	install -g $(DIST_GROUP) -o $(DIST_USER) 			\
 		-d $(DIST_ROOT)/data/sha_fs
 	install -g $(DIST_GROUP) -o $(DIST_USER) 			\

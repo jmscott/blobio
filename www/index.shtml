@@ -1,0 +1,12 @@
+<html>
+
+ <head>
+  <title>BlobIO Administration</title>
+ </head>
+
+ <body>
+  <h1>Welcome to BlobIO Administration</h1>
+  Please verify the <a href="env.shtml">process environment</a>.
+ </body>
+
+</html>
