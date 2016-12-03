@@ -32,12 +32,13 @@
 #	Initialize DIST_USER=$(USER)
 #
 
-#  where to install entire blobio distribution
-#  for developement, try $(HOME)/blobio
-#
+#  DIST_ROOT points to where to install entire blobio distribution.
+#  For example for development set DIST_ROOT to $(HOME)/opt/blobio
+
 DIST_ROOT=/usr/local/blobio
 
 #  user/group for installed distribution dir/files
+
 DIST_USER=$(USER)
 DIST_GROUP=$(USER)
 
