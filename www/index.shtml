@@ -4,9 +4,24 @@
   <title>BlobIO Administration</title>
  </head>
 
- <body>
-  <h1>Welcome to BlobIO Administration</h1>
-  Please verify the <a href="env.shtml">process environment</a>.
+ <style>
+   .parent {
+        display: -webkit-box;
+        display: -ms-flexbox;
+        display: flex;
+	height:	100%;
+   }
+   .child {
+        height: 100px; /* Or whatever */
+        margin: auto;  /* Magic! */
+   }
+ </style>
+
+ <body class="parent">
+  <div class="child">
+   <h1>Welcome to BlobIO Administration</h1>
+   Please verify the <a href="env.shtml">process environment</a>.
+  </div>
  </body>
 
 </html>
