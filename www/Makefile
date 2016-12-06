@@ -29,6 +29,7 @@ ifdef DIST_ROOT
 	install -g $(DIST_GROUP) -o $(DIST_USER) -m ug=r,o=		\
 		env.shtml						\
 		index.shtml						\
+		favicon.ico						\
 		$(DIST_WWW)/htdocs
 	install -g $(DIST_GROUP) -o $(DIST_USER) -m ug=r,o=		\
 		env.d/div.pl						\

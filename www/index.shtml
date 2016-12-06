@@ -12,8 +12,8 @@
 	height:	100%;
    }
    .child {
-        height: 100px; /* Or whatever */
-        margin: auto;  /* Magic! */
+        height: 100px;
+        margin: auto;
    }
  </style>
 
