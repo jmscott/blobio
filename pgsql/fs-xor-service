@@ -54,7 +54,7 @@ log "PGUSER=$PGUSER"
 log "PGDATABASE=$PGDATABASE"
 
 log "starting scan of $(pwd)/data/ ..."
-log "file system only in left column, service only in right column"
+log "file system only in column <, service only in column >"
 comm -3 <(
 	cd data || die "cd $(pwd)/data failed"
 	find *_fs -follow -type f -print				|
