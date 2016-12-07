@@ -21,3 +21,8 @@ export BLOBIO_ROOT=${BLOBIO_ROOT:=/usr/local/blobio}
 #  	Defining a second variable is stupid.
 #
 #export BLOBIO_BIOD_PORT=1796
+
+#
+#  To enable logging of biod stats then set BLOBIO_RRD_SAMPLE_DURATION > 0sec
+#
+#export BLOBIO_RRD_SAMPLE_DURATION=0

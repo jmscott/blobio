@@ -8,10 +8,6 @@
 #
 
 PROG=$(basename $0)
-PID=$BLOBIO_ROOT/run/biod.pid
-
-#  duration in secords rrd samples written to log/biod-rrd.log. 0 disables
-RRD_SAMPLE_DURATION=0
 PAUSE=3
 
 die()
@@ -85,6 +81,11 @@ cd $BLOBIO_ROOT || die "cd $BLOBIO_ROOT failed"
 BIOD=$BLOBIO_ROOT/sbin/biod
 test -r etc/profile && . etc/profile
 PORT=${BLOBIO_BIOD_PORT:=1797}
+PID=$BLOBIO_ROOT/run/biod.pid
+
+#  duration in seconds to write rrd samples to log/biod-rrd.log.
+#  0 disables.
+RRD_SAMPLE_DURATION=${BLOBIO_RRD_SAMPLE_DURATION:=0}
 
 case "$ACTION" in
 boot)
