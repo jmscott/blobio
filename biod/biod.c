@@ -552,6 +552,7 @@ biod(char *verb, char *algorithm, char *digest,
 	int status;
 	struct digest_module *mp;
 	int (*verb_callback)(struct request *, struct digest_module *);
+	char ps_title[5 + 4 + 1];
 
 	verb_callback = 0;		//  quiets clang compiler
 
@@ -590,31 +591,30 @@ biod(char *verb, char *algorithm, char *digest,
 	 *  Note:
 	 *  	Collapse into faster inline tests.
 	 */
-	if (strcmp("get", verb) == 0) {
-		ps_title_set("biod-get", (char *)0, (char *)0);
+	if (strcmp("get", verb) == 0)
 		verb_callback = get;
-	} else if (strcmp("put", verb) == 0) {
-		ps_title_set("biod-put", (char *)0, (char *)0);
+	else if (strcmp("put", verb) == 0)
 		verb_callback = put;
-	} else if (strcmp("take", verb) == 0) {
-		ps_title_set("biod-take", (char *)0, (char *)0);
+	else if (strcmp("take", verb) == 0)
 		verb_callback = take;
-	} else if (strcmp("give", verb) == 0) {
-		ps_title_set("biod-give", (char *)0, (char *)0);
+	else if (strcmp("give", verb) == 0)
 		verb_callback = give;
-	} else if (strcmp("eat", verb) == 0) {
-		ps_title_set("biod-eat", (char *)0, (char *)0);
+	else if (strcmp("eat", verb) == 0)
 		verb_callback = eat;
-	} else if (strcmp("wrap", verb) == 0) {
-		ps_title_set("biod-wrap", (char *)0, (char *)0);
+	else if (strcmp("wrap", verb) == 0)
 		verb_callback = wrap;
-	} else if (strcmp("roll", verb) == 0) {
-		ps_title_set("biod-roll", (char *)0, (char *)0);
+	else if (strcmp("roll", verb) == 0)
 		verb_callback = roll;
-	} else {
+	else {
 		die3_NO(algorithm, "unknown verb", verb);
 		/*NOTREACHED*/
 	}
+
+	//  set the process title seen by the os
+
+	strcpy(ps_title, "biod-");
+	strcat(ps_title, verb);
+	ps_title_set(ps_title, (char *)0, (char *)0);
 
 	/*
 	 *  Open the module.
