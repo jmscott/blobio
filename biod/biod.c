@@ -33,7 +33,7 @@
 
 #define BIOD_PORT		1797
 
-#define ACCEPT_TIMEOUT		5
+#define ACCEPT_TIMEOUT		3
 #define MAX_VERB_SIZE		5
 
 /*
@@ -67,6 +67,7 @@ extern pid_t	arborist_pid;
  *  State bits are ORed in as request proceeds.
  */
 time_t last_log_heartbeat		= 0;
+time_t last_rrd_sample			= 0;
 
 void		**module_boot_data = 0;
 char		*BLOBIO_ROOT = 0;
@@ -1106,6 +1107,11 @@ heartbeat()
 	u8 connect_diff;
 	float connect_rate;
 	static u8 prev_connect_count = 0;
+	time_t now;
+
+	time(&now);
+	if (now - last_log_heartbeat < HEARTBEAT)
+		return;
 
 	snprintf(buf, sizeof buf, "heartbeat: %u sec", HEARTBEAT);
 	info(buf);
@@ -1178,10 +1184,15 @@ heartbeat()
  *		take_no_count
  */
 static void
-put_rrd_sample()
+rrd_sample()
 {
 	int fd;
 	char buf[512];		/* <= PIPE_MAX */
+	time_t now;
+
+	time(&now);
+	if (now - last_rrd_sample < rrd_sample_duration)
+		return;
 
 	static char format[] =
 		"%llu:"					/* time epoch */
@@ -1195,7 +1206,7 @@ put_rrd_sample()
 	if (fd < 0)
 		panic3(rrd_log, "open(rrd log) failed", strerror(errno));
 	snprintf(buf, sizeof buf, format,
-		(u8)time((time_t *)0),
+		now,
  		success_count,
 		timeout_count,
 		error_count,
@@ -1219,22 +1230,17 @@ put_rrd_sample()
 		panic3(rrd_log, "write(rrd log) failed", strerror(errno));
 	if (io_close(fd))
 		panic3(rrd_log, "close(rrd log) failed", strerror(errno));
+	last_rrd_sample = now;
 }
 
 static void
 catch_CHLD(int sig)
 {
-	time_t now;
-
 	UNUSED_ARG(sig);
 
 	reap_request();
-	time(&now);
-	if (now - last_log_heartbeat >= HEARTBEAT) {
-		heartbeat();
-		if (rrd_sample_duration > 0)
-			put_rrd_sample();
-	}
+	heartbeat();
+	rrd_sample();
 }
 
 static void
@@ -1474,7 +1480,7 @@ fork_accept(struct request *rp)
 	/*
 	 *  Fork a child to handle the request.
 	 *  In the parent - the master biod process - just close down
-	 *  the connections and return to accept more requests.
+	 *  the connection and return to accept more requests.
 	 */
 	if (fork_request()) {
 		close(rp->client_fd);
@@ -1572,6 +1578,23 @@ main(int argc, char **argv)
 			die2("unknown option", argv[i]);
 		else
 			die2("unknown argument", argv[i]);
+	}
+
+	if (rrd_sample_duration > 0 && rrd_sample_duration < HEARTBEAT) {
+		char ebuf[512];
+
+		sprintf(ebuf, "rrd sample duration < heartbeat: %d < %d sec",
+				rrd_sample_duration, HEARTBEAT);
+		die(ebuf);
+	}
+
+	if (rrd_sample_duration > 0 && rrd_sample_duration < ACCEPT_TIMEOUT) {
+		char ebuf[512];
+		static char r2small[] =
+		    "rrd sample duration < socket accept duration: %d < %d sec";
+
+		sprintf(ebuf, r2small, rrd_sample_duration, ACCEPT_TIMEOUT);
+		die(ebuf);
 	}
 
 	time(&start_time);
@@ -1678,10 +1701,6 @@ main(int argc, char **argv)
 	memset(req.chat_history, 0, sizeof req.chat_history);
 	req.remote_len = sizeof req.remote_address;
 
-	/*
-	 *  Note:
-	 *	The log heartbeat is not lively enough under a heavy load.
-	 */
 accept_request:
 	switch (io_accept(
 			listen_fd,
@@ -1690,11 +1709,12 @@ accept_request:
 			&req.client_fd,
 			ACCEPT_TIMEOUT)) {
 	case -1:
-		die("io_accept() failed");
+		die2("accept(server listen socket) failed", strerror(errno));
 		/*NOTREACHED*/
 	case 0:
 		connect_count++;
 		fork_accept(&req);
+		/* always in the parent */
 		break;
 	case 1:
 		break;
@@ -1703,5 +1723,7 @@ accept_request:
 	}
 	catch_CHLD(SIGCHLD);
 
+	heartbeat();
+	rrd_sample();
 	goto accept_request;
 }

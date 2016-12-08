@@ -8,18 +8,43 @@
 include ../blobio.mk
 include ../local.mk
 
-OBJS=				\
-	arbor.o			\
-	biod.o			\
-	brr.o			\
-	blob_set.o		\
-	io.o			\
-	log.o			\
-	macosx.o		\
-	module.o		\
-	ps_title.o		\
-	sha_fs.o		\
+OBJS=									\
+	arbor.o								\
+	biod.o								\
+	brr.o								\
+	blob_set.o							\
+	io.o								\
+	log.o								\
+	macosx.o							\
+	module.o							\
+	ps_title.o							\
+	sha_fs.o							\
 	signal.o
+CSRC=									\
+	arbor.c								\
+	biod.c								\
+	biod.h								\
+	blob_set.c							\
+	brr.c								\
+	io.c								\
+	log.c								\
+	macosx.c							\
+	macosx.h							\
+	module.c							\
+	ps_title.c							\
+	sha_fs.c							\
+	signal.c
+SBINs=									\
+	append-brr							\
+	biod								\
+	biod_ctl							\
+	create-rrd							\
+	fs2udig								\
+	graph-rrd							\
+	update-rrd
+LIBs=									\
+	blobio-sys5.rc.template						\
+	blobio.rc.template
 
 #  Linux requires linking to realtime timer library
 
@@ -31,39 +56,17 @@ all: biod append-brr
 
 install: all
 	install -g $(DIST_GROUP) -o $(DIST_USER) -m u=rx,go=		\
-		append-brr						\
-		biod							\
-		biod_ctl						\
-		create-rrd						\
-		fs2udig							\
-		graph-rrd						\
-		update-rrd						\
-		$(DIST_ROOT)/sbin
+		$(SBINs) $(DIST_ROOT)/sbin
 
 	install -g $(DIST_GROUP) -o $(DIST_USER) -m ugo=rx		\
 		bio-udig2fs						\
 		$(DIST_ROOT)/bin
 
-	install -g $(DIST_GROUP) -o $(DIST_USER) -m u=rx,go=	\
-		arbor.c							\
-		biod.c							\
-		biod.h							\
-		blob_set.c						\
-		brr.c							\
-		io.c							\
-		log.c							\
-		macosx.c						\
-		macosx.h						\
-		module.c						\
-		ps_title.c						\
-		sha_fs.c						\
-		signal.c						\
-		$(DIST_ROOT)/src/biod
+	install -g $(DIST_GROUP) -o $(DIST_USER) -m u=rx,go=		\
+		$(CSRC) $(DIST_ROOT)/src/biod
 
 	install -g $(DIST_GROUP) -o $(DIST_USER) -m ug=r,o=		\
-		blobio-sys5.rc.template					\
-		blobio.rc.template 					\
-		$(DIST_ROOT)/lib
+		$(LIBs) $(DIST_ROOT)/lib
 
 biod: $(OBJS)
 	$(CC) -o biod $(OBJS)						\
@@ -115,9 +118,14 @@ dev-links:
 	test -e run || ln -s . run
 	test -e sbin || ln -s . sbin
 	test -e sha_fs || mkdir sha_fs
+
 clean-dev-links:
 	rm -rf sbin log data run
+
 clean:
 	rm -f $(OBJS) biod append-brr
-local.mk:
-	cp local.mk.example local.mk
+
+distclean:
+	cd $(DIST_ROOT)/src && rm -f $(CSRC)
+	cd $(DIST_ROOT)/sbin && rm -f $(SBINs)
+	cd $(DIST_ROOT)/lib && rm -f $(LIBs)

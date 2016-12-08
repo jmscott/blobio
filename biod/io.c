@@ -230,8 +230,11 @@ again:
  *  Returns:
  *	0	new socket accepted
  *	1	timed out the request
- *	-1	error, see errno.
+ *	-1	accpet() error, see errno.
  *  Notes:
+ *	Unfortunatley, only the accept() error code is returned to the caller.
+ *	The sigaction()/settime() failures cause a panic.
+ *
  *	client_fd only changes on success.
  */
 int

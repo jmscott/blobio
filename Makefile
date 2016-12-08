@@ -38,6 +38,7 @@ clean:
 	cd www;		$(MAKE) clean
 
 distclean:
+	cd biod;	$(MAKE) distclean
 
 ifeq "$(DIST_ROOT)" "/usr"
 	@echo 'refuse to distclean /usr'
