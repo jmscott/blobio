@@ -67,7 +67,7 @@ extern pid_t	arborist_pid;
  *  State bits are ORed in as request proceeds.
  */
 time_t last_log_heartbeat		= 0;
-time_t last_rrd_sample			= 0;
+time_t rrd_sample_prev			= 0;
 
 void		**module_boot_data = 0;
 char		*BLOBIO_ROOT = 0;
@@ -135,6 +135,8 @@ static u8	take_no_count =	0;	//  single no on take
 static u2	rrd_sample_duration = 0;
 static char	rrd_log[] = "log/biod-rrd.log";
 
+static int	in_catch_CHLD = 0;	//  Note: may not be needed
+
 /*
  *  Exit quickly and quietly, shutting down the logger.
  *
@@ -145,13 +147,16 @@ void
 leave(int exit_status)
 {
 	pid_t my_pid;
+
 	if (leaving)
 		return;
+
+	leaving = 1;		/* hush reaper complaints about exiting */
+
 	signal(SIGALRM, SIG_IGN);
 	signal(SIGTERM, SIG_IGN);
 	signal(SIGCHLD, SIG_IGN);
 
-	leaving = 1;		/* hush reaper complaints about exiting */
 	my_pid = getpid();
 
 	/*
@@ -1120,6 +1125,9 @@ heartbeat()
 	static u8 prev_connect_count = 0;
 	time_t now;
 
+	if (in_catch_CHLD)
+		return;
+
 	time(&now);
 	if (now - last_log_heartbeat < HEARTBEAT)
 		return;
@@ -1208,8 +1216,41 @@ rrd_sample()
 	char buf[512];		/* <= PIPE_MAX */
 	time_t now;
 
+	/*
+	 *  Request summaries
+	 */
+	static u8	success_count_prev =	0;
+	static u8	error_count_prev =	0;
+	static u8	timeout_count_prev =	0;
+	static u8	fault_count_prev =	0;
+	static u8	signal_count_prev =	0;
+
+	/*
+	 *  Request Verbs
+	 */
+	static u8	get_count_prev =	0;
+	static u8	put_count_prev =	0;
+	static u8	give_count_prev =	0;
+	static u8	take_count_prev =	0;
+	static u8	eat_count_prev =	0;
+	static u8	wrap_count_prev =	0;
+	static u8	roll_count_prev =	0;
+
+	/*
+	 *  Request chat summaries.
+	 */
+	static u8	chat_ok_count_prev = 0;	//  ok, ok,ok, ok,ok,ok
+	static u8	chat_no_count_prev = 0;	//  no
+	static u8	chat_no2_count_prev =0;	//  ok,no
+	static u8	chat_no3_count_prev =0;	//  ok,ok,no
+	static u8	eat_no_count_prev =	0;	//  no occured on eat
+	static u8	take_no_count_prev =	0;	//  single no on take
+
+	if (in_catch_CHLD)
+		return;
+
 	time(&now);
-	if (now - last_rrd_sample < rrd_sample_duration)
+	if (now - rrd_sample_prev < rrd_sample_duration)
 		return;
 
 	static char format[] =
@@ -1227,42 +1268,68 @@ rrd_sample()
 	snprintf(buf, sizeof buf, format,
 		now,
 
- 		success_count,
-		error_count,
-		timeout_count,
-		fault_count,
-		signal_count,
+ 		success_count - success_count_prev,
+		error_count - error_count_prev,
+		timeout_count - timeout_count_prev,
+		fault_count - fault_count_prev,
+		signal_count - signal_count_prev,
 
-		get_count,
-		put_count,
-		give_count,
-		take_count,
-		eat_count,
-		wrap_count,
-		roll_count,
+		get_count - get_count_prev,
+		put_count - put_count_prev,
+		give_count - give_count_prev,
+		take_count - take_count_prev,
+		eat_count - eat_count_prev,
+		wrap_count - wrap_count_prev,
+		roll_count - roll_count_prev,
 
-		chat_ok_count,
-		chat_no_count,
-		chat_no2_count,
-		chat_no3_count,
-		eat_no_count,
-		take_no_count
+		chat_ok_count - chat_ok_count_prev,
+		chat_no_count - chat_no_count_prev,
+		chat_no2_count - chat_no2_count_prev,
+		chat_no3_count - chat_no3_count_prev,
+		eat_no_count - eat_no_count_prev,
+		take_no_count - take_no_count_prev
 	);
 	if (io_write(fd, buf, strlen(buf)) < 0)
 		panic3(rrd_log, "write(rrd log) failed", strerror(errno));
 	if (io_close(fd))
 		panic3(rrd_log, "close(rrd log) failed", strerror(errno));
-	last_rrd_sample = now;
+
+	//  reset the samples
+	rrd_sample_prev = now;
+	success_count_prev = success_count;
+	error_count_prev = error_count;
+	timeout_count_prev = timeout_count;
+	fault_count_prev = fault_count;
+	signal_count_prev = signal_count;
+
+	get_count_prev = get_count;
+	put_count_prev = put_count;
+	give_count_prev = give_count;
+	take_count_prev = take_count;
+	eat_count_prev = eat_count;
+	wrap_count_prev = wrap_count;
+	roll_count_prev = roll_count;
+
+	chat_ok_count_prev = chat_ok_count;
+	chat_no_count_prev = chat_no_count;
+	chat_no2_count_prev = chat_no2_count;
+	chat_no3_count_prev = chat_no3_count;
+	eat_no_count_prev = eat_no_count;
+	take_no_count_prev = take_no_count;
 }
 
 static void
 catch_CHLD(int sig)
 {
-	UNUSED_ARG(sig);
+	(void)sig;
+
+	in_catch_CHLD = 1;
 
 	reap_request();
 	heartbeat();
 	rrd_sample();
+
+	in_catch_CHLD = 0;
 }
 
 static void
@@ -1743,9 +1810,6 @@ accept_request:
 	default:
 		panic("io_accept() returned impossible value");
 	}
-	catch_CHLD(SIGCHLD);
-
-	heartbeat();
-	rrd_sample();
+	catch_CHLD(SIGCHLD);		//  reap kids, put rrd stats, heartbeat
 	goto accept_request;
 }
