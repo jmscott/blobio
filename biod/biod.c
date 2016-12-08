@@ -1237,21 +1237,6 @@ catch_CHLD(int sig)
 	}
 }
 
-#ifdef SIGINFO
-/*
- *  Note:
- *  	Add boot message in log file if SIGINFO is defined.
- */
-static void
-catch_SIGINFO(int sig)
-{
-	UNUSED_ARG(sig);
-
-	info("caught signal: SIGINFO");
-	heartbeat();
-}
-#endif
-
 static void
 catch_terminate(int sig)
 {
@@ -1652,11 +1637,7 @@ main(int argc, char **argv)
 		panic2("signal(BUS) failed", strerror(errno));
 	if (signal(SIGPIPE, SIG_IGN) == SIG_ERR)
 		panic2("signal(PIPE ignore) failed", strerror(errno));
-#ifdef SIGINFO
-	if (signal(SIGINFO, catch_SIGINFO) == SIG_ERR)
-		panic2("signal(INFO) failed", strerror(errno));
-#endif
-		
+
 #ifdef SIGPWR
 	if (signal(SIGPWR, catch_terminate) == SIG_ERR)
 		panic2("signal(PWR) failed", strerror(errno));
