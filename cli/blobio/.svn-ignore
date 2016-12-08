@@ -1,7 +1,9 @@
 bio4.o
 blobio
 blobio.o
+buf.o
 digest.o
+fs.o
 rofs.o
 service.o
 sha.o
