@@ -555,7 +555,7 @@ void
 error(char *msg)
 {
 	/*
-	 *  Unclassified error is promoted to client error.
+	 *  In request  
 	 */
 	if (request_pid && (request_exit_status & 0x3) == 0)
 		request_exit_status = (request_exit_status & 0xFC) |
