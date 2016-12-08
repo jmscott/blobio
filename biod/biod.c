@@ -135,8 +135,6 @@ static u8	take_no_count =	0;	//  single no on take
 static u2	rrd_sample_duration = 0;
 static char	rrd_log[] = "log/biod-rrd.log";
 
-static int	in_catch_CHLD = 0;	//  Note: may not be needed
-
 /*
  *  Exit quickly and quietly, shutting down the logger.
  *
@@ -1125,9 +1123,6 @@ heartbeat()
 	static u8 prev_connect_count = 0;
 	time_t now;
 
-	if (in_catch_CHLD)
-		return;
-
 	time(&now);
 	if (now - last_log_heartbeat < HEARTBEAT)
 		return;
@@ -1239,15 +1234,12 @@ rrd_sample()
 	/*
 	 *  Request chat summaries.
 	 */
-	static u8	chat_ok_count_prev = 0;	//  ok, ok,ok, ok,ok,ok
-	static u8	chat_no_count_prev = 0;	//  no
-	static u8	chat_no2_count_prev =0;	//  ok,no
-	static u8	chat_no3_count_prev =0;	//  ok,ok,no
-	static u8	eat_no_count_prev =	0;	//  no occured on eat
-	static u8	take_no_count_prev =	0;	//  single no on take
-
-	if (in_catch_CHLD)
-		return;
+	static u8	chat_ok_count_prev =	0;
+	static u8	chat_no_count_prev =	0;
+	static u8	chat_no2_count_prev =	0;
+	static u8	chat_no3_count_prev =	0;
+	static u8	eat_no_count_prev =	0;
+	static u8	take_no_count_prev =	0;
 
 	time(&now);
 	if (now - rrd_sample_prev < rrd_sample_duration)
@@ -1318,18 +1310,16 @@ rrd_sample()
 	take_no_count_prev = take_no_count;
 }
 
+//  Note: not sure if CHLD signal is queued during handler!
+
 static void
 catch_CHLD(int sig)
 {
 	(void)sig;
 
-	in_catch_CHLD = 1;
-
 	reap_request();
 	heartbeat();
 	rrd_sample();
-
-	in_catch_CHLD = 0;
 }
 
 static void
