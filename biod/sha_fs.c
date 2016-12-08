@@ -843,8 +843,8 @@ sha_fs_give_blob(struct request *rp)
 static int
 sha_fs_give_reply(struct request *rp, char *reply)
 {
-	UNUSED_ARG(rp);
-	UNUSED_ARG(reply);
+	(void)rp;
+	(void)reply;
 	return 0;
 }
 
@@ -951,8 +951,8 @@ cleanup:
 static int
 sha_fs_close(struct request *rp, int status)
 {
-	UNUSED_ARG(rp);
-	UNUSED_ARG(status);
+	(void)rp;
+	(void)status;
 	return 0;
 }
 

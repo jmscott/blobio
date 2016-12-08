@@ -145,7 +145,7 @@ dump_format(unsigned char *src, int src_size,
 static void
 catch_SIGALRM(int sig)
 {
-	UNUSED_ARG(sig);
+	(void)sig;
 
 	if (request_pid)
 		request_exit_status = (request_exit_status & 0xFC) |

@@ -365,7 +365,4 @@ void		arbor_close();
 void		arbor_rename(char *tmp_path, char *new_path);
 void		arbor_trim(char *blob_path);
 
-//  suppress unsed arg error in both clang and gcc
-#define UNUSED_ARG(x)	(void)(x)
-
 #endif
