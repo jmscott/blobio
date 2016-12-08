@@ -80,7 +80,7 @@ END
 		"hostname":	"$(hostname)",
 		"environment": 		{
 					"USER":	"$USER",
-					"LOGNAME":	"$LOGNAME",
+					"LOGNAME":	"$LOGNAME"
 		},
 		"gnu-file":	"$(file "$FILE" | escape_json)",
 		"date":		"$(date)",
