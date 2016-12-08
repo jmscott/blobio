@@ -315,9 +315,6 @@ CREATE TABLE blobio.rrd_sample
 	sample_time	brr_timestamp
 				PRIMARY KEY,
 
-	connect_count	blobio.ui63
-				NOT NULL,
-
 	success_count	blobio.ui63
 				NOT NULL,
 	error_count	blobio.ui63
