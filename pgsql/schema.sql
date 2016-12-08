@@ -7,45 +7,44 @@
  *  	jmscott@setspace.com
  *  	setspace@gmail.com
  */
-\set ON_ERROR_STOP
+\set ON_ERROR_STOP on
 
-begin;
-drop schema if exists blobio cascade;
-create schema blobio;
-comment on schema blobio is
+BEGIN;
+DROP SCHEMA IF EXISTS blobio CASCADE;
+CREATE SCHEMA blobio;
+COMMENT ON SCHEMA blobio IS
   'blobs in service and brr history'
 ;
 
-set search_path to blobio,public;
 
-drop domain if exists blobio.brr_duration cascade;
-create domain brr_duration as interval
-  check (
+DROP DOMAIN IF EXISTS blobio.brr_duration CASCADE;
+CREATE DOMAIN brr_duration AS interval
+  CHECK (
 	value >= '0 seconds'
   )
-  not null
+  NOT NULL
 ;
-comment on domain brr_duration is
+COMMENT ON DOMAIN brr_duration IS
   'wall clock duration of a blob request'
 ;
 
-drop domain if exists blobio.brr_timestamp cascade;
-create domain brr_timestamp as timestamptz
-  check (
+DROP DOMAIN IF EXISTS blobio.brr_timestamp CASCADE;
+CREATE DOMAIN brr_timestamp AS timestamptz
+  CHECK (
 	value >= '2008-05-17 10:06:42'
   )
-  not null
+  NOT NULL
 ;
-comment on domain brr_timestamp is
+COMMENT ON DOMAIN brr_timestamp IS
   'starting time of request for a blob'
 ;
 
 /*
- *  Most recently seen successfull take from this service.
+ *  Most recently seen successfull take FROM this service.
  *  The connection chat history was ok,ok,ok, hence ok3.
  */
-drop table if exists blobio.brr_take_ok3_recent cascade;
-create table brr_take_ok3_recent
+DROP TABLE IF EXISTS blobio.brr_take_ok3_recent CASCADE;
+CREATE TABLE brr_take_ok3_recent
 (
 	blob			public.udig
 					primary key,
@@ -53,22 +52,22 @@ create table brr_take_ok3_recent
 
 	/*
 	 *  Since the physical remove of the blob only occurs after the client
-	 *  has the blob, a better estimate of when the blob was removed from
+	 *  has the blob, a better estimate of when the blob was removed FROM
 	 *  service is start_time + wall_duration.
 	 */
 	wall_duration		brr_duration
 );
-comment on table brr_take_ok3_recent is
+COMMENT ON TABLE brr_take_ok3_recent IS
   'most recently seen take request record for a particular blob'
 ;
-create index brr_take_ok3_recent_start_time on brr_take_ok3_recent(start_time);
+CREATE INDEX brr_take_ok3_recent_start_time ON brr_take_ok3_recent(start_time);
 
 /*
- *  The blob size as observed in a brr record of an existing blob.
+ *  The blob size AS observed in a brr record of an existing blob.
  *  Blob size should NEVER change.
  */
-drop table if exists blobio.brr_blob_size cascade;
-create table brr_blob_size
+DROP TABLE IF EXISTS blobio.brr_blob_size CASCADE;
+CREATE TABLE brr_blob_size
 (
 	blob		udig
 				primary key,
@@ -78,51 +77,51 @@ create table brr_blob_size
 				)
 				not null
 );
-comment on table brr_blob_size is
+COMMENT ON TABLE brr_blob_size IS
   'number bytes (octets) in the blob'
 ;
-revoke update on brr_blob_size from public;
+REVOKE UPDATE ON brr_blob_size FROM public;
 
 /*
- *  A recently verified existence of a blob as seen in a brr record.
+ *  A recently verified existence of a blob AS seen in a brr record.
  */
-drop table if exists blobio.brr_ok_recent cascade;
-create table brr_ok_recent
+DROP TABLE IF EXISTS blobio.brr_ok_recent CASCADE;
+CREATE TABLE brr_ok_recent
 (
 	blob		udig
 				primary key,
 	start_time	brr_timestamp,
 	wall_duration	brr_duration
 );
-comment on table brr_ok_recent is
+COMMENT ON TABLE brr_ok_recent IS
   'most recently verified existence for a particular blob'
 ;
-create index brr_ok_recent_start_time on brr_ok_recent(start_time);
+CREATE INDEX brr_ok_recent_start_time ON brr_ok_recent(start_time);
 
 /*
  *  A recently failed read of a blob, which implies the blob may not exist.
  *  Don't record successfull "take"s, since
  *  has been completely forgotten.
  */
-drop table if exists blobio.brr_no_recent cascade;
-create table brr_no_recent
+DROP TABLE IF EXISTS blobio.brr_no_recent CASCADE;
+CREATE TABLE brr_no_recent
 (
 	blob		udig
 				primary key,
 	start_time	brr_timestamp,
 	wall_duration	brr_duration
 );
-comment on table brr_no_recent is
+COMMENT ON TABLE brr_no_recent IS
   'most recently failed attempt to get or eat the blob'
 ;
-create index brr_no_recent_start_time on brr_no_recent(start_time);
+CREATE INDEX brr_no_recent_start_time ON brr_no_recent(start_time);
 
 /*
  *  Earliest known existence of a blob.  Both the brr time
  *  and the insert/update of the record are recorded.
  */
-drop table if exists blobio.brr_discover;
-create table brr_discover
+DROP TABLE IF EXISTS blobio.brr_discover;
+CREATE TABLE brr_discover
 (
 	blob		udig
 				primary key,
@@ -139,24 +138,24 @@ create table brr_discover
 				default now()
 				not null
 );
-create index brr_discover_start_time on brr_discover(start_time);
-comment on table brr_discover
-  is
+CREATE INDEX brr_discover_start_time ON brr_discover(start_time);
+COMMENT ON TABLE brr_discover
+  IS
   	'the earliest known existence of a digestable blob for this service'
 ;
 
-comment on column brr_discover.start_time
-  is
+COMMENT ON COLUMN brr_discover.start_time
+  IS
   	'start time of the earliest request for the discovered blob'
 ;
 
-comment on column brr_discover.upsert_time
-  is
+COMMENT ON COLUMN brr_discover.upsert_time
+  IS
   	'time of sql insert or update of this tuple'
 ;
 
-drop table if exists blobio.brr_wrap_ok;
-create table brr_wrap_ok
+DROP TABLE IF EXISTS blobio.brr_wrap_ok;
+CREATE TABLE brr_wrap_ok
 (
 	blob		udig
 				primary key,
@@ -166,15 +165,15 @@ create table brr_wrap_ok
 				default now()
 				not null
 );
-revoke update on brr_wrap_ok from public;
-comment on table brr_wrap_ok
-  is
+REVOKE UPDATE ON brr_wrap_ok FROM public;
+COMMENT ON TABLE brr_wrap_ok
+  IS
   	'history of successfull wrap requests'
 ;
 
 
-drop table if exists blobio.brr_roll_ok;
-create table brr_roll_ok
+DROP TABLE IF EXISTS blobio.brr_roll_ok;
+CREATE TABLE brr_roll_ok
 (
 	blob		udig
 				primary key,
@@ -184,9 +183,9 @@ create table brr_roll_ok
 				default now()
 				not null
 );
-revoke update on brr_roll_ok from public;
-comment on table brr_roll_ok
-  is
+REVOKE UPDATE ON brr_roll_ok FROM public;
+COMMENT ON TABLE brr_roll_ok
+  IS
   	'history of successfull roll requests'
 ;
 
@@ -199,106 +198,106 @@ comment on table brr_roll_ok
  *
  *  fetches a living blob.
  */
-drop view if exists blobio.service cascade;
-create view service as
-  select
+DROP VIEW IF EXISTS blobio.service CASCADE;
+CREATE VIEW service AS
+  SELECT
 	ok.blob,
-	ok.start_time as "recent_time",
-	d.start_time as "discover_time"
-    from
+	ok.start_time AS "recent_time",
+	d.start_time AS "discover_time"
+    FROM
   	brr_ok_recent ok
-	  left outer join brr_take_ok3_recent take on
+	  LEFT OUTER JOIN brr_take_ok3_recent take ON
 	  (
 	  	take.blob = ok.blob
-		and
+		AND
 		take.start_time >= ok.start_time
 	  )
-	  left outer join brr_no_recent no on
+	  LEFT OUTER JOIN brr_no_recent no ON
 	  (
 	  	no.blob = ok.blob
-		and
+		AND
 		no.start_time >= ok.start_time
 	  )
-	  inner join brr_discover d on (d.blob = ok.blob)
-    where
-	take.blob is null
-	and
-	no.blob is null
+	  INNER JOIN brr_discover d ON (d.blob = ok.blob)
+    WHERE
+	take.blob IS null
+	AND
+	no.blob IS null
 ;
-comment on view service
-  is
+COMMENT ON VIEW service
+  IS
   	'all verified blobs managed by the server'
 ;
 
 /*
- *  Blobs taken from the service and, therefore, not in service
+ *  Blobs taken FROM the service and, therefore, not in service
  */
-drop view if exists blobio.taken cascade;
-create view taken as
-  select
+DROP VIEW IF EXISTS blobio.taken CASCADE;
+CREATE VIEW taken AS
+  SELECT
 	take.blob,
-	take.start_time as "recent_time"
-    from
+	take.start_time AS "recent_time"
+    FROM
   	brr_take_ok3_recent take
-	  left outer join brr_ok_recent ok on
+	  LEFT OUTER JOIN brr_ok_recent ok ON
 	  (
 	  	ok.blob = take.blob
-		and
+		AND
 		ok.start_time >= take.start_time
 	  )
-    where
-	ok.blob is null
+    WHERE
+	ok.blob IS null
 ;
-comment on view taken
-  is
-  	'blobs taken from the service and, therefore, not in service'
+COMMENT ON VIEW taken
+  IS
+  	'blobs taken FROM the service and, therefore, not in service'
 ;
 
 /*
  *  View of once discovered blobs that are neither in service nor taken
  *  By design, the 'missing' set should always be empty.
  */
-drop view if exists blobio.missing cascade;
-create view missing as
-  select
+DROP VIEW IF EXISTS blobio.missing CASCADE;
+CREATE VIEW missing AS
+  SELECT
   	dis.blob,
-	dis.start_time as "discover_time"
-    from
+	dis.start_time AS "discover_time"
+    FROM
     	brr_discover dis
-	  left outer join service srv on (srv.blob = dis.blob)
-	  left outer join taken take on (take.blob = dis.blob)
-    where
-    	srv.blob is null
-	and
-	take.blob is null
+	  LEFT OUTER JOIN service srv ON (srv.blob = dis.blob)
+	  LEFT OUTER JOIN taken take ON (take.blob = dis.blob)
+    WHERE
+    	srv.blob IS null
+	AND
+	take.blob IS null
 ;
-comment on view missing
-  is
+COMMENT ON VIEW missing
+  IS
   	'once discovered blobs that are neither in service nor taken'
 ;
 /*
  *  View of udigs for which no associated blob has been digested.
  */
-drop view if exists blobio.quack cascade;
-create view quack as
-  select
+DROP VIEW IF EXISTS blobio.quack CASCADE;
+CREATE VIEW quack AS
+  SELECT
   	no.blob,
-	no.start_time as "discover_time"
-    from
+	no.start_time AS "discover_time"
+    FROM
     	brr_no_recent no
-	  left outer join service srv on (srv.blob = no.blob)
-	  left outer join taken take on (take.blob = no.blob)
-	  left outer join missing mis on (mis.blob = no.blob)
-    where
-    	srv.blob is null
-	and
-	take.blob is null
-	and
-	mis.blob is null
+	  LEFT OUTER JOIN service srv ON (srv.blob = no.blob)
+	  LEFT OUTER JOIN taken take ON (take.blob = no.blob)
+	  LEFT OUTER JOIN missing mis ON (mis.blob = no.blob)
+    WHERE
+    	srv.blob IS null
+	AND
+	take.blob IS null
+	AND
+	mis.blob IS null
 ;
-comment on view quack
-  is
+COMMENT ON VIEW quack
+  IS
   	'blobs which have never been digested'
 ;
 
-commit;
+COMMIT;
