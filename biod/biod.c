@@ -903,6 +903,8 @@ request()
  *	  -01-----	client chat no
  *	  -10-----	client chat ok,no
  *	  -11-----	client chat ok,ok,no
+ *  Note:
+ *	Panicing too soon upon unexpected termination of arborist or loggers.
  */
 static void
 reap_request()
@@ -1010,7 +1012,7 @@ again:
 		}
 
 		/*
-		 *  Process exited normally.  Accumlate stats dreived
+		 *  Process exited normally.  Accumlate stats derived
 		 *  from bits in the exit status.
 		 */
 		if (WIFEXITED(status)) {
