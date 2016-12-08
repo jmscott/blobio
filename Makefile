@@ -35,6 +35,7 @@ clean:
 	cd biod;	$(MAKE) clean
 	cd flowd;	$(MAKE) clean
 	cd cli;		$(MAKE) clean
+	cd www;		$(MAKE) clean
 
 distclean:
 
@@ -50,7 +51,7 @@ endif
 
 ifdef DIST_ROOT
 	cd flowd;	$(MAKE) distclean
-	cd www;	$(MAKE) distclean
+	cd www;		$(MAKE) distclean
 	rm -rf $(DIST_ROOT)/bin
 	rm -rf $(DIST_ROOT)/lib
 	rm -rf $(DIST_ROOT)/sbin
@@ -122,6 +123,7 @@ ifdef DIST_ROOT
 	cd cli; $(MAKE) install
 	cd pgsql; $(MAKE) install
 	cd flowd; $(MAKE) install
+	cd www; $(MAKE) install
 endif
 
 dev-links:
