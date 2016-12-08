@@ -97,7 +97,8 @@ static struct request	req =
 static int		listen_fd = -1;
 
 /*
- *  Inbound connections.
+ *  Inbound connections: connect_count ==
+ *	success_count + error_count + timeout_count + fault_count + signal_count
  */
 static u8	connect_count = 0;	//  socket connections answered
 
@@ -105,8 +106,8 @@ static u8	connect_count = 0;	//  socket connections answered
  *  Request summaries
  */
 static u8	success_count =	0;	//  exit ok
-static u8	timeout_count =	0;	//  timeout reading from client
 static u8	error_count =	0;	//  error talking with client
+static u8	timeout_count =	0;	//  timeout reading from client
 static u8	fault_count =	0;	//  faulted (panic in request)
 static u8	signal_count =	0;	//  terminated with signal
 
@@ -1173,8 +1174,6 @@ heartbeat()
  *  The sample looks like:
  *
  *	time epoch:
- *		connect_count:		//  all accepted connections
- *
  *		//  request summaries
  *
  *		success_count:		//  request satisfied
@@ -1215,8 +1214,8 @@ rrd_sample()
 
 	static char format[] =
 		"%llu:"					/* time epoch */
-		"%llu:%llu:"				/* connect/timeout */
-		"%llu:%llu:%llu:%llu:"			/* process exit class */
+
+		"%llu:%llu:%llu:%llu:%llu:"		/* process exit class */
 		"%llu:%llu:%llu:%llu:%llu:%llu:%llu:"	/* verb count */
 		"%llu:%llu:%llu:%llu:%llu:%llu"		/* chat history */
 		"\n"
@@ -1227,8 +1226,6 @@ rrd_sample()
 		panic3(rrd_log, "open(rrd log) failed", strerror(errno));
 	snprintf(buf, sizeof buf, format,
 		now,
-
-		connect_count,
 
  		success_count,
 		error_count,
