@@ -97,17 +97,21 @@ static struct request	req =
 static int		listen_fd = -1;
 
 /*
- *  Track inbound connections and request exit states.
+ *  Inbound connections.
  */
-static u8	connect_count = 0;	//  connections answered
-static u8	success_count =	0;	//  requests exit ok
-static u8	timeout_count =	0;	//  request timedout
-static u8	error_count =	0;	//  request had client/network error
-static u8	fault_count =	0;	//  request faulted
-static u8	signal_count =	0;	//  request terminated with signal
+static u8	connect_count = 0;	//  socket connections answered
 
 /*
- *  Track request verbs
+ *  Request summaries
+ */
+static u8	success_count =	0;	//  exit ok
+static u8	timeout_count =	0;	//  timeout reading from client
+static u8	error_count =	0;	//  error talking with client
+static u8	fault_count =	0;	//  faulted (panic in request)
+static u8	signal_count =	0;	//  terminated with signal
+
+/*
+ *  Request Verbs
  */
 static u8	get_count =	0;
 static u8	put_count =	0;
@@ -118,14 +122,14 @@ static u8	wrap_count =	0;
 static u8	roll_count =	0;
 
 /*
- *  Track request handshakes with the client.
+ *  Request chat summaries.
  */
-static u8	chat_ok_count = 0;
-static u8	chat_no_count = 0;
-static u8	chat_no2_count =0;
-static u8	chat_no3_count =0;
-static u8	eat_no_count =	0;
-static u8	take_no_count =	0;
+static u8	chat_ok_count = 0;	//  ok, ok,ok, ok,ok,ok
+static u8	chat_no_count = 0;	//  no
+static u8	chat_no2_count =0;	//  ok,no
+static u8	chat_no3_count =0;	//  ok,ok,no
+static u8	eat_no_count =	0;	//  no occured on eat
+static u8	take_no_count =	0;	//  single no on take
 
 static u2	rrd_sample_duration = 0;
 static char	rrd_log[] = "log/biod-rrd.log";
@@ -873,10 +877,10 @@ request()
  *	Process Exit Class - Bits 1 and 2:
  *
  *	  ------00	normal request  - successful request
- *	  ------01	client error	- unknown verb, bad udig syntax
- *	  ------10	hard time out	- usually network timeout, maybe disk
+ *	  ------01	client error	- unknown verb, bad udig syntax,
+ *					  read error taking to client
+ *	  ------10	hard time out	- read timeout occured (network/disk)
  *	  ------11	fault		- error affecting server stability
- *					  network errors are faults
  *
  *  	Verb - Bits 3, 4, and 5
  *
@@ -1041,12 +1045,18 @@ again:
 				break;
 			case REQUEST_EXIT_STATUS_TAKE:
 				take_count++;
+
+				//  blob did not exists (single no)
+
 				if (((s8 & 0x60) >> 5) == 
 					     REQUEST_EXIT_STATUS_CHAT_NO)
 					take_no_count++;
 				break;
 			case REQUEST_EXIT_STATUS_EAT:
 				eat_count++;
+
+				//  blob probably did not exist
+
 				if (((s8 & 0x60) >> 5) == 
 					     REQUEST_EXIT_STATUS_CHAT_NO)
 					eat_no_count++;
@@ -1140,7 +1150,6 @@ heartbeat()
 	snprintf(buf, sizeof buf,
 	      "chat: ok=%llu, no[123]=%llu, eat|take no=%llu|%llu",
 			chat_ok_count,
-			//  u8 could wrap!!!!
 			chat_no_count + chat_no2_count + chat_no3_count,
 			eat_no_count, take_no_count
 	);
@@ -1164,18 +1173,28 @@ heartbeat()
  *  The sample looks like:
  *
  *	time epoch:
- *		success_count:
- *		timeout_count:
- *		error_count:
- *		fault_count:
- *		signal_count:
+ *		connect_count:		//  all accepted connections
+ *
+ *		//  request summaries
+ *
+ *		success_count:		//  request satisfied
+ *		error_count:		//  stable error in request
+ *		timeout_count:		//  timeout in request
+ *		fault_count:		//  unstable error in request
+ *		signal_count:		//  request ended due to signal
+ *
+ *		//  verb summaries, regardless of ok/no chat history
+ *
  *		get_count:
  *		put_count:
- *		give_count:
+ *		give_count:		
  *		take_count:
  *		eat_count:
  *		wrap_count:
  *		roll_count:
+ *
+ *		//  chat history summaries
+ *
  *		chat_ok_count:
  *		chat_no_count:
  *		chat_no2_count:
@@ -1196,7 +1215,8 @@ rrd_sample()
 
 	static char format[] =
 		"%llu:"					/* time epoch */
-		"%llu:%llu:%llu:%llu:%llu:"		/* process exit class */
+		"%llu:%llu:"				/* connect/timeout */
+		"%llu:%llu:%llu:%llu:"			/* process exit class */
 		"%llu:%llu:%llu:%llu:%llu:%llu:%llu:"	/* verb count */
 		"%llu:%llu:%llu:%llu:%llu:%llu"		/* chat history */
 		"\n"
@@ -1207,11 +1227,15 @@ rrd_sample()
 		panic3(rrd_log, "open(rrd log) failed", strerror(errno));
 	snprintf(buf, sizeof buf, format,
 		now,
+
+		connect_count,
+
  		success_count,
-		timeout_count,
 		error_count,
+		timeout_count,
 		fault_count,
 		signal_count,
+
 		get_count,
 		put_count,
 		give_count,
@@ -1219,6 +1243,7 @@ rrd_sample()
 		eat_count,
 		wrap_count,
 		roll_count,
+
 		chat_ok_count,
 		chat_no_count,
 		chat_no2_count,
