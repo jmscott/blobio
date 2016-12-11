@@ -100,10 +100,40 @@ INSERT INTO blobio.biod_request_stat(
 \echo vacuum/analyze table biod_request_stat
 VACUUM ANALYZE blobio.biod_request_stat;
 
-\echo summarize min/max in biod_request_stat table
+\x on
+\echo summarize loaded samples (not all)
+WITH sample_interval AS (
+  SELECT
+  	to_timestamp(min(sample_epoch)) as "min_time",
+  	to_timestamp(max(sample_epoch)) as "max_time",
+	count(*) as "sample_count"
+    FROM
+    	load_biod_request_stat
+)
 SELECT
-	min(sample_time) as "Min Sample Time",
-	max(sample_time) as "Max Sample Time"
+	'' AS "LOADED",
+	si.sample_count as "Sample Count",
+	to_char(si.max_time - si.min_time, 'HH24:MI:SS')
+		|| ' Hours' AS "Duration",
+	si.min_time AS "Start Time",
+	si.max_time AS "End Time",
+	'' AS " ",
+	'TOTAL/AVERAGE' AS "REQUESTS",
+	sum(success_count) || '/' || avg(success_count)::int
+		AS "Success",
+	sum(error_count) || '/' || avg(error_count)::int
+		AS "Error",
+	sum(signal_count) || '/' || avg(signal_count)::int
+		AS "Signaled",
+	sum(fault_count) || '/' || avg(fault_count)::int
+		AS "Faulted"
   FROM
-  	blobio.biod_request_stat
+  	blobio.biod_request_stat brs,
+	sample_interval si
+  WHERE
+  	brs.sample_time BETWEEN si.min_time AND si.max_time
+  GROUP BY
+  	si.min_time,
+	si.max_time,
+	si.sample_count
 ;
