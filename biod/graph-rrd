@@ -68,19 +68,19 @@ exec rrdtool graph -							\
 	'GPRINT:error:MIN:% 9.1lf err/sec'				\
 	'GPRINT:error:MAX:% 9.1lf err/sec\l'				\
 									\
-	'DEF:fault=log/biod.rrd:fault:MAX'				\
-	'AREA:fault#ff0000:Fault Rate  :STACK'				\
-	'GPRINT:fault:LAST:% 9.1lf flt/sec'				\
-	'GPRINT:fault:AVERAGE:% 9.1lf flt/sec'	   			\
-	'GPRINT:fault:MIN:% 9.1lf flt/sec'				\
-	'GPRINT:fault:MAX:% 9.1lf flt/sec\l'				\
-									\
 	'DEF:signal=log/biod.rrd:signal:MAX'				\
 	'AREA:signal#2B60DE:Signal Rate :STACK'				\
 	'GPRINT:signal:LAST:% 9.1lf sig/sec'				\
 	'GPRINT:signal:AVERAGE:% 9.1lf sig/sec'   			\
 	'GPRINT:signal:MIN:% 9.1lf sig/sec'				\
 	'GPRINT:signal:MAX:% 9.1lf sig/sec\l'				\
+									\
+	'DEF:fault=log/biod.rrd:fault:MAX'				\
+	'AREA:fault#ff0000:Fault Rate  :STACK'				\
+	'GPRINT:fault:LAST:% 9.1lf flt/sec'				\
+	'GPRINT:fault:AVERAGE:% 9.1lf flt/sec'	   			\
+	'GPRINT:fault:MIN:% 9.1lf flt/sec'				\
+	'GPRINT:fault:MAX:% 9.1lf flt/sec\l'				\
 									\
 	'DEF:timeout=log/biod.rrd:timeout:MAX'				\
 	'AREA:timeout#ffff:Timeout Rate:STACK'				\

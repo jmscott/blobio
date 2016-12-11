@@ -29,10 +29,10 @@ rrdtool create $RRD                                     		\
         --step $STEP                                       		\
         --start $START                                  		\
 	DS:success:DERIVE:$HBEAT:0:$MAX					\
-	DS:timeout:DERIVE:$HBEAT:0:$MAX					\
 	DS:error:DERIVE:$HBEAT:0:$MAX					\
-	DS:fault:DERIVE:$HBEAT:0:$MAX					\
+	DS:timeout:DERIVE:$HBEAT:0:$MAX					\
 	DS:signal:DERIVE:$HBEAT:0:$MAX					\
+	DS:fault:DERIVE:$HBEAT:0:$MAX					\
 	DS:get:DERIVE:$HBEAT:0:$MAX					\
 	DS:put:DERIVE:$HBEAT:0:$MAX					\
 	DS:give:DERIVE:$HBEAT:0:$MAX					\
