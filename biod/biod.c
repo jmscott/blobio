@@ -1219,8 +1219,8 @@ rrd_sample()
 	static u8	success_count_prev =	0;
 	static u8	error_count_prev =	0;
 	static u8	timeout_count_prev =	0;
-	static u8	fault_count_prev =	0;
 	static u8	signal_count_prev =	0;
+	static u8	fault_count_prev =	0;
 
 	/*
 	 *  Request Verbs
