@@ -1,6 +1,6 @@
 /*
  *  Synopsis:
- *  	Synchronously manage file system rename and take requests.
+ *  	Process to manage file system rename and take requests.
  *  Blame:
  *  	jmscott@setspace.com
  *  	setspace@gmail.com
