@@ -68,7 +68,7 @@ INSERT INTO blobio.biod_request_stat(
 	eat_no_count,
 	take_no_count
 ) SELECT
-	TIMESTAMP 'epoch' + sample_epoch * INTERVAL '1 second',
+	to_timestamp(sample_epoch),
 
 	success_count,
 	error_count,
@@ -99,3 +99,11 @@ INSERT INTO blobio.biod_request_stat(
 
 \echo vacuum/analyze table biod_request_stat
 VACUUM ANALYZE blobio.biod_request_stat;
+
+\echo summarize min/max in biod_request_stat table
+SELECT
+	min(sample_time) as "Min Sample Time",
+	max(sample_time) as "Max Sample Time"
+  FROM
+  	blobio.biod_request_stat
+;
