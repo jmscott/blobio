@@ -113,8 +113,7 @@ WITH sample_interval AS (
 SELECT
 	'' AS "LOADED",
 	si.sample_count as "Sample Count",
-	to_char(si.max_time - si.min_time, 'HH24:MI:SS')
-		|| ' Hours' AS "Duration",
+	(si.max_time - si.min_time) || ' hours' AS "Duration",
 	si.min_time AS "Start Time",
 	si.max_time AS "End Time",
 	'' AS " ",
@@ -126,7 +125,23 @@ SELECT
 	sum(signal_count) || '/' || avg(signal_count)::int
 		AS "Signaled",
 	sum(fault_count) || '/' || avg(fault_count)::int
-		AS "Faulted"
+		AS "Faulted",
+	'' AS " ",
+	'TOTAL/AVERAGE' AS "VERBS",
+	sum(get_count) || '/' || avg(get_count)::int AS "Gets",
+	sum(put_count) || '/' || avg(put_count)::int AS "Puts",
+	sum(give_count) || '/' || avg(give_count)::int AS "Gives",
+	sum(eat_count) || '/' || avg(eat_count)::int AS "Eats",
+	sum(wrap_count) || '/' || avg(wrap_count)::int AS "Wraps",
+	sum(roll_count) || '/' || avg(roll_count)::int AS "Rolls",
+	'' AS " ",
+	'TOTAL/AVERAGE' AS "CHAT HISTORIES",
+	sum(chat_ok_count) || '/' || avg(chat_ok_count)::int AS "ok*",
+	sum(chat_no_count) || '/' || avg(chat_no_count)::int AS "no",
+	sum(chat_no2_count) || '/' || avg(chat_no2_count)::int AS "no,no",
+	sum(chat_no3_count) || '/' || avg(chat_no3_count)::int AS "no,no,no",
+	sum(eat_no_count) || '/' || avg(eat_no_count)::int AS "Eats no",
+	sum(take_no_count) || '/' || avg(take_no_count)::int AS "Takes no"
   FROM
   	blobio.biod_request_stat brs,
 	sample_interval si
