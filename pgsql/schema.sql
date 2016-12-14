@@ -309,10 +309,10 @@ COMMENT ON VIEW blobio.quack
   	'blobs which have never been digested'
 ;
 
-DROP TABLE IF EXISTS blobio.rrd_sample CASCADE;
-CREATE TABLE blobio.rrd_sample
+DROP TABLE IF EXISTS blobio.biod_request_stat CASCADE;
+CREATE TABLE blobio.biod_request_stat
 (
-	sample_time	brr_timestamp
+	sample_time	blobio.brr_timestamp
 				PRIMARY KEY,
 
 	success_count	blobio.ui63
@@ -321,9 +321,9 @@ CREATE TABLE blobio.rrd_sample
 				NOT NULL,
 	timeout_count	blobio.ui63
 				NOT NULL,
-	fault_count	blobio.ui63
-				NOT NULL,
 	signal_count	blobio.ui63
+				NOT NULL,
+	fault_count	blobio.ui63
 				NOT NULL,
 
 	get_count	blobio.ui63
