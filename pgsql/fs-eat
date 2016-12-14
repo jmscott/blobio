@@ -100,7 +100,7 @@ case $STATUS in
 	C=$(wc -l $FS | awk '{print $1}')
 	case "$C" in
 	0)
-		log 'WARN: empty fs2udig output'
+		log 'WARN: no blobs in file system'
 		exit 0
 		;;
 	[1-9]*)
@@ -164,7 +164,7 @@ C=$(wc -l $EAT | awk '{print $1}')
 
 case "$C" in
 0)
-	log 'WARN: no new files'
+	log 'in sync: no new blobs to eat'
 	exit 0
 	;;
 [1-9]*)
