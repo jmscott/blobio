@@ -105,11 +105,8 @@ io_write_buf(int fd, void *buf, size_t count)
 	size_t nwritten = 0;
 again:
 	nw = io_write(fd, buf, count - nwritten);
-	if (nw <= 0) {
-		if (nw == 0)
-			errno = EBADFD;
+	if (nw < 0)
 		return -1;
-	}
 	nwritten += nw;
 	if (nwritten < count)
 		goto again;
