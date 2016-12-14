@@ -234,7 +234,7 @@ _close(struct request *rp, int *p_fd)
 }
 
 /*
- *  Open a file to read, retrying on interupt and logging errors.
+ *  Open a local file to read, retrying on interupt and logging errors.
  */
 static int
 _open(struct request *rp, char *path, int *p_fd)
@@ -425,8 +425,8 @@ sha_fs_get(struct request *rp)
 	 *  before sending "ok" to the requestor.
 	 */
 	while ((nread = _read(rp, fd, chunk, sizeof chunk)) > 0) {
-		if (write_blob(rp, chunk, nread)) {
-			_error(rp, "write_blob() failed");
+		if (req_write(rp, chunk, nread)) {
+			_error(rp, "req_write(blob chunk) failed");
 			goto croak;
 		}
 		/*
@@ -481,7 +481,7 @@ sha_fs_write(struct request *rp, int out_fd)
 	int fd;
 	unsigned char chunk[CHUNK_SIZE];
 	int nread;
-	static char nm[] = "sha_fs_write";
+	static char n[] = "sha_fs_write";
 
 	blob_path(rp, rp->digest);
 
@@ -492,10 +492,10 @@ sha_fs_write(struct request *rp, int out_fd)
 	case 0:
 		break;
 	case ENOENT:
-		_warn3(rp, nm, "open(blob): not found", rp->digest);
+		_warn3(rp, n, "open(blob): not found", rp->digest);
 		return 1;
 	default:
-		_panic2(rp, nm, "_open(blob) failed");
+		_panic2(rp, n, "_open(blob) failed");
 	}
 
 	blk_SHA1_Init(&ctx);
@@ -505,17 +505,18 @@ sha_fs_write(struct request *rp, int out_fd)
 	 *  update incremental digest.
 	 */
 	while ((nread = _read(rp, fd, chunk, sizeof chunk)) > 0) {
-		if (write_buf(out_fd, chunk, nread, rp->write_timeout)) {
-			_error2(rp, nm, "write_buf() failed");
+		if (io_write_buf(out_fd, chunk, nread)) {
+			_error2(rp, n, "write_buf() failed");
 			goto croak;
 		}
+			
 		/*
 		 *  Update the incremental digest.
 		 */
 		blk_SHA1_Update(&ctx, chunk, nread);
 	}
 	if (nread < 0)
-		_panic2(rp, nm, "_read(blob) failed");
+		_panic2(rp, n, "_read(blob) failed");
 	/*
 	 *  Finalize the digest.
 	 */
@@ -527,13 +528,13 @@ sha_fs_write(struct request *rp, int out_fd)
 	 *  A corrupt blob is a bad, bad thang.
 	 */
 	if (memcmp(sp->digest, digest, 20))
-		_panic3(rp, nm, "stored blob doesn't match digest", rp->digest);
+		_panic3(rp, n, "stored blob doesn't match digest", rp->digest);
 	goto cleanup;
 croak:
 	status = -1;
 cleanup:
 	if (_close(rp, &fd))
-		_panic2(rp, nm, "_close(blob) failed");
+		_panic2(rp, n, "_close(blob) failed");
 	return status;
 }
 
@@ -604,29 +605,10 @@ sha_fs_eat(struct request *rp)
 	return status;
 }
 
-static int
-do_write(struct request *rp, int fd, unsigned char *buf, int buf_size)
-{
-	int nwrite;
-	unsigned char *b, *b_end;
-
-	b_end = buf + buf_size;
-	b = buf;
-	while (b < b_end) {
-		nwrite = io_write(fd, b, b_end - b);
-		if (nwrite < 0)
-			_panic2(rp, "write(blob) failed", strerror(errno));
-		if (nwrite == 0)
-			_panic(rp, "write(blob) returned unexpected 0");
-		b += nwrite;
-	}
-	return 0;
-}
-
 /*
  *  Write a portion of a blob to local storage and derive a partial digest.
  *  Return 1 if the accumulated digest matches the expected digest,
- *  0 if the do not match, and -1 on error.
+ *  0 if the partial digest does not match do not match.
  */
 static int
 eat_chunk(struct request *rp, blk_SHA_CTX *p_ctx, int fd, unsigned char *buf,
@@ -642,10 +624,10 @@ eat_chunk(struct request *rp, blk_SHA_CTX *p_ctx, int fd, unsigned char *buf,
 	blk_SHA1_Update(p_ctx, buf, buf_size);
 
 	/*
-	 *  Write the chunk to the temp file.
+	 *  Write the chunk to the local temp file.
 	 */
-	if (do_write(rp, fd, buf, buf_size))
-		_panic(rp, "eat_chunk: do_write() failed");
+	if (io_write_buf(fd, buf, buf_size))
+		_panic2(rp, "eat_chunk: write(tmp) failed", strerror(errno));
 	/*
 	 *  Determine if we have seen the whole blob
 	 *  by copying the incremental digest, finalizing it,
@@ -662,7 +644,7 @@ sha_fs_put(struct request *rp)
 	blk_SHA_CTX ctx;
 	char tmp_path[MAX_FILE_PATH_LEN];
 	unsigned char chunk[CHUNK_SIZE], *cp, *cp_end;
-	int fd;
+	int fd = -1;
 	int status = 0;
 	char buf[MSG_SIZE];
 
@@ -723,12 +705,8 @@ sha_fs_put(struct request *rp)
 		/*
 		 *  See if the entire blob fits in the first read.
 		 */
-		switch (eat_chunk(rp, &ctx, fd, rp->scan_buf, rp->scan_size)) {
-		case -1:
-			_panic(rp, "eat_chunk() failed");
-		case 1:
+		if (eat_chunk(rp, &ctx, fd, rp->scan_buf, rp->scan_size))
 			goto digested;
-		}
 	}
 	cp = chunk;
 	cp_end = &chunk[sizeof chunk];
@@ -738,23 +716,23 @@ sha_fs_put(struct request *rp)
 	 */
 again:
 	while (cp < cp_end) {
-		int nread = read_blob(rp, cp, cp_end - cp);
+		int nread = req_read(rp, cp, cp_end - cp);
 
 		/*
 		 *  Read error from client, 
 		 *  so zap the partial, invalid blob.
 		 */
 		if (nread < 0) {
-			_error(rp, "read_blob() failed");
+			_error(rp, "req_read() failed");
 			goto croak;
 		}
 		if (nread == 0) {
-			_error(rp, "read_blob() empty");
+			_error(rp, "req_read() returns 0 before digest seen");
 			goto croak;
 		}
 		switch (eat_chunk(rp, &ctx, fd, cp, nread)) {
 		case -1:
-			_panic(rp, "eat_chunk() failed");
+			_panic(rp, "eat_chunk(local) failed");
 		case 1:
 			goto digested;
 		}
@@ -764,8 +742,9 @@ again:
 	goto again;
 
 digested:
-	if (_close(rp, &fd))
-		_panic(rp, "_close(blob) failed");
+	if (fd >= 0)
+		_close(rp, &fd);
+
 	/*
 	 *  Move the temp blob file to the final blob path.
 	 */
@@ -776,7 +755,7 @@ digested:
 croak:
 	status = -1;
 cleanup:
-	if (fd > -1 && _close(rp, &fd))
+	if (fd > -1)
 		_panic(rp, "_close() failed");
 	if (tmp_path[0] && _unlink(rp, tmp_path, (int *)0))
 		_panic(rp, "_unlink() failed");
@@ -849,7 +828,7 @@ sha_fs_give_reply(struct request *rp, char *reply)
 }
 
 /*
- *  Digest a blob stream and store the digested blob.
+ *  Digest a local blob stream and store the digested blob.
  */
 static int
 sha_fs_digest(struct request *rp, int fd, char *hex_digest, int do_put)
@@ -895,10 +874,11 @@ sha_fs_digest(struct request *rp, int fd, char *hex_digest, int do_put)
 							strerror(errno));
 	}
 	blk_SHA1_Init(&ctx);
-	while ((nread = read_buf(fd, buf, sizeof buf, rp->read_timeout)) > 0) {
+	while ((nread = io_read(fd, buf, sizeof buf)) > 0) {
 		blk_SHA1_Update(&ctx, buf, nread);
-		if (do_put && write_buf(tmp_fd, buf, nread, rp->write_timeout))
-			_panic(rp, "digest: write_buf(tmp) failed");
+		if (do_put && io_write_buf(tmp_fd, buf, nread) != 0)
+			_panic2(rp, "digest: write_buf(tmp) failed",
+						strerror(errno));
 	}
 	if (nread < 0) {
 		_error(rp, "digest: _read() failed");

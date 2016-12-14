@@ -17,7 +17,9 @@ OBJS=									\
 	log.o								\
 	macosx.o							\
 	module.o							\
+	net.o								\
 	ps_title.o							\
+	req.o								\
 	sha_fs.o							\
 	signal.o
 CSRC=									\
@@ -31,7 +33,9 @@ CSRC=									\
 	macosx.c							\
 	macosx.h							\
 	module.c							\
+	net.c								\
 	ps_title.c							\
+	req.c								\
 	sha_fs.c							\
 	signal.c
 SBINs=									\
@@ -72,14 +76,21 @@ biod: $(OBJS)
 	$(CC) -o biod $(OBJS)						\
 		$(RT_LINK)						\
 		../sha1/sha1.o
+
 append-brr: append-brr.c
 	$(CC) -o append-brr $(CFLAGS) append-brr.c
-	
-blobio: blobio.o
-	$(CC) -o blobio blobio.o
 
 arbor.o: arbor.c biod.h
 	$(CC) $(CFLAGS) -c arbor.c
+
+blobio: blobio.o
+	$(CC) -o blobio blobio.o
+
+biod.o: biod.c biod.h
+	$(CC) $(CFLAGS) -c biod.c
+
+brr.o: brr.c biod.h
+	$(CC) $(CFLAGS) -c brr.c
 
 blob_set.o: blob_set.c biod.h
 	$(CC) $(CFLAGS) -c blob_set.c
@@ -89,6 +100,9 @@ sha_fs.o: sha_fs.c biod.h
 
 io.o: io.c biod.h biod.h
 	$(CC) $(CFLAGS) -c io.c
+
+req.o: req.c biod.h biod.h
+	$(CC) $(CFLAGS) -c req.c
 
 signal.o: signal.c biod.h biod.h
 	$(CC) $(CFLAGS) -c signal.c
@@ -102,11 +116,11 @@ log.o: log.c biod.h
 macosx.o: macosx.c biod.h
 	$(CC) $(CFLAGS) -c macosx.c
 
-biod.o: biod.c biod.h
-	$(CC) $(CFLAGS) -c biod.c
+net.o: net.c biod.h
+	$(CC) $(CFLAGS) -c net.c
 
-brr.o: brr.c biod.h
-	$(CC) $(CFLAGS) -c brr.c
+ps_title.o: ps_title.c biod.h
+	$(CC) $(CFLAGS) -c ps_title.c
 
 module.o: module.c biod.h
 	$(CC) $(CFLAGS) -c module.c

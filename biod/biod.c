@@ -97,8 +97,13 @@ static struct request	req =
 static int		listen_fd = -1;
 
 /*
- *  Inbound connections: connect_count ==
- *	success_count + error_count + timeout_count + fault_count + signal_count
+ *  Inbound Connections:
+ *	connect_count ==
+ *		success_count +
+ *		error_count +
+ *		timeout_count +
+ *		signal_count +
+ *		fault_count
  */
 static u8	connect_count = 0;	//  socket connections answered
 
@@ -108,8 +113,8 @@ static u8	connect_count = 0;	//  socket connections answered
 static u8	success_count =	0;	//  exit ok
 static u8	error_count =	0;	//  error talking with client
 static u8	timeout_count =	0;	//  timeout reading from client
-static u8	fault_count =	0;	//  faulted (panic in request)
 static u8	signal_count =	0;	//  terminated with signal
+static u8	fault_count =	0;	//  faulted (panic in request)
 
 /*
  *  Request Verbs
@@ -223,8 +228,7 @@ leave(int exit_status)
 }
 
 /*
- *  Synoposis:
- *	Write a panicy message to log and then exit.
+ *  Write a panicy message to log and then exit.
  */
 static void
 die(char *msg)
@@ -241,15 +245,10 @@ die(char *msg)
 	if (master_pid)
 		panic(msg);
 
-	/*
-	 *  In a child process.
-	 */
-	error(msg);
+	error(msg);		//  in a child process
 
 	/*
-	 *  Dieing implies either client error, timeout or fault.
-	 *  Therefore, an uncategorized error must be "promoted" to a full
-	 *  fault; otherwise, leave(), not die() would have been invoked.
+	 *  Reach this statement implies a fault.
 	 */
 	if (request_pid && (request_exit_status & 0x3) == 0)
 		request_exit_status = (request_exit_status & 0xFC) | 0x1;
@@ -657,13 +656,13 @@ biod(char *verb, char *algorithm, char *digest,
 }
 
 /*
- *  Synopsis:
- *	Execute a client blobio request in the child process.
+ *  Execute a client blobio request in the child process.
  */
 static void
 request()
 {
-	int nread, state;
+	ssize_t nr;
+	int state;
 	char verb[MAX_VERB_SIZE + 1], *v_next, *v_end;
 	char algorithm[MAX_ALGORITHM_SIZE + 1], *a_next, *a_end;
 	char digest[MAX_DIGEST_SIZE + 1], *d_next, *d_end;
@@ -696,16 +695,14 @@ request()
 	 *  Scan for request from the client.
 	 *  We are looking for
 	 *
-	 *   [get|put|give|take|eat|roll] [:alpha]{1,15}:[[:isgraph:]]{1,128}]\n
+	 *   [get|put|give|take|eat|roll] [:alpha:][:alnum:]{,7}:[[:isgraph:]]{1,128}]\n
 	 *   wrap\n
 	 */
 	state = STATE_SCAN_VERB;
-	while (state != STATE_HALT &&
-	      (nread = read_buf(req.client_fd, buf, sizeof buf,
-	      	                req.read_timeout)) > 0) {
+	while (state != STATE_HALT && (nr=req_read(&req, buf, sizeof buf)) > 0){
 
 		unsigned char *b = buf;
-		unsigned char *b_end = buf + nread;
+		unsigned char *b_end = buf + nr;
 
 		/*
 		 *  We just read a chunk of bytes.
@@ -809,7 +806,7 @@ request()
 			}}
 		}
 	}
-	if (nread < 0)
+	if (nr < 0)
 		die_NO("read_buf(request) failed");
 	if (state == STATE_SCAN_VERB && v_next == verb)
 		die_NO("empty read_buf(verb)");
@@ -1375,7 +1372,8 @@ open_listen( unsigned short port)
 	req.bind_address.sin_port = htons(port);
 	req.bind_address.sin_addr.s_addr = INADDR_ANY;
 	snprintf(buf, sizeof buf, "binding tcp socket to inet %s:%d",
-			addr2text(ntohl(req.bind_address.sin_addr.s_addr)),
+			net_32addr2text(ntohl(
+				req.bind_address.sin_addr.s_addr)),
 			(int)ntohs(req.bind_address.sin_port));
 	info(buf);
 try_bind:
@@ -1386,7 +1384,7 @@ try_bind:
 			goto try_bind;
 
 		snprintf(buf, sizeof buf, "bind(%s:%d) failed",
-				addr2text(ntohl(
+				net_32addr2text(ntohl(
 					req.bind_address.sin_addr.s_addr)),
 				(int)ntohs(req.bind_address.sin_port));
 		die2(buf, strerror(e));
@@ -1411,9 +1409,9 @@ set_pid_file(char *path)
 	static char n[] = "set_pid_file";
 	char buf[MSG_SIZE];
 
-	switch (is_file(path)) {
+	switch (io_is_file(path)) {
 	case -1:
-		die3(n, "is_file() failed", path);
+		panic3(n, "io_is_file() failed", path);
 		return;
 	case 0:
 		break;
@@ -1431,7 +1429,7 @@ set_pid_file(char *path)
 		die2(n, buf);
 	}
 	default:
-		die3(n, "is_file() returned unexpected value", buf);
+		panic3(n, "io_is_file() returned unexpected value", buf);
 	}
 	snprintf(buf, sizeof buf, "%d\n", getpid());
 	if (burp_text_file(buf, pid_path))
@@ -1569,6 +1567,8 @@ fork_accept(struct request *rp)
 		return;
 	}
 
+	/* in the child request */
+
 	/*
 	 *  Record start time.
 	 */
@@ -1588,11 +1588,13 @@ fork_accept(struct request *rp)
 	 *  Build a description of a network connection for blob request
 	 *  record and error messages.
 	 */
+	strcpy(rp->netflow_tiny,
+		net_32addr2text(ntohl(rp->remote_address.sin_addr.s_addr)));
 	snprintf(rp->netflow, sizeof rp->netflow - 1,
 		"tcp4~%s:%u;%s:%u",
-		addr2text(ntohl(rp->remote_address.sin_addr.s_addr)),
+		rp->netflow_tiny,
 		(unsigned int)ntohs(rp->remote_address.sin_port),
-		addr2text(ntohl(rp->bind_address.sin_addr.s_addr)),
+		net_32addr2text(ntohl(rp->bind_address.sin_addr.s_addr)),
 		(unsigned int)ntohs(rp->bind_address.sin_port)
 	);
 		
@@ -1783,7 +1785,7 @@ main(int argc, char **argv)
 	req.remote_len = sizeof req.remote_address;
 
 accept_request:
-	switch (io_accept(
+	switch (net_accept(
 			listen_fd,
 			(struct sockaddr *)&req.remote_address,
 			&req.remote_len,
@@ -1795,12 +1797,11 @@ accept_request:
 	case 0:
 		connect_count++;
 		fork_accept(&req);
-		/* always in the parent */
 		break;
-	case 1:
+	case 1:			//  timeout
 		break;
 	default:
-		panic("io_accept() returned impossible value");
+		panic("net_accept() returned impossible value");
 	}
 	catch_CHLD(SIGCHLD);		//  reap kids, put rrd stats, heartbeat
 	goto accept_request;

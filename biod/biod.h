@@ -69,7 +69,6 @@ struct request
 	int		scan_size;
 
 	struct timespec	start_time;		/* fork() start time */
-	struct timespec	ttfb_time;		/* time to first byte */
 	struct timespec	end_time;		/* child exit time */
 
 	/*
@@ -86,6 +85,7 @@ struct request
 	 *  Network flow.  For example, tcp4/remoteip:port;bindip:port
 	 */
 	char			netflow[129];
+	char			netflow_tiny[129];
 
 	/*
 	 *  Track the ok/no chat session between client and biod.
@@ -170,7 +170,7 @@ struct digest_module
 	int	(*eat)(struct request *);
 
 	/*
-	 *  Digest a stream up to EOF and copy text digest as c string to
+	 *  Digest a local stream up to EOF and copy text digest as c string to
 	 *  memory referenced by char *digest.
 	 */
 	int	(*digest)(struct request *, int fd, char *digest, int do_put);
@@ -244,19 +244,17 @@ extern char	*log_strcat3(char *buf, int buf_size,
 /*
  *  Generic unix i/o, defined in io.c.  Ought to be name fs.c
  */
-extern int	is_file(char *path);
+extern int	io_is_file(char *path);
 extern int	burp_text_file(char *buf, char *path);
-extern int	slurp_text_file(char *path, char *buf, int buf_size);
-extern int	write_blob(struct request *, unsigned char *buf, int buf_size);
+extern int	slurp_text_file(char *path, char *buf, size_t buf_size);
 extern int	write_ok(struct request *rp);
 extern int	write_no(struct request *rp);
 extern int	read_buf(int fd, unsigned char *buf, int buf_size,
 			 unsigned timeout);
 extern int	write_buf(int fd, unsigned char *buf, int buf_size,
 			unsigned timeout);
-extern int	read_blob(struct request *, unsigned char *buf, int buf_size);
 extern char	*read_reply(struct request *);
-extern char	*addr2text(u_long addr);
+extern char	*net_32addr2text(u_long addr);
 
 extern char	*sig_name(int sig);
 
@@ -268,15 +266,17 @@ extern char	*BLOBIO_ROOT;		/* BLOBIO_ROOT environment variable */
 extern int		io_close(int fd);
 extern ssize_t		io_read(int fd, void *buf, size_t count);
 extern ssize_t		io_write(int fd, void *buf, size_t count);
+extern int		io_write_buf(int fd, void *buf, size_t count);
 extern int		io_pipe(int fds[2]);
 extern int		io_open(char *path, int flags, int mode);
 extern int		io_open_append(char *path, int truncate);
-extern int		io_accept(int listen_fd, struct sockaddr *addr,
-					socklen_t *len, int *client_fd,
-					unsigned timeout);
-extern int		io_select(int nfds, fd_set *readfds, fd_set *writefds,
-					fd_set *errorfds,
-					struct timeval *timeout);
+extern int		io_select(
+				int nfds,
+				fd_set *readfds,
+				fd_set *writefds,
+				fd_set *errorfds,
+				struct timeval *timeout
+			);
 extern pid_t		io_waitpid(pid_t pid, int *stat_loc, int options);
 extern int		io_rename(char *old_path, char *new_path);
 extern DIR		*io_opendir(char *path);
@@ -290,6 +290,35 @@ extern int		io_fstat(int fd, struct stat *buf);
 extern int		io_closedir(DIR *dirp);
 extern int		io_mkdir(const char *pathname, mode_t mode);
 extern int		io_stat(const char *pathname, struct stat *st);
+
+extern int		net_accept(
+				int listen_fd, struct sockaddr *addr,
+				socklen_t *len,
+				int *client_fd,
+				unsigned timeout
+			);
+extern ssize_t		net_read(
+				int fd,
+				void *buf,
+				size_t count,
+				unsigned timeout
+			);
+extern int		net_write(
+				int fd,
+				void *buf,
+				size_t count,
+				unsigned timeout
+			);
+extern ssize_t		req_read(
+				struct request *r,
+				void *buf,
+				size_t buf_size
+			);
+extern int		req_write(
+				struct request *r,
+				void *buf,
+				size_t buf_size
+			);
 
 /*
  *  Trivial stream orient message by single reader.

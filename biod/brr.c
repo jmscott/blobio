@@ -74,7 +74,7 @@ answer_wrap(char *reply_fifo_path)
 	char path[MSG_SIZE];
 	int fd;
 	time_t now;
-	static char nm[] = "answer_wrap";
+	static char n[] = "answer_wrap";
 
 	/*
 	 *  Close the active incarnation of spool/biod.brr
@@ -82,13 +82,13 @@ answer_wrap(char *reply_fifo_path)
 	fd = log_fd;
 	log_fd = -1;
 	if (io_close(fd))
-		panic3(nm, "close(brr) failed", strerror(errno));
+		panic3(n, "close(brr) failed", strerror(errno));
 	/*
 	 *  Move brr log file from spool/biod.brr to spool/biod-<now>-<seq>.brr
 	 */
 	now = time((time_t *)0);
 	if (!now)
-		panic3(nm, "time() failed", strerror(errno));
+		panic3(n, "time() failed", strerror(errno));
 	seq++;
 	snprintf(path, sizeof path, log_wrap_format, time, seq);
 	if (io_rename(log_path, path)) {
@@ -97,16 +97,16 @@ answer_wrap(char *reply_fifo_path)
 
 		snprintf(buf, sizeof buf, "rename(%s, %s) failed", log_path,
 								path);
-		panic3(nm, buf, strerror(e));
+		panic3(n, buf, strerror(e));
 	}
 	if (io_chmod(path, S_IRUSR))
-		panic4(nm, path, "chmod(frozen brr) failed", strerror(errno));
+		panic4(n, path, "chmod(frozen brr) failed", strerror(errno));
 	/*
 	 *  Reopen the spool/biod.brr log file.  No other process can write
 	 *  to biod.brr till this answer_wrap() exits.
 	 */
 	if ((log_fd = io_open_append(log_path, 0)) < 0)
-		panic4(nm, "open(brr) failed", log_path, strerror(errno));
+		panic4(n, "open(brr) failed", log_path, strerror(errno));
 
 	/*
 	 *  Inform the waiting wrap request child by writing the renamed
@@ -114,12 +114,12 @@ answer_wrap(char *reply_fifo_path)
 	 */
 	fd = io_open(reply_fifo_path, O_WRONLY, 0);
 	if (fd < 0)
-		panic4(nm, reply_fifo_path, "open(reply fifo) failed",
+		panic4(n, reply_fifo_path, "open(reply fifo) failed",
 						strerror(errno));
 	if (io_msg_write(fd, path, 32) < 0)
-		panic3(nm, "write(reply fifo) failed", strerror(errno));
+		panic3(n, "write(reply fifo) failed", strerror(errno));
 	if (io_close(fd))
-		panic3(nm, "close(reply fifo) failed", strerror(errno));
+		panic3(n, "close(reply fifo) failed", strerror(errno));
 }
 
 /*
@@ -130,7 +130,7 @@ static void
 brr_logger(int request_fd)
 {
 	ssize_t status, nwritten, nread;
-	static char nm[] = "brr_logger";
+	static char n[] = "brr_logger";
 	struct io_message request;
 
 	/*
@@ -141,7 +141,7 @@ brr_logger(int request_fd)
 request:
 	status = io_msg_read(&request);
 	if (status < 0)
-		panic3(nm, "io_msg_read(request) failed", strerror(errno));
+		panic3(n, "io_msg_read(request) failed", strerror(errno));
 	if (status == 0) {
 		info("read from client request pipe of zero bytes");
 		info("shutting down brr logger");
@@ -234,9 +234,9 @@ request:
 	 *  Just close down the physical file, redirect to stderr and abort.
 	 */
 	if (nwritten < 0)
-		panic4(nm, "write(brr) failed", log_path, strerror(errno));
+		panic4(n, "write(brr) failed", log_path, strerror(errno));
 	if (nwritten == 0)
-		panic2(nm, "write(brr) empty");
+		panic2(n, "write(brr) empty");
 	if (nwritten != nread) {
 		char buf[MSG_SIZE];
 
@@ -247,7 +247,7 @@ request:
 				nwritten > nread ? '>' : '<',
 				nread
 		);
-		panic2(nm, buf);
+		panic2(n, buf);
 	}
 	goto request;
 }
@@ -258,14 +258,14 @@ fork_brr_logger()
 	int status;
 	pid_t pid;
 	int brr_pipe[2];
-	static char nm[] = "fork_brr_logger";
+	static char n[] = "fork_brr_logger";
 
 	status = io_pipe(brr_pipe);
 	if (status < 0)
-		panic3(nm, "pipe() failed", strerror(errno));
+		panic3(n, "pipe() failed", strerror(errno));
 	pid = fork();
 	if (pid < 0)
-		panic3(nm, "fork() failed", strerror(errno));
+		panic3(n, "fork() failed", strerror(errno));
 
 	/*
 	 *  In the parent biod process, so shutdown the read side of the
@@ -277,18 +277,18 @@ fork_brr_logger()
 		io_close(log_fd);
 		log_fd = brr_pipe[1];
 		if (io_close(brr_pipe[0]))
-			panic3(nm, "close(pipe read) failed", strerror(errno));
+			panic3(n, "close(pipe read) failed", strerror(errno));
 		return;
 	}
 	brr_logger_pid = logged_pid = getpid();
 	ps_title_set("biod-brr-logger", (char *)0, (char *)0);
-	info2(nm, "brr logger process started");
+	info2(n, "brr logger process started");
 
 	/*
 	 *  Shutdown the write() side of the pipeline.
 	 */
 	if (io_close(brr_pipe[1]))
-		panic3(nm, "close(pipe write) failed", strerror(errno));
+		panic3(n, "close(pipe write) failed", strerror(errno));
 
 	/*
 	 *  TERM is ignored so biod can use killpg() to quickly terminate
@@ -296,25 +296,25 @@ fork_brr_logger()
 	 *  side of the pipe returns 0 (EOF).
 	 */
 	if (signal(SIGTERM, SIG_IGN) == SIG_ERR)
-		panic3(nm, "signal(TERM) failed", strerror(errno));
+		panic3(n, "signal(TERM) failed", strerror(errno));
 
 	brr_logger(brr_pipe[0]);
-	panic2(nm, "unexpected return from brr_logger()");
+	panic2(n, "unexpected return from brr_logger()");
 }
 
 void
 brr_open()
 {
-	static char nm[] = "brr_open";
+	static char n[] = "brr_open";
 
 	if (log_fd > -1)
-		panic2(nm, "brr logger already open");
+		panic2(n, "brr logger already open");
 
 	/*
 	 *  Open the Blob Request Record file for append.
 	 */
 	if ((log_fd = io_open_append(log_path, 0)) < 0)
-		panic4(nm, "open() failed", log_path, strerror(errno));
+		panic4(n, "open() failed", log_path, strerror(errno));
 	fork_brr_logger();
 }
 
@@ -322,17 +322,17 @@ void
 brr_close()
 {
 	int fd;
-	static char nm[] = "brr_close";
+	static char n[] = "brr_close";
 
 	if (log_fd == -1)
 		return;
 	fd = log_fd;
 	log_fd = -1;
 	if (io_close(fd))
-		panic3(nm, "close() failed", strerror(errno));
+		panic3(n, "close() failed", strerror(errno));
 
 	if (getpid() == brr_logger_pid) {
-		info3(nm, "closing brr log file", log_path);
+		info3(n, "closing brr log file", log_path);
 		log_close();
 	}
 }
@@ -448,16 +448,16 @@ blob2udig_set(char *blob, off_t size, void **udig_set, void **algo_set)
 	char ebuf[MSG_SIZE];
 	int line_count = 1;
 	int status;
-	static char nm[] = "blob2udig_set";
+	static char n[] = "blob2udig_set";
 	static char no_graph_algo[] =
 		"non graphic character in algorithm: 0x%x: line #%d";
 	static char no_graph_dig[] =
 		"non graphic character in digest: 0x%x: line #%d";
 
 	if (size == 0)
-		panic2(nm, "impossible empty blob");
+		panic2(n, "impossible empty blob");
 	if (blob[size - 1] != '\n') {
-		error2(nm, "last character of blob is not newline");
+		error2(n, "last character of blob is not newline");
 		return -1;
 	}
 	/*
@@ -486,13 +486,13 @@ blob2udig_set(char *blob, off_t size, void **udig_set, void **algo_set)
 			if (c == '\n') {
 				snprintf(ebuf, sizeof ebuf,
 					"empty udig: line #%d", line_count);
-				error3(nm, sn, ebuf);
+				error3(n, sn, ebuf);
 				goto croak;
 			}
 			if (c == ':') {
 				snprintf(ebuf, sizeof ebuf,
 				      "unexpected colon: line #%d", line_count);
-				error3(nm, sn,  ebuf);
+				error3(n, sn,  ebuf);
 				goto croak;
 			}
 			if (isgraph(c)) {
@@ -503,7 +503,7 @@ blob2udig_set(char *blob, off_t size, void **udig_set, void **algo_set)
 				snprintf(ebuf, sizeof ebuf,
 				       "non graphic character: 0x%x: line #%d",
 				       	c, line_count);
-				error3(nm, sn, ebuf);
+				error3(n, sn, ebuf);
 				goto croak;
 			}
 			break;
@@ -512,7 +512,7 @@ blob2udig_set(char *blob, off_t size, void **udig_set, void **algo_set)
 				snprintf(ebuf, sizeof ebuf,
 						"algorithm too long: line #%d",
 						line_count);
-				error3(nm, sn, ebuf);
+				error3(n, sn, ebuf);
 				goto croak;
 			}
 			if (c == ':') {
@@ -522,7 +522,7 @@ blob2udig_set(char *blob, off_t size, void **udig_set, void **algo_set)
 			} else if (!isgraph(c)) {
 				snprintf(ebuf, sizeof ebuf, no_graph_algo,
 								c, line_count);
-				error3(nm, sn, ebuf);
+				error3(n, sn, ebuf);
 				goto croak;
 			}
 			break;
@@ -531,7 +531,7 @@ blob2udig_set(char *blob, off_t size, void **udig_set, void **algo_set)
 				snprintf(ebuf, sizeof ebuf,
 						"digest too long: line #%d",
 						line_count);
-				error3(nm, sn, ebuf);
+				error3(n, sn, ebuf);
 				goto croak;
 			}
 			if (c == '\n') {	/* new line terminating udig */
@@ -542,7 +542,7 @@ blob2udig_set(char *blob, off_t size, void **udig_set, void **algo_set)
 			} else if (!isgraph(c)) {
 				snprintf(ebuf, sizeof ebuf, no_graph_dig,
 								c, line_count);
-				error3(nm, sn, ebuf);
+				error3(n, sn, ebuf);
 				goto croak;
 			}
 			break;
@@ -554,7 +554,7 @@ blob2udig_set(char *blob, off_t size, void **udig_set, void **algo_set)
 							b - udig_start - 1);
 			if (status == 1) {
 				*b = 0;
-				error3(nm, "duplicate udig in set", udig_start);
+				error3(n, "duplicate udig in set", udig_start);
 				goto croak;
 			}
 
@@ -567,11 +567,11 @@ blob2udig_set(char *blob, off_t size, void **udig_set, void **algo_set)
 			sn = "NEW_UDIG";
 			break;
 		default:
-			panic3(nm, sn, "impossible state");
+			panic3(n, sn, "impossible state");
 		}
 	}
 	if (state != NEW_UDIG)
-		panic3(nm, "unexpected state at end of parse",
+		panic3(n, "unexpected state at end of parse",
 			state == IN_ALGORITHM ? "IN_ALGORITHM" :
 			(state == IN_DIGEST ? "IN_DIGEST" :
 			 (state == PUT_UDIG ? "PUT_UDIG" : "UNKNOWN")
@@ -646,7 +646,7 @@ roll(struct request *rp, struct digest_module *mp)
 	DIR *dirp;
 	struct dirent *dp;
 	int err;
-	static char nm[] = "roll";
+	static char n[] = "roll";
 
 	request_exit_status = (request_exit_status & 0x1C) |
 					(REQUEST_EXIT_STATUS_ROLL << 2);
@@ -679,13 +679,13 @@ roll(struct request *rp, struct digest_module *mp)
 	 */
 	io_unlink(roll_path);
 	if (roll_fd < 0)
-		panic4(nm, roll_path, "open(roll set) failed", strerror(err));
+		panic4(n, roll_path, "open(roll set) failed", strerror(err));
 	/*
 	 *  Write the blob to the temporary file.
 	 */
 	if ((*mp->write)(rp, roll_fd) == 1) {
 		if (write_no(rp)) {
-			error3(nm, rp->algorithm, "write_no(client) failed");
+			error3(n, rp->algorithm, "write_no(client) failed");
 			return -1;
 		}
 		return -1;
@@ -695,7 +695,7 @@ roll(struct request *rp, struct digest_module *mp)
 	 *  Seek to begining of roll list.
 	 */
 	if (io_lseek(roll_fd, (off_t)0, SEEK_SET))
-		panic3(nm, "lseek(roll set failed", strerror(errno));
+		panic3(n, "lseek(roll set failed", strerror(errno));
 	/*
 	 *  How much ram do we need to store the blob in memory?
 	 *
@@ -703,11 +703,11 @@ roll(struct request *rp, struct digest_module *mp)
 	 *        why not just reference that blob directly via mmap()?
 	 */
 	if (io_fstat(roll_fd, &st))
-		panic4(nm, roll_path, "fstat() failed", strerror(errno));
+		panic4(n, roll_path, "fstat() failed", strerror(errno));
 	if (st.st_size == 0) {
-		warn4(nm, "empty blob", rp->algorithm, rp->digest);
+		warn4(n, "empty blob", rp->algorithm, rp->digest);
 		if (write_ok(rp)) {
-			error3(nm, rp->algorithm, "write_ok(client) failed");
+			error3(n, rp->algorithm, "write_ok(client) failed");
 			return -1;
 		}
 		return 0;
@@ -725,7 +725,7 @@ roll(struct request *rp, struct digest_module *mp)
 
 		snprintf(buf, sizeof buf, "roll set malloc(%lu) failed",
 						(unsigned long)st.st_size); 
-		panic3(nm, buf, strerror(e));
+		panic3(n, buf, strerror(e));
 	}
 
 	/*
@@ -736,13 +736,13 @@ roll(struct request *rp, struct digest_module *mp)
 	while (b < b_end) {
 		int nread = io_read(roll_fd, (unsigned char*)b, b_end - b);
 		if (nread < 0)
-			panic3(nm, "read(roll set) failed", strerror(errno));
+			panic3(n, "read(roll set) failed", strerror(errno));
 		if (nread == 0)
-			panic2(nm, "read(roll set) unexpected end of file");
+			panic2(n, "read(roll set) unexpected end of file");
 		b += nread;
 	}
 	if (io_close(roll_fd))
-		panic4(nm, roll_path, "close(roll set) failed",strerror(errno));
+		panic4(n, roll_path, "close(roll set) failed",strerror(errno));
 
 	/*
 	 *  Parse the blob into a udig hash set.
@@ -753,10 +753,10 @@ roll(struct request *rp, struct digest_module *mp)
 		char buf[MSG_SIZE];
 
 		snprintf(buf, sizeof buf, "%s: blob not udig set: %s:%s",
-						nm, rp->algorithm, rp->digest);
+						n, rp->algorithm, rp->digest);
 		warn(buf);
 		if (write_no(rp)) {
-			error2(nm, "reply: write_no() failed");
+			error2(n, "reply: write_no() failed");
 			return -1;
 		}
 		return -1;
@@ -767,7 +767,7 @@ roll(struct request *rp, struct digest_module *mp)
 	 */
 	dirp = io_opendir("spool/wrap");
 	if (dirp == NULL)
-		panic3(nm, "opendir(spool/wrap) failed", strerror(errno));
+		panic3(n, "opendir(spool/wrap) failed", strerror(errno));
 	errno = 0;
 	roll_file_count = 0;
 
@@ -781,11 +781,11 @@ roll(struct request *rp, struct digest_module *mp)
 		if (strcmp(".", n) == 0 || strcmp("..", n) == 0)
 			continue;
 		if (dp->d_type != DT_REG) {
-			warn3(nm, "non regular file in spool/wrap", n);
+			warn3(n, "non regular file in spool/wrap", n);
 			continue;
 		}
 		if (extract_wrap_udig(n, udig)) {
-			warn3(nm, "file in spool wrap is not log file", n);
+			warn3(n, "file in spool wrap is not log file", n);
 			continue;
 		}
 		if (blob_set_exists(udig_set, (u1 *)udig, strlen(udig))) {
@@ -797,18 +797,18 @@ roll(struct request *rp, struct digest_module *mp)
 			 */
 			if (io_unlink(path)) {
 				if (errno == ENOENT)
-					warn3(nm, "brr file disappeared", n);
+					warn3(n, "brr file disappeared", n);
 				else
-					panic4(nm, n, "unlink(roll brr) failed",
+					panic4(n, n, "unlink(roll brr) failed",
 							strerror(errno));
 			}
 			roll_file_count++;
 		}
 	}
 	if (errno && errno != ENOENT)
-		panic3(nm, "readdir(spool/wrap) failed", strerror(errno));
+		panic3(n, "readdir(spool/wrap) failed", strerror(errno));
 	if (io_closedir(dirp))
-		panic3(nm, "close(spool/wrap) failed", strerror(errno));
+		panic3(n, "close(spool/wrap) failed", strerror(errno));
 
 	if (roll_file_count > 0) {
 		char buf[MSG_SIZE];
@@ -818,11 +818,11 @@ roll(struct request *rp, struct digest_module *mp)
 			roll_file_count,
 			roll_file_count == 1 ? "" : "s"
 		);
-		info2(nm, buf);
+		info2(n, buf);
 	} else
-		info2(nm, "no frozen brr logs in spool/wrap/");
+		info2(n, "no frozen brr logs in spool/wrap/");
 	if (write_ok(rp)) {
-		error2(nm, "reply: write_ok() failed");
+		error2(n, "reply: write_ok() failed");
 		return -1;
 	}
 	return 0;
@@ -836,7 +836,7 @@ put_wrap_set(int fd, char *path, char *udig)
 {
 	int nwrite, nwritten;
 	static char nl[] = "\n";
-	static char nm[] = "put_wrap_set";
+	static char n[] = "put_wrap_set";
 	
 	/*
 	 *  Write the udig and new-line to the set file.
@@ -844,19 +844,19 @@ put_wrap_set(int fd, char *path, char *udig)
 	nwrite = strlen(udig);
 	nwritten = io_write(fd, udig, nwrite);
 	if (nwritten < 0)
-		panic4(nm, path, "write(udig) failed", strerror(errno));
+		panic4(n, path, "write(udig) failed", strerror(errno));
 	if (nwritten != nwrite) {
 		char buf[MSG_SIZE];
 
 		snprintf(buf, sizeof buf, "expected %d bytes, got %d",
 						nwrite, nwritten);
-		panic4(nm, path, "unexpected write(udig) length", buf);
+		panic4(n, path, "unexpected write(udig) length", buf);
 	}
 	nwritten = io_write(fd, nl, 1);
 	if (nwritten < 0)
-		panic3(nm, "write(new-line) failed", strerror(errno));
+		panic3(n, "write(new-line) failed", strerror(errno));
 	if (nwritten != 1)
-		panic2(nm, "unexpected write(new-line) length");
+		panic2(n, "unexpected write(new-line) length");
 }
 
 /*
@@ -919,7 +919,7 @@ wrap(struct request *rp, struct digest_module *mp)
 	int err;
 	char frozen_udig[MAX_UDIG_SIZE + 1];
 	char wrap_set_udig[MAX_UDIG_SIZE + 2];		/* new-line in reply */
-	static char nm[] = "wrap";
+	static char n[] = "wrap";
 	DIR *dirp;
 	struct dirent *dp;
 	off_t offset;
@@ -938,7 +938,7 @@ wrap(struct request *rp, struct digest_module *mp)
 	 */
 	snprintf(fifo_path, sizeof fifo_path, "run/wrap-%010u.fifo", getpid());
 	if (io_mkfifo(fifo_path, S_IRUSR | S_IWUSR))
-		panic4(nm, fifo_path, "mkfifo() failed", strerror(errno));
+		panic4(n, fifo_path, "mkfifo() failed", strerror(errno));
 
 	/*
 	 *  Send request to the brr logger process.
@@ -946,7 +946,7 @@ wrap(struct request *rp, struct digest_module *mp)
 	 *  to freeze the spool/biod.brr file
 	 */
 	if (io_msg_write(log_fd, fifo_path, 25) < 0)
-		panic3(nm, "write(log) failed", strerror(errno));
+		panic3(n, "write(log) failed", strerror(errno));
 
 	/*
 	 *  Wait for reply containing the frozen path.
@@ -955,7 +955,7 @@ wrap(struct request *rp, struct digest_module *mp)
 	if (reply_fifo < 0) {
 		err = errno;
 		io_unlink(fifo_path);
-		panic4(nm, fifo_path, "open(reply fifo) failed", strerror(err));
+		panic4(n, fifo_path, "open(reply fifo) failed", strerror(err));
 	}
 
 	io_msg_new(&frozen, reply_fifo);
@@ -967,20 +967,20 @@ wrap(struct request *rp, struct digest_module *mp)
 	err = errno;
 	io_unlink(fifo_path);
 	if (status < 0)
-		panic3(nm, "read(reply fifo) failed", strerror(err));
+		panic3(n, "read(reply fifo) failed", strerror(err));
 	if (status == 0)
-		panic2(nm, "empty read(reply fifo)");
+		panic2(n, "empty read(reply fifo)");
 	strcpy(frozen_path, (char *)frozen.payload);
-	info3(nm, "frozen brr file", frozen_path);
+	info3(n, "frozen brr file", frozen_path);
 
 	/*
 	 *  Digest the brr file.
 	 *  Probably too chatty on the logging.
 	 */
-	info4(nm, "digesting brr log file", rp->algorithm, frozen_path);
+	info4(n, "digesting brr log file", rp->algorithm, frozen_path);
 	frozen_fd = io_open(frozen_path, O_RDONLY, 0);
 	if (frozen_fd < 0)
-		panic4(nm, frozen_path, "open(frozen brr) failed",
+		panic4(n, frozen_path, "open(frozen brr) failed",
 							strerror(errno));
 	strcpy(frozen_udig, mp->name);
 	strcat(frozen_udig, ":");
@@ -990,16 +990,16 @@ wrap(struct request *rp, struct digest_module *mp)
 	 */
 	err = (*mp->digest)(rp, frozen_fd, frozen_udig + strlen(frozen_udig),1);
 	if (io_close(frozen_fd))
-		panic4(nm, frozen_path, "close(frozen brr) failed",
+		panic4(n, frozen_path, "close(frozen brr) failed",
 							strerror(errno));
 	if (err) {
 		char buf[MSG_SIZE];
 
 		snprintf(buf, sizeof buf, "udig(%s:%s) failed",
 						mp->name, frozen_path);
-		panic2(nm, buf);
+		panic2(n, buf);
 	}
-	info3(nm, "udig of frozen brr log", frozen_udig);
+	info3(n, "udig of frozen brr log", frozen_udig);
 
 	/*
 	 *  Rename the frozen brr log file in spool/ to spool/wrap/<udig>.brr
@@ -1015,7 +1015,7 @@ wrap(struct request *rp, struct digest_module *mp)
 
 		snprintf(buf, sizeof buf,
 			"rename(%s, %s) failed", frozen_path, wrap_path);
-		panic3(nm, buf, strerror(err));
+		panic3(n, buf, strerror(err));
 	}
 
 	/*
@@ -1031,7 +1031,7 @@ wrap(struct request *rp, struct digest_module *mp)
 
 	io_unlink(wrap_set_path);
 	if (wrap_set_fd < 0)
-		panic4(nm, wrap_set_path,"open(wrap set) failed",strerror(err));
+		panic4(n, wrap_set_path,"open(wrap set) failed",strerror(err));
 
 	/*
 	 *  Write the freshly frozen udig set first.
@@ -1041,7 +1041,7 @@ wrap(struct request *rp, struct digest_module *mp)
 
 	dirp = io_opendir("spool/wrap");
 	if (dirp == NULL)
-		panic3(nm, "opendir(spool/wrap) failed", strerror(errno));
+		panic3(n, "opendir(spool/wrap) failed", strerror(errno));
 	errno = 0;
 
 	/*
@@ -1054,7 +1054,7 @@ wrap(struct request *rp, struct digest_module *mp)
 		if (strcmp(".", n) == 0 || strcmp("..", n) == 0)
 			continue;
 		if (dp->d_type != DT_REG) {
-			warn3(nm, "non regular file in spool/wrap", n);
+			warn3(n, "non regular file in spool/wrap", n);
 			continue;
 		}
 		/*
@@ -1066,7 +1066,7 @@ wrap(struct request *rp, struct digest_module *mp)
 		 *  otherwise, grumble and move on.
 		 */
 		if (extract_wrap_udig(n, udig)) {
-			warn3(nm, "spool/wrap: file does not match <udig>.brr",
+			warn3(n, "spool/wrap: file does not match <udig>.brr",
 									n);
 			continue;
 		}
@@ -1076,9 +1076,9 @@ wrap(struct request *rp, struct digest_module *mp)
 		wrap_udig_count++;
 	}
 	if (errno)
-		panic3(nm, "readdir(spool/wrap) failed", strerror(errno));
+		panic3(n, "readdir(spool/wrap) failed", strerror(errno));
 	if (io_closedir(dirp))
-		panic3(nm, "close(spool/wrap) failed", strerror(errno));
+		panic3(n, "close(spool/wrap) failed", strerror(errno));
 
 	if (wrap_udig_count > 0) {
 		char buf[MSG_SIZE];
@@ -1088,19 +1088,19 @@ wrap(struct request *rp, struct digest_module *mp)
 			wrap_udig_count,
 			wrap_udig_count == 1 ? "" : "s"
 		);
-		info2(nm, buf);
+		info2(n, buf);
 	} else
-		info2(nm, "no frozen brr logs in spool/wrap/");
+		info2(n, "no frozen brr logs in spool/wrap/");
 
 	/*
 	 *  Rewind to start of file for digest routine.
 	 */
 	offset = io_lseek(wrap_set_fd, (off_t)0, SEEK_SET);
 	if (offset < 0)
-		panic4(nm, wrap_set_path, "lseek(wrap set) failed",
+		panic4(n, wrap_set_path, "lseek(wrap set) failed",
 							strerror(errno));
 	if (offset != 0)
-		panic3(nm, wrap_set_path, "lseek(wrap set) != 0");
+		panic3(n, wrap_set_path, "lseek(wrap set) != 0");
 
 	strcpy(wrap_set_udig, mp->name);
 	strcat(wrap_set_udig, ":");
@@ -1111,25 +1111,25 @@ wrap(struct request *rp, struct digest_module *mp)
 	err = (*mp->digest)(rp, wrap_set_fd,
 				wrap_set_udig + strlen(wrap_set_udig), 1);
 	if (io_close(wrap_set_fd))
-		panic4(nm, wrap_set_path, "close(wrap set) failed",
+		panic4(n, wrap_set_path, "close(wrap set) failed",
 							strerror(errno));
 	if (err) {
 		char buf[MSG_SIZE];
 
 		snprintf(buf, sizeof buf, "wrap set(%s:%s) failed",
 						mp->name, wrap_set_path);
-		panic2(nm, buf);
+		panic2(n, buf);
 	}
-	info3(nm, "udig of wrapped set", wrap_set_udig);
+	info3(n, "udig of wrapped set", wrap_set_udig);
 	if (write_ok(rp)) {
-		error2(nm, "reply: write_ok() failed");
+		error2(n, "reply: write_ok() failed");
 		return -1;
 	}
 	rp->digest = strdup(strchr(wrap_set_udig, ':') + 1);
 	strcat(wrap_set_udig, "\n");
 	len = strlen(wrap_set_udig);
-	if (write_blob(rp, (unsigned char *)wrap_set_udig, len)) {
-		error2(nm, "reply: write_blob(wrap set udig) failed");
+	if (req_write(rp, (unsigned char *)wrap_set_udig, len)) {
+		error4(n, "req_write() failed", rp->algorithm, rp->digest);
 		return -1;
 	}
 	return 0;
