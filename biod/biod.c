@@ -1,9 +1,6 @@
 /*
  *  Synopsis:
- *	A reference server that speaks the blob.io protocol
- *  Blame:
- *  	jmscott@setspace.com
- *  	setspace@gmail.com
+ *	A reference blobio server that speaks the blob.io protocol
  *  Note:
  *	Signal handling needs to be pushed to main listen loop or cleaned
  *	up with sigaction().
@@ -1141,14 +1138,23 @@ heartbeat()
 		return;
 
 	snprintf(buf, sizeof buf,
-		"connect=%llu, suc=%llu, tmout=%llu, err=%llu, fault=%llu",
-		connect_count, success_count, timeout_count,error_count,
-			fault_count);
+		"suc=%llu, err=%llu, tmo=%llu, sig=%llu, flt=%llu",
+			success_count,
+			error_count,
+			timeout_count,
+			signal_count,
+			fault_count
+	);
 	info(buf);
 
 	snprintf(buf, sizeof buf,
 		"get=%llu, put=%llu, give=%llu, take=%llu, eat=%llu",
-			get_count, put_count, give_count, take_count,eat_count);
+			get_count,
+			put_count,
+			give_count,
+			take_count,
+			eat_count
+	);
 	info(buf);
 
 	snprintf(buf, sizeof buf, "wrap=%llu, roll=%llu",wrap_count,roll_count);
@@ -1158,7 +1164,8 @@ heartbeat()
 	      "chat: ok=%llu, no[123]=%llu, eat|take no=%llu|%llu",
 			chat_ok_count,
 			chat_no_count + chat_no2_count + chat_no3_count,
-			eat_no_count, take_no_count
+			eat_no_count,
+			take_no_count
 	);
 	info(buf);
 
@@ -1185,8 +1192,8 @@ heartbeat()
  *		success_count:		//  request satisfied
  *		error_count:		//  stable error in request
  *		timeout_count:		//  timeout in request
- *		fault_count:		//  unstable error in request
  *		signal_count:		//  request ended due to signal
+ *		fault_count:		//  unstable error in request
  *
  *		//  verb summaries, regardless of ok/no chat history
  *
@@ -1266,8 +1273,8 @@ rrd_sample()
  		success_count - success_count_prev,
 		error_count - error_count_prev,
 		timeout_count - timeout_count_prev,
-		fault_count - fault_count_prev,
 		signal_count - signal_count_prev,
+		fault_count - fault_count_prev,
 
 		get_count - get_count_prev,
 		put_count - put_count_prev,
@@ -1294,8 +1301,8 @@ rrd_sample()
 	success_count_prev = success_count;
 	error_count_prev = error_count;
 	timeout_count_prev = timeout_count;
-	fault_count_prev = fault_count;
 	signal_count_prev = signal_count;
+	fault_count_prev = fault_count;
 
 	get_count_prev = get_count;
 	put_count_prev = put_count;
