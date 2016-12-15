@@ -11,11 +11,13 @@ install:
 		contrib/udig/udig.sql.in				\
 		eat-unroll.sql						\
 		eat-wrap-missed.sql					\
+		merge-biod_request_stat.sql				\
 		schema.sql						\
 		$(DIST_ROOT)/lib
 
-	install -g $(DIST_GROUP) -o $(DIST_USER) -m u=rx,go=	\
+	install -g $(DIST_GROUP) -o $(DIST_USER) -m u=rx,go=		\
 		cron-eat-unroll						\
+		cron-rrd2pg						\
 		eat-wrap-missed						\
 		fs-eat							\
 		fs-xor-service						\
