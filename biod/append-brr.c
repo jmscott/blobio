@@ -18,9 +18,6 @@
  *	3	the open() failed
  *	4	the write() failed
  *	5	the close() failed
- *  Blame:
- *	jmscott@setspace.com
- *	setspace@gmail.com
  *  Note:
  *  	No syntax checking is done on the fields of the blob request record.
  *  	Only field sizes are checked.

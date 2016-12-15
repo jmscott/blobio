@@ -2,9 +2,6 @@
 #
 #  Synopsis:
 #	bio-cat <udig> | more
-#  Blame:
-#  	jmscott@setspace.com
-#	setspace@gmail.com
 #
 HELP=$(cat <<'END'
 

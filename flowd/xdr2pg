@@ -3,12 +3,9 @@
 #	Push all process execution detail records to the PostgreSQL
 #  Usage:
 #	xdr2pg --log-dir /usr/local/setspace/log
-#  Blame:
-#	jmscott@setspace.com
-#	setspace@gmail.com
 #  Exit Status:
 #	0	no errors
-#	255	unknown system error
+#	64	unknown system error
 #  Note:
 #  	Rename to bio-xdr2pg
 #
@@ -28,7 +25,7 @@ log()
 die()
 {
 	log "ERROR: $@" >&2
-	exit 255
+	exit 64
 }
 
 leave()

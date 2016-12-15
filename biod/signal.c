@@ -1,9 +1,6 @@
 /*
  *  Synopsis:
  *	Support functions for signal handling.
- *  Blame:
- *  	jmscott@setspace.com
- *  	setspace@gmail.com
  *  Note:
  *  	Replace with strsignal()?
  */

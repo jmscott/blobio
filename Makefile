@@ -3,9 +3,6 @@
 #	Root makefile for blobio clients and servers.
 #  Depends:
 #	local.mk, derived from local-<os>.mk.example
-#  Blame:
-#  	jmscott@setspace.com
-#  	setspace@gmail.com
 #  Note:
 #  	Parallel jobs have problems due to incorrection productions.
 #  	In particular,

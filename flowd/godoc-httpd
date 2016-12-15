@@ -9,9 +9,6 @@
 #  	GOROOT
 #  	GOPATH
 #  	BLOBIO_GODOC_HTTP_SERVIVCE	# host:port for http to listen on
-#  Blame:
-#	jmscott@setspace.com
-#	setspace@gmail.com
 #  Note:
 #  	Need to do static analysis via '-analysis=type,pointer'
 #

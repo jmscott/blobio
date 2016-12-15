@@ -10,10 +10,7 @@
 #	cp StartupParameters.plist.macosx $B/StartupParameters.plist
 #	reboot
 #  Note:
-#	Not tested on any other mac os x
-#  Blame:
-#  	jmscott@setspace.com
-#  	setspace@gmail.com
+#	Tested only on 10.6
 #
 . /etc/rc.common
 

@@ -17,9 +17,6 @@
 #	$ cat pdf.udig | udig2fs-path | while read UDIG FILE;  do
 #		echo $UDIG $(shasum $BLOBIO_ROOT/data/$FILE | awk '{print $1}')
 #	done
-#  Blame:
-#  	jmscott@setspace.com
-#  	setspace@gmail.com
 #
 
 my $PROG = 'udig2fs';

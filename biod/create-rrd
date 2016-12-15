@@ -2,9 +2,6 @@
 #
 #  Synopsis:
 #	Create the round robin database for blobio.
-#  Blame:
-#  	jmscott@setspace.com
-#  	setspace@gmail.com
 #
 
 PROG=$(basename $0)

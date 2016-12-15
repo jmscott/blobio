@@ -27,7 +27,4 @@
 //   parse brr record, skipping corrupted records
 //     -> brr flow work queue
 //       flow
-//  Blame:
-//	jmscott@setspace.com
-//	setspace@gmail.com
 package main;

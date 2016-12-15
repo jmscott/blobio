@@ -4,9 +4,6 @@
 #	Merge the biod samples in log/biod-rrd.log into log/biod.rrd
 #  Usage:
 #	* * * * * update-rrd >>log/update-rrd.log 2>&1
-#  Blame:
-#  	jmscott@setspace.com
-#  	setspace@gmail.com
 #
 
 PROG=$(basename $0)

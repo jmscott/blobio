@@ -1,9 +1,6 @@
 /*
  *  Synopsis:
  *	Implement logger and "wrap and "roll" verbs for blob request records.
- *  Blame:
- *  	jmscott@setspace.com
- *  	setspace@gmail.com
  *  Note:
  *	Ought to automatically create the spool/wrap directory.
  */

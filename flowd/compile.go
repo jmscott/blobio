@@ -1,8 +1,5 @@
 //Synopsis:
 //	Compile a flow configuration into a network of channels.
-//Blame:
-//	jmscott@setspace.com
-//	setspace@gmail.com
 
 package main
 

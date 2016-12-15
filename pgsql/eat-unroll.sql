@@ -1,9 +1,6 @@
 /*
  *  Synopsis:
  *	Unroll all wraps and eat new blobs not in service or taken.
- *  Blame:
- *  	jmscott@setspace.com
- *  	setspace@gmail.com
  */	
 
 \set ON_ERROR_STOP

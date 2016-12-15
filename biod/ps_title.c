@@ -1,9 +1,6 @@
 /*
  *  Synopopis:
  *	Set a process title for commands like ps and top under unix.
- *  Blame:
- *  	jmscott@setspace.com
- *  	setspace@gmail.com
  *  Note:
  *	Unfortunately, ps output looks odd due to the trailing white space.
  *	Need to investigate using null instead of ' ' character.

@@ -5,9 +5,6 @@
 #  Usage:
 #	fs-xor-service >fs-xor-service.log 2>&1 &
 #	32 4 * * Sun sbin/fs-xor-service >>support/fs-xor-service/fsc.out 2>&1
-#  Blame:
-#	jmscott@setspace.com
-#	setspace@gmail.com
 #  Note:
 #	Would be nice to query service table and file system for timestamps,
 #	so blobs created during the scan could be quickly identified.

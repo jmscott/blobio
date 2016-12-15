@@ -4,9 +4,6 @@
 #	Generate a PNG overview graph of the traffic on a BIOD server.
 #  Usage:
 #	graph-rrd <start-epoch> <end-epoch>
-#  Blame:
-#  	jmscott@setspace.com
-#  	setspace@gmail.com
 #
 
 START_TIME=$1

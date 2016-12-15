@@ -1,9 +1,6 @@
 #
 #  Synopsis:
 #	Install client scripts
-#  Blame:
-#	jmscott@setspace.com
-# 	setspace@gmail.com
 #
 
 include ../blobio.mk

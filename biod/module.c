@@ -1,9 +1,6 @@
 /*
  *  Synopsis:
  *	Digest module list for biod.
- *  Blame:
- *  	jmscott@setspace.com
- *  	setspace@gmail.com
  */
 #include "biod.h"
 

@@ -2,9 +2,6 @@
 /*
  *  Synopsis:
  *	Module that manages sha digested blobs in POSIX file system.
- *  Blame:
- *  	jmscott@setspace.com
- *  	setspace@gmail.com
  *  Note:
  *  	The digest is logged during an error.  This is a security hole.
  */

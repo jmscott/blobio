@@ -3,9 +3,6 @@
  *	PostgreSQL schema to track blobs available in a particular biod server.
  *  Note:
  *	Please add sql comments.
- *  Blame:
- *  	jmscott@setspace.com
- *  	setspace@gmail.com
  */
 \set ON_ERROR_STOP on
 

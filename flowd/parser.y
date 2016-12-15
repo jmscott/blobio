@@ -1,9 +1,6 @@
 /*
  *  Synopsis:
  *	Yacc grammar for 'flow' language.
- *  Blame:
- *	jmscott@setspace.com
- *	setspace@gmail.com
  *  Note:
  *	Query arguments are always strings.  Not too much of a problem in
  *	the short run, since the cast can be added in the query, put

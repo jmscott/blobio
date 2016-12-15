@@ -9,9 +9,6 @@ Exit Status:
 	0	ok, udig of wrap set written to standard out
 	1	no, wrap failed
 	255	unexpected error
-Blame:
-	jmscott@setspace.com
-	setspace@gmail.com
 END
 )
 

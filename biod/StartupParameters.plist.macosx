@@ -1,9 +1,6 @@
 #
 #  Synopsis:
 #	Untested launchd service config
-#  Blame:
-#  	jmscott@setspace.com
-#  	setspace@gmail.com
 #
 {
   Description     = "BlobIO Service";

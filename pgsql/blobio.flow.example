@@ -3,9 +3,6 @@
 #	Example configuration for maintaining database defined in schema.sql
 #  Usage:
 #  	brrflow server brrflow.conf
-#  Blame:
-#  	jmscott@setspace.com
-#  	setspace@gmail.com
 #
 
 boot

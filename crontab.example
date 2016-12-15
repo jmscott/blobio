@@ -1,9 +1,6 @@
 #
 #  Synopsis:
 #	Example crontab for BlobIO daemon account
-#  Blame:
-#  	jmscott@setspace.com
-#  	setspace@gmail.com
 #
 BLOBIO_ROOT=/usr/local/blobio
 BLOBIO_SERVICE=bio4:localhost:1797

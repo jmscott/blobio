@@ -2,9 +2,6 @@
 //  Synopsis:
 //	Channelized poll for lines of text from a typical append only log file,
 //	in the manner of the 'tail -f' unix command line tool.
-//  Blame:
-//	jmscott@setspace.com
-//	setspace@gmail.com
 //  Note:
 //	Investigate rolling algorithm.  On linux I (jmscott) witnessed a
 //	a tail on a wrapped log file that never rolled to spool/biod.brr.

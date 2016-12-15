@@ -6,9 +6,6 @@
 #	BLOBIO_ROOT=/usr/local/blobio
 #	@reboot $BLOBIO_ROOTsbin/cron-reboot 				\
 #		>>$BLOBIO_ROOT/log/cron-reboot.log 2>&1
-#  Blame:
-#  	jmscott@setspace.com
-#  	setspace@gmail.com
 #
 
 PROG=$(basename $0)

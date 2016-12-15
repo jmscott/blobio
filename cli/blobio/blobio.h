@@ -1,9 +1,6 @@
 /*
  *  Synopsis:
  *	C header for Command Line Interface to BlobIO.
- *  Blame:
- *	jmscott@setspace.com
- *	setspace@gmail.com
  */
 #ifndef BLOBIO_H
 #define BLOBIO_H

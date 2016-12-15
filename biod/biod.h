@@ -1,9 +1,6 @@
 /*
  *  Synopsis:
  *	Global C header file for biod program.
- *  Blame:
- *  	jmscott@setspace.com
- *  	setspace@gmail.com
  */
 #ifndef BIOD_H
 #define BIOD_H

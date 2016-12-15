@@ -91,10 +91,6 @@ Query Detail Record:
 
 	Wall/Query durations are float64 seconds formated as %20.9f.
 
-Blame:
-	jmscott@setspace.com
-	setspace@gmail.com
-
 Note:
 	- inbound{} ought to tie together various sources of brr records.
 

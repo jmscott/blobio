@@ -1,9 +1,6 @@
 #
 #  Synopsis:
 #	Static make rules for blobio.
-#  Blame:
-#  	jmscott@setspace.com
-#  	setspace@gmail.com
 #
 
 #  Most extreme compilation flags

@@ -1,9 +1,6 @@
 /*
  *  Synopsis:
  *	Find "quack" blobs.
- * Blame:
- *  	jmscott@setspace.com
- *  	setspace@gmail.com
  */
 \set ON_ERROR_STOP 1
 \pset tuples_only

@@ -2,9 +2,7 @@
 #
 #  Synopsis:
 #	Trivial rc template for sysv init environment
-#  Blame:
-#  	jmscott@setspace.com
-#  	setspace@gmail.com
+#
 
 export BLOBIO_ROOT=/usr/local/blobio
 

@@ -2,9 +2,7 @@
 #
 #  Synopsis:
 #	Merge two blob.io services
-#  Blame:
-#  	jmscott@setspace.com
-#	setspace@gmail.com
+#
 HELP=$(cat <<'END'
 
 Synopsis:

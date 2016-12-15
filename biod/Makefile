@@ -1,9 +1,6 @@
 #
 #  Synospsi:
 #	Ye old makefile
-#  Blame:
-#  	jmscott@setspace.com
-#  	setspace@gmail.com
 #
 include ../blobio.mk
 include ../local.mk

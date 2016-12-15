@@ -1,8 +1,5 @@
 //  Synopsis:
 //	Front end routines to os.File package.  Most panic on error.
-//  Blame:
-//	jmscott@setspace.com
-//	setspace@gmail.com
 
 package main
 

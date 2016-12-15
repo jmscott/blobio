@@ -25,9 +25,6 @@
 #	cp local-linux.mk.example local.mk
 #	vi local.mk
 #	make install
-#  Blame:
-#	jmscott@setspace.com
-#	setspace@gmail.com
 #  Note:
 #	Initialize DIST_USER=$(USER)
 #

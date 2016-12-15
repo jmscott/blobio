@@ -1,8 +1,6 @@
 /*
  *  Synopsis:
  *	Hash Digest Modules
- *  Blame:
- *	jmscott@setspace.com
  */
 #include "blobio.h"
 

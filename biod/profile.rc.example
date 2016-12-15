@@ -3,9 +3,6 @@
 #	BlobIO variables used by rc.d startup script and biod daemon
 #  See Also:
 #	blobio.rc.template
-#  Blame:
-#  	jmscott@setspace.com
-#  	setspace@gmail.com
 #
 export BLOBIO_ROOT=${BLOBIO_ROOT:=/usr/local/blobio}
 

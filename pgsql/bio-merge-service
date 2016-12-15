@@ -25,9 +25,6 @@
 #	service tables will be
 #
 #		(S1.service + S2.service) - (S1.taken + S2.taken)
-#  Blame:
-#	jmscott@setspace.com
-#	setspace@gmail.com
 #  Note:
 #	Occasionally, bio-merge will exit with 1, indicating that a stable
 #	blob which exists in the BLOBIO_SERVICE.service table in fact does not

@@ -10,9 +10,6 @@ Exit Status:
 	1	no, roll failed
 	2	wrap sent no, so roll not attempted
 	bio-roll [--help]
-Blame:
-	jmscott@setspace.com
-	setspace@gmail.com
 END
 )
 

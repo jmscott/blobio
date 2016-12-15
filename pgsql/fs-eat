@@ -11,9 +11,6 @@
 #  Depends:
 #	fs2udig
 #	well known gnu comm program
-#  Blame:
-#  	jmscott@setspace.com
-#  	setspace@gmail.com
 #
 
 PROG=$(basename $0)

@@ -101,9 +101,6 @@
 #					some brr log blobs don't exist
 #
 #		255		an invocation error or system fault
-#  Blame:
-#  	jmscott@setspace.com
-#  	setspace@gmail.com
 #  Note:
 #	No checking for syntax of the wrap set or brr logs occurs.
 #	Hopefully syntax error generates faults.  Hopefully.

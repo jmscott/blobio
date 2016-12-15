@@ -2,9 +2,6 @@
 //	Action to translate a flow file into graphviz dot layout.
 //  See:
 //	http://www.graphviz.org/
-//  Blame:
-//	jmscott@setspace.com
-//	setspace@gmail.com
 package main
 
 import (

@@ -1,6 +1,6 @@
 /*
  *  Synopsis:
- *	Execute command vectors read from stdin and write summaries on standard out 
+ *	Execute command vectors read from stdin and write summaries on stdout
  *  Usage:
  *	Invoked as a background worker by flowd server.
  *
@@ -32,9 +32,6 @@
  *	On ERROR, flowd-exec does not return user/system times.
  *
  *	Should the process be killed upon receiving a STOP signal?
- *
- *  Blame:
- *  	jmscott@setspace.com
  */
 #include <sys/times.h>
 #include <sys/types.h>

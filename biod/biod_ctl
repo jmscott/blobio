@@ -2,9 +2,6 @@
 #
 #  Synopsis:
 #	Start/stop blobio daemon.
-#  Blame:
-#	jmscott@setspace.com
-#	setspace@gmail.com
 #
 
 PROG=$(basename $0)

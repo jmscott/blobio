@@ -6,9 +6,6 @@
 #	fdr2sql <flowd.fdr | psql
 #  Note:
 #  	Rename to bio-fdr2psql?
-#  Blame:
-#	jmscott@setspace.com
-#	setspace@gmail.com
 #
 
 #

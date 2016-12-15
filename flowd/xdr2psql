@@ -4,11 +4,6 @@
 #	Transform stream of xdr records into sql 'copy in' for xdr table
 #  Usage:
 #	xdr2sql <flowd.xdr | psql
-#  Blame:
-#	jmscott@setspace.com
-#	setspace@gmail.com
-#  Note:
-#  	Rename to bio-xdr2psql?
 #
 
 my ($first_start_time, $end_time);

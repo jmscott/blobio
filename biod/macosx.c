@@ -1,9 +1,6 @@
 /*
  *  Synopsis:
  *	Mach OS stub function to emulate Posix clock_gettime().
- *  Blame:
- *  	jmscott@setspace.com
- *  	setspace@gmail.com
  */
 #if __APPLE__ == 1 && __ENVIRONMENT_MAC_OS_X_VERSION_MIN_REQUIRED__ < 101200
 

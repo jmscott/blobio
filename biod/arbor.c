@@ -1,9 +1,6 @@
 /*
  *  Synopsis:
  *  	Process to manage file system rename and take requests.
- *  Blame:
- *  	jmscott@setspace.com
- *  	setspace@gmail.com
  */
 #include <sys/types.h>
 #include <sys/stat.h>

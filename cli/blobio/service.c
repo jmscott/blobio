@@ -1,8 +1,6 @@
 /*
  *  Synopsis:
  *	Blob Service Module
- *  Blame:
- *	jmscott@setspace.com
  */
 #include "blobio.h"
 

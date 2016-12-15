@@ -1,9 +1,6 @@
 /*
  *  Synopsis:
  *	Simple functions to get/put small blobs in memory
- *  Blame:
- *  	jmscott@setspace.com
- *  	setspace@gmail.com
  */
 #include "biod.h"
 

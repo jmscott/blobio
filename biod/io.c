@@ -1,9 +1,6 @@
 /*
  *  Synopsis:
  *	Low level, restartable file operations.
- *  Blame:
- *  	jmscott@setspace.com
- *  	setspace@gmail.com
  *  Note:
  *	Can the timeout code in functions read_buf() and write_buf()
  *	be moved to io_read() and io_write().

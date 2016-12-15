@@ -1,9 +1,6 @@
 #
 #  Synopsis:
 #	Build blobio binary executable from C source
-#  Blame:
-#	jmscott@setspace.com
-# 	setspace@gmail.com
 #  Note:
 #	CC=cc -g on linux 2.6.32
 #
