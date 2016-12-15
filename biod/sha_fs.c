@@ -401,7 +401,6 @@ sha_fs_get(struct request *rp)
 	case 0:
 		break;
 	case ENOENT:
-		_warn2(rp, "not found", rp->digest);
 		return 1;
 	default:
 		_panic(rp, "_open(blob) failed");
@@ -561,11 +560,6 @@ sha_fs_eat(struct request *rp)
 	 *  Blob not found.
 	 */
 	case ENOENT:
-		/*
-		 *  Don't log missiing entries on eat.
-		 *  Shouldn't the caller determine if logging should be done.
-		_warn2(rp, "not found", rp->digest);
-		*/
 		return 1;
 	default:
 		_panic(rp, "_open(blob) failed");
