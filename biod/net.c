@@ -2,10 +2,11 @@
  *  Synopsis:
  *	Low level, network stream i/o with explicit timeouts.
  *  Note:
+ *	Consider a 'net' data structure.
+ *
  *	Explict, global timeouts are used instead of setsockopt(SO_RCVTIMEO).
  *	Not clear to me (jmscott) if setsockopt(SO_RCVTIMEO) prevents
  *	multiple packets from accumulating in the read() buffer.
- *	
  */
 #include <sys/time.h>
 
@@ -115,7 +116,6 @@ again:
 	errno = e;
 	return -1;
 }
-
 
 /*
  *  Do a timed read of some bytes on the network.
