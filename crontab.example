@@ -7,11 +7,27 @@ BLOBIO_SERVICE=bio4:localhost:1797
 
 #
 #  What:
+#	Push biod rrd request sample into postgres database
+#  When:
+#	once a minute
+#
+* * * * * $BLOBIO_ROOT/sbin/cron-rrd2pg >>$BLOBIO_ROOT/log/cron-rrd2pg.log 2>&1
+
+#
+#  What:
+#	Clear log file log/cron-rrd2pg.log
+#  When:
+#	15th day of every month at 11:06am
+#
+06 11 15 * * sleep 45; echo "$(date): cleared by cron" >$BLOBIO_ROOT/log/cron-rrd2pg.log 2>&1
+
+#
+#  What:
 #       Wrap and eat new blobs by unrolling logs
 #  When:
-#       15 minutes after every hour
+#       4:15am, every day
 #
-15 * * * * $BLOBIO_ROOT/sbin/cron-eat-unroll >>$BLOBIO_ROOT/log/cron-eat-unroll.log 2>&1
+15 4 * * * $BLOBIO_ROOT/sbin/cron-eat-unroll >>$BLOBIO_ROOT/log/cron-eat-unroll.log 2>&1
 
 #
 #  What:
@@ -42,6 +58,9 @@ BLOBIO_SERVICE=bio4:localhost:1797
 #	Clear flow, query and exec detail record logs files
 #  When:
 #	26 minutes after each hour
+#  Note:
+#	Need to write as a script to get around xargs problems on bsd with
+#	th option --no-run-if-empty.
 #
 26 * * * * (echo "$(date): hello, world";  find $BLOBIO_ROOT/log/ -mtime +1 -follow -type f -name '*-*.[fqx]dr' | xargs --no-run-if-empty rm -v;  echo "$(date): good bye, cruel world") >>$BLOBIO_ROOT/log/purge-dr.log 2>&1
 
@@ -55,18 +74,19 @@ BLOBIO_SERVICE=bio4:localhost:1797
 
 #
 #  What:
+#	compare file system blobs to database blobio.service table
+#  When:
+#	1:13am, every day
+#
+13 1 * * * $BLOBIO_ROOT/sbin/fs-xor-service >>$HOME/support/fs-sync/fs-xor-service.log
+
+
+#
+#  What:
 #	Startup the biod and flow servers
 #  When:
 #	On system reboot
 #  Note:
 #	Log file cleared on reboot $BLOBIO_ROOT/log/cron-reboot.log
 #
-@reboot $BLOBIO_ROOT/sbin/cron-reboot >$BLOBIO_ROOT/log/cron-reboot.log 2>&1
-
-#
-#  What:
-#       Count blobs in service
-#  When:
-#       5 minutes after every hour
-#
-5 * * * * (echo "$(date): hello, world";  . $BLOBIO_ROOT/etc/profile;  psql -c 'select count(*) from blobio.service';  echo "$(date): good bye, cruel world") >>support/service-count/service-count.log
+@reboot sleep 30 && $BLOBIO_ROOT/sbin/cron-reboot >$BLOBIO_ROOT/log/cron-reboot.log 2>&1
