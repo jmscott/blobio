@@ -570,7 +570,7 @@ biod(char *verb, char *algorithm, char *digest,
 			die3_NO(verb, algorithm, "unexpected algorithm");
 		strcpy(algorithm, "sha");
 	} else if (!algorithm[0] || !digest[0])
-		die2_NO(verb, "missing udig");
+		die2_NO(verb, "missing udig or unknown verb");
 
 	req.algorithm = algorithm;
 	req.blob_size = scan_size;
@@ -695,8 +695,12 @@ request()
 	 *  Scan for request from the client.
 	 *  We are looking for
 	 *
-	 *   [get|put|give|take|eat|roll] [:alpha:][:alnum:]{,7}:[[:isgraph:]]{1,128}]\n
-	 *   wrap\n
+	 *	UDIG_RE=[:alpha:][:alnum:]{0,7}:[[:isgraph:]]{1,128}]
+	 *	[get|put|give|take|eat|roll] $UDIG_RE\n
+	 *  
+	 *  or
+	 *
+	 *	 wrap\n
 	 */
 	state = STATE_SCAN_VERB;
 	while (state != STATE_HALT && (nr=req_read(&req, buf, sizeof buf)) > 0){
