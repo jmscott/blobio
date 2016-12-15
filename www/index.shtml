@@ -20,7 +20,7 @@
  <body class="parent">
   <div class="child">
    <h1>Welcome to BlobIO Administration</h1>
-   Please verify the <a href="env.shtml">process environment</a>.
+  <!--#include virtual="/cgi-bin/blobio?out=table&${QUERY_STRING}" -->
   </div>
  </body>
 

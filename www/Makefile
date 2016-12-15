@@ -2,7 +2,7 @@ include ../local.mk
 
 DIST_WWW=$(DIST_ROOT)/www
 
-all: env
+all: env blobio
 
 env: env.cgi
 	cgi2perl5 --source-path env.cgi
@@ -51,3 +51,7 @@ dev-links:
 	test -e htdocs || ln -s . htdocs
 	test -e cgi-bin || ln -s . cgi-bin
 	test -e lib || ln -s . lib
+
+blobio: blobio.cgi
+	cgi2perl5 --source-path blobio.cgi
+	chmod +x blobio
