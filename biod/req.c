@@ -213,7 +213,7 @@ read_reply(struct request *r)
 
 	nread = 0;
 again:
-	nr = req_read(r,  reply + nread, nread - nread);
+	nr = req_read(r, reply + nread, sizeof reply - nread);
 	if (nr < 0)
 		return reply_error(r, "req_read() failed");
 
