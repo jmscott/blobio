@@ -33,6 +33,7 @@ dev-links:
 	test -e lib || ln -s . lib
 	test -e run || ln -s . run
 	test -e sbin || ln -s . sbin
+	test -e log || ln -s . log
 
 frisk ff:
 	flowd frisk blobio.flow.example
