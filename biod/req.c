@@ -78,8 +78,22 @@ req_read(struct request *r, void *buf, size_t buf_size)
 }
 
 /*
- *  Do a timed write() of an entire buffer in child request process.
- *  Returns
+ *  Read a blob from the remote client.
+ */
+ssize_t
+blob_read(struct request *r, void *buf, size_t buf_size)
+{
+	 ssize_t nread;
+
+	 nread = req_read(r, buf, buf_size);
+	 if (nread > 0)
+	 	r->blob_size += nread;
+	return nread;
+}
+
+/*
+ *  Do a timed write() to the remote client of an entire buffer in child
+ *  request process.  Returns
  *
  *	0	=> buffer written without error
  *	1	=> write() timed out
@@ -122,6 +136,21 @@ req_write(struct request *r, void *buf, size_t buf_size)
 	_SET_EXIT_TIMEOUT;
 	errno = e;
 	return 1;
+}
+
+/*
+ *  Write a blob to the remote client.
+ */
+int
+blob_write(struct request *r, void *buf, size_t buf_size)
+{
+	int status;
+
+	status = req_write(r, buf, buf_size);
+	if (status != 0)
+		return status; 
+	r->blob_size += buf_size;
+	return 0;
 }
 
 /*

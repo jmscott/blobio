@@ -338,7 +338,7 @@ brr_close()
  *  Write the blob request record to the brr logger.
  */
 void
-brr_write(struct request *rp)
+brr_write(struct request *r)
 {
 	char brr[BRR_SIZE + 1];
 	long int sec, nsec;
@@ -352,7 +352,7 @@ brr_write(struct request *rp)
 	/*
 	 *  Build the ascii version of the start time.
 	 */
-	t = gmtime(&rp->start_time.tv_sec);
+	t = gmtime(&r->start_time.tv_sec);
 	if (!t)
 		panic3(n, "gmtime() failed", strerror(errno));
 	/*
@@ -361,13 +361,13 @@ brr_write(struct request *rp)
 	 *  is the same as "borrowing" a one in grade school
 	 *  subtraction.
 	 */
-	if (rp->end_time.tv_nsec - rp->start_time.tv_nsec < 0) {
-		sec = rp->end_time.tv_sec - rp->start_time.tv_sec - 1;
-		nsec = 1000000000 + rp->end_time.tv_nsec -
-							rp->start_time.tv_nsec;
+	if (r->end_time.tv_nsec - r->start_time.tv_nsec < 0) {
+		sec = r->end_time.tv_sec - r->start_time.tv_sec - 1;
+		nsec = 1000000000 + r->end_time.tv_nsec -
+							r->start_time.tv_nsec;
 	} else {
-		sec = rp->end_time.tv_sec - rp->start_time.tv_sec;
-		nsec = rp->end_time.tv_nsec - rp->start_time.tv_nsec;
+		sec = r->end_time.tv_sec - r->start_time.tv_sec;
+		nsec = r->end_time.tv_nsec - r->start_time.tv_nsec;
 	}
 
 	/*
@@ -392,6 +392,12 @@ brr_write(struct request *rp)
 		warn2(n, "resetting nano seconds to 0");
 		nsec = 0;
 	}
+
+	/*
+	 *  Note:
+	 *	Need a sanity test to prevent blob_size == 0 for non empty blob.
+	 */
+
 	/*
 	 *  Format the record buffer.
 	 */
@@ -402,15 +408,15 @@ brr_write(struct request *rp)
 		t->tm_hour,
 		t->tm_min,
 		t->tm_sec,
-		rp->start_time.tv_nsec,
-		rp->netflow,
-		rp->verb,
-		rp->algorithm && rp->algorithm[0] ? rp->algorithm : "",
-		rp->algorithm && rp->algorithm[0] &&
-			rp->digest && rp->digest[0] ? ":" : "",
-		rp->digest && rp->digest[0] ? rp->digest : "",
-		rp->chat_history,
-		rp->blob_size,
+		r->start_time.tv_nsec,
+		r->netflow,
+		r->verb,
+		r->algorithm && r->algorithm[0] ? r->algorithm : "",
+		r->algorithm && r->algorithm[0] &&
+			r->digest && r->digest[0] ? ":" : "",
+		r->digest && r->digest[0] ? r->digest : "",
+		r->chat_history,
+		r->blob_size,
 		sec, nsec
 	);
 
@@ -632,7 +638,7 @@ extract_wrap_udig(char *name, char *udig)
  *	-1	error
  */
 int
-roll(struct request *rp, struct digest_module *mp)
+roll(struct request *r, struct digest_module *mp)
 {
 	char roll_path[MAX_FILE_PATH_LEN + 1];
 	int roll_fd;
@@ -668,7 +674,7 @@ roll(struct request *rp, struct digest_module *mp)
 	err = errno;
 
 	/*
-	 *  Unlink temp file while still open,so file blocks are automatically
+	 *  Unlink temp file while still open, so file blocks are automatically
 	 *  freed when process exists.
 	 *
 	 *  Note:
@@ -678,11 +684,11 @@ roll(struct request *rp, struct digest_module *mp)
 	if (roll_fd < 0)
 		panic4(n, roll_path, "open(roll set) failed", strerror(err));
 	/*
-	 *  Write the blob to the temporary file.
+	 *  Write the local blob to the temporary file.
 	 */
-	if ((*mp->write)(rp, roll_fd) == 1) {
-		if (write_no(rp)) {
-			error3(n, rp->algorithm, "write_no(client) failed");
+	if ((*mp->copy)(r, roll_fd) == 1) {
+		if (write_no(r)) {
+			error3(n, r->algorithm, "write_no(client) failed");
 			return -1;
 		}
 		return -1;
@@ -702,9 +708,9 @@ roll(struct request *rp, struct digest_module *mp)
 	if (io_fstat(roll_fd, &st))
 		panic4(n, roll_path, "fstat() failed", strerror(errno));
 	if (st.st_size == 0) {
-		warn4(n, "empty blob", rp->algorithm, rp->digest);
-		if (write_ok(rp)) {
-			error3(n, rp->algorithm, "write_ok(client) failed");
+		warn4(n, "empty blob", r->algorithm, r->digest);
+		if (write_ok(r)) {
+			error3(n, r->algorithm, "write_ok(client) failed");
 			return -1;
 		}
 		return 0;
@@ -750,9 +756,9 @@ roll(struct request *rp, struct digest_module *mp)
 		char buf[MSG_SIZE];
 
 		snprintf(buf, sizeof buf, "%s: blob not udig set: %s:%s",
-						n, rp->algorithm, rp->digest);
+						n, r->algorithm, r->digest);
 		warn(buf);
-		if (write_no(rp)) {
+		if (write_no(r)) {
 			error2(n, "reply: write_no() failed");
 			return -1;
 		}
@@ -818,7 +824,7 @@ roll(struct request *rp, struct digest_module *mp)
 		info2(n, buf);
 	} else
 		info2(n, "no frozen brr logs in spool/wrap/");
-	if (write_ok(rp)) {
+	if (write_ok(r)) {
 		error2(n, "reply: write_ok() failed");
 		return -1;
 	}
@@ -901,7 +907,7 @@ put_wrap_set(int fd, char *path, char *udig)
  *	rapidly wrapped logs be missed by flowd?
  */
 int
-wrap(struct request *rp, struct digest_module *mp)
+wrap(struct request *r, struct digest_module *mp)
 {
 	char fifo_path[25];
 	char frozen_path[32];
@@ -974,7 +980,7 @@ wrap(struct request *rp, struct digest_module *mp)
 	 *  Digest the brr file.
 	 *  Probably too chatty on the logging.
 	 */
-	info4(n, "digesting brr log file", rp->algorithm, frozen_path);
+	info4(n, "digesting brr log file", r->algorithm, frozen_path);
 	frozen_fd = io_open(frozen_path, O_RDONLY, 0);
 	if (frozen_fd < 0)
 		panic4(n, frozen_path, "open(frozen brr) failed",
@@ -985,7 +991,7 @@ wrap(struct request *rp, struct digest_module *mp)
 	 *  Call the module to generate a digest for the stream of the
 	 *  wrapped brr log file.
 	 */
-	err = (*mp->digest)(rp, frozen_fd, frozen_udig + strlen(frozen_udig),1);
+	err = (*mp->digest)(r, frozen_fd, frozen_udig + strlen(frozen_udig),1);
 	if (io_close(frozen_fd))
 		panic4(n, frozen_path, "close(frozen brr) failed",
 							strerror(errno));
@@ -1105,7 +1111,7 @@ wrap(struct request *rp, struct digest_module *mp)
 	/*
 	 *  Digest the temporary wrapped set of udigs.
 	 */
-	err = (*mp->digest)(rp, wrap_set_fd,
+	err = (*mp->digest)(r, wrap_set_fd,
 				wrap_set_udig + strlen(wrap_set_udig), 1);
 	if (io_close(wrap_set_fd))
 		panic4(n, wrap_set_path, "close(wrap set) failed",
@@ -1118,15 +1124,15 @@ wrap(struct request *rp, struct digest_module *mp)
 		panic2(n, buf);
 	}
 	info3(n, "udig of wrapped set", wrap_set_udig);
-	if (write_ok(rp)) {
+	if (write_ok(r)) {
 		error2(n, "reply: write_ok() failed");
 		return -1;
 	}
-	rp->digest = strdup(strchr(wrap_set_udig, ':') + 1);
+	r->digest = strdup(strchr(wrap_set_udig, ':') + 1);
 	strcat(wrap_set_udig, "\n");
 	len = strlen(wrap_set_udig);
-	if (req_write(rp, (unsigned char *)wrap_set_udig, len)) {
-		error4(n, "req_write() failed", rp->algorithm, rp->digest);
+	if (req_write(r, (unsigned char *)wrap_set_udig, len)) {
+		error4(n, "net_write() failed", r->algorithm, r->digest);
 		return -1;
 	}
 	return 0;

@@ -173,10 +173,10 @@ struct digest_module
 	int	(*digest)(struct request *, int fd, char *digest, int do_put);
 
 	/*
-	 *  Write a blob to a stream and return 0 if blob exists and is written
-	 *  on the stream, otherwise -1.
+	 *  Write a local blob to a local stream and return 0 if blob exists
+	 *  and was copyed to the local stream, otherwise -1.
 	 */
-	int	(*write)(struct request *, int fd);
+	int	(*copy)(struct request *, int fd);
 
 	/*
 	 *  Is the digest valid, empty, or invalid.
@@ -306,12 +306,25 @@ extern int		net_write(
 				size_t count,
 				unsigned timeout
 			);
+
 extern ssize_t		req_read(
 				struct request *r,
 				void *buf,
 				size_t buf_size
 			);
 extern int		req_write(
+				struct request *r,
+				void *buf,
+				size_t buf_size
+			);
+
+extern ssize_t		blob_read(
+				struct request *r,
+				void *buf,
+				size_t buf_size
+			);
+
+extern int		blob_write(
 				struct request *r,
 				void *buf,
 				size_t buf_size
