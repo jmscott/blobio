@@ -429,19 +429,22 @@ take(struct request *rp, struct digest_module *mp)
 	 */
 	{
 		char wrap_path[MAX_FILE_PATH_LEN];
-		struct stat st;
 		int status;
 
 		snprintf(wrap_path, sizeof wrap_path, "spool/wrap/%s:%s.brr",
 				rp->algorithm, rp->digest);
-		status = io_stat(wrap_path, &st);
-		if (status == 0) {
+		status = io_path_exists(wrap_path);
+		if (status < 0)
+			die3("take: stat() failed", strerror(errno), wrap_path);
+		if (status == 1) {
 			char wrap_udig[MAX_UDIG_SIZE + 1];
 
 			snprintf(wrap_udig, sizeof wrap_udig, "%s:%s",
 						rp->algorithm, rp->digest);
-			warn3("take", rp->netflow, "blob in unrolled wrap set");
-			warn2("take failed", wrap_udig);
+
+			error3("take", rp->netflow,"blob in unrolled wrap set");
+			error3("take", "forbidden until a next roll",
+								wrap_udig);
 			write_no(rp);
 			return 1;
 		}
@@ -1420,9 +1423,9 @@ set_pid_file(char *path)
 	static char n[] = "set_pid_file";
 	char buf[MSG_SIZE];
 
-	switch (io_is_file(path)) {
+	switch (io_path_exists(path)) {
 	case -1:
-		panic3(n, "io_is_file() failed", path);
+		panic4(n, "io_path_exists() failed", strerror(errno), path);
 		return;
 	case 0:
 		break;
@@ -1438,9 +1441,10 @@ set_pid_file(char *path)
 		snprintf(buf, sizeof buf,
 				"is another biod running with pid=%u", pid);
 		die2(n, buf);
+		break;
 	}
 	default:
-		panic3(n, "io_is_file() returned unexpected value", buf);
+		panic3(n, "io_path_exists() returned unexpected value", path);
 	}
 	snprintf(buf, sizeof buf, "%d\n", getpid());
 	if (burp_text_file(buf, pid_path))

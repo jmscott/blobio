@@ -150,67 +150,13 @@ again:
 }
 
 int
-io_is_file(char *path)
+io_path_exists(char *path)
 {
 	struct stat st;
 
-again:
-	if (stat(path, &st)) {
-		char buf[MSG_SIZE];
-
-		if (errno == ENOENT)
-			return 0;
-		if (errno == EINTR || errno == EAGAIN)
-			goto again;
-		snprintf(buf, sizeof buf, "is_file: stat(%s) failed: %s",
-						path, strerror(errno));
-		error(buf);
-		return -1;
-	}
+	if (io_stat(path, &st))
+		return errno == ENOENT ? 0 : -1;
 	return 1;
-}
-
-/*
- *  Convert 32 bit internet address to dotted text.
- *
- *  Derived from traceport.c written by Andy Fullford (akfull@august.com).
- */
-char *
-addr2text(u_long addr)
-{
-#define SHOW_IP_BUFS	4
-#define SHOW_IP_BUFSIZE	20
-
-	char *cp, *buf;
-	u_int byte;
-	int n;
-	static char bufs[SHOW_IP_BUFS][SHOW_IP_BUFSIZE];
-	static int curbuf = 0;
-
-	buf = bufs[curbuf++];
-	if (curbuf >= SHOW_IP_BUFS)
-		curbuf = 0;
-
-	cp = buf + SHOW_IP_BUFSIZE;
-	*--cp = '\0';
-
-	n = 4;
-	do {
-		byte = addr & 0xff;
-		*--cp = byte % 10 + '0';
-		byte /= 10;
-		if (byte > 0) {
-			*--cp = byte % 10 + '0';
-			byte /= 10;
-			if (byte > 0)
-				*--cp = byte + '0';
-		}
-		*--cp = '.';
-		addr >>= 8;
-	} while (--n > 0);
-
-	cp++;
-	return cp;
 }
 
 int
@@ -488,12 +434,12 @@ slurp_text_file(char *path, char *buf, size_t buf_size)
 	int fd;
 	ssize_t nr, nread;
 
-	switch (io_is_file(path)) {
+	switch (io_path_exists(path)) {
 	case -1:
 		error3(n, "io_is_file() failed", path);
 		return -1;
 	case 0:
-		error3(n, "not a file", path);
+		error3(n, "file does not exist", path);
 		return -1;
 	}
 	if ((fd = io_open(path, O_RDONLY, 0)) < 0) {

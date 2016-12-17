@@ -238,10 +238,6 @@ extern char	*log_strcat2(char *buf, int buf_size, char *msg1, char *msg2);
 extern char	*log_strcat3(char *buf, int buf_size,
 					char *msg1, char *msg2, char *msg3);
 
-/*
- *  Generic unix i/o, defined in io.c.  Ought to be name fs.c
- */
-extern int	io_is_file(char *path);
 extern int	burp_text_file(char *buf, char *path);
 extern int	slurp_text_file(char *path, char *buf, size_t buf_size);
 extern int	write_ok(struct request *rp);
@@ -260,6 +256,7 @@ extern char	*BLOBIO_ROOT;		/* BLOBIO_ROOT environment variable */
 /*
  *  Wrappers around various interuptable unix system calls
  */
+extern int		io_path_exists(char *path);
 extern int		io_close(int fd);
 extern ssize_t		io_read(int fd, void *buf, size_t count);
 extern ssize_t		io_write(int fd, void *buf, size_t count);
