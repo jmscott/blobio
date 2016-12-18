@@ -3,6 +3,14 @@
 #	Root makefile for blobio clients and servers.
 #  Depends:
 #	local.mk, derived from local-<os>.mk.example
+#  Usage:
+#	mkdir -p $HOME/dev
+#	cd $HOME/dev
+#	svn https://github.com/jmscott/blobio
+#	cd blobio/trunk
+#	cp local-<os>.mk.example local.mk
+#	<edit local.mk>
+#	make clean all distclean install
 #  Note:
 #  	Parallel jobs have problems due to incorrection productions.
 #  	In particular,
@@ -106,6 +114,7 @@ ifdef DIST_ROOT
 
 	install -g $(DIST_GROUP) -o $(DIST_USER) -m u=rx,go=	\
 		cron-reboot						\
+		dev-reboot						\
 		$(DIST_ROOT)/sbin
 
 	install -g $(DIST_GROUP) -o $(DIST_USER) -m ug=r,o=		\

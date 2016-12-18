@@ -1,0 +1,32 @@
+#
+#  Synopsis:
+#	Reboot blobio servers (not cron) into cleanish development environment.
+#  Description:
+#	The script 'dev-reboot' establishes a clean development environemtn
+#	for the biod and flowd	servers.  Cronjobs are NOT reset.
+#
+#	Before rebooting all blobio servers, the script dev-reboot kills
+#	biod and flowd processes owned by $USER, copies the example templates
+#	for profile, blobio.flow and psqlrc files into the directory etc/, and
+#	the removes all files the directories in spool/, log/ and run/.
+#  Usage:
+#	cd $HOME/opt/blobio
+#	. bash_login
+#	dev-reboot >dev-reboot.out 2>&1 &
+#  Note:
+#	Simulating cron jobs is tricky.  Investigate integrating with anacron.
+#
+
+pkill -u $USER biod flowd
+
+(
+	echo bloody-bsd-xargs-missing-no-run-if-empty
+	find run spool log -type f
+
+) | xargs rm -vf
+
+cp lib/profile.example etc/profile
+cp lib/psqlrc.example etc/psqlrc
+cp lib/blobio.flow.example etc/blobio.flow
+
+exec cron-reboot $@
