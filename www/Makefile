@@ -2,7 +2,10 @@ include ../local.mk
 
 DIST_WWW=$(DIST_ROOT)/www
 
-all: env blobio
+all: env biod
+clean:
+	rm -f biod biod.d/help.pl
+	rm -f env env.d/help.pl
 
 env: env.cgi
 	cgi2perl5 --source-path env.cgi
@@ -52,6 +55,6 @@ dev-links:
 	test -e cgi-bin || ln -s . cgi-bin
 	test -e lib || ln -s . lib
 
-blobio: blobio.cgi
-	cgi2perl5 --source-path blobio.cgi
-	chmod +x blobio
+biod: biod.cgi
+	cgi2perl5 --source-path biod.cgi
+	chmod +x biod

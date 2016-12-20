@@ -1,15 +1,15 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<cgi name="blobio">
- <title>/cgi-bin/blobio</title>
- <synopsis>HTTP CGI Script /cgi-bin/blobio</synopsis>
+<cgi name="biod">
+ <title>/cgi-bin/biod</title>
+ <synopsis>HTTP CGI Script /cgi-bin/biod</synopsis>
  <subversion id="$Id$" />
  <blame>jmscott</blame>
  <GET>
   <examples>
    <example
-   	query="/cgi-bin/blobio?help"
+   	query="/cgi-bin/biod?help"
    >
-    Generate This Help Page for the CGI Script /cgi-bin/blobio
+    Generate This Help Page for the CGI Script /cgi-bin/biod
    </example>
   </examples>
 

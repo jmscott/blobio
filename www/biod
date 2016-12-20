@@ -1,13 +1,13 @@
 #!/usr/bin/env perl
 #
 #  Synopsis:
-#	Implements argument processing for /cgi-bin/blobio.
+#	Implements argument processing for /cgi-bin/biod.
 #  Source Path:
-#	blobio.cgi
+#	biod.cgi
 #  Source SHA1 Digest:
 #	No SHA1 Calculated
 #  Note:
-#	/cgi-bin/blobio was generated automatically by cgi2perl5.
+#	/cgi-bin/biod was generated automatically by cgi2perl5.
 #
 #	Do not make changes directly to this script.
 #
@@ -23,7 +23,7 @@ unshift @INC, "$ENV{SERVER_ROOT}/lib";
 our (%CGI);
 
 require 'httpd2.d/common.pl';
-$CGI{name} = 'blobio';
+$CGI{name} = 'biod';
 #
 #  Default content type for all elements.
 #
