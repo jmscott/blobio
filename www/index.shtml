@@ -19,8 +19,12 @@
 
  <body class="parent">
   <div class="child">
-   <h1>Welcome to BlobIO Administration</h1>
-  <!--#include virtual="/cgi-bin/blobio?out=table&${QUERY_STRING}" -->
+   <h1>Welcome to BlobIO</h1>
+   <p>
+     In networking technology the word <quot>blob</quot> of bytes is a well
+     defined sequence of bytes
+   </p>
+  <!--#include virtual="/cgi-bin/biod?out=table&${QUERY_STRING}" -->
   </div>
  </body>
 

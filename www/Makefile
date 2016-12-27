@@ -43,6 +43,9 @@ ifdef DIST_ROOT
 		$(DIST_WWW)/lib/env.d
 	install -g $(DIST_GROUP) -o $(DIST_USER) -m ug=r,o=		\
 		apache2-vhost.conf.example				\
+		biod_request_stat-alert-after-group-by-day.sql		\
+		biod_request_stat-success-after-group-by-day.sql	\
+		blobio.rasql						\
 		env.cgi							\
 		$(DIST_WWW)/lib
 	install -g $(DIST_GROUP) -o $(DIST_USER) -m ug=xr,o=		\
