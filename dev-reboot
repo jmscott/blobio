@@ -1,3 +1,4 @@
+#!/bin/bash
 #
 #  Synopsis:
 #	Reboot blobio servers (not cron) into cleanish development environment.
@@ -21,10 +22,13 @@ pkill -u $USER biod flowd
 
 (
 	echo bloody-bsd-xargs-missing-no-run-if-empty
-	find run spool log -type f
+	find run spool log -type f 					|
+		#  don't zap log/dev-reboot.lo
+		fgrep -v log/dev-reboot.log
 
 ) | xargs rm -vf
 
+#  reset configurations
 cp lib/profile.example etc/profile
 cp lib/psqlrc.example etc/psqlrc
 cp lib/blobio.flow.example etc/blobio.flow
