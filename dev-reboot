@@ -10,6 +10,8 @@
 #	biod and flowd processes owned by $USER, copies the example templates
 #	for profile, blobio.flow and psqlrc files into the directory etc/, and
 #	the removes all files the directories in spool/, log/ and run/.
+#
+#	The script must start in the directory $BLOBIO_ROOT
 #  Usage:
 #	cd $HOME/opt/blobio
 #	. bash_login
@@ -18,8 +20,50 @@
 #	Simulating cron jobs is tricky.  Investigate integrating with anacron.
 #
 
+PROG=$(basename $0)
+
+log()
+{
+	echo "$(date +'%Y/%m/%d %H:%M:%S'): $PROG#$$: $@"
+}
+
+die()
+{
+	log "ERROR: $@" >&2
+	exit 1
+}
+
+leave()
+{
+	log 'good bye, cruel world'
+}
+
+reset_etc()
+{
+	log 'resting configs in directory etc/'
+	while [ "$1" ];  do
+		F="$1"
+		shift
+
+		LF=lib/$F.example
+		test -r $LF			|| die "can not read file: $LF"
+
+		EF=etc/$F
+
+		log "copy $LF -> $EF"
+		rm -f $EF			|| die "rm -f $EF failed"
+		cp $LF $EF			|| die "cp $LF $EF failed"
+		chmod +w $EF			|| die "chmod $EF failed"
+	done
+}
+
+log 'hello, world'
+trap leave EXIT
+
+log "killing processes owned by $USER: biod flowd"
 pkill -u $USER biod flowd
 
+log 'zap files in directories: run/ spool/ log/'
 (
 	echo bloody-bsd-xargs-missing-no-run-if-empty
 	find run spool log -type f 					|
@@ -28,9 +72,5 @@ pkill -u $USER biod flowd
 
 ) | xargs rm -vf
 
-#  reset configurations
-cp lib/profile.example etc/profile
-cp lib/psqlrc.example etc/psqlrc
-cp lib/blobio.flow.example etc/blobio.flow
-
-exec cron-reboot $@
+reset_etc profile psqlrc blobio.flow || exit 1
+cron-reboot
