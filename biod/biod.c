@@ -74,6 +74,7 @@ pid_t		logger_pid = 0;
 int		leaving = 0;
 unsigned char	request_exit_status = 0;
 time_t		start_time;	
+u2		rrd_sample_duration = 0;
 
 static char	pid_path[] = "run/biod.pid";
 
@@ -134,7 +135,6 @@ static u8	chat_no3_count =0;	//  ok,ok,no
 static u8	eat_no_count =	0;	//  no occured on eat
 static u8	take_no_count =	0;	//  single no on take
 
-static u2	rrd_sample_duration = 0;
 static char	rrd_log[] = "log/biod-rrd.log";
 
 /*

@@ -34,6 +34,7 @@ extern pid_t		logger_pid;
 extern pid_t		request_pid;
 extern unsigned char	request_exit_status;
 extern time_t		last_log_heartbeat;
+extern u2		rrd_sample_duration;
 extern time_t		start_time;	
 
 pid_t			logged_pid;
@@ -165,11 +166,18 @@ check_log_age()
 	now = localtime(&now_t);
 
 	if (now->tm_wday != log_dow) {
+		char rsd[40];
+
+		snprintf(rsd, sizeof rsd, "%u", rrd_sample_duration);
+		info2("logger: rrd sample duration", rsd);
 		info2("logger: closing log file", log_path);
+
 		open_log_path(1);
 		log_fd = log_path_fd;
+
 		info2("logger: opened new log file", log_path);
 		info2("logger: elapsed running time", server_elapsed());
+		info2("logger: rrd sample duration", rsd);
 	}
 }
 
