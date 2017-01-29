@@ -3,7 +3,7 @@
 #  Synopsis:
 #	Reboot blobio servers (not cron) into cleanish development environment.
 #  Description:
-#	The script 'dev-reboot' establishes a clean development environemtn
+#	The script 'dev-reboot' establishes a clean development environment.
 #	for the biod and flowd	servers.  Cronjobs are NOT reset.
 #
 #	Before rebooting all blobio servers, the script dev-reboot kills
@@ -11,7 +11,10 @@
 #	for profile, blobio.flow and psqlrc files into the directory etc/, and
 #	the removes all files the directories in spool/, log/ and run/.
 #
-#	The script must start in the directory $BLOBIO_ROOT
+#	Since etc/profile is rewritten to the default in lib/profile.example,
+#	the script MUST start in the same directory as the directory
+#	determined by BLOBIO_ROOT in lib/profile.example.
+#	
 #  Usage:
 #	cd $HOME/opt/blobio
 #	. bash_login
