@@ -2,10 +2,22 @@
 #
 #  Synopsis:
 #	Push rrd samples into the table blobio.biod_request_stat
+#  Note:
+#	Race condition exists between the time the log file is renamed
+#	and the insert into the database.  A slightly safer algorithm
+#	would be to sha the frozen log file before and after the put to the db.
+#
+#		FROZEN=biod-rrd-<timestamp>.log
+#		mv biod-rrd.log $FROZEN
+#		sleep FLUSH_PAUSE
+#		SHA1=$(blobio eat $FROZEN)
+#		psql <biod-rrd-<timestamp>.log
+#		SHA2=$(blobio eat $FROZEN)
+#		test $SHA1 = $SHA2 || die
 #
 
 RRD=log/biod-rrd.log
-RRD_PAUSE=1
+FLUSH_PAUSE=${BLOBIO_RRD_FLUSH_PAUSE:=5}
 MERGE_SQL=lib/merge-biod_request_stat.sql
 PSQL='psql --no-psqlrc'
 
@@ -67,8 +79,8 @@ RRD_FROZEN=$(echo $RRD | sed "s/\.log$/-$NOW.log/")
 log "frozen sample file: $RRD_FROZEN"
 mv $RRD $RRD_FROZEN || die "mv $RRD $RRD_FROZEN failed"
 
-log "pause $RRD_PAUSE sec ..."
-sleep $RRD_PAUSE
+log "flush pause $FLUSH_PAUSE sec ..."
+sleep $FLUSH_PAUSE
 
 log "merging new samples with sql $MERGE_SQL"
 $PSQL --file $MERGE_SQL <$RRD_FROZEN || die "psql $MERGE_SQL failed: status=$?"
