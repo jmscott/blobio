@@ -1224,6 +1224,8 @@ rrd_sample()
 	char buf[512];		/* <= PIPE_MAX */
 	time_t now;
 
+	if (rrd_sample_duration == 0)
+		return;
 	/*
 	 *  Request summaries
 	 */
@@ -1671,7 +1673,7 @@ main(int argc, char **argv)
 					die3(o, "sscanf(seconds) failed", hb);
 				rrd_sample_duration = (u2)sec;
 			} else
-				die3(o, "unexpected seconds", hb);
+				die3(o, "unexpected seconds or heartbeat", hb);
 		} else if (strncmp("--", argv[i], 2) == 0)
 			die2("unknown option", argv[i]);
 		else
@@ -1784,7 +1786,7 @@ main(int argc, char **argv)
 		info(buf);
 		info2("rrd log", rrd_log);
 	} else
-		info("rrd sampling disabled");
+		warn("rrd sampling disabled");
 
 	req.verb = 0;
 	req.client_fd = -1;
