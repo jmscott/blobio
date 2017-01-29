@@ -2,6 +2,8 @@
 #
 #  Synopsis:
 #	Unix 'file' command run on a blob
+#  Usage:
+#	xargs bio-file <24hours.udig
 #  Environment Variables:
 #	BLOBIO_SERVICE
 #	BLOBIO_GET_SERVICE
@@ -23,13 +25,9 @@ leave()
 	exit $STATUS
 }
 
-trap leave EXIT
-
-test -n "$BLOBIO_SERVICE" || die 'env variable not defined: BLOBIO_SERVICE'
-SERVICE=${BLOBIO_GET_SERVICE:=$BLOBIO_SERVICE}
-
-while [ "$1" ]; do
-	UDIG="$1";  shift
+_file()
+{
+	UDIG=$1
 
 	#  blobio command will refuse to overwrite existing file
 
@@ -45,11 +43,30 @@ while [ "$1" ]; do
 		;;
 	1)
 		echo "?$UDIG"
-		continue
+		return
 		;;
 	*)
 		die "blob get $SERVICE $UDIG failed: exit status=$STATUS"
 		;;
 	esac
 	echo ">$UDIG	$(file --brief $TMP_FILE | sed 's/	/ /g')"
-done
+}
+
+trap leave EXIT
+
+test -n "$BLOBIO_SERVICE" || die 'env variable not defined: BLOBIO_SERVICE'
+SERVICE=${BLOBIO_GET_SERVICE:=$BLOBIO_SERVICE}
+
+case $# in
+0)
+	while read U;  do
+		_file $U 
+	done
+	;;
+*)
+	while [ "$1" ]; do
+		_file "$1"
+		shift
+	done
+	;;
+esac
