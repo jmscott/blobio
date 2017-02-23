@@ -203,7 +203,12 @@ cache_blob()
 purge_cache()
 {
 	log "purging cache entries older than $CACHE_PURGE_DAYS days ..."
-	find $CACHE_DIR -mtime +$CACHE_PURGE_DAYS -type f -empty -print |
+	find $CACHE_DIR
+		-follow							\
+		-mtime +$CACHE_PURGE_DAYS				\
+		-type f							\
+		-empty							\
+		-print							|
 	  while read F; do
 		log "purge: $F"
 		rm $F || die "purge_cache: rm $F failed: exit status=$?"
