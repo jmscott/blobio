@@ -1,0 +1,38 @@
+#
+#  Synopsis:
+#	Makefile for goyacc.
+#  Description:
+#	Unfortunatly, golang version 1.8 eliminated the yacc tool.  Flowd needs
+#	the go yacc, named 'goyacc' in the main Makefile.  Fortunatly building
+#	the yacc tool is relatively easy.  See the file Makefile.goyacc for
+#	details.
+#
+#	To create the source directory, do
+#
+#		_LOCAL=/usr/local
+#		_SRC=$_LOCAL/src/golang.org/x/tools/cmd/goyacc
+#		mkdir -p $_SRC
+#		cp Makefile.goyacc $_SRC/Makefile
+#
+#		cd $_SRC
+#		#  edit Makefile
+#		Makefile install
+#
+
+LOCAL=/usr/local
+GO=$(LOCAL)/go/bin/go
+REPO=https://raw.githubusercontent.com/golang/tools/master/cmd/goyacc
+
+all: yacc
+
+yacc: update
+	$(GO) build yacc.go doc.go
+
+install: all
+	mv yacc $(LOCAL)/bin/goyacc
+clean:
+	rm -f yacc yacc.go doc.go
+
+update: clean
+	wget --no-check-certificate $(REPO)/yacc.go
+	wget --no-check-certificate $(REPO)/doc.go
