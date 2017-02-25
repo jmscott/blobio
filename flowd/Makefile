@@ -95,7 +95,7 @@ vet: $(GOSRC)
 	go vet $(GOSRC)
 
 parser.go: parser.y
-	go tool yacc -o parser.go parser.y || (rm -f parser.go; exit 1)
+	goyacc -o parser.go parser.y || (rm -f parser.go; exit 1)
 	go fmt parser.go
 
 flowd-execv: flowd-execv.c
