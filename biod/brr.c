@@ -498,10 +498,16 @@ blob2udig_set(char *blob, off_t size, void **udig_set, void **algo_set)
 				error3(n, sn,  ebuf);
 				goto croak;
 			}
-			if (isgraph(c)) {
+			if ('a' <= c&&c < 'z') {
 				udig_start = b - 1;
 				state = IN_ALGORITHM;
 				sn = "IN_ALGORITHM";
+			} else if (isgraph(c)) {
+				snprintf(ebuf, sizeof ebuf,
+				       "first char is not a-z: %c: line #%d",
+					c, line_count);
+				error3(n, sn, ebuf);
+				goto croak;
 			} else {
 				snprintf(ebuf, sizeof ebuf,
 				       "non graphic character: 0x%x: line #%d",
