@@ -36,12 +36,20 @@ void
 tmp_open()
 {
 	BLOBIO_TMPDIR = getenv("BLOBIO_TMPDIR");
+	if (BLOBIO_TMPDIR == NULL)
+		info("env BLOBIO_TMPDIR: not defined");
+	else
+		info2("BLOBIO_TMPDIR", BLOBIO_TMPDIR);
+
 	BLOBIO_TMPDIRS = getenv("BLOBIO_TMPDIRS");
-	if (BLOBIO_TMPDIRS == NULL)
+	if (BLOBIO_TMPDIRS == NULL) {
+		info("env BLOBIO_TMPDIRS: not defined");
 		return;
+	}
 
 	//  maximum length of BLOBIO_TMPDIRS < 4096 (arbitrary).
 
 	if (strlen(BLOBIO_TMPDIRS) >= 4096)
 		panic("env variable BLOBIO_TMPDIRS >= 4096 bytes");
+	info2("BLOBIO_TMPDIRS", BLOBIO_TMPDIRS);
 }
