@@ -18,7 +18,8 @@ OBJS=									\
 	ps_title.o							\
 	req.o								\
 	sha_fs.o							\
-	signal.o
+	signal.o							\
+	tmp.o
 CSRC=									\
 	arbor.c								\
 	biod.c								\
@@ -34,7 +35,8 @@ CSRC=									\
 	ps_title.c							\
 	req.c								\
 	sha_fs.c							\
-	signal.c
+	signal.c							\
+	tmp.c
 SBINs=									\
 	append-brr							\
 	biod								\
@@ -121,6 +123,9 @@ ps_title.o: ps_title.c biod.h
 
 module.o: module.c biod.h
 	$(CC) $(CFLAGS) -c module.c
+
+tmp.o: tmp.c
+	$(CC) $(CFLAGS) -c tmp.c
 
 dev-links:
 	test -e data || ln -s . data
