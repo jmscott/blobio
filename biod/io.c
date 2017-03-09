@@ -150,6 +150,18 @@ again:
 }
 
 int
+io_lstat(const char *path, struct stat *st)
+{
+again:
+	if (lstat(path, st)) {
+		if (errno == EINTR || errno == EAGAIN)
+			goto again;
+		return -1;
+	}
+	return 0;
+}
+
+int
 io_path_exists(char *path)
 {
 	struct stat st;

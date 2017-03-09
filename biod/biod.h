@@ -286,6 +286,7 @@ extern int		io_fstat(int fd, struct stat *buf);
 extern int		io_closedir(DIR *dirp);
 extern int		io_mkdir(const char *pathname, mode_t mode);
 extern int		io_stat(const char *pathname, struct stat *st);
+extern int		io_lstat(const char *pathname, struct stat *st);
 
 extern int		net_accept(
 				int listen_fd, struct sockaddr *addr,
@@ -402,5 +403,11 @@ void		arbor_open();
 void		arbor_close();
 void		arbor_rename(char *tmp_path, char *new_path);
 void		arbor_trim(char *blob_path);
+
+/*
+ *  Map digest prefix ont temp directory on same file system as blob storage.
+ */
+void		tmp_open();
+char *		tmp_get(char *algorithm, char *digest_prefix);
 
 #endif

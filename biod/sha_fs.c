@@ -38,7 +38,6 @@ struct sha_fs_request
 static struct sha_fs_boot
 {
 	char		root_dir_path[MAX_FILE_PATH_LEN];
-	char		tmp_dir_path[MAX_FILE_PATH_LEN];
 } boot_data;
 
 static char nib2hex[] =
@@ -645,13 +644,13 @@ sha_fs_put(struct request *r)
 	char buf[MSG_SIZE];
 
 	/*
-	 *  Open a temporary file in $sha_fs_root/tmp to accumulate the
+	 *  Open a temporary file in tmp to accumulate the
 	 *  blob read from the client.  The file looks like
 	 *
 	 *	[put|give]-time-pid-digest
 	 */
 	snprintf(tmp_path, sizeof tmp_path, "%s/%s-%d-%u-%s",
-					boot_data.tmp_dir_path,
+					tmp_get(r->algorithm, r->digest),
 					r->verb,
 					/*
 					 *  Warning:
@@ -850,13 +849,13 @@ sha_fs_digest(struct request *r, int fd, char *hex_digest, int do_put)
 			drift = 0;
 
 		/*
-		 *  Open a temporary file in $sha_fs_root/tmp to accumulate the
+		 *  Open a temporary file in tmp to accumulate the
 		 *  blob read from the stream.  The file looks like
 		 *
 		 *	digest-time-pid-drift
 		 */
 		snprintf(tmp_path, sizeof tmp_path, "%s/digest-%d-%u-%d",
-						boot_data.tmp_dir_path,
+						tmp_get(r->algorithm,r->digest),
 						/*
 						 *  Warning:
 						 *	Casting time() to int is
@@ -965,15 +964,6 @@ sha_fs_boot()
 	if (_mkdir((struct request *)0, boot_data.root_dir_path, 1))
 		panic("sha: boot: _mkdir(root_dir) failed");
 
-	/*
-	 *  Create the temporary scratch directory data/sha_fs/tmp
-	 */
-	strcpy(boot_data.tmp_dir_path, boot_data.root_dir_path);
-	strcat(boot_data.tmp_dir_path, "/tmp");
-
-	if (_mkdir((struct request *)0, boot_data.tmp_dir_path, 1))
-		panic("sha: boot: _mkdir(tmp) failed");
-	binfo2("sha temporary directory", boot_data.tmp_dir_path);
 	return 0;
 }
 

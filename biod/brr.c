@@ -663,7 +663,8 @@ roll(struct request *r, struct digest_module *mp)
 	/*
 	 *  Open a temporary file to hold the roll list blob sent by the client.
 	 */
-	snprintf(roll_path, sizeof roll_path, "tmp/roll-%d-%u.log",
+	snprintf(roll_path, sizeof roll_path, "%s/roll-%d-%u.log",
+					tmp_get(r->algorithm, r->digest),
 					/*
 					 *  Note:
 					 *	Casting time() to int is
@@ -1032,7 +1033,8 @@ wrap(struct request *r, struct digest_module *mp)
 	 *  Send the udig of the blob set to the client.
 	 */
 	snprintf(wrap_set_path, sizeof wrap_set_path,
-				"tmp/wrap-%ld-%u.udig",
+				"%s/wrap-%ld-%u.udig",
+				tmp_get(r->algorithm, r->digest),
 				time((time_t *)0), getpid()
 	);
 	wrap_set_fd = io_open(wrap_set_path, O_RDWR | O_CREAT,S_IRUSR|S_IWUSR);

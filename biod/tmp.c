@@ -41,118 +41,87 @@
 
 extern char *BLOBIO_ROOT;
 
-static char *TMPDIR = (char *)0;
 static char *BLOBIO_TMPDIR = (char *)0;
 
 struct tmp_map_entry
 {
-	char	algorithm[9];
+	char	digest_algorithm[9];
 	char	digest_prefix[129];
-	char	path[256];
+	size_t	prefix_len;
+	char	path[97];		//  limited by arborist message size
 };
 
-static struct tmp_map_entry *tmp_map;
+static struct tmp_map_entry *tmp_map = 0;
+static char *default_path = 0;
 
 static void
-to_panic(char *msg)
-{
-	panic2("tmp_open", msg);
-}
-
-static void
-to_panic2(char *msg1, char *msg2)
-{
-	char buf[MSG_SIZE];
-
-	log_strcat2(buf, sizeof buf, msg1, msg2);
-	to_panic(buf);
-}
-
-static void
-to_info(char *msg)
+_info(char *msg)
 {
 	info2("tmp_open", msg);
 }
 
 static void
-to_info2(char *msg1, char *msg2)
+_info2(char *msg1, char *msg2)
 {
 	char buf[MSG_SIZE];
 
 	log_strcpy2(buf, sizeof buf, msg1, msg2);
-	to_info(buf);
+	_info(buf);
 }
 
 static void
-td_panic(char *msg)
+_panic(char *msg)
 {
-	to_panic2("BLOBIO_TMPDIR_MAP", msg);
+	panic2("tmp_open", msg);
 }
 
 static void
-td_panic2(char *msg1, char *msg2)
+_panic2(char *msg1, char *msg2)
 {
 	char buf[MSG_SIZE];
 
 	log_strcpy2(buf, sizeof buf, msg1, msg2);
 
-	td_panic(buf);
+	_panic(buf);
 }
+
+//  make the table to map the digest prefix onto a temp directory
 
 static void
-tm_info(char *msg)
-{
-	to_info2("BLOBIO_TMPDIR_MAP", msg);
-}
-
-/*
- *  Parse env variables BLOBIO_TMPDIR_MAP and BLOBIO_TMPDIR
- */
-void
-tmp_open()
+make_map()
 {
 	char *BLOBIO_TMPDIR_MAP;
-	char tm[4096];
+	char tm[4096], buf[MSG_SIZE];
 
-	int tab_count, path_count, i;
+	int tab_count = 0, path_count = 0, i;
 	char *p;
-
-	TMPDIR = getenv("TMPDIR");
-	if (TMPDIR == NULL)
-		to_info("environment variable not defined");
-	else
-		to_info2("env TMPDIR", TMPDIR);
-
-	BLOBIO_TMPDIR = getenv("BLOBIO_TMPDIR");
-	if (BLOBIO_TMPDIR == NULL)
-		to_info("env BLOBIO_TMPDIR: not defined");
-	else
-		to_info2("BLOBIO_TMPDIR", BLOBIO_TMPDIR);
 
 	BLOBIO_TMPDIR_MAP = getenv("BLOBIO_TMPDIR_MAP");
 	if (BLOBIO_TMPDIR_MAP == NULL) {
-		tm_info("not defined");
+		_info("not defined");
 		return;
 	}
 
 	//  maximum length of BLOBIO_TMPDIR_MAP < 4096 (arbitrary).
 
 	if (strlen(BLOBIO_TMPDIR_MAP) >= 4096)
-		td_panic("env value >= 4096 bytes");
-	info2("BLOBIO_TMPDIR_MAP", BLOBIO_TMPDIR_MAP);
+		_panic("env value >= 4096 bytes");
+	_info2("BLOBIO_TMPDIR_MAP", BLOBIO_TMPDIR_MAP);
 	strcpy(tm, BLOBIO_TMPDIR_MAP);
 
 	//  verify an odd number of tab chars and replace \t char with null
 
 	p = tm;
-	for (tab_count = 0;  p != NULL;  (p = strchr(p, '\t'))) {
-		tab_count++;
-		*p = 0;
-	}
+
+	while (p != NULL)
+		if ((p = strchr(p, '\t'))) {
+			tab_count++;
+			*p++ = 0;
+		}
 	if (tab_count == 0)
-		td_panic2("no tabs in value", tm);
+		_panic2("no tabs in $BLOBIO_TMPDIR_MAP", tm);
 	if (tab_count % 2 == 0)
-		td_panic2("even number of tab chars", tm);
+		_panic2("even number of tab chars in $BLOBIO_TMPDIR_MAP", tm);
 
 	//  verify that each algorithm exists and the digest is well formed.
 	//  replace ':' with null.
@@ -164,22 +133,24 @@ tmp_open()
 		//  find colon that terminates <algorithm>
 		q = strchr(p, ':');
 		if (q == NULL)
-			td_panic2("no colon after algorithm", tm);
+			_panic2("no colon after digest algorithm", tm);
 		if (q - p > 8)
-			td_panic2("algorithm > 8 bytes", tm);
+			_panic2("digest algorithm > 8 bytes", tm);
 
 		// replace colon with null
 
 		*q++ = 0;
 
 		if (module_get(p) == NULL)
-			td_panic2("unknown digest algorithm", p);
+			_panic2("unknown digest algorithm", p);
 
+		if (strlen(q) == 0)
+			_panic("digest prefix == 0");
 		/*
 		 *  insure prefix is <= 128 bytes.
 		 */
 		if (strlen(q) > 128)
-			td_panic2("digest prefix > 128 bytes", q);
+			_panic2("digest prefix > 128 bytes", q);
 
 		/*
 		 *  insure each character in digest prefix is graphable.
@@ -196,7 +167,7 @@ tmp_open()
 				continue;
 			b[0] = c;
 			b[1] = 0;
-			td_panic2("digest prefix contains no-graphic char", b);
+			_panic2("digest prefix contains no-graphic char", b);
 		}
 
 		p = q;
@@ -212,13 +183,13 @@ tmp_open()
 	 */
 	path_count = (tab_count + 1) / 2;
 	tmp_map = (struct tmp_map_entry *)malloc(
-					sizeof *tmp_map * path_count + 1);
+					sizeof *tmp_map * (path_count + 1));
 	if (tmp_map == NULL)
-		td_panic("malloc(tmp_map) failed");
+		_panic("malloc(tmp_map) failed");
 
 	//  null terminate the algorithm of final entry
 
-	tmp_map[path_count].algorithm[0] = 0;
+	tmp_map[path_count].digest_algorithm[0] = 0;
 
 	//  build the full tmp_map by walking through the null terminated
 	//  values of $BLOBIO_TMPDIR_MAP
@@ -226,17 +197,71 @@ tmp_open()
 	p = tm;
 	i = 0;
 	while (*p) {
-		strcpy(tmp_map[i].algorithm, p);
-		p += strlen(p);
+		strcpy(tmp_map[i].digest_algorithm, p);
+		p += strlen(p) + 1;
 
 		strcpy(tmp_map[i].digest_prefix, p);
-		p += strlen(p);
+		p += strlen(p) + 1;
 
+		if (strlen(tmp_map[i].path) > 96)
+			_panic2("path > 96 characters", tmp_map[i].path);
 		strcpy(tmp_map[i].path, p);
-		p += strlen(p);
+		p += strlen(p) + 1;
+
+		tmp_map[i].prefix_len = strlen(tmp_map[i].digest_prefix);
 
 		i++;
 	}
 	if (i != path_count)
-		td_panic("make tmp_map: count != path_count");
+		_panic("count != path_count");
+	snprintf(buf, sizeof buf, "putting %d temp maps", path_count);
+	_info(buf);
+	for (i = 0;  i < path_count;  i++) {
+		_info2("	digest algorithm", tmp_map[i].digest_algorithm);
+		_info2("	digest prefix", tmp_map[i].digest_prefix);
+		_info2("	tmp path", tmp_map[i].path);
+	}
+}
+
+/*
+ *  Parse env variables BLOBIO_TMPDIR_MAP and BLOBIO_TMPDIR
+ */
+void
+tmp_open()
+{
+	make_map();
+
+	BLOBIO_TMPDIR = getenv("BLOBIO_TMPDIR");
+	if (BLOBIO_TMPDIR == NULL) {
+		_info("env BLOBIO_TMPDIR: not defined");
+		default_path = "tmp";
+	} else {
+		default_path = BLOBIO_TMPDIR;
+		_info2("BLOBIO_TMPDIR", BLOBIO_TMPDIR);
+	}
+	_info2("default temp path", default_path);
+	if (!io_path_exists(default_path))
+		_panic2("tmp path does not exist", default_path);
+}
+
+static int
+tmp_cmp(struct tmp_map_entry *tm, char *digest_algorithm, char *digest_prefix)
+{
+	return strcmp(digest_algorithm, tm->digest_algorithm) == 0 &&
+	       strncmp(digest_prefix, tm->digest_prefix, tm->prefix_len) == 0
+	;
+}
+
+char *
+tmp_get(char *digest_algorithm, char *digest_prefix)
+{
+	struct tmp_map_entry *tm;
+
+	if ((tm = tmp_map))
+		while (tm->digest_algorithm[0]) {
+			if (tmp_cmp(tm, digest_algorithm, digest_prefix))
+				return tm->path;
+			tm++;
+		}
+	return default_path;
 }

@@ -1726,6 +1726,8 @@ main(int argc, char **argv)
 	if (module_boot())
 		die("modules_boot() failed");
 
+	tmp_open();
+
 	brr_open();
 	snprintf(buf, sizeof buf, "brr logger process id: %u", brr_logger_pid);
 	info(buf);

@@ -1,6 +1,9 @@
 /*
  *  Synopsis:
  *  	Process to manage file system rename and take requests.
+ *
+ *	The arborist stops searching at a symbolic link in the path.
+ *	Ought to follow the symbolic links.
  */
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -114,6 +117,7 @@ trim_blob_dir(char *dir_path)
 	char *slash;
 	static char nm[] = "trim_blob_dir";
 	int count = 0;
+	struct stat st;
 
 	/*
 	 *   Start at the deepest directory.
@@ -135,6 +139,19 @@ zap:
 	if (slash == (char *)0)
 		return count;
 	*slash = 0;
+
+	//  is the new directory a true directory.
+	if (io_lstat(dir_path, &st) != 0)
+		panic4(nm, "stat() failed", strerror(errno), dir_path);
+
+	/*
+	 *  Stop searching at symbolic link
+	 *
+	 *  Note:
+	 *	This is broken.  Ought to follow the symbolic link.
+	 */
+	if (S_ISLNK(st.st_mode))
+		return count;
 	goto zap;
 }
 
