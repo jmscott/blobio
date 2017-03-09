@@ -218,7 +218,8 @@ purge_cache()
 	test "$STATUS" = '0 0' ||
 		die "find cache | rm failed: exit status=$STATUS"
 	log "counting cache entries in $CACHE_DIR ..."
-	log "entry count: $(find $CACHE_DIR -type f | wc -l | awk '{print $1}')"
+	EC=$(find $CACHE_DIR -follow -type f | wc -l | awk '{print $1}')
+	log "entry count: $EC"
 }
 
 #

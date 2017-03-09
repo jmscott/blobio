@@ -69,7 +69,7 @@ pkill -u $USER biod flowd
 log 'zap files in directories: run/ spool/ log/'
 (
 	echo bloody-bsd-xargs-missing-no-run-if-empty
-	find run spool log -type f 					|
+	find run spool log -type f -follow				|
 		#  don't zap log/dev-reboot.lo
 		fgrep -v log/dev-reboot.log
 
