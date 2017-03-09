@@ -221,6 +221,8 @@ extern void	panic4(char *msg1, char *msg2, char *msg3, char *msg4);
 
 /*
  *  Event logging to log/biod.log, defined in log.c
+ *  Most important are the log_str* functions, which known about limits
+ *  on buffers imposed by #define MSG_SIZE.
  */
 extern void	log_close();
 extern void	log_open();
