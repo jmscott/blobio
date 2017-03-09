@@ -269,7 +269,7 @@ arbor_close()
 	int fd;
 	static char nm[] = "arbor_close";
 
-	if (arbor_fd < -1)
+	if (arbor_fd < 0)
 		return;
 	fd = arbor_fd;
 	arbor_fd = -1;
