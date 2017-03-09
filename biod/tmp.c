@@ -22,7 +22,8 @@
  *	The <path> must start with / .  If no match occurs, then $BLOBIO_TMPDIR
  *	will be tried, followed by $BLOBIO_ROOT/tmp.
  *  Note:
- *	This whole code is kind of a hack for casual users.
+ *	The tmp.c code is kind of a hack for casual users who don't use
+ *	volume mangers.
  *
  *	Only ascii file paths are understood, which is wrong.
  *
@@ -31,6 +32,10 @@
  *	Need to verify that the <prefix> in BLOBIO_TMPDIR_MAP is correct
  *	for the algorithm.  In other words, need to add to module the callback
  *	is_prefix(prefix).
+ *
+ *	The TMPDIR variable is ignored and defaults to $BLOBIO_ROOT.  Why? 
+ *
+ *	Also, probably need cross volume tests on startup.
  */
 #include <ctype.h>
 #include <stdlib.h>
