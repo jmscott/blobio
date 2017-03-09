@@ -1705,6 +1705,7 @@ main(int argc, char **argv)
 	BLOBIO_ROOT = getenv("BLOBIO_ROOT");
 	if (BLOBIO_ROOT == (char *)0)
 		die("environment variable BLOBIO_ROOT not defined");
+	info2("BLOBIO_ROOT", BLOBIO_ROOT);
 	/*
 	 *  Goto $BLOBIO_ROOT directory.
 	 */
