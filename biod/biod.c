@@ -4,6 +4,8 @@
  *  Note:
  *	Signal handling needs to be pushed to main listen loop or cleaned
  *	up with sigaction().
+ *
+ *	Need to enumerate all the environment variables upon boot up.
  */
 #include <sys/stat.h>
 #include <ctype.h>
