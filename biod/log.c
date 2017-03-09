@@ -20,6 +20,8 @@
  *		502 12157 12155   0 10:45AM ttys000    0:00.01 biod-logger
  *
  *	Why?  All other processes are unbound from a terminal.
+ *
+ *	Should the log_* functions be renamed as buf_*?
  */
 #include <sys/stat.h>
 #include <fcntl.h>
