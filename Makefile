@@ -138,3 +138,6 @@ dev-links:
 	test -e htdocs || ln -s . htdocs
 	test -e cgi-bin || ln -s . cgi-bin
 	test -e lib || ln -s . lib
+
+world:
+	make clean all distclean install
