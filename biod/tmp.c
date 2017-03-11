@@ -99,7 +99,7 @@ make_map()
 	char tm[4096], buf[MSG_SIZE];
 
 	int tab_count = 0, path_count = 0, i;
-	char *p;
+	char *p, *p_end;
 
 	BLOBIO_TMPDIR_MAP = getenv("BLOBIO_TMPDIR_MAP");
 	if (BLOBIO_TMPDIR_MAP == NULL) {
@@ -117,7 +117,6 @@ make_map()
 	//  verify an odd number of tab chars and replace \t char with null
 
 	p = tm;
-
 	while (p != NULL)
 		if ((p = strchr(p, '\t'))) {
 			tab_count++;
@@ -132,7 +131,8 @@ make_map()
 	//  replace ':' with null.
 
 	p = tm;
-	while (*p) {
+	p_end = tm + strlen(BLOBIO_TMPDIR_MAP);
+	while (p < p_end) {
 		char *q;
 
 		//  find colon that terminates <algorithm>
@@ -179,7 +179,7 @@ make_map()
 	}
 
 	/*
-	 *  In the copy of BLOBIO_TMPDIR_MAP both \t and colon have been
+	 *  In the copy of BLOBIO_TMPDIR_MAP (var tm) both \t and colon have been
 	 *  replace with null strings.
 	 *
 	 *	<algo>\0<prefix1>\0<path1>\0<algo>\0<prefix2>\0<path2> ...
@@ -201,7 +201,7 @@ make_map()
 
 	p = tm;
 	i = 0;
-	while (*p) {
+	while (p < p_end) {
 		strcpy(tmp_map[i].digest_algorithm, p);
 		p += strlen(p) + 1;
 
