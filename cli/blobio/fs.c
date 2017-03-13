@@ -284,7 +284,7 @@ fs_put(int *ok_no)
 	if (errno != ENOENT)
 		return strerror(errno);
 
-	//  try to link the target blob to the existing source blob
+	//  try to hard link the target blob to the existing source blob
 
 	if (input_path) {
 		if (uni_link(input_path, fs_path) == 0 || errno == EEXIST) {
@@ -294,7 +294,7 @@ fs_put(int *ok_no)
 
 		if (errno != EXDEV)
 			return strerror(errno);
-	} else
+	}
 
 	//  build path to temporary file which will accumulate the blob.
 
