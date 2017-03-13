@@ -96,10 +96,11 @@ static void
 make_map()
 {
 	char *BLOBIO_TMPDIR_MAP;
-	char tm[4096], buf[MSG_SIZE];
+	char tm[4096], *tm_end;
+	char buf[MSG_SIZE];
 
 	int tab_count = 0, path_count = 0, i;
-	char *p, *p_end;
+	char *p;
 
 	BLOBIO_TMPDIR_MAP = getenv("BLOBIO_TMPDIR_MAP");
 	if (BLOBIO_TMPDIR_MAP == NULL) {
@@ -113,6 +114,7 @@ make_map()
 		_panic("env value >= 4096 bytes");
 	_info2("BLOBIO_TMPDIR_MAP", BLOBIO_TMPDIR_MAP);
 	strcpy(tm, BLOBIO_TMPDIR_MAP);
+	tm_end = tm + strlen(BLOBIO_TMPDIR_MAP);
 
 	//  verify an odd number of tab chars and replace \t char with null
 
@@ -131,8 +133,7 @@ make_map()
 	//  replace ':' with null.
 
 	p = tm;
-	p_end = tm + strlen(BLOBIO_TMPDIR_MAP);
-	while (p < p_end) {
+	while (p < tm_end) {
 		char *q;
 
 		//  find colon that terminates <algorithm>
@@ -149,8 +150,10 @@ make_map()
 		if (module_get(p) == NULL)
 			_panic2("unknown digest algorithm", p);
 
+		//  tab was replaced with null char
 		if (strlen(q) == 0)
 			_panic("digest prefix == 0");
+
 		/*
 		 *  insure prefix is <= 128 bytes.
 		 */
@@ -174,13 +177,14 @@ make_map()
 			b[1] = 0;
 			_panic2("digest prefix contains no-graphic char", b);
 		}
+		q++;
 
-		p = q;
+		p = q + strlen(q) + 1;	//  start of next entry or null
 	}
 
 	/*
-	 *  In the copy of BLOBIO_TMPDIR_MAP (var tm) both \t and colon have been
-	 *  replace with null strings.
+	 *  In the copy of BLOBIO_TMPDIR_MAP (var tm) both \t and colon have
+	 *  been replaced with null strings, yielding:
 	 *
 	 *	<algo>\0<prefix1>\0<path1>\0<algo>\0<prefix2>\0<path2> ...
 	 *
@@ -201,7 +205,7 @@ make_map()
 
 	p = tm;
 	i = 0;
-	while (p < p_end) {
+	while (p < tm_end) {
 		strcpy(tmp_map[i].digest_algorithm, p);
 		p += strlen(p) + 1;
 
@@ -219,6 +223,8 @@ make_map()
 	}
 	if (i != path_count)
 		_panic("count != path_count");
+
+	//  log the temp maps.
 	snprintf(buf, sizeof buf, "putting %d temp maps", path_count);
 	_info(buf);
 	for (i = 0;  i < path_count;  i++) {
