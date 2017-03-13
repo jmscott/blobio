@@ -145,3 +145,5 @@ distclean:
 	cd $(DIST_ROOT)/src && rm -f $(CSRC)
 	cd $(DIST_ROOT)/sbin && rm -f $(SBINs)
 	cd $(DIST_ROOT)/lib && rm -f $(LIBs)
+world:
+	make clean all distclean install
