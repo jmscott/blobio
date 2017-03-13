@@ -16,7 +16,7 @@ OBJS=			\
 	service.o	\
 	sha.o		\
 	trace.o		\
-	unistd.o
+	uni.o
 
 all: blobio
 
@@ -37,7 +37,7 @@ install: all
 		service.c						\
 		sha.c							\
 		trace.c							\
-		unistd.c						\
+		uni.c							\
 		$(DIST_ROOT)/src/blobio
 
 blobio: blobio.o $(OBJS) ../../sha1/sha1.c
@@ -62,5 +62,5 @@ service.o: service.c blobio.h
 	$(CC) $(CFLAGS) -c service.c
 trace.o: trace.c blobio.h
 	$(CC) $(CFLAGS) -c trace.c
-unistd.o: unistd.c blobio.h
-	$(CC) $(CFLAGS) -c unistd.c
+uni.o: uni.c blobio.h
+	$(CC) $(CFLAGS) -c uni.c
