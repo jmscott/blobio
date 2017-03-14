@@ -18,6 +18,9 @@
  *	--input-path <path/to/file>
  *	--output-path <path/to/file>
  *  Note:
+ *	Hanging blobio's processes are (rarely) seen on Mac OSX 10.12.3,
+ *	implying timeouts are STILL not executing correctly.
+ *
  *  	Options desperately need to be folding into a data structure.
  *  	We refuse to use getopts.
  *
