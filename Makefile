@@ -67,7 +67,7 @@ endif
 install: all
 ifdef PREFIX
 	echo "Installing to $(PREFIX)"
-	test -d $(PREFIX)/bin && cp cli/blobio $(PREFIX)/bin
+	test -d $(PREFIX)/bin && cp cli/blobio/blobio $(PREFIX)/bin
 endif
 
 	#  setup the directories
