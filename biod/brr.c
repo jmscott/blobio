@@ -954,6 +954,9 @@ wrap(struct request *r, struct digest_module *mp)
 	 *  Send request to the brr logger process.
 	 *  The length of exactly 25 chars triggers the brr wrapper process
 	 *  to freeze the spool/biod.brr file
+	 *
+	 *  Note:
+	 *	Why use magic of 25 chars?
 	 */
 	if (io_msg_write(log_fd, fifo_path, 25) < 0)
 		panic3(n, "write(log) failed", strerror(errno));
@@ -998,7 +1001,7 @@ wrap(struct request *r, struct digest_module *mp)
 	 *  Call the module to generate a digest for the stream of the
 	 *  wrapped brr log file.
 	 */
-	err = (*mp->digest)(r, frozen_fd, frozen_udig + strlen(frozen_udig),1);
+	err = (*mp->digest)(r, frozen_fd, frozen_udig + strlen(frozen_udig));
 	if (io_close(frozen_fd))
 		panic4(n, frozen_path, "close(frozen brr) failed",
 							strerror(errno));
@@ -1120,7 +1123,7 @@ wrap(struct request *r, struct digest_module *mp)
 	 *  Digest the temporary wrapped set of udigs.
 	 */
 	err = (*mp->digest)(r, wrap_set_fd,
-				wrap_set_udig + strlen(wrap_set_udig), 1);
+				wrap_set_udig + strlen(wrap_set_udig));
 	if (io_close(wrap_set_fd))
 		panic4(n, wrap_set_path, "close(wrap set) failed",
 							strerror(errno));

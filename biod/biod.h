@@ -170,7 +170,7 @@ struct digest_module
 	 *  Digest a local stream up to EOF and copy text digest as c string to
 	 *  memory referenced by char *digest.
 	 */
-	int	(*digest)(struct request *, int fd, char *digest, int do_put);
+	int	(*digest)(struct request *, int fd, char *digest);
 
 	/*
 	 *  Write a local blob to a local stream and return 0 if blob exists

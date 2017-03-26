@@ -831,7 +831,7 @@ sha_fs_give_reply(struct request *r, char *reply)
  *  Digest a local blob stream and store the digested blob.
  */
 static int
-sha_fs_digest(struct request *r, int fd, char *hex_digest, int do_put)
+sha_fs_digest(struct request *r, int fd, char *hex_digest)
 {
 	char unsigned buf[4096], digest[20], *d, *d_end;
 	char *h;
@@ -840,43 +840,41 @@ sha_fs_digest(struct request *r, int fd, char *hex_digest, int do_put)
 	int tmp_fd = -1;
 	char tmp_path[MAX_FILE_PATH_LEN];
 	int status = 0;
+	static int drift = 0;
 
 	tmp_path[0] = 0;
-	if (do_put) {
-		static int drift = 0;
 
-		if (drift++ >= 999)
-			drift = 0;
+	if (drift++ >= 999)
+		drift = 0;
 
-		/*
-		 *  Open a temporary file in tmp to accumulate the
-		 *  blob read from the stream.  The file looks like
-		 *
-		 *	digest-time-pid-drift
-		 */
-		snprintf(tmp_path, sizeof tmp_path, "%s/digest-%d-%u-%d",
-						tmp_get(r->algorithm,r->digest),
-						/*
-						 *  Warning:
-						 *	Casting time() to int is
-						 *	incorrect!!
-						 */
-						(int)time((time_t *)0),
-						getpid(), drift);
-		/*
-		 *  Open the file ... need O_LARGEFILE support!!
-		 *  Need to catch EINTR!!!!
-		 */
-		tmp_fd = io_open(tmp_path, O_CREAT|O_EXCL|O_WRONLY|O_APPEND,
-								S_IRUSR);
-		if (tmp_fd < 0)
-			_panic3(r, "digest: open(tmp) failed", tmp_path,
-							strerror(errno));
-	}
+	/*
+	 *  Open a temporary file in tmp to accumulate the
+	 *  blob read from the stream.  The file looks like
+	 *
+	 *	digest-time-pid-drift
+	 */
+	snprintf(tmp_path, sizeof tmp_path, "%s/digest-%d-%u-%d",
+					tmp_get(r->algorithm,r->digest),
+					/*
+					 *  Warning:
+					 *	Casting time() to int is
+					 *	incorrect!!
+					 */
+					(int)time((time_t *)0),
+					getpid(), drift);
+	/*
+	 *  Open the file ... need O_LARGEFILE support!!
+	 *  Need to catch EINTR!!!!
+	 */
+	tmp_fd = io_open(tmp_path, O_CREAT|O_EXCL|O_WRONLY|O_APPEND,
+							S_IRUSR);
+	if (tmp_fd < 0)
+		_panic3(r, "digest: open(tmp) failed", tmp_path,
+						strerror(errno));
 	blk_SHA1_Init(&ctx);
 	while ((nread = io_read(fd, buf, sizeof buf)) > 0) {
 		blk_SHA1_Update(&ctx, buf, nread);
-		if (do_put && io_write_buf(tmp_fd, buf, nread) != 0)
+		if (io_write_buf(tmp_fd, buf, nread) != 0)
 			_panic2(r, "digest: write_buf(tmp) failed",
 						strerror(errno));
 	}
@@ -886,12 +884,10 @@ sha_fs_digest(struct request *r, int fd, char *hex_digest, int do_put)
 	}
 	blk_SHA1_Final(digest, &ctx);
 
-	if (do_put) {
-		status = io_close(tmp_fd);
-		tmp_fd = -1;
-		if (status)
-			_panic2(r,"digest: close(tmp) failed",strerror(errno));
-	}
+	status = io_close(tmp_fd);
+	tmp_fd = -1;
+	if (status)
+		_panic2(r,"digest: close(tmp) failed",strerror(errno));
 
 	/*
 	 *  Convert the binary sha digest to text.
@@ -909,12 +905,10 @@ sha_fs_digest(struct request *r, int fd, char *hex_digest, int do_put)
 	/*
 	 *  Move the blob from the temporary file to the blob file.
 	 */
-	if (do_put) {
-		blob_path(r, hex_digest);
-		arbor_rename(tmp_path,
-			((struct sha_fs_request *)r->open_data)->blob_path);
-		tmp_path[0] = 0;
-	}
+	blob_path(r, hex_digest);
+	arbor_rename(tmp_path,
+		((struct sha_fs_request *)r->open_data)->blob_path);
+	tmp_path[0] = 0;
 
 	goto cleanup;
 croak:
