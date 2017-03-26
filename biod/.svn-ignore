@@ -27,4 +27,5 @@ sha_fs
 sha_fs.o
 signal.o
 tmp
+tmp.o
 wrap
