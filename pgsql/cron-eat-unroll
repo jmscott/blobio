@@ -203,7 +203,7 @@ cache_blob()
 purge_cache()
 {
 	log "purging cache entries older than $CACHE_PURGE_DAYS days ..."
-	find $CACHE_DIR
+	find $CACHE_DIR							\
 		-follow							\
 		-mtime +$CACHE_PURGE_DAYS				\
 		-type f							\
