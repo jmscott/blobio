@@ -4,6 +4,9 @@
  *
  *	The arborist stops searching at a symbolic link in the path.
  *	Ought to follow the symbolic links.
+ *  Note:
+ *	Need to document why move() and rename() are not combined into
+ *	single call.
  */
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -23,6 +26,7 @@ static int
 make_path(char *path)
 {
 	//  group can search but not scan directory 
+
 	if (io_mkdir(path, S_IRWXU | S_IXGRP)) {
 		char buf[MSG_SIZE];
 		int err = errno;
@@ -38,7 +42,7 @@ make_path(char *path)
 }
 
 static void
-rename_blob(char *reply_path, char *old_path, char *new_path)
+rename_blob(char *reply_path, char *src_path, char *tgt_path)
 {
 	char *slash, *p;
 	int reply_fd;
@@ -53,12 +57,12 @@ rename_blob(char *reply_path, char *old_path, char *new_path)
 	}
 
 	/*
-	 *  Make the full directory path to the new blob.
+	 *  Make the full directory path to the target blob.
 	 */
-	p = new_path;
+	p = tgt_path;
 	while ((slash = index(p, '/'))) {
 		*slash = 0;
-		reply = make_path(new_path);
+		reply = make_path(tgt_path);
 		*slash = '/';
 		if (reply)
 			goto bye;
@@ -66,14 +70,14 @@ rename_blob(char *reply_path, char *old_path, char *new_path)
 	}
 
 	/*
-	 *  Move the blob to the new directory.
+	 *  Move the blob to the target directory.
 	 */
-	if (io_rename(old_path, new_path)) {
+	if (io_rename(src_path, tgt_path)) {
 		int err = errno;
 		char buf[MSG_SIZE];
 
 		snprintf(buf, sizeof buf, "rename(%s, %s) failed: %s",
-					old_path, new_path, strerror(err));
+					src_path, tgt_path, strerror(err));
 		error2(nm, buf);
 		reply = 1;
 		goto bye;
@@ -82,12 +86,172 @@ rename_blob(char *reply_path, char *old_path, char *new_path)
 	/*
 	 *  Set the blob read only for user/group.
 	 */
-	if (io_chmod(new_path, S_IRUSR | S_IRGRP)) {
+	if (io_chmod(tgt_path, S_IRUSR | S_IRGRP)) {
 		int err = errno;
 		char buf[MSG_SIZE];
 
 		snprintf(buf, sizeof buf, "readonly chmod(%s) failed: %s",
-					new_path, strerror(err));
+					tgt_path, strerror(err));
+		error2(nm, buf);
+		reply = 1;
+	}
+
+bye:
+	/*
+	 *  Always reply to requesting process so they can properly reply with
+	 *  an error to the client.  Note, we have a race condition because the
+	 *  panic() implies that the master biod process may simply shutdown the
+	 *  request process before the request has a chance to reply to the
+	 *  client.  That's ok, since the client still never gets ok, implying
+	 *  the blob was not put properly.
+	 */
+	if (reply_fd >= 0) {
+		if (io_msg_write(reply_fd, &reply, 1) < 0)
+			panic3(nm, "write(reply fifo) failed", strerror(errno));
+		if (io_close(reply_fd))
+			panic3(nm, "close(reply fifo) failed", strerror(errno));
+	}
+
+	if (reply)
+		panic2(nm, "aborist process replied with failure");
+}
+
+/*
+ *  Do unix "mv" command.
+ */
+int
+_move(char *src_path, char *tgt_path)
+{
+	static char n[] = "move";
+	struct stat src_st, tgt_st;
+	int src_fd = -1, tgt_fd = -1;
+	char buf[MSG_SIZE];
+	int nr;
+	int ret = 0;
+
+	if (io_stat(src_path, &src_st)) {
+		error4(n, "stat(source path) failed", strerror(errno),src_path);
+		goto croak;
+	}
+
+	if (io_stat(tgt_path, &tgt_st)) {
+		error4(n, "stat(target) failed", strerror(errno), tgt_path);
+		goto croak;
+	}
+	
+	/*
+	 *  Files on same device, so just rename.
+	 */
+	if (src_st.st_dev == tgt_st.st_dev) {
+		int err;
+
+		if (io_rename(src_path, tgt_path) == 0)
+			goto bye;
+
+		err = errno;
+		error3(n, "source path", src_path);
+		error3(n, "target path", tgt_path);
+		error3(n, "rename(source, target) failed", strerror(err));
+
+		goto croak;
+	}
+
+	/*
+	 *  Files on different device, so copy source to target.
+	 *
+	 *  Note:
+	 *	Use splice() under linux!
+	 */
+	src_fd = io_open(src_path, O_RDONLY, 0);
+	if (src_fd < 0) {
+		error4(n, "open(source) failed", strerror(errno), src_path);
+		goto croak;
+	}
+
+	tgt_fd = io_open_append(tgt_path, 0);
+	if (tgt_fd < 0) {
+		error4(n, "open(target) failed", strerror(errno), tgt_path);
+		goto croak;
+	}
+
+	/*
+	 *  Copy the source file to the target file.
+	 */
+
+	while ((nr = io_read(src_fd, buf, sizeof buf)) > 0)
+		if (io_write_buf(tgt_fd, buf, nr) < 0) {
+			error4(n, "write_buf(target) failed", strerror(errno),
+								tgt_path);
+			goto croak;
+		}
+	if (nr < 0) {
+		error4(n, "read(source) failed", strerror(errno), src_path);
+		goto croak;
+	}
+
+croak:
+	ret = -1;
+bye:
+	if (src_fd > -1 && io_close(tgt_fd)) {
+		error4(n, "close(source) failed", strerror(errno), src_path);
+		ret = -1;
+	}
+	if (tgt_fd > -1 && io_close(tgt_fd)) {
+		error4(n, "close(target) failed", strerror(errno), tgt_path);
+		ret = -1;
+	}
+	if (ret == 0 && io_unlink(src_path)) {
+		error4(n, "unlink(source) failed", strerror(errno), src_path);
+		ret = -1;
+	}
+
+	return ret;
+}
+
+static void
+move_blob(char *reply_path, char *src_path, char *tgt_path)
+{
+	char *slash, *p;
+	int reply_fd;
+	unsigned char reply = 0;
+	static char nm[] = "move_blob";
+
+	reply_fd = io_open(reply_path, O_WRONLY, 0);
+	if (reply_fd < 0) {
+		error3(nm, "open(reply fifo) failed", strerror(errno));
+		reply = 1;
+		goto bye;
+	}
+
+	/*
+	 *  Make the full directory path to the target blob.
+	 */
+	p = tgt_path;
+	while ((slash = index(p, '/'))) {
+		*slash = 0;
+		reply = make_path(tgt_path);
+		*slash = '/';
+		if (reply)
+			goto bye;
+		p = slash + 1;
+	}
+
+	//  move the blob file, possible doing a copy across file systems.
+
+	if (_move(src_path, tgt_path)) {
+		reply = 1;
+		goto bye;
+	}
+
+	/*
+	 *  Set the blob read only for user/group.
+	 */
+	if (io_chmod(tgt_path, S_IRUSR | S_IRGRP)) {
+		int err = errno;
+		char buf[MSG_SIZE];
+
+		snprintf(buf, sizeof buf, "readonly chmod(%s) failed: %s",
+					tgt_path, strerror(err));
 		error2(nm, buf);
 		reply = 1;
 	}
@@ -141,7 +305,7 @@ zap:
 		return count;
 	*slash = 0;
 
-	//  is the new directory a true directory.
+	//  is the target directory a true directory.
 	if (io_lstat(dir_path, &st) != 0)
 		panic4(nm, "stat() failed", strerror(errno), dir_path);
 
@@ -161,6 +325,7 @@ arborist(int request_fd)
 {
 	ssize_t status;
 	struct io_message request;
+	char c;
 
 	static char nm[] = "arborist";
 
@@ -169,6 +334,7 @@ arborist(int request_fd)
 	 *  records. We depend upon atomic write/reads on pipes.
 	 */
 	io_msg_new(&request, request_fd);
+
 request:
 	status = io_msg_read(&request);
 	if (status < 0)
@@ -179,33 +345,35 @@ request:
 		leave(0);
 	}
 	/*
-	 *  The client requests two commands: rename or take.
-	 *  The 'rename' command moves a file into a directory, possibly
-	 *  creating the full directory path.  The 'take' command
-	 *  removes all empty directories in a path branch, effectively
-	 *  garbage collecting the empty directory entries.
+	 *  The client requests three commands: rename, move or take.
+	 *
+	 *  The 'rename' command renames a file into a directory, possibly
+	 *  creating the full directory path.  The source file MUST exist
+	 *  on the same volume as the target file.
+	 *
+	 *  The 'move' command renames or copies a file into a directory,
+	 *  possibly creating the full directory path.  The source file MUST
+	 *  exist on the same volume as the target file.
+	 *
+	 *  The 'trim' command removes the blob and all empty directories in a
+	 *  path branch to the blob, effectively garbage collecting the empty
+	 *  directory entries.
 	 *
 	 *  The request packets look like:
 	 *
-	 *  	R[reply fifo][null][tmp blob path ...][null][new path ...][null]
+	 *  	R[reply fifo][null][src blob path ...][null][tgt path ...][null]
+	 *  	M[reply fifo][null][src blob path ...][null][tgt path ...][null]
 	 *  	T[dir path to blob ...][null]
 	 *
-	 *  where 'R' means rename and 'T' means take.
+	 *  where 'R' means rename, 'M' means move and 'T' means trim.
 	 *
-	 *  The for 'R' rename, the arborist replies to the request over the
+	 *  The for 'R' and 'M', the arborist replies to the request over the
 	 *  sent fifo with a single null byte for success, panic otherwise.
 	 *
-	 *  For the 'T' take, no reply occurs.
+	 *  For the 'T' trim, no reply occurs.
 	 */
-	if ((char)request.payload[0] == 'R') {
-		char *reply_path, *tmp_path, *new_path;
-		
-		reply_path = (char *)request.payload + 1;
-		tmp_path = reply_path + strlen(reply_path) + 1;
-		new_path = tmp_path + strlen(tmp_path) + 1;
-
-		rename_blob(reply_path, tmp_path, new_path);
-	} else {
+	c = (char)request.payload[0];
+	if (c == 'T') {
 		char buf[MSG_SIZE];
 		int count;
 
@@ -213,6 +381,17 @@ request:
 		snprintf(buf, sizeof buf, "trimmed %d director%s",
 					count, count == 1 ? "y" : "ies");
 		info(buf);
+	} else {
+		char *reply_path, *tmp_path, *tgt_path;
+		
+		reply_path = (char *)request.payload + 1;
+		tmp_path = reply_path + strlen(reply_path) + 1;
+		tgt_path = tmp_path + strlen(tmp_path) + 1;
+
+		if (c == 'R')
+			rename_blob(reply_path, tmp_path, tgt_path);
+		else
+			move_blob(reply_path, tmp_path, tgt_path);
 	}
 	goto request;
 }
@@ -295,8 +474,14 @@ arbor_close()
 		panic3(nm, "close(write pipe) failed", strerror(errno));
 }
 
+/*
+ *  Client invocation to rename a file blob.
+ *
+ *  Note:
+ *	Fifo is not always removed!
+ */
 void
-arbor_rename(char *tmp_path, char *new_path)
+arbor_rename(char *tmp_path, char *tgt_path)
 {
 	char msg[MSG_SIZE];
 	unsigned len, rlen, tlen, nlen;
@@ -312,10 +497,10 @@ arbor_rename(char *tmp_path, char *new_path)
 	/*
 	 *  The request packet looks like:
 	 *
-	 *  	R[reply fifo][null][tmp blob path ...][null][new path ...][null]
+	 *  	R[reply fifo][null][tmp blob path ...][null][tgt path ...][null]
 	 */
 	tlen = strlen(tmp_path) + 1;
-	nlen = strlen(new_path) + 1;
+	nlen = strlen(tgt_path) + 1;
 	len = 1 + rlen + tlen + nlen;
 	if (len > MSG_SIZE) {
 		char buf[MSG_SIZE];
@@ -327,7 +512,85 @@ arbor_rename(char *tmp_path, char *new_path)
 	msg[0] = 'R';
 	memcpy(msg + 1, reply_path, rlen);
 	memcpy(msg + 1 + rlen, tmp_path, tlen);
-	memcpy(msg + 1 + rlen + tlen, new_path, nlen);
+	memcpy(msg + 1 + rlen + tlen, tgt_path, nlen);
+
+	/*
+	 *  Create the reply fifo.
+	 */
+	snprintf(reply_path, sizeof reply_path,"run/arborist-%u.fifo",getpid());
+	if (io_mkfifo(reply_path, S_IRUSR | S_IWUSR) < 0)
+		panic4(nm, reply_path, "mkfifo(reply) failed", strerror(errno));
+
+	/*
+	 *  Send the rename request to the arborist process and wait for
+	 *  response.
+	 */
+	if (io_msg_write(arbor_fd, (unsigned char *)msg, len)) {
+		err = errno;
+
+		io_unlink(reply_path);
+		panic3(nm, "msg_write() failed", strerror(err));
+	}
+
+	reply_fd = io_open(reply_path, O_RDONLY, 0);
+	if (reply_fd < 0) {
+		err = errno;
+
+		io_unlink(reply_path);
+		panic4(nm, reply_path, "open(reply fifo) failed",strerror(err));
+	}
+
+	io_msg_new(&reply, reply_fd);
+	status = io_msg_read(&reply);
+	err = errno;
+	io_close(reply_fd);
+	io_unlink(reply_path);
+
+	if (status < 0)
+		panic3(nm, "msg_read(reply) failed", strerror(err));
+	if (status == 0)
+		panic2(nm, "unexpected msg_read() of 0 from reply fifo");
+}
+
+/*
+ *  Client invocation to move a file blob.
+ *
+ *  Note:
+ *	Fifo is not always removed!
+ */
+void
+arbor_move(char *tmp_path, char *tgt_path)
+{
+	char msg[MSG_SIZE];
+	unsigned len, rlen, tlen, nlen;
+	int reply_fd;
+	char reply_path[32];
+	int status, err;
+	struct io_message reply;
+	static char nm[] = "arbor_move";
+
+	snprintf(reply_path, sizeof reply_path,"run/arborist-%u.fifo",getpid());
+	rlen = strlen(reply_path) + 1;
+
+	/*
+	 *  The request packet looks like:
+	 *
+	 *  	M[reply fifo][null][tmp blob path ...][null][tgt path ...][null]
+	 */
+	tlen = strlen(tmp_path) + 1;
+	nlen = strlen(tgt_path) + 1;
+	len = 1 + rlen + tlen + nlen;
+	if (len > MSG_SIZE) {
+		char buf[MSG_SIZE];
+
+		snprintf(buf, sizeof buf, "message length %d > 255",len);
+		panic2(nm, buf);
+	}
+
+	msg[0] = 'R';
+	memcpy(msg + 1, reply_path, rlen);
+	memcpy(msg + 1 + rlen, tmp_path, tlen);
+	memcpy(msg + 1 + rlen + tlen, tgt_path, nlen);
 
 	/*
 	 *  Create the reply fifo.

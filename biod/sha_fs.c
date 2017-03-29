@@ -746,9 +746,10 @@ digested:
 		_close(r, &fd);
 
 	/*
-	 *  Move the temp blob file to the final blob path.
+	 *  Rename the temp blob file to the final blob path.
 	 */
 	blob_path(r, r->digest);
+
 	arbor_rename(tmp_path,
 		((struct sha_fs_request *)r->open_data)->blob_path);
 	goto cleanup;
@@ -854,7 +855,7 @@ sha_fs_digest(struct request *r, int fd, char *hex_digest)
 	 *	digest-time-pid-drift
 	 */
 	snprintf(tmp_path, sizeof tmp_path, "%s/digest-%d-%u-%d",
-					tmp_get(r->algorithm,r->digest),
+					tmp_get(r->algorithm, r->digest),
 					/*
 					 *  Warning:
 					 *	Casting time() to int is
