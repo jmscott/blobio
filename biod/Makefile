@@ -8,8 +8,8 @@ include ../local.mk
 OBJS=									\
 	arbor.o								\
 	biod.o								\
-	brr.o								\
 	blob_set.o							\
+	brr.o								\
 	io.o								\
 	log.o								\
 	macosx.o							\
