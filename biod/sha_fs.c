@@ -907,7 +907,7 @@ sha_fs_digest(struct request *r, int fd, char *hex_digest)
 	 *  Move the blob from the temporary file to the blob file.
 	 */
 	blob_path(r, hex_digest);
-	arbor_rename(tmp_path,
+	arbor_move(tmp_path,
 		((struct sha_fs_request *)r->open_data)->blob_path);
 	tmp_path[0] = 0;
 

@@ -236,7 +236,7 @@ move_blob(char *reply_path, char *src_path, char *tgt_path)
 		p = slash + 1;
 	}
 
-	//  move the blob file, possible doing a copy across file systems.
+	//  move the blob file, perhaps doing a copy across file systems.
 
 	if (_move(src_path, tgt_path)) {
 		reply = 1;
@@ -587,7 +587,7 @@ arbor_move(char *tmp_path, char *tgt_path)
 		panic2(nm, buf);
 	}
 
-	msg[0] = 'R';
+	msg[0] = 'M';
 	memcpy(msg + 1, reply_path, rlen);
 	memcpy(msg + 1 + rlen, tmp_path, tlen);
 	memcpy(msg + 1 + rlen + tlen, tgt_path, nlen);

@@ -402,6 +402,7 @@ int		blob_set_for_each(void *set,
 void		arbor_open();
 void		arbor_close();
 void		arbor_rename(char *tmp_path, char *new_path);
+void		arbor_move(char *tmp_path, char *new_path);
 void		arbor_trim(char *blob_path);
 
 /*
