@@ -76,6 +76,7 @@ rename_blob(char *reply_path, char *old_path, char *new_path)
 					old_path, new_path, strerror(err));
 		error2(nm, buf);
 		reply = 1;
+		goto bye;
 	}
 	
 	/*
