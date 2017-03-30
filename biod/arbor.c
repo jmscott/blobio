@@ -46,13 +46,13 @@ rename_blob(char *reply_path, char *src_path, char *tgt_path)
 {
 	char *slash, *p;
 	int reply_fd;
-	unsigned char reply = 0;
+	unsigned char reply_payload = 0;
 	static char nm[] = "rename_blob";
 
 	reply_fd = io_open(reply_path, O_WRONLY, 0);
 	if (reply_fd < 0) {
 		error3(nm, "open(reply fifo) failed", strerror(errno));
-		reply = 1;
+		reply_payload = 1;
 		goto bye;
 	}
 
@@ -62,9 +62,9 @@ rename_blob(char *reply_path, char *src_path, char *tgt_path)
 	p = tgt_path;
 	while ((slash = index(p, '/'))) {
 		*slash = 0;
-		reply = make_path(tgt_path);
+		reply_payload = make_path(tgt_path);
 		*slash = '/';
-		if (reply)
+		if (reply_payload)
 			goto bye;
 		p = slash + 1;
 	}
@@ -79,7 +79,7 @@ rename_blob(char *reply_path, char *src_path, char *tgt_path)
 		snprintf(buf, sizeof buf, "rename(%s, %s) failed: %s",
 					src_path, tgt_path, strerror(err));
 		error2(nm, buf);
-		reply = 1;
+		reply_payload = 1;
 		goto bye;
 	}
 	
@@ -93,7 +93,7 @@ rename_blob(char *reply_path, char *src_path, char *tgt_path)
 		snprintf(buf, sizeof buf, "readonly chmod(%s) failed: %s",
 					tgt_path, strerror(err));
 		error2(nm, buf);
-		reply = 1;
+		reply_payload = 1;
 	}
 
 bye:
@@ -106,13 +106,14 @@ bye:
 	 *  the blob was not put properly.
 	 */
 	if (reply_fd >= 0) {
-		if (io_msg_write(reply_fd, &reply, 1) < 0)
+		if (io_msg_write(reply_fd, &reply_payload, 1) < 0)
 			panic3(nm, "write(reply fifo) failed", strerror(errno));
 		if (io_close(reply_fd))
 			panic3(nm, "close(reply fifo) failed", strerror(errno));
 	}
 
-	if (reply)
+	//  no-zero reply indicates an error
+	if (reply_payload)
 		panic2(nm, "aborist process replied with failure");
 }
 
@@ -122,20 +123,41 @@ bye:
 int
 _move(char *src_path, char *tgt_path)
 {
-	static char n[] = "move";
+	static char n[] = "_move";
 	struct stat src_st, tgt_st;
 	int src_fd = -1, tgt_fd = -1;
-	char buf[MSG_SIZE];
+	char buf[MSG_SIZE], *slash;
 	int nr;
 	int ret = 0;
 
-	if (io_stat(src_path, &src_st)) {
-		error4(n, "stat(source path) failed", strerror(errno),src_path);
+	if (io_lstat(src_path, &src_st)) {
+		error4(n, "lstat(source path) failed",strerror(errno),src_path);
 		goto croak;
 	}
 
-	if (io_stat(tgt_path, &tgt_st)) {
-		error4(n, "stat(target) failed", strerror(errno), tgt_path);
+	//  file must be regular
+
+	if (!S_ISREG(src_st.st_mode)) {
+		error3(n, "source not a regular file", src_path);
+		goto croak;
+	}
+
+	//  verify the target directory live on same device as source
+
+	strncpy(buf, tgt_path, sizeof buf - 1);
+	slash = rindex(buf, '/');
+	if (slash == NULL) {
+		error3(n, "no slash in target path", tgt_path);
+		goto croak;
+	}
+	*slash = 0;
+
+	if (io_lstat(buf, &tgt_st)) {
+		error4(n, "lstat(target dir) failed", strerror(errno), buf);
+		goto croak;
+	}
+	if (!S_ISDIR(tgt_st.st_mode)) {
+		error3(n, "component in target not a directory", tgt_path);
 		goto croak;
 	}
 	
@@ -145,8 +167,10 @@ _move(char *src_path, char *tgt_path)
 	if (src_st.st_dev == tgt_st.st_dev) {
 		int err;
 
-		if (io_rename(src_path, tgt_path) == 0)
+		if (io_rename(src_path, tgt_path) == 0) {
+			src_path[0] = 0;
 			goto bye;
+		}
 
 		err = errno;
 		error3(n, "source path", src_path);
@@ -184,15 +208,14 @@ _move(char *src_path, char *tgt_path)
 								tgt_path);
 			goto croak;
 		}
-	if (nr < 0) {
-		error4(n, "read(source) failed", strerror(errno), src_path);
-		goto croak;
-	}
+	if (nr == 0)
+		goto bye;
+	error4(n, "read(source) failed", strerror(errno), src_path);
 
 croak:
 	ret = -1;
 bye:
-	if (src_fd > -1 && io_close(tgt_fd)) {
+	if (src_fd > -1 && io_close(src_fd)) {
 		error4(n, "close(source) failed", strerror(errno), src_path);
 		ret = -1;
 	}
@@ -200,7 +223,7 @@ bye:
 		error4(n, "close(target) failed", strerror(errno), tgt_path);
 		ret = -1;
 	}
-	if (ret == 0 && io_unlink(src_path)) {
+	if (ret == 0 && src_path[0] && io_unlink(src_path)) {
 		error4(n, "unlink(source) failed", strerror(errno), src_path);
 		ret = -1;
 	}
@@ -213,13 +236,13 @@ move_blob(char *reply_path, char *src_path, char *tgt_path)
 {
 	char *slash, *p;
 	int reply_fd;
-	unsigned char reply = 0;
+	unsigned char reply_payload = 0;
 	static char nm[] = "move_blob";
 
 	reply_fd = io_open(reply_path, O_WRONLY, 0);
 	if (reply_fd < 0) {
 		error3(nm, "open(reply fifo) failed", strerror(errno));
-		reply = 1;
+		reply_payload = 1;
 		goto bye;
 	}
 
@@ -229,9 +252,9 @@ move_blob(char *reply_path, char *src_path, char *tgt_path)
 	p = tgt_path;
 	while ((slash = index(p, '/'))) {
 		*slash = 0;
-		reply = make_path(tgt_path);
+		reply_payload = make_path(tgt_path);
 		*slash = '/';
-		if (reply)
+		if (reply_payload)
 			goto bye;
 		p = slash + 1;
 	}
@@ -239,7 +262,7 @@ move_blob(char *reply_path, char *src_path, char *tgt_path)
 	//  move the blob file, perhaps doing a copy across file systems.
 
 	if (_move(src_path, tgt_path)) {
-		reply = 1;
+		reply_payload = 1;
 		goto bye;
 	}
 
@@ -253,7 +276,7 @@ move_blob(char *reply_path, char *src_path, char *tgt_path)
 		snprintf(buf, sizeof buf, "readonly chmod(%s) failed: %s",
 					tgt_path, strerror(err));
 		error2(nm, buf);
-		reply = 1;
+		reply_payload = 1;
 	}
 
 bye:
@@ -266,13 +289,13 @@ bye:
 	 *  the blob was not put properly.
 	 */
 	if (reply_fd >= 0) {
-		if (io_msg_write(reply_fd, &reply, 1) < 0)
+		if (io_msg_write(reply_fd, &reply_payload, 1) < 0)
 			panic3(nm, "write(reply fifo) failed", strerror(errno));
 		if (io_close(reply_fd))
 			panic3(nm, "close(reply fifo) failed", strerror(errno));
 	}
 
-	if (reply)
+	if (reply_payload)	//  non zero reply payload indicates error
 		panic2(nm, "aborist process replied with failure");
 }
 
