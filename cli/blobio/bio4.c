@@ -436,6 +436,8 @@ read_ok_no(int *reply)
 		err =  _read(server_fd, (unsigned char *)buf, 3 - nread, &nr);
 		if (err)
 			return err;
+		if (nr == 0)
+			return "unexpected end of stream reading reply";
 		nread += nr;
 	}
 
