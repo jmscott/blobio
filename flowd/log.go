@@ -19,12 +19,12 @@ func (out file_byte_chan) info(format string, args ...interface{}) {
 
 func (out file_byte_chan) ERROR(format string, args ...interface{}) {
 
-	out.info("%s", "ERROR: "+Sprintf(format, args...))
+	out.info("%s", "ERROR: " + Sprintf(format, args...))
 }
 
 func (out file_byte_chan) WARN(format string, args ...interface{}) {
 
-	out.info("%s", "WARN: "+Sprintf(format, args...))
+	out.info("%s", "WARN: " + Sprintf(format, args...))
 }
 
 func (out *file_byte_chan) die(format string, args ...interface{}) {
