@@ -1453,6 +1453,7 @@ set_pid_file(char *path)
 	snprintf(buf, sizeof buf, "%d\n", getpid());
 	if (burp_text_file(buf, pid_path))
 		die3(n, "burp_text_file() failed", pid_path);
+	info2("created biod .pid file", pid_path);
 	/*
 	 *  Chmod run/biod.pid u=r,go=
 	 */
