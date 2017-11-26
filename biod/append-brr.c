@@ -411,6 +411,7 @@ main(int argc, char **argv)
 
 	arg2brr("chat history", argv[6], 2, 8, &b);
 	if (strcmp("ok", argv[6])					&&
+	    strcmp("no", argv[6])					&&
 	    strcmp("ok,ok", argv[6])					&&
 	    strcmp("ok,no", argv[6])					&&
 	    strcmp("ok,ok,ok", argv[6])					&&
