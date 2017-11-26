@@ -18,6 +18,7 @@
  *	3	the open() failed
  *	4	the write() failed
  *	5	the close() failed
+ *	6	a brr field is wrong syntax.
  *  Note:
  *  	No syntax checking is done on the fields of the blob request record.
  *  	Only field sizes are checked.
@@ -38,6 +39,7 @@
 #include <fcntl.h>
 #include <string.h>
 #include <errno.h>
+#include <ctype.h>
 #include <unistd.h>
 
 #define EXIT_BAD_ARGC	1
@@ -215,20 +217,160 @@ _close(int fd)
  *	For example, a char set per arg would be easy to add.
  */
 static void
-arg2brr(char *name, char *arg, int size, char **brr)
+arg2brr(char *name, char *arg, size_t min_len, int size, char **brr)
 {
 	char *tgt, *src;
 	int n;
 
+	if (strlen(arg) < min_len)
+		die3(EXIT_BAD_BRR, "argument too short", name, arg);
 	n = 0;
 	src = arg;
 	tgt = *brr;
 	while (*src && n++ < size)
 		*tgt++ = *src++;
-	if (n == size && *src)
-		die2(EXIT_BAD_BRR, "arg too big for brr field", name); 
+	if (n >= size && *src)
+		die3(EXIT_BAD_BRR, "arg too big for brr field", name, arg); 
 	*tgt++ = '\t';
 	*brr = tgt;
+}
+
+static void
+in_char_set(char *name, char *arg, char *set)
+{
+	char c;
+	char *a = arg;
+
+	//  verify all chars exist in the set
+	//  Note:  can replace with a table lookup.
+
+	while ((c = *a++)) {
+		char *sp = set;
+		while (*sp) {
+			if (c == *sp)
+				break;
+			sp++;
+		}
+		if (*sp == 0)
+			die3(EXIT_BAD_BRR, name, "illegal char exists", arg);
+	}
+}
+
+static void
+is_start_time(char *arg, char **brr)
+{
+	static char start_time_set[16] = {
+		'0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
+		  '-', 'T', ':', '.', '+', 0
+	};
+	char *nm = "start time";
+
+	arg2brr(nm, arg, 26,  10+1+8+1+9+1+6, brr);
+	if (arg[4] != '-')
+		die3(EXIT_BAD_BRR, nm, "dash not at pos 5", arg);
+	if (arg[7] != '-')
+		die3(EXIT_BAD_BRR, nm, "dash not at pos 7", arg);
+	if (arg[10] != 'T')
+		die3(EXIT_BAD_BRR, nm, "T not at pos 11", arg);
+	if (arg[13] != ':')
+		die3(EXIT_BAD_BRR, nm, "colon not at pos 14", arg);
+	if (arg[16] != ':')
+		die3(EXIT_BAD_BRR, nm, "colon not at pos 17", arg);
+	if (arg[19] != '.')
+		die3(EXIT_BAD_BRR, nm, "colon not at pos 20", arg);
+	in_char_set(nm, arg, start_time_set);
+}
+
+static void
+is_netflow(char *arg, char **brr)
+{
+	char *nm = "netflow";
+	char c, *a;
+
+	arg2brr(nm, arg, 3, 8+1+128, brr);
+	a = arg;
+	if (*a < 'a' || *a > 'z')
+		die3(EXIT_BAD_BRR, nm, "protocol not ^[a-z]", arg);
+	a++;
+
+	//  check chars in protocol
+
+	while ((c = *a) && c != '~') {
+		if (a - arg > 7)
+			die3(EXIT_BAD_BRR, nm, "protocol > 8 characters", arg);
+		if (!isdigit(c) && !islower(c))
+			die3(EXIT_BAD_BRR, nm, "protocol not [a-z0-9]", arg);
+		a++;
+	}
+	if (c == 0)
+		die3(EXIT_BAD_BRR, nm, "tilda not seen", arg);
+	a++;
+	if (strlen(a) > 128)
+		die3(EXIT_BAD_BRR, nm, "flow: length > 128", arg);
+
+	while ((c = *a++))
+		if (!isgraph(c) || !isascii(c))
+			die3(EXIT_BAD_BRR, nm, "flow: bad char", arg);
+}
+
+static void
+is_udig(char *arg, char **brr)
+{
+	char *nm = "udig";
+	char c, *a;
+	size_t len;
+
+	arg2brr(nm, arg, 1 + 1 + 32, 8+1+128, brr);
+	a = arg;
+	if (*a < 'a' || *a > 'z')
+		die3(EXIT_BAD_BRR, nm, "algorithm not ^[a-z]", arg);
+	a++;
+
+	//  check digits in algorithm
+
+	while ((c = *a) && c != ':') {
+		if (a - arg > 7)
+			die3(EXIT_BAD_BRR, nm, "algorithm > 8 characters", arg);
+		if (!isdigit(c) && !islower(c))
+			die3(EXIT_BAD_BRR, nm, "algorithm not [a-z0-9]", arg);
+		a++;
+	}
+	if (c == 0)
+		die3(EXIT_BAD_BRR, nm, "no colon at end of algorithm", arg);
+
+	a++;
+	len = strlen(a);
+	if (len < 32)
+		die3(EXIT_BAD_BRR, nm, "digest: length < 32", arg);
+	if (len > 128)
+		die3(EXIT_BAD_BRR, nm, "digest: length > 128", arg);
+
+	while ((c = *a++))
+		if (!isgraph(c) || !isascii(c))
+			die3(EXIT_BAD_BRR, nm, "digest: bad char", arg);
+}
+
+static void
+is_blob_size(char *arg, char **brr)
+{
+	static char digit_set[11] = {
+		'0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
+		0
+	};
+
+	arg2brr("blob size", arg, 1, 19, brr);
+	in_char_set("blob size", arg, digit_set);
+}
+
+static void
+is_wall_duration(char *arg, char **brr)
+{
+	static char duration_set[12] = {
+		'0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
+		'.', 0
+	};
+	arg2brr("wall duration", arg, 1, 10+1+9, brr);
+	in_char_set("wall duration", arg, duration_set);
 }
 
 int
@@ -247,13 +389,37 @@ main(int argc, char **argv)
 	 *  Build the blob request record from command line arguments
 	 */
 	b = brr;
-	arg2brr("start request time", argv[2], 10+1+8+1+9+1+6, &b);
-	arg2brr("netflow", argv[3], 8+1+128, &b);
-	arg2brr("verb", argv[4], 8, &b);
-	arg2brr("udig", argv[5], 8+1+128, &b);
-	arg2brr("chat history", argv[6], 8, &b);
-	arg2brr("blob size", argv[7], 20, &b);
-	arg2brr("wall duration", argv[8], 10+1+9, &b);
+
+	is_start_time(argv[2], &b);
+	is_netflow(argv[3], &b);
+
+	//  verb
+
+	arg2brr("verb", argv[4], 3, 8, &b);
+	if (strcmp("get", argv[4])					&&
+	    strcmp("put", argv[4])					&&
+	    strcmp("give", argv[4])					&&
+	    strcmp("take", argv[4])					&&
+	    strcmp("eat", argv[4])					&&
+	    strcmp("wrap", argv[4])					&&
+	    strcmp("roll", argv[4]))
+		die2(EXIT_BAD_BRR, "not verb", argv[4]);
+
+	is_udig(argv[5], &b);
+
+	//  chat history
+
+	arg2brr("chat history", argv[6], 2, 8, &b);
+	if (strcmp("ok", argv[6])					&&
+	    strcmp("ok,ok", argv[6])					&&
+	    strcmp("ok,no", argv[6])					&&
+	    strcmp("ok,ok,ok", argv[6])					&&
+	    strcmp("ok,ok,no", argv[6]))
+		die2(EXIT_BAD_BRR, "not chat history", argv[6]);
+
+	is_blob_size(argv[7], &b);
+
+	is_wall_duration(argv[8], &b);
 
 	b[-1] = '\n';		//  zap trailing tab
 
