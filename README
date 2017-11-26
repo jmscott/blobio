@@ -72,7 +72,7 @@ Description:
 
 		https://en.wikipedia.org/wiki/Call_detail_record
 
-	The format of a single brr record is a line of tab separated fields,
+	The format of a single brr record is a line of tab separated fields
 	i.e, the typical unixy ascii record:
 
 		start_time		#  YYYY-MM-DDThh:mm:ss.ns[+-]HH:MM
@@ -80,7 +80,7 @@ Description:
 		verb			#  get/put/take/give/eat/wrap/roll
 		algorithm:digest	#  udig of the blob in request
 		chat_history		#  ok/no handshake between server&client
-		blob_size		#  unsigned 64 bit long < 2^63
+		blob_size		#  unsigned 64 bit long <= 2^63
 		wall_duration		#  request wall duration in sec.ns>=0
 
 	All characters are ascii.  Most important is that each client request
@@ -88,6 +88,19 @@ Description:
 	Also, BRR records are always syntactally correct as described above.
 	For example, a request for a syntactically incorrect udig or an unknown
 	verb will not generate a BRR record.
+
+	The minimum size of a brr record is 95 bytes.
+
+		(10+1+8+1+9+1+5) + 1	==  start_time
+		(1 + 1 + 1) + 1		>=  netflow
+		(2) + 1			>=  verb
+		(1 + 1 + 32) + 1	>=  udig
+		(2) + 1			>=  chat history 
+		(1) + 1			>=  blobio size
+		(1+1+9) + 1		>=  wall duration
+
+	where nanoseconds in start_time and wall_duration is always 9 digits.
+	Seconds in wall duration is <= 10 digits (2^31).
 
 	The maximum size of a blob request record is 371 bytes.
 	
