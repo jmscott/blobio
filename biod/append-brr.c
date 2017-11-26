@@ -50,6 +50,7 @@
 
 static char	progname[] = "append-brr";
 
+#define MIN_BRR		95
 #define MAX_BRR		365
 
 /*
@@ -73,6 +74,12 @@ static char	progname[] = "append-brr";
 
 #ifndef PIPE_MAX
 #define PIPE_MAX	512
+#endif
+
+//  force a compile time error if the atomic pipe buffer is too small for a brr
+
+#if PIPE_MAX < MAX_BRR
+-!(PIPE_MAX < MAX_BRR)
 #endif
 
 /*
@@ -428,6 +435,9 @@ main(int argc, char **argv)
 		   O_WRONLY | O_APPEND | O_CREAT,
 		   S_IRUSR | S_IWUSR | S_IRGRP
 	);
+
+	if (b - brr < MIN_BRR)
+		die(EXIT_BAD_BRR, "brr < 95 bytes");
 
 	// atomically write exactly the number bytes in the blob request record
 	_write(fd, brr, b - brr);
