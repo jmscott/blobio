@@ -58,12 +58,29 @@ endif
 all: biod append-brr
 
 install: all
-	install -g $(DIST_GROUP) -o $(DIST_USER) -m u=rx,go=		\
-		$(SBINs) $(DIST_ROOT)/sbin
+	install -g $(DIST_GROUP) -o $(DIST_USER)			\
+		-d $(DIST_ROOT)
+	install -g $(DIST_GROUP) -o $(DIST_USER)			\
+		-d $(DIST_ROOT)/bin
+	install -g $(DIST_GROUP) -o $(DIST_USER)			\
+		-d $(DIST_ROOT)/src
+	install -g $(DIST_GROUP) -o $(DIST_USER)			\
+		-d $(DIST_ROOT)/src/biod
+	install -g $(DIST_GROUP) -o $(DIST_USER)			\
+		-m u=rwx,go= -d $(DIST_ROOT)/sbin
+	install -g $(DIST_GROUP) -o $(DIST_USER)			\
+		-d $(DIST_ROOT)/lib
 
 	install -g $(DIST_GROUP) -o $(DIST_USER) -m ugo=rx		\
 		bio-udig2fs						\
 		$(DIST_ROOT)/bin
+
+	install -g $(DIST_GROUP) -o $(DIST_USER) -m ugo=rx		\
+		bio-udig2fs						\
+		$(DIST_ROOT)/sbin/bin
+
+	install -g $(DIST_GROUP) -o $(DIST_USER) -m u=rx,go=		\
+		$(CSRC) $(DIST_ROOT)/src
 
 	install -g $(DIST_GROUP) -o $(DIST_USER) -m u=rx,go=		\
 		$(CSRC) $(DIST_ROOT)/src/biod
