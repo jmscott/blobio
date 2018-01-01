@@ -10,19 +10,7 @@
 #	cd blobio/trunk
 #	cp local-<os>.mk.example local.mk
 #	<edit local.mk>
-#	make clean all distclean install
-#  Note:
-#  	Parallel jobs have problems due to incorrection productions.
-#  	In particular,
-#
-#  		make -j 4 clean all
-#
-#	fails, since, I (jmscott), believe that the proper .PHONY target
-#	directories have not been identified.  However, doing a
-#		
-#		make clean && make -j 4 all
-#
-#	appears to work correctly.
+#	make -j 4 clean all distclean install
 #
 include local.mk
 
