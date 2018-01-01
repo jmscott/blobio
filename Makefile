@@ -15,23 +15,23 @@
 include local.mk
 
 all:
-	cd sha1;	$(MAKE) all
+	cd sha1;	$(MAKE) $(MAKEFLAGS) all
 ifdef DIST_ROOT
-	cd biod;	$(MAKE) all
+	cd biod;	$(MAKE) $(MAKEFLAGS) all
 endif
-	cd cli;		$(MAKE) all
-	cd flowd;	$(MAKE) all
-	cd www;		$(MAKE) all
+	cd cli;		$(MAKE) $(MAKEFLAGS) all
+	cd flowd;	$(MAKE) $(MAKEFLAGS) all
+	cd www;		$(MAKE) $(MAKEFLAGS) all
 
 clean:
-	cd sha1;	$(MAKE) clean
-	cd biod;	$(MAKE) clean
-	cd flowd;	$(MAKE) clean
-	cd cli;		$(MAKE) clean
-	cd www;		$(MAKE) clean
+	cd sha1;	$(MAKE) $(MAKEFLAGS) clean
+	cd biod;	$(MAKE) $(MAKEFLAGS) clean
+	cd flowd;	$(MAKE) $(MAKEFLAGS) clean
+	cd cli;		$(MAKE) $(MAKEFLAGS) clean
+	cd www;		$(MAKE) $(MAKEFLAGS) clean
 
 distclean:
-	cd biod;	$(MAKE) distclean
+	cd biod;	$(MAKE) $(MAKEFLAGS) distclean
 
 ifeq "$(DIST_ROOT)" "/usr"
 	@echo 'refuse to distclean /usr'
@@ -44,8 +44,8 @@ ifeq "$(DIST_ROOT)" "/usr/local"
 endif
 
 ifdef DIST_ROOT
-	cd flowd;	$(MAKE) distclean
-	cd www;		$(MAKE) distclean
+	cd flowd;	$(MAKE) $(MAKEFLAGS) distclean
+	cd www;		$(MAKE) $(MAKEFLAGS) distclean
 	rm -rf $(DIST_ROOT)/bin
 	rm -rf $(DIST_ROOT)/lib
 	rm -rf $(DIST_ROOT)/sbin
