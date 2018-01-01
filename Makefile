@@ -140,4 +140,7 @@ dev-links:
 	test -e lib || ln -s . lib
 
 world:
-	make clean all distclean install
+	$(MAKE) $(MAKEFLAGS) clean
+	$(MAKE) $(MAKEFLAGS) all
+	$(MAKE) $(MAKEFLAGS) distclean
+	$(MAKE) $(MAKEFLAGS) install
