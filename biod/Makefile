@@ -163,4 +163,7 @@ distclean:
 	cd $(DIST_ROOT)/sbin && rm -f $(SBINs)
 	cd $(DIST_ROOT)/lib && rm -f $(LIBs)
 world:
-	make clean all distclean install
+	$(MAKE) $(MAKEFLAGS) clean
+	$(MAKE) $(MAKEFLAGS) all
+	$(MAKE) $(MAKEFLAGS) distclean
+	$(MAKE) $(MAKEFLAGS) install
