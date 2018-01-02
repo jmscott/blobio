@@ -5,6 +5,10 @@
 include ../blobio.mk
 include ../local.mk
 
+SRC=$(DIST_ROOT)/src
+SBIN=$(DIST_ROOT)/sbin
+LIB=$(DIST_ROOT)/lib
+
 OBJS=									\
 	arbor.o								\
 	biod.o								\
@@ -159,9 +163,9 @@ clean:
 	rm -f $(OBJS) biod append-brr
 
 distclean:
-	cd $(DIST_ROOT)/src && rm -f $(CSRC)
-	cd $(DIST_ROOT)/sbin && rm -f $(SBINs)
-	cd $(DIST_ROOT)/lib && rm -f $(LIBs)
+	test ! -e $(SRC) || (cd $(SRC);  rm -f $(CSRC))
+	test ! -e $(SBIN) || (cd $(SBIN);  rm -f $(SBINs))
+	test ! -e $(LIB) || (cd $(LIB);  rm -f $(LIBs))
 world:
 	$(MAKE) $(MAKEFLAGS) clean
 	$(MAKE) $(MAKEFLAGS) all
