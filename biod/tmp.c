@@ -115,7 +115,7 @@ make_map()
 	//  maximum length of BLOBIO_TMPDIR_MAP < 4096 (arbitrary).
 
 	if (strlen(BLOBIO_TMPDIR_MAP) >= 4096)
-		_panic("env value >= 4096 bytes");
+		_panic("BLOBIO_TMPDIR_MAP: env value >= 4096 bytes");
 	_info2("BLOBIO_TMPDIR_MAP", BLOBIO_TMPDIR_MAP);
 	strcpy(tm, BLOBIO_TMPDIR_MAP);
 	tm_end = tm + strlen(BLOBIO_TMPDIR_MAP);
