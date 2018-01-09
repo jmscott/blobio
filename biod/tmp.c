@@ -108,7 +108,7 @@ make_map()
 
 	BLOBIO_TMPDIR_MAP = getenv("BLOBIO_TMPDIR_MAP");
 	if (BLOBIO_TMPDIR_MAP == NULL) {
-		_info("not defined");
+		_info("BLOBIO_TMPDIR_MAP not defined");
 		return;
 	}
 
