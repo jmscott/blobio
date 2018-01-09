@@ -6,7 +6,7 @@
  *	and then atomically rename()'s the tmp blob to it's final resting
  *	place in the file system.  Unfortunately this algorithm implies
  *	that the temp directory be on the same device as the final home for
- *	home for the blob, since a typical unix file system forbids renaming()
+ *	for the blob, since a typical unix file system forbids renaming()
  *	across file systems. Atomically rename()'ing the blob is critical to the
  *	correctness of the blob tree. A partially copied blob could be
  *	interupted with a sig 9, for example.
@@ -21,11 +21,15 @@
  *	
  *	The <path> must start with / .  If no match occurs, then $BLOBIO_TMPDIR
  *	will be tried, followed by $BLOBIO_ROOT/tmp.
- *  Note:
- *	The tmp.c code is kind of a hack for casual users who don't use
- *	volume mangers.
  *
- *	Only ascii file paths are understood, which is wrong.
+ *	The tmp.c code is a hack for casual users who don't use a file system
+ *	volume manager.
+ *  Note:
+ *	The BLOBIO_TMPDIR_MAP values should be allowed to be separated with more
+ *	than the tab character.  The carriage return, new-line and space 
+ *	characters ought to be allowed.
+ *
+ *	Only ascii file paths are understood, which is very provincial.
  *
  *	Need to investigate/document if LVM can extend inodes dynamically.
  *
