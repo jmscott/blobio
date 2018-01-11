@@ -159,9 +159,9 @@ Protocol Flow:
 	flaw, particulary with regard to denial-of-service attacks.  Essentially
 	the only indication that the end of the blob has been reached is that 
 	the socket has closed;  nothing in the protocol explicity indicates
-	"END of BLOB", other than the sequence of bytes matching the signature.
-	In other words, only the digest presented by the request determines
-	the correctness of the blob.
+	"END of BLOB", other than the sequence of bytes matching the digest
+	signature.  In other words, only the digest presented by the request
+	determines the correctness of the blob.
 
 	As blobio evolves, I (jmscott) expect a client friendly, RESTful and
 	inherently more complex caching protocol to be built in front of the
