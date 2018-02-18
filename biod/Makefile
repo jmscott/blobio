@@ -45,6 +45,7 @@ SBINs=									\
 	append-brr							\
 	biod								\
 	biod_ctl							\
+	bio-udig2fs							\
 	create-rrd							\
 	fs2udig								\
 	graph-rrd							\
@@ -80,8 +81,8 @@ install: all
 		$(DIST_ROOT)/bin
 
 	install -g $(DIST_GROUP) -o $(DIST_USER) -m ugo=rx		\
-		bio-udig2fs						\
-		$(DIST_ROOT)/sbin/bin
+		$(SBINs)						\
+		$(DIST_ROOT)/sbin
 
 	install -g $(DIST_GROUP) -o $(DIST_USER) -m u=rx,go=		\
 		$(CSRC) $(DIST_ROOT)/src
