@@ -127,6 +127,7 @@ dev-links:
 	test -e cgi-bin || ln -s . cgi-bin
 	test -e lib || ln -s . lib
 
+#  Note:  breaks on gnu make!
 world:
 	$(MAKE) $(MAKEFLAGS) clean
 	$(MAKE) $(MAKEFLAGS) all
