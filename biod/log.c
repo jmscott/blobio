@@ -471,7 +471,7 @@ _format(char *msg, char *buf, int buf_size)
 	time(&last_log_heartbeat);
 	t = localtime(&last_log_heartbeat);
 
-	snprintf(buf, buf_size, "%04d/%02d/%02d %02d:%02d:%02d #%u: ",
+	snprintf(buf, buf_size, "%04d/%02d/%02d %02d:%02d:%02d: #%u: ",
 			t->tm_year + 1900,
 			t->tm_mon + 1,
 			t->tm_mday,
@@ -502,9 +502,13 @@ info(char *msg)
 	
 	_format(msg, buf, sizeof buf);
 	len = strlen(buf);
-	if (is_logger)
+	if (is_logger) {
 		_write(buf, len);
-	else if (io_msg_write(log_fd, buf, len))
+	}
+	else if (logger_pid) {
+		if (io_msg_write(log_fd, buf, len))
+			_panic(buf, len, -1);
+	} else if (io_write(log_fd, buf, strlen(buf)) < 0)
 		_panic(buf, len, -1);
 }
 
