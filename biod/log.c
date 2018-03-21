@@ -478,7 +478,9 @@ _format(char *msg, char *buf, int buf_size)
 			t->tm_hour,
 			t->tm_min,
 			t->tm_sec,
-			logged_pid
+
+			//  Note: why not just getpid()?
+			logged_pid == 0 ? getpid() : logged_pid
 	);
 
 	/*
