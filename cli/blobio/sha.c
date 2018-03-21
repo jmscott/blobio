@@ -1,6 +1,6 @@
 /*
  *  Synopsis:
- *	blk_SHA1 client digest module interface routines.
+ *	openssl SHA1 client digest module interface routines.
  *  Note:
  *  	Why does sha_request exist at all?
  */
@@ -13,7 +13,7 @@
 #include <unistd.h>
 #include <stdlib.h>
 
-#include "../../sha1/sha1.h"
+#include <openssl/sha.h>
 #include "blobio.h"
 
 #ifdef COMPILE_TRACE
@@ -31,7 +31,7 @@ extern char	digest[];
 extern int	input_fd;
 
 static unsigned char	bin_digest[20];
-static blk_SHA_CTX	sha_ctx;
+static SHA_CTX	sha_ctx;
 
 static char	empty[]		= "da39a3ee5e6b4b0d3255bfef95601890afd80709";
 
@@ -44,7 +44,7 @@ sha_init()
 	static char nm[] = "sha: init";
 
 	if (strcmp("roll", verb)) {
-		blk_SHA1_Init(&sha_ctx);
+		SHA1_Init(&sha_ctx);
 
 		/*
 		 *  Convert the 40 character hex signature to 20 byte binary.
@@ -94,15 +94,15 @@ chew(unsigned char *chunk, int size)
 	 *  Incremental digest.
 	 */
 	unsigned char tmp_digest[20];
-	blk_SHA_CTX tmp_ctx;
+	SHA_CTX tmp_ctx;
 
-	blk_SHA1_Update(&sha_ctx, chunk, size);
+	SHA1_Update(&sha_ctx, chunk, size);
 	/*
 	 *  Copy current digest state to a temporary state,
 	 *  finalize and then compare to expected state.
 	 */
 	tmp_ctx = sha_ctx;
-	blk_SHA1_Final(tmp_digest, &tmp_ctx);
+	SHA1_Final(tmp_digest, &tmp_ctx);
 
 #ifdef COMPILE_TRACE
 	if (tracing) {
@@ -175,7 +175,7 @@ sha_close()
 }
 
 /*
- *  blk_SHA1 digest is 40 characters of 0-9 or a-f.
+ *  SHA1 digest is 40 characters of 0-9 or a-f.
  */
 static int
 sha_syntax()
@@ -228,10 +228,10 @@ sha_eat_input()
 	_TRACE("request to sha_eat_input()");
 
 	while ((nread = uni_read(input_fd, buf, sizeof buf)) > 0)
-		blk_SHA1_Update(&sha_ctx, buf, nread);
+		SHA1_Update(&sha_ctx, buf, nread);
 	if (nread < 0)
 		return strerror(errno);
-	blk_SHA1_Final(bin_digest, &sha_ctx);
+	SHA1_Final(bin_digest, &sha_ctx);
 
 	p = digest;
 	q = bin_digest;

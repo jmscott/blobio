@@ -40,8 +40,8 @@ install: all
 		uni.c							\
 		$(DIST_ROOT)/src/blobio
 
-blobio: blobio.o $(OBJS) ../../sha1/sha1.c
-	$(CC) -o blobio blobio.o $(OBJS) ../../sha1/sha1.o
+blobio: blobio.o $(OBJS)
+	$(CC) -o blobio blobio.o $(OBJS) -lssl -lcrypto
 
 bio4.o: bio4.c blobio.h
 	$(CC) $(CFLAGS) -c bio4.c
