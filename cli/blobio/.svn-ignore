@@ -8,4 +8,5 @@ rofs.o
 service.o
 sha.o
 trace.o
+uni.o
 unistd.o
