@@ -4,8 +4,8 @@
 #  Note:
 #	CC=cc -g on linux 2.6.32
 #
-include ../../blobio.mk
 include ../../local.mk
+include ../../blobio.mk
 
 OBJS=			\
 	bio4.o		\
@@ -41,7 +41,7 @@ install: all
 		$(DIST_ROOT)/src/blobio
 
 blobio: blobio.o $(OBJS)
-	$(CC) -o blobio blobio.o $(OBJS) -lssl -lcrypto
+	$(CC) -o blobio blobio.o $(OBJS) $(OPENSSL_LIB)
 
 bio4.o: bio4.c blobio.h
 	$(CC) $(CFLAGS) -c bio4.c
@@ -57,7 +57,7 @@ rofs.o: rofs.c blobio.h
 fs.o: fs.c blobio.h
 	$(CC) $(CFLAGS) -c fs.c
 sha.o: sha.c blobio.h
-	$(CC) $(CFLAGS) -c sha.c
+	$(CC) $(CFLAGS) $(OPENSSL_INC) -c sha.c
 service.o: service.c blobio.h
 	$(CC) $(CFLAGS) -c service.c
 trace.o: trace.c blobio.h

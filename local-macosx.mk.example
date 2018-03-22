@@ -41,5 +41,9 @@ DIST_ROOT=/usr/local/blobio
 DIST_USER=$(USER)
 DIST_GROUP=staff
 
+#  openssl install by port package manager.
+OPENSSL_INC=-I/opt/local/include
+OPENSSL_LIB=-L/opt/local/lib -lssl -lcrypto
+
 #  where is go distribution installed
 GODIST=/usr/local/go

@@ -41,3 +41,7 @@ DIST_GROUP=$(USER)
 
 #  where is go distribution installed
 GODIST=/usr/local/go
+
+#  openssl 1+ installed in u
+OPENSSL_INC=
+OPENSSL_LIB=-lssl -lcrypto
