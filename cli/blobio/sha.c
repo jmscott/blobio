@@ -13,7 +13,7 @@
 #include <unistd.h>
 #include <stdlib.h>
 
-#include <openssl/sha.h>
+#include "openssl/sha.h"
 #include "blobio.h"
 
 #ifdef COMPILE_TRACE
