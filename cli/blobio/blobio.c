@@ -17,6 +17,7 @@
  *	--algorithm name
  *	--input-path <path/to/file>
  *	--output-path <path/to/file>
+ *	--help
  *  Note:
  *	Hanging blobio's processes are (rarely) seen on Mac OSX 10.12.3,
  *	implying timeouts are STILL not executing correctly.
@@ -98,7 +99,8 @@ static struct service		*service = 0;
 static struct digest		*digest_module;
 
 static char		usage[] =
-   "usage: blobio [help | get|put|give|take|eat|wrap|roll|empty] [options]\n";
+       "usage: blobio [help | get|put|give|take|eat|wrap|roll|empty] [options]\n"
+;
 
 static void
 ecat(char *buf, int size, char *msg)
@@ -160,6 +162,7 @@ Options:\n\
 	--output-path   get/take target file <default stdout>\n\
 	--udig          algorithm:digest for get/put/give/take/eat/empty/roll\n\
 	--algorithm     algorithm name for local eat request\n\
+	--help\n\
 Exit Status:\n\
 	0	request succeed\n\
   	1	request denied.  blob may not exist or is not empty\n\
@@ -371,7 +374,7 @@ parse_argv(int argc, char **argv)
 		uni_write(2, usage, strlen(usage));
 		die(EXIT_BAD_ARG, "no command line arguments");
 	}
-	if (*argv[1] == 'h' && strcmp("help", argv[1]) == 0)
+	if (strcmp("help", argv[1]) == 0 || strcmp("--help", argv[1]) == 0)
 		help();
 
 	//  first argument is always the request verb
@@ -534,6 +537,8 @@ parse_argv(int argc, char **argv)
 				emany("trace");
 			tracing = 1;
 			TRACE("hello, world");
+		} else if (strcmp("help", a) == 0) {
+			help();
 		} else
 			die2(EXIT_BAD_ARG, "unknown option", argv[i]);
 	}
