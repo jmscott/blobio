@@ -2,6 +2,13 @@ append-brr
 arbor.o
 bin
 biod
+biod-Fri.log
+biod-Mon.log
+biod-Sat.log
+biod-Sun.log
+biod-Thu.log
+biod-Tue.log
+biod-Wed.log
 biod.brr
 biod.log
 biod.o
@@ -26,6 +33,7 @@ sbin
 sha_fs
 sha_fs.o
 signal.o
+spool
 tmp
 tmp.o
 wrap

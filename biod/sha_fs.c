@@ -10,7 +10,8 @@
 #include <fcntl.h>
 #include <unistd.h>
 
-#include "../sha1/sha1.h"
+#include "openssl/opensslv.h"
+#include "openssl/sha.h"
 #include "biod.h"
 
 /*
@@ -234,7 +235,7 @@ _close(struct request *r, int *p_fd)
 }
 
 /*
- *  Open a local file to read, retrying on interupt and logging errors.
+ *  Open a local file to read, retrying on interrupt and logging errors.
  */
 static int
 _open(struct request *r, char *path, int *p_fd)
@@ -386,7 +387,7 @@ sha_fs_get(struct request *r)
 {
 	struct sha_fs_request *sp = (struct sha_fs_request *)r->open_data;
 	int status = 0;
-	blk_SHA_CTX ctx;
+	SHA_CTX ctx;
 	unsigned char digest[20];
 	int fd;
 	unsigned char chunk[CHUNK_SIZE];
@@ -414,7 +415,7 @@ sha_fs_get(struct request *r)
 		goto croak;
 	}
 
-	blk_SHA1_Init(&ctx);
+	SHA1_Init(&ctx);
 
 	/*
 	 *  Read a chunk from the file, write chunk to client,
@@ -431,14 +432,14 @@ sha_fs_get(struct request *r)
 		/*
 		 *  Update the incremental digest.
 		 */
-		blk_SHA1_Update(&ctx, chunk, nread);
+		SHA1_Update(&ctx, chunk, nread);
 	}
 	if (nread < 0)
 		_panic(r, "_read(blob) failed");
 	/*
 	 *  Finalize the digest.
 	 */
-	blk_SHA1_Final(digest, &ctx);
+	SHA1_Final(digest, &ctx);
 	/*
 	 *  If the calculated digest does NOT match the stored digest,
 	 *  then zap the blob from storage and get panicy.
@@ -476,7 +477,7 @@ sha_fs_copy(struct request *r, int out_fd)
 {
 	struct sha_fs_request *sp = (struct sha_fs_request *)r->open_data;
 	int status = 0;
-	blk_SHA_CTX ctx;
+	SHA_CTX ctx;
 	unsigned char digest[20];
 	int fd;
 	unsigned char chunk[CHUNK_SIZE];
@@ -498,7 +499,7 @@ sha_fs_copy(struct request *r, int out_fd)
 		_panic2(r, n, "_open(blob) failed");
 	}
 
-	blk_SHA1_Init(&ctx);
+	SHA1_Init(&ctx);
 
 	/*
 	 *  Read a chunk from the file, write chunk to local stream,
@@ -513,14 +514,14 @@ sha_fs_copy(struct request *r, int out_fd)
 		/*
 		 *  Update the incremental digest.
 		 */
-		blk_SHA1_Update(&ctx, chunk, nread);
+		SHA1_Update(&ctx, chunk, nread);
 	}
 	if (nread < 0)
 		_panic2(r, n, "_read(blob) failed");
 	/*
 	 *  Finalize the digest.
 	 */
-	blk_SHA1_Final(digest, &ctx);
+	SHA1_Final(digest, &ctx);
 
 	/*
 	 *  If the calculated digest does NOT match the stored digest,
@@ -543,7 +544,7 @@ sha_fs_eat(struct request *r)
 {
 	struct sha_fs_request *sp = (struct sha_fs_request *)r->open_data;
 	int status = 0;
-	blk_SHA_CTX ctx;
+	SHA_CTX ctx;
 	unsigned char digest[20];
 	int fd;
 	unsigned char chunk[CHUNK_SIZE];
@@ -566,7 +567,7 @@ sha_fs_eat(struct request *r)
 		_panic(r, "_open(blob) failed");
 	}
 
-	blk_SHA1_Init(&ctx);
+	SHA1_Init(&ctx);
 
 	/*
 	 *  Read a chunk from the file and chew.
@@ -575,13 +576,13 @@ sha_fs_eat(struct request *r)
 		/*
 		 *  Update the incremental digest.
 		 */
-		blk_SHA1_Update(&ctx, chunk, nread);
+		SHA1_Update(&ctx, chunk, nread);
 	if (nread < 0)
 		_panic(r, "_read(blob) failed");
 	/*
 	 *  Finalize the digest.
 	 */
-	blk_SHA1_Final(digest, &ctx);
+	SHA1_Final(digest, &ctx);
 
 	/*
 	 *  If the calculated digest does NOT match the stored digest,
@@ -606,17 +607,17 @@ sha_fs_eat(struct request *r)
  *  0 if the partial digest does not match do not match.
  */
 static int
-eat_chunk(struct request *r, blk_SHA_CTX *p_ctx, int fd, unsigned char *buf,
+eat_chunk(struct request *r, SHA_CTX *p_ctx, int fd, unsigned char *buf,
 	  int buf_size)
 {
 	struct sha_fs_request *sp = (struct sha_fs_request *)r->open_data;
-	blk_SHA_CTX ctx;
+	SHA_CTX ctx;
 	unsigned char digest[20];
 
 	/*
 	 *  Update the incremental digest.
 	 */
-	blk_SHA1_Update(p_ctx, buf, buf_size);
+	SHA1_Update(p_ctx, buf, buf_size);
 
 	/*
 	 *  Write the chunk to the local temp file.
@@ -629,14 +630,14 @@ eat_chunk(struct request *r, blk_SHA_CTX *p_ctx, int fd, unsigned char *buf,
 	 *  then comparing to the expected blob.
 	 */
 	memcpy(&ctx, p_ctx, sizeof *p_ctx);
-	blk_SHA1_Final(digest, &ctx);
+	SHA1_Final(digest, &ctx);
 	return memcmp(sp->digest, digest, 20) == 0 ? 1 : 0;
 }
 
 static int
 sha_fs_put(struct request *r)
 {
-	blk_SHA_CTX ctx;
+	SHA_CTX ctx;
 	char tmp_path[MAX_FILE_PATH_LEN];
 	unsigned char chunk[CHUNK_SIZE], *cp, *cp_end;
 	int fd = -1;
@@ -674,7 +675,7 @@ sha_fs_put(struct request *r)
 	/*
 	 *  Initialize digest of blob being scanned from the client.
 	 */
-	blk_SHA1_Init(&ctx);
+	SHA1_Init(&ctx);
 
 	/*
 	 *  An empty blob is always put.
@@ -836,7 +837,7 @@ sha_fs_digest(struct request *r, int fd, char *hex_digest)
 {
 	char unsigned buf[4096], digest[20], *d, *d_end;
 	char *h;
-	blk_SHA_CTX ctx;
+	SHA_CTX ctx;
 	int nread;
 	int tmp_fd = -1;
 	char tmp_path[MAX_FILE_PATH_LEN];
@@ -872,9 +873,9 @@ sha_fs_digest(struct request *r, int fd, char *hex_digest)
 	if (tmp_fd < 0)
 		_panic3(r, "digest: open(tmp) failed", tmp_path,
 						strerror(errno));
-	blk_SHA1_Init(&ctx);
+	SHA1_Init(&ctx);
 	while ((nread = io_read(fd, buf, sizeof buf)) > 0) {
-		blk_SHA1_Update(&ctx, buf, nread);
+		SHA1_Update(&ctx, buf, nread);
 		if (io_write_buf(tmp_fd, buf, nread) != 0)
 			_panic2(r, "digest: write_buf(tmp) failed",
 						strerror(errno));
@@ -883,7 +884,7 @@ sha_fs_digest(struct request *r, int fd, char *hex_digest)
 		_error(r, "digest: _read() failed");
 		goto croak;
 	}
-	blk_SHA1_Final(digest, &ctx);
+	SHA1_Final(digest, &ctx);
 
 	status = io_close(tmp_fd);
 	tmp_fd = -1;
@@ -948,7 +949,7 @@ sha_fs_boot()
 {
 	binfo("starting");
 	binfo("storage is file system");
-	binfo("git blk_SHA1() hash algorithm");
+	binfo2("openssl sha1 hash algorithm", OPENSSL_VERSION_TEXT);
 
 	strcpy(boot_data.root_dir_path, sha_fs_root);
 	binfo2("fs root directory", boot_data.root_dir_path);

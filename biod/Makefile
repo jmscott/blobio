@@ -96,7 +96,7 @@ install: all
 biod: $(OBJS)
 	$(CC) -o biod $(OBJS)						\
 		$(RT_LINK)						\
-		../sha1/sha1.o
+		$(OPENSSL_LIB)
 
 append-brr: append-brr.c
 	$(CC) -o append-brr $(CFLAGS) append-brr.c
@@ -117,7 +117,7 @@ blob_set.o: blob_set.c biod.h
 	$(CC) $(CFLAGS) -c blob_set.c
 
 sha_fs.o: sha_fs.c biod.h
-	$(CC) $(CFLAGS) -c sha_fs.c
+	$(CC) $(CFLAGS) $(OPENSSL_INC) -c sha_fs.c
 
 io.o: io.c biod.h biod.h
 	$(CC) $(CFLAGS) -c io.c
@@ -155,7 +155,9 @@ dev-links:
 	test -e log || ln -s . log
 	test -e run || ln -s . run
 	test -e sbin || ln -s . sbin
+	test -e tmp || ln -s . tmp
 	test -e sha_fs || mkdir sha_fs
+	test -e spool || mkdir spool
 
 clean-dev-links:
 	rm -rf sbin log data run
