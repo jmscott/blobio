@@ -61,9 +61,7 @@ fs_end_point_syntax(char *root_dir)
 	}
 	/*
 	 *  root directory can't be too long.  Need room for
-	 *  trailing $BLOBIO_ROOT/data/<algorithm>_fs/<path/to/blob>.
-	 *
-	 *  Currently only sha1 is understood.
+	 *  trailing $BLOBIO_ROOT/data/<algorithm>_fs/path/to/blob.
 	 *
 	 *  Note:
 	 *	Seems like this code ought to be in the digest module.

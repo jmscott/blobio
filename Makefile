@@ -15,7 +15,6 @@
 include local.mk
 
 all:
-	cd sha1;	$(MAKE) $(MAKEFLAGS) all
 ifdef DIST_ROOT
 	cd biod;	$(MAKE) $(MAKEFLAGS) all
 endif
@@ -24,7 +23,6 @@ endif
 	cd www;		$(MAKE) $(MAKEFLAGS) all
 
 clean:
-	cd sha1;	$(MAKE) $(MAKEFLAGS) clean
 	cd biod;	$(MAKE) $(MAKEFLAGS) clean
 	cd flowd;	$(MAKE) $(MAKEFLAGS) clean
 	cd cli;		$(MAKE) $(MAKEFLAGS) clean
