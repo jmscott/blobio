@@ -2,7 +2,7 @@
  *  Synopsis:
  *	openssl SHA1 client digest module interface routines.
  *  Note:
- *  	Why does bc160_request exist at all?
+ *  	Why does bch_request exist at all?
  */
 #ifdef SHA_FS_MODULE    
 
@@ -37,29 +37,29 @@ typedef struct
 {
 	RIPEMD160_CTX	ripemd_ctx;
 	SHA256_CTX	sha_ctx;
-} BC160_CTX;
+} BCH_CTX;
 
-static BC160_CTX	bc160_ctx;
+static BCH_CTX	bch_ctx;
 
 static char	empty[]		= "b472a266d0bd89c13706a4132ccfb16f7c3b9fcb";
 
 static void
-BC160_Init(BC160_CTX *ctx)
+BCH_Init(BCH_CTX *ctx)
 {
 	SHA256_Init(&ctx->sha_ctx);
 	RIPEMD160_Init(&ctx->ripemd_ctx);
 }
 
 static char *
-bc160_init()
+bch_init()
 {
 	char *d40, c;
 	unsigned char *d20;
 	unsigned int i;
-	static char nm[] = "bc160: init";
+	static char nm[] = "bch: init";
 
 	if (strcmp("roll", verb)) {
-		BC160_Init(&bc160_ctx);
+		BCH_Init(&bch_ctx);
 
 		/*
 		 *  Convert the 40 character hex signature to 20 byte binary.
@@ -95,7 +95,7 @@ bc160_init()
 }
 
 static void
-BC160_Update(BC160_CTX *ctx, unsigned char *chunk, int size)
+BCH_Update(BCH_CTX *ctx, unsigned char *chunk, int size)
 {
 	SHA256_CTX tmp_ctx;
 	unsigned char tmp_digest[32];
@@ -115,7 +115,7 @@ BC160_Update(BC160_CTX *ctx, unsigned char *chunk, int size)
 static int
 chew(unsigned char *chunk, int size)
 {
-	static char nm[] = "bc160: chew";
+	static char nm[] = "bch: chew";
 
 	TRACE2(nm, "request to chew()");
 
@@ -125,12 +125,12 @@ chew(unsigned char *chunk, int size)
 	unsigned char tmp_digest[20];
 	RIPEMD160_CTX tmp_ctx;
 
-	BC160_Update(&bc160_ctx, chunk, size);
+	BCH_Update(&bch_ctx, chunk, size);
 	/*
 	 *  Copy current ripemd digest state to a temporary state,
 	 *  finalize and then compare to expected state.
 	 */
-	tmp_ctx = bc160_ctx.ripemd_ctx;
+	tmp_ctx = bch_ctx.ripemd_ctx;
 	RIPEMD160_Final(tmp_digest, &tmp_ctx);
 
 #ifdef COMPILE_TRACE
@@ -152,19 +152,19 @@ chew(unsigned char *chunk, int size)
  *	1	more to read, continue, blob not seen
  */
 static int
-bc160_get_update(unsigned char *src, int src_size)
+bch_get_update(unsigned char *src, int src_size)
 {
 	return chew(src, src_size);
 }
 
 static int
-bc160_take_update(unsigned char *src, int src_size)
+bch_take_update(unsigned char *src, int src_size)
 {
 	return chew(src, src_size);
 }
 
 static int
-bc160_took(char *reply)
+bch_took(char *reply)
 {
 	(void)reply;
 	return 0;
@@ -179,35 +179,35 @@ bc160_took(char *reply)
  *	-1	chunk not part of the blob.
  */
 static int
-bc160_put_update(unsigned char *src, int src_size)
+bch_put_update(unsigned char *src, int src_size)
 {
 	return chew(src, src_size);
 }
 
 static int
-bc160_give_update(unsigned char *src, int src_size)
+bch_give_update(unsigned char *src, int src_size)
 {
-	return bc160_put_update(src, src_size);
+	return bch_put_update(src, src_size);
 }
 
 static int
-bc160_gave(char *reply)
+bch_gave(char *reply)
 {
 	UNUSED_ARG(reply);
 	return 0;
 }
 
 static int
-bc160_close()
+bch_close()
 {
 	return 0;
 }
 
 /*
- *  BC160 digest is 40 characters of 0-9 or a-f.
+ *  BCH digest is 40 characters of 0-9 or a-f.
  */
 static int
-bc160_syntax()
+bch_syntax()
 {
 	char *p, c;
 
@@ -226,7 +226,7 @@ bc160_syntax()
  *  da39a3ee5e6b4b0d3255bfef95601890afd80709 
  */
 static int
-bc160_empty()
+bch_empty()
 {
 	return strcmp(empty, digest) == 0?  1 : 0;
 }
@@ -240,29 +240,29 @@ static char nib2hex[] =
 static void
 _trace(char *msg)
 {
-	trace2("bc160", msg);
+	trace2("bch", msg);
 }
 
 /*
  *  Digest data on input and update the global digest[129] array.
  */
 static char *
-bc160_eat_input()
+bch_eat_input()
 {
 	unsigned char buf[PIPE_MAX], *q, *q_end;
 	char *p;
 	int nread;
 	unsigned char sha_digest[32];
 
-	_TRACE("request to bc160_eat_input()");
+	_TRACE("request to bch_eat_input()");
 
 	while ((nread = uni_read(input_fd, buf, sizeof buf)) > 0)
-		SHA256_Update(&bc160_ctx.sha_ctx, buf, nread);
+		SHA256_Update(&bch_ctx.sha_ctx, buf, nread);
 	if (nread < 0)
 		return strerror(errno);
-	SHA256_Final(sha_digest, &bc160_ctx.sha_ctx);
-	RIPEMD160_Update(&bc160_ctx.ripemd_ctx, sha_digest, 32);
-	RIPEMD160_Final(bin_digest, &bc160_ctx.ripemd_ctx);
+	SHA256_Final(sha_digest, &bch_ctx.sha_ctx);
+	RIPEMD160_Update(&bch_ctx.ripemd_ctx, sha_digest, 32);
+	RIPEMD160_Final(bin_digest, &bch_ctx.ripemd_ctx);
 
 	p = digest;
 	q = bin_digest;
@@ -275,7 +275,7 @@ bc160_eat_input()
 	}
 	*p = 0;
 
-	_TRACE("bc160_eat_input() done");
+	_TRACE("bch_eat_input() done");
 	return (char *)0;
 }
 
@@ -283,7 +283,7 @@ bc160_eat_input()
  *  Convert an ascii digest to a file system path.
  */
 static char *
-bc160_fs_name(char *name, int size)
+bch_fs_name(char *name, int size)
 {
 	char *dp, *np;
 
@@ -315,7 +315,7 @@ _mkdir(char *path, int len)
  *  Make the directory path to a file system blob.
  */
 static char *
-bc160_fs_mkdir(char *path, int size)
+bch_fs_mkdir(char *path, int size)
 {
 	char *dp, *dirp;
 
@@ -370,7 +370,7 @@ bc160_fs_mkdir(char *path, int size)
  *  Convert an ascii digest to a file system path.
  */
 static char *
-bc160_fs_path(char *file_path, int size)
+bch_fs_path(char *file_path, int size)
 {
 	char *dp, *fp;
 
@@ -408,27 +408,27 @@ bc160_fs_path(char *file_path, int size)
 	return (char *)0;
 }
 
-struct digest	bc160_digest =
+struct digest	bch_digest =
 {
-	.algorithm	=	"bc160",
+	.algorithm	=	"bch",
 
-	.init		=	bc160_init,
-	.get_update	=	bc160_get_update,
-	.take_update	=	bc160_take_update,
-	.took		=	bc160_took,
-	.put_update	=	bc160_put_update,
-	.give_update	=	bc160_give_update,
-	.gave		=	bc160_gave,
-	.close		=	bc160_close,
+	.init		=	bch_init,
+	.get_update	=	bch_get_update,
+	.take_update	=	bch_take_update,
+	.took		=	bch_took,
+	.put_update	=	bch_put_update,
+	.give_update	=	bch_give_update,
+	.gave		=	bch_gave,
+	.close		=	bch_close,
 
-	.eat_input	=	bc160_eat_input,
+	.eat_input	=	bch_eat_input,
 
-	.syntax		=	bc160_syntax,
-	.empty		=	bc160_empty,
+	.syntax		=	bch_syntax,
+	.empty		=	bch_empty,
 
-	.fs_name	=	bc160_fs_name,
-	.fs_mkdir	=	bc160_fs_mkdir,
-	.fs_path	=	bc160_fs_path
+	.fs_name	=	bch_fs_name,
+	.fs_mkdir	=	bch_fs_mkdir,
+	.fs_path	=	bch_fs_path
 };
 
 #endif
