@@ -199,8 +199,7 @@ sha_syntax()
 static int
 sha_empty()
 {
-	return strcmp("da39a3ee5e6b4b0d3255bfef95601890afd80709", digest) == 0?
-						1 : 0;
+	return strcmp(empty, digest) == 0? 1 : 0;
 }
 
 static char nib2hex[] =
