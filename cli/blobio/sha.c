@@ -143,7 +143,7 @@ sha_took(char *reply)
 
 /*
  *  Synopsis:
- *	Update the digest with a chunk from in a put request.
+ *	Update the digest with a chunk from a put request.
  *  Returns:
  *	0	id blob finished
  *	1	continue putting blob.
