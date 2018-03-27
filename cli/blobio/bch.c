@@ -1,10 +1,8 @@
 /*
  *  Synopsis:
- *	openssl SHA1 client digest module interface routines.
- *  Note:
- *  	Why does bch_request exist at all?
+ *	Bitcoin Hash RIPEMD160(SHA256(blob))
  */
-#ifdef SHA_FS_MODULE    
+#ifdef BCH_FS_MODULE    
 
 #include <sys/stat.h>
 #include <string.h>
