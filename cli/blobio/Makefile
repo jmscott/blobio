@@ -8,7 +8,7 @@ include ../../local.mk
 include ../../blobio.mk
 
 OBJS=			\
-	bch.o		\
+	bc160.o		\
 	bio4.o		\
 	buf.o		\
 	digest.o 	\
@@ -29,7 +29,7 @@ install: all
 		blobio							\
 		$(DIST_ROOT)/bin
 	install -g $(DIST_GROUP) -o $(DIST_USER) -m u=rx,go=		\
-		bch.c							\
+		bc160.c							\
 		bio4.c							\
 		blobio.h						\
 		buf.c							\
@@ -60,8 +60,8 @@ fs.o: fs.c blobio.h
 	$(CC) $(CFLAGS) -c fs.c
 sha.o: sha.c blobio.h
 	$(CC) $(CFLAGS) $(OPENSSL_INC) -c sha.c
-bch.o: bch.c blobio.h
-	$(CC) $(CFLAGS) $(OPENSSL_INC) -c bch.c
+bc160.o: bc160.c blobio.h
+	$(CC) $(CFLAGS) $(OPENSSL_INC) -c bc160.c
 service.o: service.c blobio.h
 	$(CC) $(CFLAGS) -c service.c
 trace.o: trace.c blobio.h

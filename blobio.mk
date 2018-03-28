@@ -5,7 +5,7 @@
 
 #  Most extreme compilation flags
 
-CFLAGS=-Wall -Wextra -Werror -DSHA_FS_MODULE -DBCH_FS_MODULE
+CFLAGS=-Wall -Wextra -Werror -DSHA_FS_MODULE -DBC160_FS_MODULE
 
 #  Setting SHELL forces gmake to disable optimizing of single line productions,
 #  forcing make to honor $PATH
