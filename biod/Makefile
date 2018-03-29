@@ -11,6 +11,7 @@ LIB=$(DIST_ROOT)/lib
 
 OBJS=									\
 	arbor.o								\
+	bc160_fs.o							\
 	biod.o								\
 	blob_set.o							\
 	brr.o								\
@@ -119,6 +120,9 @@ blob_set.o: blob_set.c biod.h
 sha_fs.o: sha_fs.c biod.h
 	$(CC) $(CFLAGS) $(OPENSSL_INC) -c sha_fs.c
 
+bc160_fs.o: bc160_fs.c biod.h
+	$(CC) $(CFLAGS) $(OPENSSL_INC) -c bc160_fs.c
+
 io.o: io.c biod.h biod.h
 	$(CC) $(CFLAGS) -c io.c
 
@@ -127,9 +131,6 @@ req.o: req.c biod.h biod.h
 
 signal.o: signal.c biod.h biod.h
 	$(CC) $(CFLAGS) -c signal.c
-
-is_sha_fs.o: is_sha_fs.c biod.h
-	$(CC) $(CFLAGS) -c is_sha_fs.c
 
 log.o: log.c biod.h
 	$(CC) $(CFLAGS) -c log.c
@@ -157,6 +158,7 @@ dev-links:
 	test -e sbin || ln -s . sbin
 	test -e tmp || ln -s . tmp
 	test -e sha_fs || mkdir sha_fs
+	test -e bc160_fs || mkdir bc160_fs
 	test -e spool || mkdir spool
 
 clean-dev-links:
