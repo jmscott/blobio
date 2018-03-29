@@ -461,19 +461,22 @@ slurp_text_file(char *path, char *buf, size_t buf_size)
 		return -1;
 	}
 	/*
-	 *  Slurp up the file
+	 *  Slurp to end of file.
 	 */
-	nr = nread = 0;
-	while ((nr = io_read(fd, buf + nread, buf_size - nread)) > 0)
+	nread = 0;
+	while ((nr = io_read(fd, buf + nread, buf_size - nread)) > 0) {
 		nread += nr;
+		if (buf_size - nread <= 0) {
+			error3(n, "file too big for buffer", path);
+			return -1;
+		}
+	}
 	if (nr < 0)
 		error3(n, "read_buf() failed", path);
-	if (nread > 0)
-		error3(n, "file too big for buffer", path);
 	if (close(fd))
 		error4(n, path, "close() failed", strerror(errno));
 	if (nr == 0) {
-		buf[nr] = 0;
+		buf[nread] = 0;
 		return 0;
 	}
 	return -1;
