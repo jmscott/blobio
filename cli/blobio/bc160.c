@@ -33,8 +33,8 @@ static unsigned char	bin_digest[20];
 
 typedef struct
 {
-	RIPEMD160_CTX	ripemd_ctx;
-	SHA256_CTX	sha_ctx;
+	RIPEMD160_CTX	ripemd160;
+	SHA256_CTX	sha256;
 } BC160_CTX;
 
 static BC160_CTX	bc160_ctx;
@@ -44,8 +44,8 @@ static char	empty[]		= "b472a266d0bd89c13706a4132ccfb16f7c3b9fcb";
 static void
 BC160_Init(BC160_CTX *ctx)
 {
-	SHA256_Init(&ctx->sha_ctx);
-	RIPEMD160_Init(&ctx->ripemd_ctx);
+	SHA256_Init(&ctx->sha256);
+	RIPEMD160_Init(&ctx->ripemd160);
 }
 
 static char *
@@ -98,12 +98,12 @@ BC160_Update(BC160_CTX *ctx, unsigned char *chunk, int size)
 	SHA256_CTX tmp_ctx;
 	unsigned char tmp_digest[32];
 
-	SHA256_Update(&ctx->sha_ctx, chunk, size);
+	SHA256_Update(&ctx->sha256, chunk, size);
 
-	tmp_ctx = ctx->sha_ctx;
+	tmp_ctx = ctx->sha256;
 	SHA256_Final(tmp_digest, &tmp_ctx);
 
-	RIPEMD160_Update(&ctx->ripemd_ctx, tmp_digest, (unsigned long)32);
+	RIPEMD160_Update(&ctx->ripemd160, tmp_digest, (unsigned long)32);
 }
 
 /*
@@ -128,7 +128,7 @@ chew(unsigned char *chunk, int size)
 	 *  Copy current ripemd digest state to a temporary state,
 	 *  finalize and then compare to expected state.
 	 */
-	tmp_ctx = bc160_ctx.ripemd_ctx;
+	tmp_ctx = bc160_ctx.ripemd160;
 	RIPEMD160_Final(tmp_digest, &tmp_ctx);
 
 #ifdef COMPILE_TRACE
@@ -255,12 +255,12 @@ bc160_eat_input()
 	_TRACE("request to bc160_eat_input()");
 
 	while ((nread = uni_read(input_fd, buf, sizeof buf)) > 0)
-		SHA256_Update(&bc160_ctx.sha_ctx, buf, nread);
+		SHA256_Update(&bc160_ctx.sha256, buf, nread);
 	if (nread < 0)
 		return strerror(errno);
-	SHA256_Final(sha_digest, &bc160_ctx.sha_ctx);
-	RIPEMD160_Update(&bc160_ctx.ripemd_ctx, sha_digest, 32);
-	RIPEMD160_Final(bin_digest, &bc160_ctx.ripemd_ctx);
+	SHA256_Final(sha_digest, &bc160_ctx.sha256);
+	RIPEMD160_Update(&bc160_ctx.ripemd160, sha_digest, 32);
+	RIPEMD160_Final(bin_digest, &bc160_ctx.ripemd160);
 
 	p = digest;
 	q = bin_digest;
