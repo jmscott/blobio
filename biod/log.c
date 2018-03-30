@@ -38,6 +38,7 @@ extern unsigned char	request_exit_status;
 extern time_t		last_log_heartbeat;
 extern u2		rrd_sample_duration;
 extern time_t		start_time;	
+extern char		pid_path[];
 
 pid_t			logged_pid;
 
@@ -368,6 +369,7 @@ _panic(char *buf, int len, int nwrite)
 	io_write(2, nl, sizeof nl);
 	io_write(2, buf, len);
 	io_write(2, nl, sizeof nl);
+	io_unlink(pid_path);
 	exit(request_pid ? 3 : 255);
 }
 

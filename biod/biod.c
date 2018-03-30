@@ -55,7 +55,7 @@
 #define HEARTBEAT		10	/* 10 seconds */
 #define REQUEST_READ_TIMEOUT	20	/* 20 seconds */
 #define REQUEST_WRITE_TIMEOUT	20	/* 20 seconds */
-#define LEAVE_PAUSE		3	/* 3 seconds */
+#define LEAVE_PAUSE		2	/* 2 seconds */
 
 extern pid_t	brr_logger_pid;
 extern pid_t	logged_pid;
@@ -78,7 +78,7 @@ unsigned char	request_exit_status = 0;
 time_t		start_time;	
 u2		rrd_sample_duration = 0;
 
-static char	pid_path[] = "run/biod.pid";
+char	pid_path[] = "run/biod.pid";
 
 static struct request	req =
 {
@@ -140,7 +140,7 @@ static u8	take_no_count =	0;	//  single no on take
 static char	rrd_log[] = "log/biod-rrd.log";
 
 /*
- *  Exit quickly and quietly, shutting down the logger.
+ *  Exit cleanly, shutting down the logger.
  *
  *  Note:
  *  	Do the sockets need a shutdown() before a close().
@@ -179,50 +179,50 @@ leave(int exit_status)
 		io_close(listen_fd);
 		listen_fd = -1;
 	}
+	if (my_pid != master_pid)
+		exit(exit_status);
 
 	/*
 	 *  In the master, so shutdown all children, the logger last.
 	 */
-	if (my_pid == master_pid) {
-		char buf[MSG_SIZE];
+	char buf[MSG_SIZE];
 
-		info("request to shutdown");
+	info("request to shutdown");
 
-		info("shutting down the arborist");
-		arbor_close();
+	info("shutting down the arborist");
+	arbor_close();
 
-		info("shutting down brr logger");
-		brr_close();
+	info("shutting down brr logger");
+	brr_close();
 
-		info("shutting down digest modules");
-		module_leave();
+	info("shutting down digest modules");
+	module_leave();
 
-		info("sending TERM signal to request children");
-		killpg(getpgrp(), SIGTERM);
-		
-		info2("removing process id file", pid_path);
-		if (io_unlink(pid_path) && errno != ENOENT) {
-			snprintf(buf, sizeof buf,
-				"PANIC: unlink(%s) failed: %s",
-					pid_path, strerror(errno));
-			error(buf);
-			error("this server may not restart");
-		}
-
-		snprintf(buf, sizeof buf, "sleeping %d seconds while kids exit",
-						LEAVE_PAUSE);
-		info(buf);
-
-		/*
-		 *  Sleep awhile as kids shutdown.
-		 *
-		 *  Note:
-		 *  	Need to waitpid() for logger process to shutdown.
-		 */
-		sleep(LEAVE_PAUSE);
-		info("good bye, cruel world");
-		log_close();
+	info("sending TERM signal to request children");
+	killpg(getpgrp(), SIGTERM);
+	
+	info2("removing process id file", pid_path);
+	if (io_unlink(pid_path)) {
+		snprintf(buf, sizeof buf,
+			"PANIC: unlink(%s) failed: %s",
+				pid_path, strerror(errno));
+		error(buf);
+		error("this server may not restart");
 	}
+
+	snprintf(buf, sizeof buf, "sleeping %d seconds while kids exit",
+					LEAVE_PAUSE);
+	info(buf);
+
+	/*
+	 *  Sleep awhile as kids shutdown.
+	 *
+	 *  Note:
+	 *  	Need to waitpid() for logger process to shutdown.
+	 */
+	sleep(LEAVE_PAUSE);
+	info("good bye, cruel world");
+	log_close();
 	exit(exit_status);
 }
 
