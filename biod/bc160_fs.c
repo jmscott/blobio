@@ -221,8 +221,8 @@ zap_blob(struct request *r)
 }
 
 /*
- *  Read a chunk from a local stream, reading up to end of either the stream
- *  or the chunk.
+ *  Read a chunk from a local stream, reading up to either the end of the stream
+ *  or the end of the digested chunk.
  */
 static int
 _read(struct request *r, int fd, unsigned char *buf, int buf_size)
@@ -679,7 +679,8 @@ eat_chunk(struct request *r, SHA256_CTX *sha_ctx, int fd, unsigned char *buf,
 	  int buf_size)
 {
 	struct bc160_fs_request *sp = (struct bc160_fs_request *)r->open_data;
-	BC160_CTX ctx;
+	SHA256_CTX tmp_sha;
+	RIPEMD160_CTX tmp_ripe;
 	unsigned char sha_digest[32];
 	unsigned char digest[20];
 	char n[] = "eat_chunk";
@@ -700,18 +701,18 @@ eat_chunk(struct request *r, SHA256_CTX *sha_ctx, int fd, unsigned char *buf,
 	 *  by copying the incremental digest, finalizing it,
 	 *  then comparing to the expected blob.
 	 */
-	memcpy(&ctx.sha256, sha_ctx, sizeof *sha_ctx);
-	if (!SHA256_Final(sha_digest, sha_ctx))
-		_panic3(r, n, "SHA256_Final() failed", strerror(errno));
+	memcpy(&tmp_sha, sha_ctx, sizeof *sha_ctx);
+	if (!SHA256_Final(sha_digest, &tmp_sha))
+		_panic3(r, n, "SHA256_Final(tmp) failed", strerror(errno));
 
 	/*
 	 *  Calulate RIPEMD160(SHA256) of incremental digest.
 	 */
-	if (!RIPEMD160_Init(&ctx.ripemd160))
-		_panic2(r, n, "RIPEMD160_Init() failed");
-	if (!RIPEMD160_Update(&ctx.ripemd160, sha_digest, 32))
+	if (!RIPEMD160_Init(&tmp_ripe))
+		_panic2(r, n, "RIPEMD160_Init(tmp) failed");
+	if (!RIPEMD160_Update(&tmp_ripe, sha_digest, 32))
 		_panic2(r, n, "RIPEMD160_Update(SHA256) failed");
-	if (!RIPEMD160_Final(digest, &ctx.ripemd160))
+	if (!RIPEMD160_Final(digest, &tmp_ripe))
 		_panic2(r, n, "RIPEMD160_Final(SHA256) failed");
 
 	return memcmp(sp->digest, digest, 20) == 0 ? 1 : 0;
