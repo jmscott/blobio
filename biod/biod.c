@@ -1469,7 +1469,7 @@ daemonize(int argc, char **argv)
 	static char n[] = "daemonize";
 
 	/*
-	 *  Root always runs as user blobio.
+	 *  Server always runs as user blobio.
 	 */
 	if (getuid() == 0) {
 		struct passwd *pwd = getpwnam("blobio");
