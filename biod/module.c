@@ -8,14 +8,22 @@
 extern struct digest_module		sha_fs_module;
 #endif
 
+#ifdef BC160_FS_MODULE
+extern struct digest_module		bc160_fs_module;
+#endif
+
 /*
  *  List of all digest modules.
  *  The module list should really be in a separate file, not here.
  */
 static struct digest_module		*modules[] =
 {
+#ifdef BC160_FS_MODULE
+	&bc160_fs_module,
+#endif
+
 #ifdef SHA_FS_MODULE 
-	&sha_fs_module,
+	&sha_fs_module
 #endif
 };
 static int module_count;
@@ -28,7 +36,7 @@ module_boot()
 	char buf[MSG_SIZE];
 
 	module_count = sizeof modules / sizeof *modules;
-	snprintf(buf, sizeof buf, "%d compiled signature modules",module_count);
+	snprintf(buf, sizeof buf, "%d compiled digest modules", module_count);
 	info2(nm, buf);
 
 	if (module_count == 0)
