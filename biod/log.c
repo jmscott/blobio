@@ -508,8 +508,7 @@ info(char *msg)
 	len = strlen(buf);
 	if (is_logger) {
 		_write(buf, len);
-	}
-	else if (logger_pid) {
+	} else if (logger_pid) {
 		if (io_msg_write(log_fd, buf, len))
 			_panic(buf, len, -1);
 	} else if (io_write(log_fd, buf, strlen(buf)) < 0)
