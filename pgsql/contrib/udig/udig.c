@@ -117,6 +117,11 @@ Datum	udig_lt_bc160(PG_FUNCTION_ARGS);
 Datum	udig_le_bc160(PG_FUNCTION_ARGS);
 Datum	udig_cmp_bc160(PG_FUNCTION_ARGS);
 
+static char empty_udig[] = "empty udig";
+static char big_algo[] = "algorithm > 16 characters: \"%s\"";
+static char no_aprint[] = "unprintable character in algorithm name: 0x%x";
+#define ALGO_HINT "did you mean sha or bc160"
+
 /*
  *  Transform 40 char hex string to 20 byte sha binary.
  */
@@ -360,12 +365,10 @@ _udig_sha_cmp_udig(unsigned char *a_operand, unsigned char *b_operand)
 
 	b = UDIG_VARDATA(b_operand);
 
-	switch (b[0]) {
-	case UDIG_SHA:
+	if (b[0] == UDIG_SHA)
 		return memcmp(a_operand, &b[1], 20);	// sha versus sha
-	case UDIG_BC160:
-		return 1;				// bc160 > sha1
-	}
+	if (b[0] == UDIG_BC160)
+		return -1;
 	ereport(PANIC, (errcode(ERRCODE_DATA_CORRUPTED),
 		errmsg("_udig_sha_cmp_udig: corrupted udig internal type")));
 	return -1;
@@ -491,18 +494,10 @@ udig_in(PG_FUNCTION_ARGS)
 	unsigned char *d;
 	Size size = 0;
 
-	static char no_aprint[] =
-		"unprintable character in algorithm name: 0x%x";
-	static char big_algo[] =
-		"algorithm > 16 characters: \"%s\"";
-	static char empty_udig[] =
-		"empty udig";
 	static char no_algo[] =
 		"unknown algorithm in udig: \"%s\"";
-	static char algo_hint[] =
-		"did you mean sha or bc160";
 	static char bad_dig[] =
-		"invalid input syntax for udig %s digest: \"%s\";
+		"invalid input syntax for udig %s digest: \"%s\"";
 
 	udig = PG_GETARG_CSTRING(0);
 	if (udig == NULL)
@@ -522,7 +517,9 @@ udig_in(PG_FUNCTION_ARGS)
 		if (!isgraph(c))
 			ereport(ERROR,
 				(errcode(ERRCODE_INVALID_TEXT_REPRESENTATION),
-				errmsg(no_aprint, c)));
+				errmsg(no_aprint, c),
+				errhint(ALGO_HINT)
+			));
 		if (c == ':') {
 			*a = a8[8] = 0;	/* successfull parse */
 			break;
@@ -537,7 +534,7 @@ udig_in(PG_FUNCTION_ARGS)
 		ereport(ERROR,
 			(errcode(ERRCODE_INVALID_TEXT_REPRESENTATION),
 				errmsg(big_algo, udig),
-				errhint(algo_hint)
+				errhint(ALGO_HINT)
 			));
 	/*
 	 *  Store SHA or BC160 digests in binary form.
@@ -548,7 +545,7 @@ udig_in(PG_FUNCTION_ARGS)
 	//  Note: memory leak if error occurs on massive copy in?
 	d = palloc(size);
 
-	if (a8[0] == 's' && a8[1] == 'h' && a[2] == 'a' && !a[3])
+	if (a8[0] == 's' && a8[1] == 'h' && a8[2] == 'a' && !a8[3])
 		d[4] = UDIG_SHA;
 	else if (a8[0] == 'b' && a8[1] == 'c' &&
 	         a8[2] == '1' && a8[3] == '6' && a8[4] == '0' &&
@@ -559,7 +556,7 @@ udig_in(PG_FUNCTION_ARGS)
 		ereport(ERROR,
 			(errcode(ERRCODE_INVALID_TEXT_REPRESENTATION),
 				errmsg(no_algo, a8),
-				errhint(algo_hint)
+				errhint(ALGO_HINT)
 			)
 		);
 	if (hex2dig20(u, &d[VARHDRSZ + 1]))
@@ -862,6 +859,7 @@ udig_can_cast(PG_FUNCTION_ARGS)
 {
 	char *udig, *u, *u_end;
 	char a8[9], *a;
+	static char empty_udig[] = "empty udig";
 
 	udig = PG_GETARG_CSTRING(0);
 	if (udig == NULL)
@@ -879,7 +877,9 @@ udig_can_cast(PG_FUNCTION_ARGS)
 		char c = *u++;
 
 		if (!isgraph(c))
-			goto no;
+			ereport(ERROR,
+				(errcode(ERRCODE_INVALID_TEXT_REPRESENTATION),
+				errmsg(no_aprint, c)));
 		if (c == ':') {
 			*a = a8[8] = 0;		/* successfull parse */
 			break;
@@ -887,8 +887,11 @@ udig_can_cast(PG_FUNCTION_ARGS)
 		*a++ = c;
 	}
 	if (u == udig || a8[8] == ':')
-		goto no;
-	if (strcmp("sha", a8) == 0) || strcmp("bc160", a8) == 0){
+		ereport(ERROR,
+			(errcode(ERRCODE_INVALID_TEXT_REPRESENTATION),
+			errmsg(empty_udig, udig)));
+		
+	if (strcmp("sha", a8) == 0 || strcmp("bc160", a8) == 0){
 		unsigned char d20[20];
 
 		if (hex2dig20(u, d20) == 0)
