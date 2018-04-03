@@ -116,7 +116,7 @@ Description:
 
 	not including a trailing new-line or terminating null character.
 	Being <= 371 bytes allows easy broadcast in an UDP packet.
-	The BRR record format is cast in stone.
+	The BRR record format is almost (extra handshake on put?) cast in stone.
 
 Protocol Flow:
  	>get udig\n			# request for blob by udig
@@ -142,8 +142,8 @@ Protocol Flow:
   	    <no\n[close]		#   server rejects blob request
 
 	>eat udig\n			# client requests server to verify blob
-	    <ok\n			#   blob exists and has been verified
-	    <no\n			#   server was unable to digest the blob
+	    <ok\n[close]		#   blob exists and has been verified
+	    <no\n[close]		#   server was unable to digest the blob
 
 	>wrap				# request udig set of traffic logs
 	    <ok\nudig\n[close]		#   udig of set of traffic logs
