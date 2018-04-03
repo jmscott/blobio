@@ -620,7 +620,7 @@ _udig_cmp(unsigned char *a_operand, unsigned char *b_operand)
  *  gcc compiler bug for static variable gets confused doing print style format
  *  checks.
  */
-#define BAD_TYPE_GCC_BUG	"_udig_cmp: corrupted udig type byte in first operand"
+#define BAD_TYPE	"_udig_cmp: corrupted udig type byte in first operand"
 
 	a = UDIG_VARDATA(a_operand);
 	b = UDIG_VARDATA(b_operand);
@@ -630,8 +630,11 @@ _udig_cmp(unsigned char *a_operand, unsigned char *b_operand)
 	 */
 	if (a[0] == b[0])
 		return memcmp(&a[1], &b[1], 20);
-	ereport(PANIC, (errcode(ERRCODE_DATA_CORRUPTED),
-						errmsg(BAD_TYPE_GCC_BUG)));
+	if (a[0] == UDIG_SHA)
+		return 1;
+	if (a[0] == UDIG_BC160)
+		return -1;
+	ereport(PANIC, (errcode(ERRCODE_DATA_CORRUPTED), errmsg(BAD_TYPE)));
 	/*NOTREACHED*/
 	return -1;
 }
