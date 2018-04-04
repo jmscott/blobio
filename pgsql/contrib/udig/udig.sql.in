@@ -6,7 +6,7 @@
  *	psql <<END
  *	DROP TYPE udig CASCADE;
  *	DROP TYPE udig_sha CASCADE;
- *	DROP TYPE udig_bitrip CASCADE;
+ *	DROP TYPE udig_bc160 CASCADE;
  *	DROP OPERATOR FAMILY udig_clan USING btree CASCADE;
  *	END
  *	psql -f udig.sql
@@ -568,112 +568,112 @@ IMMUTABLE STRICT LANGUAGE C;
 /*
  *  RIPEMD160(RIPEMD160(SHA256)) UDig Core Type.
  */
-CREATE TYPE udig_bitrip;					-- bitrip udig type
+CREATE TYPE udig_bc160;					-- bc160 udig type
 
-CREATE OR REPLACE FUNCTION udig_bitrip_in(cstring)	-- cstring to internal
-RETURNS udig_bitrip
-AS 'MODULE_PATHNAME', 'udig_bitrip_in'
+CREATE OR REPLACE FUNCTION udig_bc160_in(cstring)	-- cstring to internal
+RETURNS udig_bc160
+AS 'MODULE_PATHNAME', 'udig_bc160_in'
 IMMUTABLE STRICT LANGUAGE C;
 
-CREATE OR REPLACE FUNCTION udig_bitrip_out(udig_bitrip)	-- internal to cstring
+CREATE OR REPLACE FUNCTION udig_bc160_out(udig_bc160)	-- internal to cstring
 RETURNS cstring
-AS 'MODULE_PATHNAME', 'udig_bitrip_out'
+AS 'MODULE_PATHNAME', 'udig_bc160_out'
 IMMUTABLE STRICT LANGUAGE C;
 
-CREATE TYPE udig_bitrip
+CREATE TYPE udig_bc160
 (
-	input =			udig_bitrip_in,
-	output =		udig_bitrip_out,
+	input =			udig_bc160_in,
+	output =		udig_bc160_out,
 	internallength =	20
 );
 
 /*
  *  Functions for core RIPEMD160(RIPEMD160(SHA256)) data types.
  */
-CREATE OR REPLACE FUNCTION udig_bitrip_eq(udig_bitrip, udig_bitrip)
+CREATE OR REPLACE FUNCTION udig_bc160_eq(udig_bc160, udig_bc160)
 RETURNS boolean
-AS 'MODULE_PATHNAME', 'udig_bitrip_eq'
+AS 'MODULE_PATHNAME', 'udig_bc160_eq'
 IMMUTABLE STRICT LANGUAGE C;
 
-CREATE OR REPLACE FUNCTION udig_bitrip_ne(udig_bitrip, udig_bitrip)
+CREATE OR REPLACE FUNCTION udig_bc160_ne(udig_bc160, udig_bc160)
 RETURNS boolean
-AS 'MODULE_PATHNAME', 'udig_bitrip_ne'
+AS 'MODULE_PATHNAME', 'udig_bc160_ne'
 IMMUTABLE STRICT LANGUAGE C;
 
-CREATE OR REPLACE FUNCTION udig_bitrip_lt(udig_bitrip, udig_bitrip)
+CREATE OR REPLACE FUNCTION udig_bc160_lt(udig_bc160, udig_bc160)
 RETURNS boolean
-AS 'MODULE_PATHNAME', 'udig_bitrip_lt'
+AS 'MODULE_PATHNAME', 'udig_bc160_lt'
 IMMUTABLE STRICT LANGUAGE C;
 
-CREATE OR REPLACE FUNCTION udig_bitrip_le(udig_bitrip, udig_bitrip)
+CREATE OR REPLACE FUNCTION udig_bc160_le(udig_bc160, udig_bc160)
 RETURNS boolean
-AS 'MODULE_PATHNAME', 'udig_bitrip_le'
+AS 'MODULE_PATHNAME', 'udig_bc160_le'
 IMMUTABLE STRICT LANGUAGE C;
 
-CREATE OR REPLACE FUNCTION udig_bitrip_gt(udig_bitrip, udig_bitrip)
+CREATE OR REPLACE FUNCTION udig_bc160_gt(udig_bc160, udig_bc160)
 RETURNS boolean
-AS 'MODULE_PATHNAME', 'udig_bitrip_gt'
+AS 'MODULE_PATHNAME', 'udig_bc160_gt'
 IMMUTABLE STRICT LANGUAGE C;
 
-CREATE OR REPLACE FUNCTION udig_bitrip_ge(udig_bitrip, udig_bitrip)
+CREATE OR REPLACE FUNCTION udig_bc160_ge(udig_bc160, udig_bc160)
 RETURNS boolean
-AS 'MODULE_PATHNAME', 'udig_bitrip_ge'
+AS 'MODULE_PATHNAME', 'udig_bc160_ge'
 IMMUTABLE STRICT LANGUAGE C;
 
-CREATE OR REPLACE FUNCTION udig_bitrip_cmp(udig_bitrip, udig_bitrip)
+CREATE OR REPLACE FUNCTION udig_bc160_cmp(udig_bc160, udig_bc160)
 RETURNS integer
-AS 'MODULE_PATHNAME', 'udig_bitrip_cmp'
+AS 'MODULE_PATHNAME', 'udig_bc160_cmp'
 IMMUTABLE STRICT LANGUAGE C;
 
 /*
  *  Functions for cross compare RIPEMD160(RIPEMD160(SHA256))-generic
  *  UDIG data types.
  */
-CREATE OR REPLACE FUNCTION udig_bitrip_eq_udig(udig_bitrip, udig)
+CREATE OR REPLACE FUNCTION udig_bc160_eq_udig(udig_bc160, udig)
 RETURNS boolean
-AS 'MODULE_PATHNAME', 'udig_bitrip_eq_udig'
+AS 'MODULE_PATHNAME', 'udig_bc160_eq_udig'
 IMMUTABLE STRICT LANGUAGE C;
 
-CREATE OR REPLACE FUNCTION udig_bitrip_ne_udig(udig_bitrip, udig)
+CREATE OR REPLACE FUNCTION udig_bc160_ne_udig(udig_bc160, udig)
 RETURNS boolean
-AS 'MODULE_PATHNAME', 'udig_bitrip_ne_udig'
+AS 'MODULE_PATHNAME', 'udig_bc160_ne_udig'
 IMMUTABLE STRICT LANGUAGE C;
 
-CREATE OR REPLACE FUNCTION udig_bitrip_lt_udig(udig_bitrip, udig)
+CREATE OR REPLACE FUNCTION udig_bc160_lt_udig(udig_bc160, udig)
 RETURNS boolean
-AS 'MODULE_PATHNAME', 'udig_bitrip_lt_udig'
+AS 'MODULE_PATHNAME', 'udig_bc160_lt_udig'
 IMMUTABLE STRICT LANGUAGE C;
 
-CREATE OR REPLACE FUNCTION udig_bitrip_le_udig(udig_bitrip, udig)
+CREATE OR REPLACE FUNCTION udig_bc160_le_udig(udig_bc160, udig)
 RETURNS boolean
-AS 'MODULE_PATHNAME', 'udig_bitrip_le_udig'
+AS 'MODULE_PATHNAME', 'udig_bc160_le_udig'
 IMMUTABLE STRICT LANGUAGE C;
 
-CREATE OR REPLACE FUNCTION udig_bitrip_gt_udig(udig_bitrip, udig)
+CREATE OR REPLACE FUNCTION udig_bc160_gt_udig(udig_bc160, udig)
 RETURNS boolean
-AS 'MODULE_PATHNAME', 'udig_bitrip_gt_udig'
+AS 'MODULE_PATHNAME', 'udig_bc160_gt_udig'
 IMMUTABLE STRICT LANGUAGE C;
 
-CREATE OR REPLACE FUNCTION udig_bitrip_ge_udig(udig_bitrip, udig)
+CREATE OR REPLACE FUNCTION udig_bc160_ge_udig(udig_bc160, udig)
 RETURNS boolean
-AS 'MODULE_PATHNAME', 'udig_bitrip_ge_udig'
+AS 'MODULE_PATHNAME', 'udig_bc160_ge_udig'
 IMMUTABLE STRICT LANGUAGE C;
 
-CREATE OR REPLACE FUNCTION udig_bitrip_cmp_udig(udig_bitrip, udig)
+CREATE OR REPLACE FUNCTION udig_bc160_cmp_udig(udig_bc160, udig)
 RETURNS integer
-AS 'MODULE_PATHNAME', 'udig_bitrip_cmp_udig'
+AS 'MODULE_PATHNAME', 'udig_bc160_cmp_udig'
 IMMUTABLE STRICT LANGUAGE C;
 
 /*
  *  Cast RIPEMD160(SHA256) to generic udig.
  */
-CREATE OR REPLACE FUNCTION udig_bitrip_cast(udig_bitrip)
+CREATE OR REPLACE FUNCTION udig_bc160_cast(udig_bc160)
 RETURNS udig
-AS 'MODULE_PATHNAME', 'udig_bitrip_cast'
+AS 'MODULE_PATHNAME', 'udig_bc160_cast'
 IMMUTABLE STRICT LANGUAGE C;
 
-CREATE CAST (udig_bitrip AS udig)
-  WITH FUNCTION udig_bitrip_cast(udig_bitrip)
+CREATE CAST (udig_bc160 AS udig)
+  WITH FUNCTION udig_bc160_cast(udig_bc160)
   AS IMPLICIT
 ;
 
@@ -682,9 +682,9 @@ CREATE CAST (udig_bitrip AS udig)
  */
 CREATE OPERATOR =
 (
-	leftarg =		udig_bitrip,
-	rightarg =		udig_bitrip,
-	procedure =		udig_bitrip_eq,
+	leftarg =		udig_bc160,
+	rightarg =		udig_bc160,
+	procedure =		udig_bc160_eq,
 	commutator =		=,
 	negator =		<>,
 	restrict =		eqsel,
@@ -693,9 +693,9 @@ CREATE OPERATOR =
 
 CREATE OPERATOR <>
 (
-	leftarg =		udig_bitrip,
-	rightarg =		udig_bitrip,
-	procedure =		udig_bitrip_ne,
+	leftarg =		udig_bc160,
+	rightarg =		udig_bc160,
+	procedure =		udig_bc160_ne,
 	commutator =		<>,
 	negator =		=,
 	restrict =		neqsel,
@@ -704,9 +704,9 @@ CREATE OPERATOR <>
 
 CREATE OPERATOR >
 (
-	leftarg =		udig_bitrip,
-	rightarg =		udig_bitrip,
-	procedure =		udig_bitrip_gt,
+	leftarg =		udig_bc160,
+	rightarg =		udig_bc160,
+	procedure =		udig_bc160_gt,
 	commutator =		<,
 	negator =		<=,
 	restrict =		scalargtsel,
@@ -715,9 +715,9 @@ CREATE OPERATOR >
 
 CREATE OPERATOR >=
 (
-	leftarg =		udig_bitrip,
-	rightarg =		udig_bitrip,
-	procedure =		udig_bitrip_ge,
+	leftarg =		udig_bc160,
+	rightarg =		udig_bc160,
+	procedure =		udig_bc160_ge,
 	commutator =		<=,
 	negator =		<,
 	restrict =		scalargtsel,
@@ -726,9 +726,9 @@ CREATE OPERATOR >=
 
 CREATE OPERATOR <
 (
-	leftarg =		udig_bitrip,
-	rightarg =		udig_bitrip,
-	procedure =		udig_bitrip_lt,
+	leftarg =		udig_bc160,
+	rightarg =		udig_bc160,
+	procedure =		udig_bc160_lt,
 	commutator =		>,
 	negator =		>=,
 	restrict =		scalarltsel,
@@ -737,9 +737,9 @@ CREATE OPERATOR <
 
 CREATE OPERATOR <=
 (
-	leftarg =		udig_bitrip,
-	rightarg =		udig_bitrip,
-	procedure =		udig_bitrip_le,
+	leftarg =		udig_bc160,
+	rightarg =		udig_bc160,
+	procedure =		udig_bc160_le,
 	commutator =		>=,
 	negator =		>,
 	restrict =		scalarltsel,
@@ -749,66 +749,66 @@ CREATE OPERATOR <=
 /*
  *  Cross Type RIPEMD160(SHA256) to UDig Comparison Operators
  */
-CREATE OPERATOR =					-- = (bitrip, udig)
+CREATE OPERATOR =					-- = (bc160, udig)
 (
-	leftarg =		udig_bitrip,
+	leftarg =		udig_bc160,
 	rightarg =		udig,
-	procedure =		udig_bitrip_eq_udig,
+	procedure =		udig_bc160_eq_udig,
 	commutator =		=,
 	negator =		<>,
 	restrict =		eqsel,
 	join =			eqjoinsel
 );
 
-CREATE OPERATOR <>					-- <> (bitrip, udig)
+CREATE OPERATOR <>					-- <> (bc160, udig)
 (
-	leftarg =		udig_bitrip,
+	leftarg =		udig_bc160,
 	rightarg =		udig,
-	procedure =		udig_bitrip_ne_udig,
+	procedure =		udig_bc160_ne_udig,
 	commutator =		<>,
 	negator =		=,
 	restrict =		neqsel,
 	join =			neqjoinsel
 );
 
-CREATE OPERATOR >					-- > (bitrip, udig)
+CREATE OPERATOR >					-- > (bc160, udig)
 (
-	leftarg =		udig_bitrip,
+	leftarg =		udig_bc160,
 	rightarg =		udig,
-	procedure =		udig_bitrip_gt_udig,
+	procedure =		udig_bc160_gt_udig,
 	commutator =		<,
 	negator =		<=,
 	restrict =		scalargtsel,
 	join =			scalargtjoinsel
 );
 
-CREATE OPERATOR >=					-- >= (bitrip, udig)
+CREATE OPERATOR >=					-- >= (bc160, udig)
 (
-	leftarg =		udig_bitrip,
+	leftarg =		udig_bc160,
 	rightarg =		udig,
-	procedure =		udig_bitrip_ge_udig,
+	procedure =		udig_bc160_ge_udig,
 	commutator =		<=,
 	negator =		<,
 	restrict =		scalargtsel,
 	join =			scalargtjoinsel
 );
 
-CREATE OPERATOR <					-- < (bitrip, udig)
+CREATE OPERATOR <					-- < (bc160, udig)
 (
-	leftarg =		udig_bitrip,
+	leftarg =		udig_bc160,
 	rightarg =		udig,
-	procedure =		udig_bitrip_lt_udig,
+	procedure =		udig_bc160_lt_udig,
 	commutator =		>,
 	negator =		>=,
 	restrict =		scalarltsel,
 	join =			scalarltjoinsel
 );
 
-CREATE OPERATOR <=					-- <= (bitrip, udig)
+CREATE OPERATOR <=					-- <= (bc160, udig)
 (
-	leftarg =		udig_bitrip,
+	leftarg =		udig_bc160,
 	rightarg =		udig,
-	procedure =		udig_bitrip_le_udig,
+	procedure =		udig_bc160_le_udig,
 	commutator =		>=,
 	negator =		>,
 	restrict =		scalarltsel,
@@ -818,39 +818,39 @@ CREATE OPERATOR <=					-- <= (bitrip, udig)
 /*
  *  Create Cross UDIG,RIPEMD160(SHA256) Functions
  */
-CREATE OR REPLACE FUNCTION udig_eq_bitrip(udig, udig_bitrip)
+CREATE OR REPLACE FUNCTION udig_eq_bc160(udig, udig_bc160)
 RETURNS boolean
-AS 'MODULE_PATHNAME', 'udig_eq_bitrip'
+AS 'MODULE_PATHNAME', 'udig_eq_bc160'
 IMMUTABLE STRICT LANGUAGE C;
 
-CREATE OR REPLACE FUNCTION udig_ne_bitrip(udig, udig_bitrip)
+CREATE OR REPLACE FUNCTION udig_ne_bc160(udig, udig_bc160)
 RETURNS boolean
-AS 'MODULE_PATHNAME', 'udig_ne_bitrip'
+AS 'MODULE_PATHNAME', 'udig_ne_bc160'
 IMMUTABLE STRICT LANGUAGE C;
 
-CREATE OR REPLACE FUNCTION udig_lt_bitrip(udig, udig_bitrip)
+CREATE OR REPLACE FUNCTION udig_lt_bc160(udig, udig_bc160)
 RETURNS boolean
-AS 'MODULE_PATHNAME', 'udig_lt_bitrip'
+AS 'MODULE_PATHNAME', 'udig_lt_bc160'
 IMMUTABLE STRICT LANGUAGE C;
 
-CREATE OR REPLACE FUNCTION udig_le_bitrip(udig, udig_bitrip)
+CREATE OR REPLACE FUNCTION udig_le_bc160(udig, udig_bc160)
 RETURNS boolean
-AS 'MODULE_PATHNAME', 'udig_le_bitrip'
+AS 'MODULE_PATHNAME', 'udig_le_bc160'
 IMMUTABLE STRICT LANGUAGE C;
 
-CREATE OR REPLACE FUNCTION udig_gt_bitrip(udig, udig_bitrip)
+CREATE OR REPLACE FUNCTION udig_gt_bc160(udig, udig_bc160)
 RETURNS boolean
-AS 'MODULE_PATHNAME', 'udig_gt_bitrip'
+AS 'MODULE_PATHNAME', 'udig_gt_bc160'
 IMMUTABLE STRICT LANGUAGE C;
 
-CREATE OR REPLACE FUNCTION udig_ge_bitrip(udig, udig_bitrip)
+CREATE OR REPLACE FUNCTION udig_ge_bc160(udig, udig_bc160)
 RETURNS boolean
-AS 'MODULE_PATHNAME', 'udig_ge_bitrip'
+AS 'MODULE_PATHNAME', 'udig_ge_bc160'
 IMMUTABLE STRICT LANGUAGE C;
 
-CREATE OR REPLACE FUNCTION udig_cmp_bitrip(udig, udig_bitrip)
+CREATE OR REPLACE FUNCTION udig_cmp_bc160(udig, udig_bc160)
 RETURNS integer
-AS 'MODULE_PATHNAME', 'udig_cmp_bitrip'
+AS 'MODULE_PATHNAME', 'udig_cmp_bc160'
 IMMUTABLE STRICT LANGUAGE C;
 
 /*
@@ -859,8 +859,8 @@ IMMUTABLE STRICT LANGUAGE C;
 CREATE OPERATOR =
 (
 	leftarg =		udig,
-	rightarg =		udig_bitrip,
-	procedure =		udig_eq_bitrip,
+	rightarg =		udig_bc160,
+	procedure =		udig_eq_bc160,
 	commutator =		=,
 	negator =		<>,
 	restrict =		eqsel,
@@ -870,8 +870,8 @@ CREATE OPERATOR =
 CREATE OPERATOR <>
 (
 	leftarg =		udig,
-	rightarg =		udig_bitrip,
-	procedure =		udig_ne_bitrip,
+	rightarg =		udig_bc160,
+	procedure =		udig_ne_bc160,
 	commutator =		<>,
 	negator =		=,
 	restrict =		neqsel,
@@ -881,8 +881,8 @@ CREATE OPERATOR <>
 CREATE OPERATOR >
 (
 	leftarg =		udig,
-	rightarg =		udig_bitrip,
-	procedure =		udig_gt_bitrip,
+	rightarg =		udig_bc160,
+	procedure =		udig_gt_bc160,
 	commutator =		<,
 	negator =		<=,
 	restrict =		scalargtsel,
@@ -892,8 +892,8 @@ CREATE OPERATOR >
 CREATE OPERATOR >=
 (
 	leftarg =		udig,
-	rightarg =		udig_bitrip,
-	procedure =		udig_ge_bitrip,
+	rightarg =		udig_bc160,
+	procedure =		udig_ge_bc160,
 	commutator =		<=,
 	negator =		<,
 	restrict =		scalargtsel,
@@ -903,8 +903,8 @@ CREATE OPERATOR >=
 CREATE OPERATOR <
 (
 	leftarg =		udig,
-	rightarg =		udig_bitrip,
-	procedure =		udig_lt_bitrip,
+	rightarg =		udig_bc160,
+	procedure =		udig_lt_bc160,
 	commutator =		>,
 	negator =		>=,
 	restrict =		scalarltsel,
@@ -914,43 +914,43 @@ CREATE OPERATOR <
 CREATE OPERATOR <=
 (
 	leftarg =		udig,
-	rightarg =		udig_bitrip,
-	procedure =		udig_le_bitrip,
+	rightarg =		udig_bc160,
+	procedure =		udig_le_bc160,
 	commutator =		>=,
 	negator =		>,
 	restrict =		scalarltsel,
 	join =			scalarltjoinsel
 );
 
-CREATE OPERATOR CLASS udig_bitrip_ops
-  DEFAULT FOR TYPE udig_bitrip USING btree FAMILY udig_clan AS
-        OPERATOR        1       <	(udig_bitrip, udig_bitrip),
-        OPERATOR        2       <=	(udig_bitrip, udig_bitrip),
-        OPERATOR        3       =	(udig_bitrip, udig_bitrip),
-        OPERATOR        4       >=	(udig_bitrip, udig_bitrip),
-        OPERATOR        5       >	(udig_bitrip, udig_bitrip),
-        FUNCTION        1       udig_bitrip_cmp
-					(udig_bitrip, udig_bitrip)
+CREATE OPERATOR CLASS udig_bc160_ops
+  DEFAULT FOR TYPE udig_bc160 USING btree FAMILY udig_clan AS
+        OPERATOR        1       <	(udig_bc160, udig_bc160),
+        OPERATOR        2       <=	(udig_bc160, udig_bc160),
+        OPERATOR        3       =	(udig_bc160, udig_bc160),
+        OPERATOR        4       >=	(udig_bc160, udig_bc160),
+        OPERATOR        5       >	(udig_bc160, udig_bc160),
+        FUNCTION        1       udig_bc160_cmp
+					(udig_bc160, udig_bc160)
 ;
 
 /*
- *  Add cross type - bitrip/generic udig - operator classes to udig_clan family.
+ *  Add cross type - bc160/generic udig - operator classes to udig_clan family.
  */
 ALTER OPERATOR FAMILY udig_clan USING btree ADD
 
-  --  cross type for bitrip and udig
-  OPERATOR 1 	<	(udig_bitrip, udig),
-  OPERATOR 2	<=	(udig_bitrip, udig),
-  OPERATOR 3	=	(udig_bitrip, udig),
-  OPERATOR 4	>=	(udig_bitrip, udig),
-  OPERATOR 5	>	(udig_bitrip, udig),
-  FUNCTION 1	udig_bitrip_cmp_udig	(udig_bitrip, udig),
+  --  cross type for bc160 and udig
+  OPERATOR 1 	<	(udig_bc160, udig),
+  OPERATOR 2	<=	(udig_bc160, udig),
+  OPERATOR 3	=	(udig_bc160, udig),
+  OPERATOR 4	>=	(udig_bc160, udig),
+  OPERATOR 5	>	(udig_bc160, udig),
+  FUNCTION 1	udig_bc160_cmp_udig	(udig_bc160, udig),
 
-  --  cross type for udig and bitrip
-  OPERATOR 1 	<	(udig, udig_bitrip),
-  OPERATOR 2	<=	(udig, udig_bitrip),
-  OPERATOR 3	=	(udig, udig_bitrip),
-  OPERATOR 4	>=	(udig, udig_bitrip),
-  OPERATOR 5	>	(udig, udig_bitrip),
-  FUNCTION 1	udig_cmp_bitrip	(udig, udig_bitrip)
+  --  cross type for udig and bc160
+  OPERATOR 1 	<	(udig, udig_bc160),
+  OPERATOR 2	<=	(udig, udig_bc160),
+  OPERATOR 3	=	(udig, udig_bc160),
+  OPERATOR 4	>=	(udig, udig_bc160),
+  OPERATOR 5	>	(udig, udig_bc160),
+  FUNCTION 1	udig_cmp_bc160	(udig, udig_bc160)
 ;
