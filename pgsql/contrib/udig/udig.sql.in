@@ -1,13 +1,15 @@
 /*
  *  Synopsis:
  *	Create PostgreSQL UDIG Data Types, including SHA1.
+ *  Note:
+ *	Should a udig be in the blobio schema?
  */
 \set ON_ERROR_STOP
 
 SET search_path = public;
 
 /*
- *  SHA1 Udig Core Type.
+ *  SHA1 UDig Core Type.
  */
 CREATE TYPE udig_sha;					-- temporary shell type
 
@@ -215,7 +217,7 @@ CREATE OPERATOR <=
 );
 
 /*
- *  Cross Type SHA to Udig Comparison Operators
+ *  Cross Type SHA to UDig Comparison Operators
  */
 CREATE OPERATOR =					-- = (sha, udig)
 (
