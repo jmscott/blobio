@@ -477,11 +477,11 @@ udig_sha_cast(PG_FUNCTION_ARGS)
 /*
  *  Convert text udig in the format
  *
- *	algorithm:digest
+ *	{sha,bc160}:[a-f0-9]{40}
  *
  *  to variable length
  *
- *	[algo byte] [data ...]
+ *	[algo byte] [20 bytes of digest bits]
  *
  */
 PG_FUNCTION_INFO_V1(udig_in);
@@ -520,6 +520,7 @@ udig_in(PG_FUNCTION_ARGS)
 				errmsg(no_aprint, c),
 				errhint(ALGO_HINT)
 			));
+
 		if (c == ':') {
 			*a = a8[8] = 0;	/* successfull parse */
 			break;
@@ -542,30 +543,35 @@ udig_in(PG_FUNCTION_ARGS)
 
 	size = VARHDRSZ + 1 + 20;
 
-	//  Note: memory leak if error occurs on massive copy in?
 	d = palloc(size);
 
-	if (a8[0] == 's' && a8[1] == 'h' && a8[2] == 'a' && !a8[3])
-		d[4] = UDIG_SHA;
-	else if (a8[0] == 'b' && a8[1] == 'c' &&
+	//  quick test for "bc160" or "sha"
+	if (a8[0] == 'b' && a8[1] == 'c' &&
 	         a8[2] == '1' && a8[3] == '6' && a8[4] == '0' &&
-		 !a8[5]
+		 a8[5] == 0
 	)
 		d[4] = UDIG_BC160;
-	else
+	else if (a8[0] == 's' && a8[1] == 'h' && a8[2] == 'a' && a8[3] == 0)
+		d[4] = UDIG_SHA;
+	else {
+		pfree(d);
 		ereport(ERROR,
 			(errcode(ERRCODE_INVALID_TEXT_REPRESENTATION),
 				errmsg(no_algo, a8),
 				errhint(ALGO_HINT)
 			)
 		);
-	if (hex2dig20(u, &d[VARHDRSZ + 1]))
+	}
+
+	if (hex2dig20(u, &d[VARHDRSZ + 1])) {
+		pfree(d);
 		ereport(ERROR,
 			(errcode(ERRCODE_INVALID_TEXT_REPRESENTATION),
 				errmsg(bad_dig, a8, u),
 				errhint("hex digest chars are 0-9 or a-f")
 			)
 		);
+	}
 
 	SET_VARSIZE(d, size);
 	PG_RETURN_POINTER(d);
@@ -609,7 +615,8 @@ udig_out(PG_FUNCTION_ARGS)
 
 /*
  *  Lexically compare two udigs.  Udigs of the same algorithm will compare by
- *  digests.  UDigs with different algorithms will compare the algorithms only.
+ *  digests.  UDigs with different algorithms will compare by ascii order
+ *  of the digest name.  For example, "bc160" < "sha".
  */
 static int
 _udig_cmp(unsigned char *a_operand, unsigned char *b_operand)
@@ -618,9 +625,9 @@ _udig_cmp(unsigned char *a_operand, unsigned char *b_operand)
 
 /*
  *  gcc compiler bug for static variable gets confused doing print style format
- *  checks.
+ *  checks for variable.
  */
-#define BAD_TYPE	"_udig_cmp: corrupted udig type byte in first operand"
+#define _BAD_TYPE	"_udig_cmp: corrupted udig type byte in first operand"
 
 	a = UDIG_VARDATA(a_operand);
 	b = UDIG_VARDATA(b_operand);
@@ -634,7 +641,8 @@ _udig_cmp(unsigned char *a_operand, unsigned char *b_operand)
 		return 1;
 	if (a[0] == UDIG_BC160)
 		return -1;
-	ereport(PANIC, (errcode(ERRCODE_DATA_CORRUPTED), errmsg(BAD_TYPE)));
+	ereport(PANIC, (errcode(ERRCODE_DATA_CORRUPTED), errmsg(_BAD_TYPE)));
+
 	/*NOTREACHED*/
 	return -1;
 }
