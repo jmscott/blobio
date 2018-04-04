@@ -41,23 +41,19 @@ static BC160_CTX	bc160_ctx;
 
 static char	empty[]		= "b472a266d0bd89c13706a4132ccfb16f7c3b9fcb";
 
-static void
-BC160_Init(BC160_CTX *ctx)
-{
-	SHA256_Init(&ctx->sha256);
-	RIPEMD160_Init(&ctx->ripemd160);
-}
-
 static char *
 bc160_init()
 {
 	char *d40, c;
 	unsigned char *d20;
 	unsigned int i;
-	static char nm[] = "bc160: init";
+	static char n[] = "bc160: init";
 
 	if (strcmp("roll", verb)) {
-		BC160_Init(&bc160_ctx);
+		if (!SHA256_Init(&bc160_ctx.sha256))
+			return "SHA256_Init() failed";
+		if (!RIPEMD160_Init(&bc160_ctx.ripemd160))
+			return "RIPEMD160_Init() failed";
 
 		/*
 		 *  Convert the 40 character hex signature to 20 byte binary.
@@ -83,7 +79,7 @@ bc160_init()
 			}
 #ifdef COMPILE_TRACE
 			if (tracing) {
-				trace2(nm, "hex dump of 20 byte digest:");
+				trace2(n, "hex dump of 20 byte digest:");
 				hexdump(d20, 20, '=');
 			}
 #endif
@@ -92,80 +88,82 @@ bc160_init()
 	return (char *)0;
 }
 
-static void
-BC160_Update(BC160_CTX *ctx, unsigned char *chunk, int size)
-{
-	SHA256_CTX tmp_ctx;
-	unsigned char tmp_digest[32];
-
-	SHA256_Update(&ctx->sha256, chunk, size);
-
-	tmp_ctx = ctx->sha256;
-	SHA256_Final(tmp_digest, &tmp_ctx);
-
-	RIPEMD160_Update(&ctx->ripemd160, tmp_digest, (unsigned long)32);
-}
-
 /*
  *  Update the digest with a chunk of the blob being put to the server.
- *  Return 0 if digest matches requested digest;  otherwise return 1.
+ *
+ *  Return
+ *
+ *	"0"	no more to chew since digest matches requested digest;
+ *	"1"	more to chew since digest does not match request digest
+ *	"..."	error
  */
-static int
+static char *
 chew(unsigned char *chunk, int size)
 {
-	static char nm[] = "bc160: chew";
+	static char n[] = "bc160: chew";
 
-	TRACE2(nm, "request to chew()");
+	TRACE2(n, "request to chew()");
+
+	if (!SHA256_Update(&bc160_ctx.sha256, chunk, size))
+		return "SHA256_Update(chunk) failed";
 
 	/*
-	 *  Incremental ripemd160 digest.
+	 *  Finalize a temporay copy of sha256.
 	 */
-	unsigned char tmp_digest[20];
-	RIPEMD160_CTX tmp_ctx;
+	SHA256_CTX tmp_sha_ctx;
+	unsigned char tmp_sha_digest[32];
 
-	BC160_Update(&bc160_ctx, chunk, size);
+	tmp_sha_ctx = bc160_ctx.sha256;
+	if (!SHA256_Final(tmp_sha_digest, &tmp_sha_ctx))
+		return "SHA256_Final(tmp) failed";
+
 	/*
-	 *  Copy current ripemd digest state to a temporary state,
-	 *  finalize and then compare to expected state.
+	 *  Take RIPEMD160 of temp sha256 digest.
 	 */
-	tmp_ctx = bc160_ctx.ripemd160;
-	RIPEMD160_Final(tmp_digest, &tmp_ctx);
+	unsigned char tmp_ripemd_digest[20];
+	RIPEMD160_CTX tmp_ripemd_ctx;
 
+	if (!RIPEMD160_Init(&tmp_ripemd_ctx))
+		return "RIPEMD160_Init(tmp) failed";
+	if (!RIPEMD160_Update(&tmp_ripemd_ctx, tmp_sha_digest, 32))
+		return "RIPEMD160_Update(tmp SHA256) failed";
+	if (!RIPEMD160_Final(tmp_ripemd_digest, &tmp_ripemd_ctx))
+		return "RIPEMD160_Final(tmp SHA256) failed";
 #ifdef COMPILE_TRACE
 	if (tracing) {
-		trace2(nm, "hex dump of 20 byte digest follows ...");
-		hexdump(tmp_digest, 20, '=');
-		trace2(nm, "chew() done");
+		trace2(n, "hex dump of 20 byte RIPEMD160 follows ...");
+		hexdump(tmp_ripemd_digest, 20, '=');
+		trace2(n, "chew(tmp_ripemd) done");
 	}
 #endif
-	return memcmp(tmp_digest, bin_digest, 20) == 0 ? 0 : 1;
+	return memcmp(tmp_ripemd_digest, bin_digest, 20) == 0 ? "0" : "1";
 }
 
 /*
  *  Synopsis:
  *	Update the partial digest with a chunk read from a get request.
  *  Returns:
- *	-1	invalid signature
- *	0	ok, no more to read, blob seen
- *	1	more to read, continue, blob not seen
+ *	"0"	ok, no more to read, blob seen
+ *	"1"	more blob to read
+ *	"..."	error message
  */
-static int
+static char *
 bc160_get_update(unsigned char *src, int src_size)
 {
 	return chew(src, src_size);
 }
 
-static int
+static char *
 bc160_take_update(unsigned char *src, int src_size)
 {
 	return chew(src, src_size);
 }
 
-static int
+static char *
 bc160_took(char *reply)
 {
 	(void)reply;
-	return 0;
+	return "0";
 }
 
 /*
@@ -176,23 +174,23 @@ bc160_took(char *reply)
  *	1	continue putting blob.
  *	-1	chunk not part of the blob.
  */
-static int
+static char *
 bc160_put_update(unsigned char *src, int src_size)
 {
 	return chew(src, src_size);
 }
 
-static int
+static char *
 bc160_give_update(unsigned char *src, int src_size)
 {
 	return bc160_put_update(src, src_size);
 }
 
-static int
+static char *
 bc160_gave(char *reply)
 {
 	UNUSED_ARG(reply);
-	return 0;
+	return "0";
 }
 
 static int
@@ -243,6 +241,10 @@ _trace(char *msg)
 
 /*
  *  Digest data on input and update the global digest[129] array.
+ *
+ *  Returns:
+ *	(char *)	input eaten success fully
+ *	"..."		error message.
  */
 static char *
 bc160_eat_input()
@@ -255,12 +257,17 @@ bc160_eat_input()
 	_TRACE("request to bc160_eat_input()");
 
 	while ((nread = uni_read(input_fd, buf, sizeof buf)) > 0)
-		SHA256_Update(&bc160_ctx.sha256, buf, nread);
+		if (!SHA256_Update(&bc160_ctx.sha256, buf, nread))
+			return "SHA256_Update(chunk) failed";
 	if (nread < 0)
 		return strerror(errno);
-	SHA256_Final(sha_digest, &bc160_ctx.sha256);
-	RIPEMD160_Update(&bc160_ctx.ripemd160, sha_digest, 32);
-	RIPEMD160_Final(bin_digest, &bc160_ctx.ripemd160);
+	if (!SHA256_Final(sha_digest, &bc160_ctx.sha256))
+		return "SHA256_Final() failed";
+
+	if (!RIPEMD160_Update(&bc160_ctx.ripemd160, sha_digest, 32))
+		return "RIPEMD160_Update(SHA256) failed";
+	if (!RIPEMD160_Final(bin_digest, &bc160_ctx.ripemd160))
+		return "RIPEMD160_Final(SHA256) failed";
 
 	p = digest;
 	q = bin_digest;

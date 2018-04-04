@@ -44,7 +44,8 @@ sha_init()
 	static char nm[] = "sha: init";
 
 	if (strcmp("roll", verb)) {
-		SHA1_Init(&sha_ctx);
+		if (!SHA1_Init(&sha_ctx))
+			return "SHA1_Init() failed";
 
 		/*
 		 *  Convert the 40 character hex signature to 20 byte binary.
@@ -81,9 +82,13 @@ sha_init()
 
 /*
  *  Update the digest with a chunk of the blob being put to the server.
- *  Return 0 if digest matches requested digest;  otherwise return 1.
+ *  Return
+ *
+ *	"0"	no more to chew, blob has digest
+ *	"1"	more input to chew, digest not seen
+ *	"..."	error message
  */
-static int
+static char *
 chew(unsigned char *chunk, int size)
 {
 	static char nm[] = "sha: chew";
@@ -96,13 +101,15 @@ chew(unsigned char *chunk, int size)
 	unsigned char tmp_digest[20];
 	SHA_CTX tmp_ctx;
 
-	SHA1_Update(&sha_ctx, chunk, size);
+	if (!SHA1_Update(&sha_ctx, chunk, size))
+		return "SHA1_Update(chunk) failed";
 	/*
 	 *  Copy current digest state to a temporary state,
 	 *  finalize and then compare to expected state.
 	 */
 	tmp_ctx = sha_ctx;
-	SHA1_Final(tmp_digest, &tmp_ctx);
+	if (!SHA1_Final(tmp_digest, &tmp_ctx))
+		return "SHA1_Final(tmp) failed";
 
 #ifdef COMPILE_TRACE
 	if (tracing) {
@@ -111,7 +118,7 @@ chew(unsigned char *chunk, int size)
 		trace2(nm, "chew() done");
 	}
 #endif
-	return memcmp(tmp_digest, bin_digest, 20) == 0 ? 0 : 1;
+	return memcmp(tmp_digest, bin_digest, 20) == 0 ? "0" : "1";
 }
 
 /*
@@ -122,19 +129,19 @@ chew(unsigned char *chunk, int size)
  *	0	ok, no more to read, blob seen
  *	1	more to read, continue, blob not seen
  */
-static int
+static char *
 sha_get_update(unsigned char *src, int src_size)
 {
 	return chew(src, src_size);
 }
 
-static int
+static char *
 sha_take_update(unsigned char *src, int src_size)
 {
 	return chew(src, src_size);
 }
 
-static int
+static char *
 sha_took(char *reply)
 {
 	(void)reply;
@@ -145,27 +152,27 @@ sha_took(char *reply)
  *  Synopsis:
  *	Update the digest with a chunk from a put request.
  *  Returns:
- *	0	id blob finished
- *	1	continue putting blob.
- *	-1	chunk not part of the blob.
+ *	"0"	done, digest seen input
+ *	"1"	not done, digest not seen
+ *	"..."	error message
  */
-static int
+static char *
 sha_put_update(unsigned char *src, int src_size)
 {
 	return chew(src, src_size);
 }
 
-static int
+static char *
 sha_give_update(unsigned char *src, int src_size)
 {
 	return sha_put_update(src, src_size);
 }
 
-static int
+static char *
 sha_gave(char *reply)
 {
 	UNUSED_ARG(reply);
-	return 0;
+	return "0";
 }
 
 static int
@@ -227,10 +234,12 @@ sha_eat_input()
 	_TRACE("request to sha_eat_input()");
 
 	while ((nread = uni_read(input_fd, buf, sizeof buf)) > 0)
-		SHA1_Update(&sha_ctx, buf, nread);
+		if (!SHA1_Update(&sha_ctx, buf, nread))
+			return "SHA1_Update(chunk) failed";
 	if (nread < 0)
 		return strerror(errno);
-	SHA1_Final(bin_digest, &sha_ctx);
+	if (!SHA1_Final(bin_digest, &sha_ctx))
+		return "SHA1_Final() failed";
 
 	p = digest;
 	q = bin_digest;

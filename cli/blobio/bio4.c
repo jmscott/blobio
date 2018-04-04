@@ -519,7 +519,11 @@ _get(int *ok_no, int in_take)
 		if (err)
 			return err;
 
-		more = bio4_service.digest->get_update(buf, nread);
+		char *status = bio4_service.digest->get_update(buf, nread);
+		if (*status == '0')
+			more = 0;
+		else if (*status != '1')
+			return status;
 
 		if (nread == 0)
 			break;
@@ -606,7 +610,11 @@ bio4_put(int *ok_no)
 		if (err)
 			return err;
 
-		more = bio4_service.digest->get_update(buf, nread);
+		char *status = bio4_service.digest->get_update(buf, nread);
+		if (*status == '0')
+			more = 0;
+		else if (*status != '1')
+			return status;
 
 		if (nread == 0)
 			break;

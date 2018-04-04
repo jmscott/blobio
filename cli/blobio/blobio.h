@@ -46,7 +46,7 @@ struct digest
 	 *	service.  Returns 0 if the full blob has been seen, 1 if 
 	 *	more needs to be read, < 0 if an error occured.
 	 */
-	int	(*get_update)(unsigned char *src, int src_size);
+	char	*(*get_update)(unsigned char *src, int src_size);
 
 	/*
 	 *  put:
@@ -54,7 +54,7 @@ struct digest
 	 *	service.  Returns 0 if the full blob has been seen, 1 if 
 	 *	more needs to be read, < 0 if an error occured.
 	 */
-	int	(*put_update)(unsigned char *src, int src_size);
+	char	*(*put_update)(unsigned char *src, int src_size);
 
 	/*
 	 *  take:
@@ -65,8 +65,8 @@ struct digest
 	 *	After a succesful take, took() is called with the reply
 	 *	from the server.
 	 */
-	int	(*take_update)(unsigned char *bite, int bite_size);
-	int	(*took)(char *reply);
+	char	*(*take_update)(unsigned char *bite, int bite_size);
+	char	*(*took)(char *reply);
 
 	/*
 	 *  give:
@@ -77,11 +77,11 @@ struct digest
 	 *	After the blob has been successfully given to the server,
 	 *	the gave() is called with the remote reply.
 	 */
-	int	(*give_update)(unsigned char *src, int src_size);
+	char	*(*give_update)(unsigned char *src, int src_size);
 	/*
 	 *  Is gave still used?
 	 */
-	int	(*gave)(char *reply);
+	char	*(*gave)(char *reply);
 
 	/*
 	 *  Digest the input stream
