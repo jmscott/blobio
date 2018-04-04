@@ -910,3 +910,331 @@ udig_can_cast(PG_FUNCTION_ARGS)
 	}
 	PG_RETURN_BOOL(0);
 }
+
+/*
+ *  Core bc160 RIPEMD160(SHA256) Operators
+ *
+ *	=		equal
+ *	!=		not rqual
+ *	>		greater than
+ *	>=		greater than or equal
+ *	<		less than
+ *	<=		less than or equal
+ */
+PG_FUNCTION_INFO_V1(udig_bc160_eq);
+
+Datum
+udig_bc160_eq(PG_FUNCTION_ARGS)
+{
+	unsigned char *a = (unsigned char *)PG_GETARG_POINTER(0);
+	unsigned char *b = (unsigned char *)PG_GETARG_POINTER(1);
+
+	PG_RETURN_BOOL((int32)memcmp(a, b, 20) == 0);
+}
+
+PG_FUNCTION_INFO_V1(udig_bc160_ne);
+
+Datum
+udig_bc160_ne(PG_FUNCTION_ARGS)
+{
+	unsigned char *a = (unsigned char *)PG_GETARG_POINTER(0);
+	unsigned char *b = (unsigned char *)PG_GETARG_POINTER(1);
+
+	PG_RETURN_BOOL((int32)memcmp(a, b, 20) != 0);
+}
+
+PG_FUNCTION_INFO_V1(udig_bc160_gt);
+
+Datum
+udig_bc160_gt(PG_FUNCTION_ARGS)
+{
+	unsigned char *a = (unsigned char *)PG_GETARG_POINTER(0);
+	unsigned char *b = (unsigned char *)PG_GETARG_POINTER(1);
+
+	PG_RETURN_BOOL((int32)memcmp(a, b, 20) > 0);
+}
+
+PG_FUNCTION_INFO_V1(udig_bc160_ge);
+
+Datum
+udig_bc160_ge(PG_FUNCTION_ARGS)
+{
+	unsigned char *a = (unsigned char *)PG_GETARG_POINTER(0);
+	unsigned char *b = (unsigned char *)PG_GETARG_POINTER(1);
+
+	PG_RETURN_BOOL((int32)memcmp(a, b, 20) >= 0);
+}
+
+PG_FUNCTION_INFO_V1(udig_bc160_lt);
+
+Datum
+udig_bc160_lt(PG_FUNCTION_ARGS)
+{
+	unsigned char *a = (unsigned char *)PG_GETARG_POINTER(0);
+	unsigned char *b = (unsigned char *)PG_GETARG_POINTER(1);
+
+	PG_RETURN_BOOL((int32)memcmp(a, b, 20) < 0);
+}
+
+PG_FUNCTION_INFO_V1(udig_bc160_le);
+
+Datum
+udig_bc160_le(PG_FUNCTION_ARGS)
+{
+	unsigned char *a = (unsigned char *)PG_GETARG_POINTER(0);
+	unsigned char *b = (unsigned char *)PG_GETARG_POINTER(1);
+
+	PG_RETURN_BOOL((int32)memcmp(a, b, 20) <= 0);
+}
+
+PG_FUNCTION_INFO_V1(udig_bc160_cmp);
+
+Datum
+udig_bc160_cmp(PG_FUNCTION_ARGS)
+{
+	unsigned char *a = (unsigned char *)PG_GETARG_POINTER(0);
+	unsigned char *b = (unsigned char *)PG_GETARG_POINTER(1);
+
+	PG_RETURN_INT32((int32)memcmp(a, b, 20));
+}
+
+/*
+ *  Cross RIPEMD160(SHA256), Generic UDIG Operators
+ *
+ *	=		equal
+ *	!=		not rqual
+ *	>		greater than
+ *	>=		greater than or equal
+ *	<		less than
+ *	<=		less than or equal
+ */
+
+/*
+ *  Compare udig_bc160=a versus generic udig=b.
+ */
+static int32
+_udig_bc160_cmp_udig(unsigned char *a_operand, unsigned char *b_operand)
+{
+	unsigned char *b;
+
+	b = UDIG_VARDATA(b_operand);
+
+	if (b[0] == UDIG_BC160)
+		return memcmp(a_operand, &b[1], 20);	// bc160 versus bc160
+	if (b[0] == UDIG_SHA)
+		return -1;
+
+	ereport(PANIC, (errcode(ERRCODE_DATA_CORRUPTED),
+		errmsg("_udig_bc160_cmp_udig: corrupted udig internal type")));
+	/*NOTREACHED*/
+	return -1;
+}
+
+/*
+ *  Cross Type RIPEMD160(SHA256) -> UDIG
+ */
+PG_FUNCTION_INFO_V1(udig_bc160_eq_udig);
+
+Datum
+udig_bc160_eq_udig(PG_FUNCTION_ARGS)
+{
+	unsigned char *a = (unsigned char *)PG_GETARG_POINTER(0);
+	unsigned char *b = (unsigned char *)PG_GETARG_POINTER(1);
+
+	PG_RETURN_BOOL(_udig_bc160_cmp_udig(a, b) == 0);
+}
+
+PG_FUNCTION_INFO_V1(udig_bc160_ne_udig);
+
+Datum
+udig_bc160_ne_udig(PG_FUNCTION_ARGS)
+{
+	unsigned char *a = (unsigned char *)PG_GETARG_POINTER(0);
+	unsigned char *b = (unsigned char *)PG_GETARG_POINTER(1);
+
+	PG_RETURN_BOOL(_udig_bc160_cmp_udig(a, b) != 0);
+}
+
+PG_FUNCTION_INFO_V1(udig_bc160_gt_udig);
+
+Datum
+udig_bc160_gt_udig(PG_FUNCTION_ARGS)
+{
+	unsigned char *a = (unsigned char *)PG_GETARG_POINTER(0);
+	unsigned char *b = (unsigned char *)PG_GETARG_POINTER(1);
+
+	PG_RETURN_BOOL(_udig_bc160_cmp_udig(a, b) > 0);
+}
+
+PG_FUNCTION_INFO_V1(udig_bc160_ge_udig);
+
+Datum
+udig_bc160_ge_udig(PG_FUNCTION_ARGS)
+{
+	unsigned char *a = (unsigned char *)PG_GETARG_POINTER(0);
+	unsigned char *b = (unsigned char *)PG_GETARG_POINTER(1);
+
+	PG_RETURN_BOOL(_udig_bc160_cmp_udig(a, b) >= 0);
+}
+
+PG_FUNCTION_INFO_V1(udig_bc160_lt_udig);
+
+Datum
+udig_bc160_lt_udig(PG_FUNCTION_ARGS)
+{
+	unsigned char *a = (unsigned char *)PG_GETARG_POINTER(0);
+	unsigned char *b = (unsigned char *)PG_GETARG_POINTER(1);
+
+	PG_RETURN_BOOL(_udig_bc160_cmp_udig(a, b) < 0);
+}
+
+PG_FUNCTION_INFO_V1(udig_bc160_le_udig);
+
+Datum
+udig_bc160_le_udig(PG_FUNCTION_ARGS)
+{
+	unsigned char *a = (unsigned char *)PG_GETARG_POINTER(0);
+	unsigned char *b = (unsigned char *)PG_GETARG_POINTER(1);
+
+	PG_RETURN_BOOL(_udig_bc160_cmp_udig(a, b) <= 0);
+}
+
+PG_FUNCTION_INFO_V1(udig_bc160_cmp_udig);
+
+Datum
+udig_bc160_cmp_udig(PG_FUNCTION_ARGS)
+{
+	unsigned char *a = (unsigned char *)PG_GETARG_POINTER(0);
+	unsigned char *b = (unsigned char *)PG_GETARG_POINTER(1);
+
+	PG_RETURN_INT32((int32)_udig_bc160_cmp_udig(a, b));
+}
+
+/*
+ *  Cast a udig_bc160 to generic udig.
+ */
+PG_FUNCTION_INFO_V1(udig_bc160_cast);
+
+Datum
+udig_bc160_cast(PG_FUNCTION_ARGS)
+{
+	unsigned char *src = (unsigned char *)PG_GETARG_POINTER(0);
+	Size size;
+	unsigned char *udig;
+
+	size = VARHDRSZ + 21;		/* size bytes + udig type byte + data */
+	udig = palloc(size);
+	udig[4] = UDIG_BC160;		/* bc160 type */
+	memcpy(udig + 5, src, 20);
+	SET_VARSIZE(udig, size);
+	PG_RETURN_POINTER(udig);
+}
+
+/*
+ *  Cross Type UDIG, RIPEMD(SHA256) Functions
+ *
+ *	=		equal
+ *	!=		not rqual
+ *	>		greater than
+ *	>=		greater than or equal
+ *	<		less than
+ *	<=		less than or equal
+ */
+
+/*
+ *  Compare generic udig and RIPEMD160(SHA256).
+ */
+static int32
+_udig_cmp_bc160(unsigned char *a_operand, unsigned char *b_operand)
+{
+	unsigned char *a;
+
+	a = UDIG_VARDATA(a_operand);
+
+	if (a[0] == UDIG_BC160)
+		return memcmp(&a[1], b_operand, 20);
+	if (a[0] == UDIG_SHA)				//  all sha1 > all bc160
+		return 1;
+	ereport(PANIC, (errcode(ERRCODE_INVALID_TEXT_REPRESENTATION),
+		errmsg("_udig_cmp_bc160: corrupted udig internal type byte")));
+
+	/*NOTREACHED*/
+	return -1;
+}
+
+PG_FUNCTION_INFO_V1(udig_eq_bc160);
+
+Datum
+udig_eq_bc160(PG_FUNCTION_ARGS)
+{
+	unsigned char *a = (unsigned char *)PG_GETARG_POINTER(0);
+	unsigned char *b = (unsigned char *)PG_GETARG_POINTER(1);
+
+	PG_RETURN_BOOL(_udig_cmp_bc160(a, b) == 0);
+}
+
+PG_FUNCTION_INFO_V1(udig_ne_bc160);
+
+Datum
+udig_ne_bc160(PG_FUNCTION_ARGS)
+{
+	unsigned char *a = (unsigned char *)PG_GETARG_POINTER(0);
+	unsigned char *b = (unsigned char *)PG_GETARG_POINTER(1);
+
+	PG_RETURN_BOOL(_udig_cmp_bc160(a, b) != 0);
+}
+
+PG_FUNCTION_INFO_V1(udig_gt_bc160);
+
+Datum
+udig_gt_bc160(PG_FUNCTION_ARGS)
+{
+	unsigned char *a = (unsigned char *)PG_GETARG_POINTER(0);
+	unsigned char *b = (unsigned char *)PG_GETARG_POINTER(1);
+
+	PG_RETURN_BOOL(_udig_cmp_bc160(a, b) > 0);
+}
+
+PG_FUNCTION_INFO_V1(udig_ge_bc160);
+
+Datum
+udig_ge_bc160(PG_FUNCTION_ARGS)
+{
+	unsigned char *a = (unsigned char *)PG_GETARG_POINTER(0);
+	unsigned char *b = (unsigned char *)PG_GETARG_POINTER(1);
+
+	PG_RETURN_BOOL(_udig_cmp_bc160(a, b) >= 0);
+}
+
+PG_FUNCTION_INFO_V1(udig_lt_bc160);
+
+Datum
+udig_lt_bc160(PG_FUNCTION_ARGS)
+{
+	unsigned char *a = (unsigned char *)PG_GETARG_POINTER(0);
+	unsigned char *b = (unsigned char *)PG_GETARG_POINTER(1);
+
+	PG_RETURN_BOOL(_udig_cmp_bc160(a, b) < 0);
+}
+
+PG_FUNCTION_INFO_V1(udig_le_bc160);
+
+Datum
+udig_le_bc160(PG_FUNCTION_ARGS)
+{
+	unsigned char *a = (unsigned char *)PG_GETARG_POINTER(0);
+	unsigned char *b = (unsigned char *)PG_GETARG_POINTER(1);
+
+	PG_RETURN_BOOL(_udig_cmp_bc160(a, b) <= 0);
+}
+
+PG_FUNCTION_INFO_V1(udig_cmp_bc160);
+
+Datum
+udig_cmp_bc160(PG_FUNCTION_ARGS)
+{
+	unsigned char *a = (unsigned char *)PG_GETARG_POINTER(0);
+	unsigned char *b = (unsigned char *)PG_GETARG_POINTER(1);
+
+	PG_RETURN_INT32(_udig_cmp_bc160(a, b));
+}
