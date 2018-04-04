@@ -701,7 +701,7 @@ eat_chunk(struct request *r, SHA256_CTX *sha_ctx, int fd, unsigned char *buf,
 	 *  by copying the incremental digest, finalizing it,
 	 *  then comparing to the expected blob.
 	 */
-	tmp_sha = sha_ctx;
+	tmp_sha = *sha_ctx;
 	if (!SHA256_Final(sha_digest, &tmp_sha))
 		_panic3(r, n, "SHA256_Final(tmp) failed", strerror(errno));
 
