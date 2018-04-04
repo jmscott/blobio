@@ -701,7 +701,7 @@ eat_chunk(struct request *r, SHA256_CTX *sha_ctx, int fd, unsigned char *buf,
 	 *  by copying the incremental digest, finalizing it,
 	 *  then comparing to the expected blob.
 	 */
-	memcpy(&tmp_sha, sha_ctx, sizeof *sha_ctx);
+	tmp_sha = sha_ctx;
 	if (!SHA256_Final(sha_digest, &tmp_sha))
 		_panic3(r, n, "SHA256_Final(tmp) failed", strerror(errno));
 
@@ -828,9 +828,6 @@ again:
 	goto again;
 
 digested:
-	if (fd >= 0)
-		_close(r, &fd);
-
 	/*
 	 *  Rename the temp blob file to the final blob path.
 	 */
@@ -840,10 +837,11 @@ digested:
 			((struct bc160_fs_request *)r->open_data)->blob_path);
 	goto cleanup;
 croak:
+	_close(r, &fd);
 	status = -1;
 cleanup:
 	if (fd > -1)
-		_panic(r, "_close() failed");
+		_close(r, &fd);
 	if (tmp_path[0] && _unlink(r, tmp_path, (int *)0))
 		_panic(r, "_unlink() failed");
 	return status; 
