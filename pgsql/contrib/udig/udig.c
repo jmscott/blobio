@@ -24,15 +24,15 @@
  *  Note: need to prefix these symbols with 'PG_'.
  */
 #define UDIG_SHA	1
-#define UDIG_BC160	2
+#define UDIG_BITRIP	2
 
 PG_MODULE_MAGIC;
 
 Datum	udig_sha_in(PG_FUNCTION_ARGS);
 Datum	udig_sha_out(PG_FUNCTION_ARGS);
 
-Datum	udig_bc160_in(PG_FUNCTION_ARGS);
-Datum	udig_bc160_out(PG_FUNCTION_ARGS);
+Datum	udig_bitrip_in(PG_FUNCTION_ARGS);
+Datum	udig_bitrip_out(PG_FUNCTION_ARGS);
 
 /*
  *  Core SHA1.
@@ -48,13 +48,13 @@ Datum	udig_sha_cmp(PG_FUNCTION_ARGS);
 /*
  *  Core BitCoin RIPEMD160(SHA256)
  */
-Datum	udig_bc160_eq(PG_FUNCTION_ARGS);
-Datum	udig_bc160_ne(PG_FUNCTION_ARGS);
-Datum	udig_bc160_gt(PG_FUNCTION_ARGS);
-Datum	udig_bc160_ge(PG_FUNCTION_ARGS);
-Datum	udig_bc160_lt(PG_FUNCTION_ARGS);
-Datum	udig_bc160_le(PG_FUNCTION_ARGS);
-Datum	udig_bc160_cmp(PG_FUNCTION_ARGS);
+Datum	udig_bitrip_eq(PG_FUNCTION_ARGS);
+Datum	udig_bitrip_ne(PG_FUNCTION_ARGS);
+Datum	udig_bitrip_gt(PG_FUNCTION_ARGS);
+Datum	udig_bitrip_ge(PG_FUNCTION_ARGS);
+Datum	udig_bitrip_lt(PG_FUNCTION_ARGS);
+Datum	udig_bitrip_le(PG_FUNCTION_ARGS);
+Datum	udig_bitrip_cmp(PG_FUNCTION_ARGS);
 
 /*
  *  Cross type SHA -> UDIG
@@ -71,14 +71,14 @@ Datum	udig_sha_cast(PG_FUNCTION_ARGS);
 /*
  *  Cross type BitCoin RIPEMD160(SHA256) -> UDIG
  */
-Datum	udig_bc160_eq_udig(PG_FUNCTION_ARGS);
-Datum	udig_bc160_ne_udig(PG_FUNCTION_ARGS);
-Datum	udig_bc160_gt_udig(PG_FUNCTION_ARGS);
-Datum	udig_bc160_ge_udig(PG_FUNCTION_ARGS);
-Datum	udig_bc160_lt_udig(PG_FUNCTION_ARGS);
-Datum	udig_bc160_le_udig(PG_FUNCTION_ARGS);
-Datum	udig_bc160_cmp_udig(PG_FUNCTION_ARGS);
-Datum	udig_bc160_cast(PG_FUNCTION_ARGS);
+Datum	udig_bitrip_eq_udig(PG_FUNCTION_ARGS);
+Datum	udig_bitrip_ne_udig(PG_FUNCTION_ARGS);
+Datum	udig_bitrip_gt_udig(PG_FUNCTION_ARGS);
+Datum	udig_bitrip_ge_udig(PG_FUNCTION_ARGS);
+Datum	udig_bitrip_lt_udig(PG_FUNCTION_ARGS);
+Datum	udig_bitrip_le_udig(PG_FUNCTION_ARGS);
+Datum	udig_bitrip_cmp_udig(PG_FUNCTION_ARGS);
+Datum	udig_bitrip_cast(PG_FUNCTION_ARGS);
 
 /*
  *  Core generic/text udig type.
@@ -107,20 +107,20 @@ Datum	udig_le_sha(PG_FUNCTION_ARGS);
 Datum	udig_cmp_sha(PG_FUNCTION_ARGS);
 
 /*
- *  Cross Type UDIG,BC160
+ *  Cross Type UDIG,BITRIP
  */
-Datum	udig_eq_bc160(PG_FUNCTION_ARGS);
-Datum	udig_ne_bc160(PG_FUNCTION_ARGS);
-Datum	udig_gt_bc160(PG_FUNCTION_ARGS);
-Datum	udig_ge_bc160(PG_FUNCTION_ARGS);
-Datum	udig_lt_bc160(PG_FUNCTION_ARGS);
-Datum	udig_le_bc160(PG_FUNCTION_ARGS);
-Datum	udig_cmp_bc160(PG_FUNCTION_ARGS);
+Datum	udig_eq_bitrip(PG_FUNCTION_ARGS);
+Datum	udig_ne_bitrip(PG_FUNCTION_ARGS);
+Datum	udig_gt_bitrip(PG_FUNCTION_ARGS);
+Datum	udig_ge_bitrip(PG_FUNCTION_ARGS);
+Datum	udig_lt_bitrip(PG_FUNCTION_ARGS);
+Datum	udig_le_bitrip(PG_FUNCTION_ARGS);
+Datum	udig_cmp_bitrip(PG_FUNCTION_ARGS);
 
 static char empty_udig[] = "empty udig";
 static char big_algo[] = "algorithm > 16 characters: \"%s\"";
 static char no_aprint[] = "unprintable character in algorithm name: 0x%x";
-#define ALGO_HINT "did you mean sha or bc160"
+#define ALGO_HINT "did you mean sha or bitrip"
 
 /*
  *  Transform 40 char hex string to 20 byte sha binary.
@@ -205,12 +205,12 @@ udig_sha_in(PG_FUNCTION_ARGS)
 }
 
 /*
- *  Convert bc160 text digest in common hex format into binary 20 bytes.
+ *  Convert bitrip text digest in common hex format into binary 20 bytes.
  */
-PG_FUNCTION_INFO_V1(udig_bc160_in);
+PG_FUNCTION_INFO_V1(udig_bitrip_in);
 
 Datum
-udig_bc160_in(PG_FUNCTION_ARGS)
+udig_bitrip_in(PG_FUNCTION_ARGS)
 {
 	char *hex40 = PG_GETARG_CSTRING(0);
 	unsigned char *d20;
@@ -220,7 +220,7 @@ udig_bc160_in(PG_FUNCTION_ARGS)
 		pfree(d20);
 		ereport(ERROR,
 			(errcode(ERRCODE_INVALID_TEXT_REPRESENTATION),
-				errmsg("invalid bc160 digest: \"%s\"", hex40)));
+				errmsg("invalid bitrip digest: \"%s\"", hex40)));
 	}
 	PG_RETURN_POINTER(d20);
 }
@@ -243,13 +243,13 @@ udig_sha_out(PG_FUNCTION_ARGS)
 }
 
 /*
- *  Convert binary, 20 byte bc160 digest into common, 40 character 
+ *  Convert binary, 20 byte bitrip digest into common, 40 character 
  *  text hex format.
  */
-PG_FUNCTION_INFO_V1(udig_bc160_out);
+PG_FUNCTION_INFO_V1(udig_bitrip_out);
 
 Datum
-udig_bc160_out(PG_FUNCTION_ARGS)
+udig_bitrip_out(PG_FUNCTION_ARGS)
 {
 	unsigned char *d20 = (unsigned char *)PG_GETARG_POINTER(0);
 	char *hex40;
@@ -367,7 +367,7 @@ _udig_sha_cmp_udig(unsigned char *a_operand, unsigned char *b_operand)
 
 	if (b[0] == UDIG_SHA)
 		return memcmp(a_operand, &b[1], 20);	// sha versus sha
-	if (b[0] == UDIG_BC160)
+	if (b[0] == UDIG_BITRIP)
 		return -1;
 	ereport(PANIC, (errcode(ERRCODE_DATA_CORRUPTED),
 		errmsg("_udig_sha_cmp_udig: corrupted udig internal type")));
@@ -477,7 +477,7 @@ udig_sha_cast(PG_FUNCTION_ARGS)
 /*
  *  Convert text udig in the format
  *
- *	{sha,bc160}:[a-f0-9]{40}
+ *	{sha,bitrip}:[a-f0-9]{40}
  *
  *  to variable length
  *
@@ -538,19 +538,19 @@ udig_in(PG_FUNCTION_ARGS)
 				errhint(ALGO_HINT)
 			));
 	/*
-	 *  Store SHA or BC160 digests in binary form.
+	 *  Store SHA or BITRIP digests in binary form.
 	 */
 
 	size = VARHDRSZ + 1 + 20;
 
 	d = palloc(size);
 
-	//  quick test for "bc160" or "sha"
+	//  quick test for "bitrip" or "sha"
 	if (a8[0] == 'b' && a8[1] == 'c' &&
 	         a8[2] == '1' && a8[3] == '6' && a8[4] == '0' &&
 		 a8[5] == 0
 	)
-		d[4] = UDIG_BC160;
+		d[4] = UDIG_BITRIP;
 	else if (a8[0] == 's' && a8[1] == 'h' && a8[2] == 'a' && a8[3] == 0)
 		d[4] = UDIG_SHA;
 	else {
@@ -599,8 +599,8 @@ udig_out(PG_FUNCTION_ARGS)
 		strcpy(udig, "sha");
 		colon = 3;
 		break;
-	case UDIG_BC160:
-		strcpy(udig, "bc160");
+	case UDIG_BITRIP:
+		strcpy(udig, "bitrip");
 		colon = 5;
 		break;
 	default:
@@ -616,7 +616,7 @@ udig_out(PG_FUNCTION_ARGS)
 /*
  *  Lexically compare two udigs.  Udigs of the same algorithm will compare by
  *  digests.  UDigs with different algorithms will compare by ascii order
- *  of the digest name.  For example, "bc160" < "sha".
+ *  of the digest name.  For example, "bitrip" < "sha".
  */
 static int
 _udig_cmp(unsigned char *a_operand, unsigned char *b_operand)
@@ -639,7 +639,7 @@ _udig_cmp(unsigned char *a_operand, unsigned char *b_operand)
 		return memcmp(&a[1], &b[1], 20);
 	if (a[0] == UDIG_SHA)
 		return 1;
-	if (a[0] == UDIG_BC160)
+	if (a[0] == UDIG_BITRIP)
 		return -1;
 	ereport(PANIC, (errcode(ERRCODE_DATA_CORRUPTED), errmsg(_BAD_TYPE)));
 
@@ -753,7 +753,7 @@ _udig_cmp_sha(unsigned char *a_operand, unsigned char *b_operand)
 
 	a = UDIG_VARDATA(a_operand);
 
-	if (a[0] == UDIG_BC160)		//  all bc160 > than all sha1
+	if (a[0] == UDIG_BITRIP)		//  all bitrip > than all sha1
 		return 1;
 	if (a[0] == UDIG_SHA)
 		return memcmp(&a[1], b_operand, 20);
@@ -849,8 +849,8 @@ udig_algorithm(PG_FUNCTION_ARGS)
 {
 	unsigned char *a = (unsigned char *)UDIG_VARDATA(PG_GETARG_POINTER(0));
 
-	if (a[0] == UDIG_BC160)
-		PG_RETURN_CSTRING("bc160");
+	if (a[0] == UDIG_BITRIP)
+		PG_RETURN_CSTRING("bitrip");
 	if (a[0] == UDIG_SHA)
 		PG_RETURN_CSTRING("sha");
 	ereport(PANIC,
@@ -902,7 +902,7 @@ udig_can_cast(PG_FUNCTION_ARGS)
 			(errcode(ERRCODE_INVALID_TEXT_REPRESENTATION),
 			errmsg(empty_udig, udig)));
 		
-	if (strcmp("sha", a8) == 0 || strcmp("bc160", a8) == 0){
+	if (strcmp("sha", a8) == 0 || strcmp("bitrip", a8) == 0){
 		unsigned char d20[20];
 
 		if (hex2dig20(u, d20) == 0)
@@ -912,7 +912,7 @@ udig_can_cast(PG_FUNCTION_ARGS)
 }
 
 /*
- *  Core bc160 RIPEMD160(SHA256) Operators
+ *  Core bitrip RIPEMD160(SHA256) Operators
  *
  *	=		equal
  *	!=		not rqual
@@ -921,10 +921,10 @@ udig_can_cast(PG_FUNCTION_ARGS)
  *	<		less than
  *	<=		less than or equal
  */
-PG_FUNCTION_INFO_V1(udig_bc160_eq);
+PG_FUNCTION_INFO_V1(udig_bitrip_eq);
 
 Datum
-udig_bc160_eq(PG_FUNCTION_ARGS)
+udig_bitrip_eq(PG_FUNCTION_ARGS)
 {
 	unsigned char *a = (unsigned char *)PG_GETARG_POINTER(0);
 	unsigned char *b = (unsigned char *)PG_GETARG_POINTER(1);
@@ -932,10 +932,10 @@ udig_bc160_eq(PG_FUNCTION_ARGS)
 	PG_RETURN_BOOL((int32)memcmp(a, b, 20) == 0);
 }
 
-PG_FUNCTION_INFO_V1(udig_bc160_ne);
+PG_FUNCTION_INFO_V1(udig_bitrip_ne);
 
 Datum
-udig_bc160_ne(PG_FUNCTION_ARGS)
+udig_bitrip_ne(PG_FUNCTION_ARGS)
 {
 	unsigned char *a = (unsigned char *)PG_GETARG_POINTER(0);
 	unsigned char *b = (unsigned char *)PG_GETARG_POINTER(1);
@@ -943,10 +943,10 @@ udig_bc160_ne(PG_FUNCTION_ARGS)
 	PG_RETURN_BOOL((int32)memcmp(a, b, 20) != 0);
 }
 
-PG_FUNCTION_INFO_V1(udig_bc160_gt);
+PG_FUNCTION_INFO_V1(udig_bitrip_gt);
 
 Datum
-udig_bc160_gt(PG_FUNCTION_ARGS)
+udig_bitrip_gt(PG_FUNCTION_ARGS)
 {
 	unsigned char *a = (unsigned char *)PG_GETARG_POINTER(0);
 	unsigned char *b = (unsigned char *)PG_GETARG_POINTER(1);
@@ -954,10 +954,10 @@ udig_bc160_gt(PG_FUNCTION_ARGS)
 	PG_RETURN_BOOL((int32)memcmp(a, b, 20) > 0);
 }
 
-PG_FUNCTION_INFO_V1(udig_bc160_ge);
+PG_FUNCTION_INFO_V1(udig_bitrip_ge);
 
 Datum
-udig_bc160_ge(PG_FUNCTION_ARGS)
+udig_bitrip_ge(PG_FUNCTION_ARGS)
 {
 	unsigned char *a = (unsigned char *)PG_GETARG_POINTER(0);
 	unsigned char *b = (unsigned char *)PG_GETARG_POINTER(1);
@@ -965,10 +965,10 @@ udig_bc160_ge(PG_FUNCTION_ARGS)
 	PG_RETURN_BOOL((int32)memcmp(a, b, 20) >= 0);
 }
 
-PG_FUNCTION_INFO_V1(udig_bc160_lt);
+PG_FUNCTION_INFO_V1(udig_bitrip_lt);
 
 Datum
-udig_bc160_lt(PG_FUNCTION_ARGS)
+udig_bitrip_lt(PG_FUNCTION_ARGS)
 {
 	unsigned char *a = (unsigned char *)PG_GETARG_POINTER(0);
 	unsigned char *b = (unsigned char *)PG_GETARG_POINTER(1);
@@ -976,10 +976,10 @@ udig_bc160_lt(PG_FUNCTION_ARGS)
 	PG_RETURN_BOOL((int32)memcmp(a, b, 20) < 0);
 }
 
-PG_FUNCTION_INFO_V1(udig_bc160_le);
+PG_FUNCTION_INFO_V1(udig_bitrip_le);
 
 Datum
-udig_bc160_le(PG_FUNCTION_ARGS)
+udig_bitrip_le(PG_FUNCTION_ARGS)
 {
 	unsigned char *a = (unsigned char *)PG_GETARG_POINTER(0);
 	unsigned char *b = (unsigned char *)PG_GETARG_POINTER(1);
@@ -987,10 +987,10 @@ udig_bc160_le(PG_FUNCTION_ARGS)
 	PG_RETURN_BOOL((int32)memcmp(a, b, 20) <= 0);
 }
 
-PG_FUNCTION_INFO_V1(udig_bc160_cmp);
+PG_FUNCTION_INFO_V1(udig_bitrip_cmp);
 
 Datum
-udig_bc160_cmp(PG_FUNCTION_ARGS)
+udig_bitrip_cmp(PG_FUNCTION_ARGS)
 {
 	unsigned char *a = (unsigned char *)PG_GETARG_POINTER(0);
 	unsigned char *b = (unsigned char *)PG_GETARG_POINTER(1);
@@ -1010,22 +1010,22 @@ udig_bc160_cmp(PG_FUNCTION_ARGS)
  */
 
 /*
- *  Compare udig_bc160=a versus generic udig=b.
+ *  Compare udig_bitrip=a versus generic udig=b.
  */
 static int32
-_udig_bc160_cmp_udig(unsigned char *a_operand, unsigned char *b_operand)
+_udig_bitrip_cmp_udig(unsigned char *a_operand, unsigned char *b_operand)
 {
 	unsigned char *b;
 
 	b = UDIG_VARDATA(b_operand);
 
-	if (b[0] == UDIG_BC160)
-		return memcmp(a_operand, &b[1], 20);	// bc160 versus bc160
+	if (b[0] == UDIG_BITRIP)
+		return memcmp(a_operand, &b[1], 20);	// bitrip versus bitrip
 	if (b[0] == UDIG_SHA)
 		return -1;
 
 	ereport(PANIC, (errcode(ERRCODE_DATA_CORRUPTED),
-		errmsg("_udig_bc160_cmp_udig: corrupted udig internal type")));
+		errmsg("_udig_bitrip_cmp_udig: corrupted udig internal type")));
 	/*NOTREACHED*/
 	return -1;
 }
@@ -1033,90 +1033,90 @@ _udig_bc160_cmp_udig(unsigned char *a_operand, unsigned char *b_operand)
 /*
  *  Cross Type RIPEMD160(SHA256) -> UDIG
  */
-PG_FUNCTION_INFO_V1(udig_bc160_eq_udig);
+PG_FUNCTION_INFO_V1(udig_bitrip_eq_udig);
 
 Datum
-udig_bc160_eq_udig(PG_FUNCTION_ARGS)
+udig_bitrip_eq_udig(PG_FUNCTION_ARGS)
 {
 	unsigned char *a = (unsigned char *)PG_GETARG_POINTER(0);
 	unsigned char *b = (unsigned char *)PG_GETARG_POINTER(1);
 
-	PG_RETURN_BOOL(_udig_bc160_cmp_udig(a, b) == 0);
+	PG_RETURN_BOOL(_udig_bitrip_cmp_udig(a, b) == 0);
 }
 
-PG_FUNCTION_INFO_V1(udig_bc160_ne_udig);
+PG_FUNCTION_INFO_V1(udig_bitrip_ne_udig);
 
 Datum
-udig_bc160_ne_udig(PG_FUNCTION_ARGS)
+udig_bitrip_ne_udig(PG_FUNCTION_ARGS)
 {
 	unsigned char *a = (unsigned char *)PG_GETARG_POINTER(0);
 	unsigned char *b = (unsigned char *)PG_GETARG_POINTER(1);
 
-	PG_RETURN_BOOL(_udig_bc160_cmp_udig(a, b) != 0);
+	PG_RETURN_BOOL(_udig_bitrip_cmp_udig(a, b) != 0);
 }
 
-PG_FUNCTION_INFO_V1(udig_bc160_gt_udig);
+PG_FUNCTION_INFO_V1(udig_bitrip_gt_udig);
 
 Datum
-udig_bc160_gt_udig(PG_FUNCTION_ARGS)
+udig_bitrip_gt_udig(PG_FUNCTION_ARGS)
 {
 	unsigned char *a = (unsigned char *)PG_GETARG_POINTER(0);
 	unsigned char *b = (unsigned char *)PG_GETARG_POINTER(1);
 
-	PG_RETURN_BOOL(_udig_bc160_cmp_udig(a, b) > 0);
+	PG_RETURN_BOOL(_udig_bitrip_cmp_udig(a, b) > 0);
 }
 
-PG_FUNCTION_INFO_V1(udig_bc160_ge_udig);
+PG_FUNCTION_INFO_V1(udig_bitrip_ge_udig);
 
 Datum
-udig_bc160_ge_udig(PG_FUNCTION_ARGS)
+udig_bitrip_ge_udig(PG_FUNCTION_ARGS)
 {
 	unsigned char *a = (unsigned char *)PG_GETARG_POINTER(0);
 	unsigned char *b = (unsigned char *)PG_GETARG_POINTER(1);
 
-	PG_RETURN_BOOL(_udig_bc160_cmp_udig(a, b) >= 0);
+	PG_RETURN_BOOL(_udig_bitrip_cmp_udig(a, b) >= 0);
 }
 
-PG_FUNCTION_INFO_V1(udig_bc160_lt_udig);
+PG_FUNCTION_INFO_V1(udig_bitrip_lt_udig);
 
 Datum
-udig_bc160_lt_udig(PG_FUNCTION_ARGS)
+udig_bitrip_lt_udig(PG_FUNCTION_ARGS)
 {
 	unsigned char *a = (unsigned char *)PG_GETARG_POINTER(0);
 	unsigned char *b = (unsigned char *)PG_GETARG_POINTER(1);
 
-	PG_RETURN_BOOL(_udig_bc160_cmp_udig(a, b) < 0);
+	PG_RETURN_BOOL(_udig_bitrip_cmp_udig(a, b) < 0);
 }
 
-PG_FUNCTION_INFO_V1(udig_bc160_le_udig);
+PG_FUNCTION_INFO_V1(udig_bitrip_le_udig);
 
 Datum
-udig_bc160_le_udig(PG_FUNCTION_ARGS)
+udig_bitrip_le_udig(PG_FUNCTION_ARGS)
 {
 	unsigned char *a = (unsigned char *)PG_GETARG_POINTER(0);
 	unsigned char *b = (unsigned char *)PG_GETARG_POINTER(1);
 
-	PG_RETURN_BOOL(_udig_bc160_cmp_udig(a, b) <= 0);
+	PG_RETURN_BOOL(_udig_bitrip_cmp_udig(a, b) <= 0);
 }
 
-PG_FUNCTION_INFO_V1(udig_bc160_cmp_udig);
+PG_FUNCTION_INFO_V1(udig_bitrip_cmp_udig);
 
 Datum
-udig_bc160_cmp_udig(PG_FUNCTION_ARGS)
+udig_bitrip_cmp_udig(PG_FUNCTION_ARGS)
 {
 	unsigned char *a = (unsigned char *)PG_GETARG_POINTER(0);
 	unsigned char *b = (unsigned char *)PG_GETARG_POINTER(1);
 
-	PG_RETURN_INT32((int32)_udig_bc160_cmp_udig(a, b));
+	PG_RETURN_INT32((int32)_udig_bitrip_cmp_udig(a, b));
 }
 
 /*
- *  Cast a udig_bc160 to generic udig.
+ *  Cast a udig_bitrip to generic udig.
  */
-PG_FUNCTION_INFO_V1(udig_bc160_cast);
+PG_FUNCTION_INFO_V1(udig_bitrip_cast);
 
 Datum
-udig_bc160_cast(PG_FUNCTION_ARGS)
+udig_bitrip_cast(PG_FUNCTION_ARGS)
 {
 	unsigned char *src = (unsigned char *)PG_GETARG_POINTER(0);
 	Size size;
@@ -1124,7 +1124,7 @@ udig_bc160_cast(PG_FUNCTION_ARGS)
 
 	size = VARHDRSZ + 21;		/* size bytes + udig type byte + data */
 	udig = palloc(size);
-	udig[4] = UDIG_BC160;		/* bc160 type */
+	udig[4] = UDIG_BITRIP;		/* bitrip type */
 	memcpy(udig + 5, src, 20);
 	SET_VARSIZE(udig, size);
 	PG_RETURN_POINTER(udig);
@@ -1145,96 +1145,96 @@ udig_bc160_cast(PG_FUNCTION_ARGS)
  *  Compare generic udig and RIPEMD160(SHA256).
  */
 static int32
-_udig_cmp_bc160(unsigned char *a_operand, unsigned char *b_operand)
+_udig_cmp_bitrip(unsigned char *a_operand, unsigned char *b_operand)
 {
 	unsigned char *a;
 
 	a = UDIG_VARDATA(a_operand);
 
-	if (a[0] == UDIG_BC160)
+	if (a[0] == UDIG_BITRIP)
 		return memcmp(&a[1], b_operand, 20);
-	if (a[0] == UDIG_SHA)				//  all sha1 > all bc160
+	if (a[0] == UDIG_SHA)				//  all sha1 > all bitrip
 		return 1;
 	ereport(PANIC, (errcode(ERRCODE_INVALID_TEXT_REPRESENTATION),
-		errmsg("_udig_cmp_bc160: corrupted udig internal type byte")));
+		errmsg("_udig_cmp_bitrip: corrupted udig internal type byte")));
 
 	/*NOTREACHED*/
 	return -1;
 }
 
-PG_FUNCTION_INFO_V1(udig_eq_bc160);
+PG_FUNCTION_INFO_V1(udig_eq_bitrip);
 
 Datum
-udig_eq_bc160(PG_FUNCTION_ARGS)
+udig_eq_bitrip(PG_FUNCTION_ARGS)
 {
 	unsigned char *a = (unsigned char *)PG_GETARG_POINTER(0);
 	unsigned char *b = (unsigned char *)PG_GETARG_POINTER(1);
 
-	PG_RETURN_BOOL(_udig_cmp_bc160(a, b) == 0);
+	PG_RETURN_BOOL(_udig_cmp_bitrip(a, b) == 0);
 }
 
-PG_FUNCTION_INFO_V1(udig_ne_bc160);
+PG_FUNCTION_INFO_V1(udig_ne_bitrip);
 
 Datum
-udig_ne_bc160(PG_FUNCTION_ARGS)
+udig_ne_bitrip(PG_FUNCTION_ARGS)
 {
 	unsigned char *a = (unsigned char *)PG_GETARG_POINTER(0);
 	unsigned char *b = (unsigned char *)PG_GETARG_POINTER(1);
 
-	PG_RETURN_BOOL(_udig_cmp_bc160(a, b) != 0);
+	PG_RETURN_BOOL(_udig_cmp_bitrip(a, b) != 0);
 }
 
-PG_FUNCTION_INFO_V1(udig_gt_bc160);
+PG_FUNCTION_INFO_V1(udig_gt_bitrip);
 
 Datum
-udig_gt_bc160(PG_FUNCTION_ARGS)
+udig_gt_bitrip(PG_FUNCTION_ARGS)
 {
 	unsigned char *a = (unsigned char *)PG_GETARG_POINTER(0);
 	unsigned char *b = (unsigned char *)PG_GETARG_POINTER(1);
 
-	PG_RETURN_BOOL(_udig_cmp_bc160(a, b) > 0);
+	PG_RETURN_BOOL(_udig_cmp_bitrip(a, b) > 0);
 }
 
-PG_FUNCTION_INFO_V1(udig_ge_bc160);
+PG_FUNCTION_INFO_V1(udig_ge_bitrip);
 
 Datum
-udig_ge_bc160(PG_FUNCTION_ARGS)
+udig_ge_bitrip(PG_FUNCTION_ARGS)
 {
 	unsigned char *a = (unsigned char *)PG_GETARG_POINTER(0);
 	unsigned char *b = (unsigned char *)PG_GETARG_POINTER(1);
 
-	PG_RETURN_BOOL(_udig_cmp_bc160(a, b) >= 0);
+	PG_RETURN_BOOL(_udig_cmp_bitrip(a, b) >= 0);
 }
 
-PG_FUNCTION_INFO_V1(udig_lt_bc160);
+PG_FUNCTION_INFO_V1(udig_lt_bitrip);
 
 Datum
-udig_lt_bc160(PG_FUNCTION_ARGS)
+udig_lt_bitrip(PG_FUNCTION_ARGS)
 {
 	unsigned char *a = (unsigned char *)PG_GETARG_POINTER(0);
 	unsigned char *b = (unsigned char *)PG_GETARG_POINTER(1);
 
-	PG_RETURN_BOOL(_udig_cmp_bc160(a, b) < 0);
+	PG_RETURN_BOOL(_udig_cmp_bitrip(a, b) < 0);
 }
 
-PG_FUNCTION_INFO_V1(udig_le_bc160);
+PG_FUNCTION_INFO_V1(udig_le_bitrip);
 
 Datum
-udig_le_bc160(PG_FUNCTION_ARGS)
+udig_le_bitrip(PG_FUNCTION_ARGS)
 {
 	unsigned char *a = (unsigned char *)PG_GETARG_POINTER(0);
 	unsigned char *b = (unsigned char *)PG_GETARG_POINTER(1);
 
-	PG_RETURN_BOOL(_udig_cmp_bc160(a, b) <= 0);
+	PG_RETURN_BOOL(_udig_cmp_bitrip(a, b) <= 0);
 }
 
-PG_FUNCTION_INFO_V1(udig_cmp_bc160);
+PG_FUNCTION_INFO_V1(udig_cmp_bitrip);
 
 Datum
-udig_cmp_bc160(PG_FUNCTION_ARGS)
+udig_cmp_bitrip(PG_FUNCTION_ARGS)
 {
 	unsigned char *a = (unsigned char *)PG_GETARG_POINTER(0);
 	unsigned char *b = (unsigned char *)PG_GETARG_POINTER(1);
 
-	PG_RETURN_INT32(_udig_cmp_bc160(a, b));
+	PG_RETURN_INT32(_udig_cmp_bitrip(a, b));
 }
