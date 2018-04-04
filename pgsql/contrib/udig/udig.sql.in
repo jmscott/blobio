@@ -11,7 +11,7 @@ SET search_path = public;
 /*
  *  SHA1 UDig Core Type.
  */
-CREATE TYPE udig_sha;					-- temporary sha1 type
+CREATE TYPE udig_sha;					-- sha1 udig type
 
 CREATE OR REPLACE FUNCTION udig_sha_in(cstring)		-- cstring to internal
 RETURNS udig_sha
