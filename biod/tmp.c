@@ -48,8 +48,6 @@
 
 #define _NULLC	(char *)0
 
-extern char *BLOBIO_ROOT;
-
 static char *BLOBIO_TMPDIR = (char *)0;
 
 struct tmp_map_entry

@@ -69,7 +69,6 @@ time_t last_log_heartbeat		= 0;
 time_t rrd_sample_prev			= 0;
 
 void		**module_boot_data = 0;
-char		*BLOBIO_ROOT = 0;
 pid_t		request_pid = 0;
 pid_t		master_pid = 0;
 pid_t		logger_pid = 0;
@@ -79,6 +78,9 @@ time_t		start_time;
 u2		rrd_sample_duration = 0;
 
 char	pid_path[] = "run/biod.pid";
+
+static char		*BLOBIO_ROOT = 0;
+static char		*BLOBIO_ALGORITHM = 0;
 
 static struct request	req =
 {
@@ -570,7 +572,7 @@ biod(char *verb, char *algorithm, char *digest,
 	if (strcmp("wrap", verb) == 0) {
 		if (algorithm[0])
 			die3_NO(verb, algorithm, "unexpected algorithm");
-		strcpy(algorithm, "sha");
+		strcpy(BLOBIO_ALGORITHM, "bc160");
 	} else if (!algorithm[0] || !digest[0])
 		die2_NO(verb, "missing udig or unknown verb");
 
@@ -1720,6 +1722,10 @@ main(int argc, char **argv)
 
 	daemonize(argc, argv);
 
+	BLOBIO_ALGORITHM = getenv("BLOBIO_ALGORITHM");
+	if (BLOBIO_ALGORITHM == (char *)0)
+		BLOBIO_ALGORITHM = "bc160";
+	info2("BLOBIO_ALGORITHM", BLOBIO_ALGORITHM);
 	/*
 	 *  Calculate current working directory.
 	 */

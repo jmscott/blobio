@@ -253,8 +253,6 @@ extern char	*net_32addr2text(u_long addr);
 
 extern char	*sig_name(int sig);
 
-extern char	*BLOBIO_ROOT;		/* BLOBIO_ROOT environment variable */
-
 /*
  *  Wrappers around various interuptable unix system calls
  */
