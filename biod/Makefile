@@ -151,15 +151,16 @@ tmp.o: tmp.c
 	$(CC) $(CFLAGS) -c tmp.c
 
 dev-links:
-	test -e data || ln -s . data
 	test -e htdocs || ln -s . htdocs
 	test -e log || ln -s . log
 	test -e run || ln -s . run
 	test -e sbin || ln -s . sbin
 	test -e tmp || ln -s . tmp
+	test -e data || mkdir data
 	test -e sha_fs || mkdir sha_fs
 	test -e bc160_fs || mkdir bc160_fs
 	test -e spool || mkdir spool
+	test -e spool/wrap || mkdir spool/wrap
 
 clean-dev-links:
 	rm -rf sbin log data run

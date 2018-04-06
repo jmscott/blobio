@@ -80,7 +80,9 @@ u2		rrd_sample_duration = 0;
 char	pid_path[] = "run/biod.pid";
 
 static char		*BLOBIO_ROOT = 0;
-static char		*BLOBIO_ALGORITHM = 0;
+
+#define DEFAULT_WRAP_DIGEST_ALGORITHM	"bc160"
+static char		wrap_digest_algorithm[MAX_ALGORITHM_SIZE+1];
 
 static struct request	req =
 {
@@ -563,16 +565,14 @@ biod(char *verb, char *algorithm, char *digest,
 {
 	int status;
 	struct digest_module *mp;
-	int (*verb_callback)(struct request *, struct digest_module *);
+	int (*verb_callback)(struct request *, struct digest_module *) = 0;
 	char ps_title[5 + 4 + 1];
-
-	verb_callback = 0;		//  quiets clang compiler
 
 	req.verb = verb;
 	if (strcmp("wrap", verb) == 0) {
 		if (algorithm[0])
 			die3_NO(verb, algorithm, "unexpected algorithm");
-		strcpy(BLOBIO_ALGORITHM, "bc160");
+		strcpy(algorithm, wrap_digest_algorithm);
 	} else if (!algorithm[0] || !digest[0])
 		die2_NO(verb, "missing udig or unknown verb");
 
@@ -1633,6 +1633,7 @@ main(int argc, char **argv)
 	unsigned short port;
 	int i;
 
+	strcpy(wrap_digest_algorithm, DEFAULT_WRAP_DIGEST_ALGORITHM);
 	/*
 	 *  Parse verb line arguments.
 	 */
@@ -1679,6 +1680,19 @@ main(int argc, char **argv)
 				rrd_sample_duration = (u2)sec;
 			} else
 				die3(o, "unexpected seconds or heartbeat", hb);
+		} else if (strcmp("--wrap-algorithm", argv[i]) == 0) {
+			static char o[] = "option --wrap-algorithm";
+
+			if (++i >= argc)
+				die2(o, "missing algorithm");
+
+			if (*argv[i] == 0)
+				die2(o, "empty algorithm");
+
+			//  verify the digest exists
+			if (!module_get(argv[i]))
+				die3(o, "unknown digest algorithm", argv[i]);
+			strcpy(wrap_digest_algorithm, argv[i]);
 		} else if (strncmp("--", argv[i], 2) == 0)
 			die2("unknown option", argv[i]);
 		else
@@ -1722,10 +1736,7 @@ main(int argc, char **argv)
 
 	daemonize(argc, argv);
 
-	BLOBIO_ALGORITHM = getenv("BLOBIO_ALGORITHM");
-	if (BLOBIO_ALGORITHM == (char *)0)
-		BLOBIO_ALGORITHM = "bc160";
-	info2("BLOBIO_ALGORITHM", BLOBIO_ALGORITHM);
+	info2("wrap digest algorithm", wrap_digest_algorithm);
 	/*
 	 *  Calculate current working directory.
 	 */
