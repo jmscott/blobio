@@ -44,12 +44,13 @@ CSRC=									\
 	tmp.c
 SBINs=									\
 	append-brr							\
+	bio-udig2fs							\
 	biod								\
 	biod_ctl							\
-	bio-udig2fs							\
 	create-rrd							\
 	fs2udig								\
 	graph-rrd							\
+	sync-put							\
 	update-rrd
 LIBs=									\
 	blobio-sys5.rc.template						\
