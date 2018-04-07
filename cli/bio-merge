@@ -1,12 +1,8 @@
 #!/bin/bash
-#
-#  Synopsis:
-#	Merge two blob.io services
-#
 HELP=$(cat <<'END'
 
 Synopsis:
-	Merge udigs $BLOBIO_SERVICE to a target service
+	One way merge of udigs in $BLOBIO_SERVICE to a target service
 Usage:
 	bio-merge panoz.setspace.com:1797 [sha:1234 ...]
 	bio-merge --quiet panoz.setspace.com:1797 [sha:1234 ...]
