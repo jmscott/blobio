@@ -1,0 +1,65 @@
+#!/bin/bash
+#
+#  Synopsis:
+#	Sync a local blob to a remote server by doing a put request.
+#  Usage:
+#	bio-sync-blob <remote-service> <udig>
+#
+#	UDIG=bc160:a8affdfc1058fe9191b7730aaa0e1b6765d12f05
+#	bio-sync-blob bio4:condor.setspace.com $UDIG
+#  Exit Status:
+#	0	blob already exists on remote server
+#	1	blob put to remote server
+#	2	local blob does not exist
+#	3	error putting blob to remote server
+#
+
+die()
+{
+	echo "$(basename $0): ERROR: $@" >&2
+	exit 3
+}
+
+test $# = 2 || die 'wrong number of arguments'
+UDIG=$1
+SERVICE=$2
+
+test -n "$BLOBIO_SERVICE" || die 'env variable not defined: BLOBIO_SERVICE'
+
+#  does the blob already exist on remote server?
+
+blobio eat --udig $UDIG --service $SERVICE
+STATUS=$?
+case $STATUS in
+0)
+	exit 0		#  blob exists on remote server
+	;;
+1)
+	;;		#  blob does not exist
+*)
+	die "blobio eat sync failed: exit status=$STATUS"
+	;;
+esac
+
+#  does the blob exist on local server
+blobio eat --udig $UDIG --service $BLOBIO_SERVICE
+STATUS=$?
+case $STATUS in
+0)
+	;;
+1)
+	exit 2
+	;;
+*)
+	die "blobio eat local failed: exit status=$STATUS"
+	;;
+esac
+
+#  put the blob to the remote server
+
+blobio get --udig $UDIG --service $BLOBIO_SERVICE			|
+	blobio put --udig $UDIG --service $SERVICE
+STATUS=${PIPESTATUS[*]}
+test "$STATUS" = '0 0' || die "blobio get | put failed: exit status=$STATUS"
+
+exit 1

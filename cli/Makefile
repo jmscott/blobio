@@ -20,10 +20,11 @@ install: all
 		bio-more						\
 		bio-put							\
 		bio-put-file						\
-		bio-wrap-roll						\
+		bio-sync-put						\
 		bio-take						\
 		bio-unroll						\
 		bio-wrap						\
+		bio-wrap-roll						\
 		bio-zap							\
 		$(DIST_ROOT)/bin
 	cd blobio;	$(MAKE) install
