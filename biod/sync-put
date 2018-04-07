@@ -21,8 +21,8 @@ die()
 }
 
 test $# = 2 || die 'wrong number of arguments'
-UDIG=$1
-SERVICE=$2
+SERVICE=$1
+UDIG=$2
 
 test -n "$BLOBIO_SERVICE" || die 'env variable not defined: BLOBIO_SERVICE'
 
