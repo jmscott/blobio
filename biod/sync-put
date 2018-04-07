@@ -6,7 +6,7 @@
 #	bio-sync-blob <remote-service> <udig>
 #
 #	UDIG=bc160:a8affdfc1058fe9191b7730aaa0e1b6765d12f05
-#	bio-sync-blob bio4:condor.setspace.com $UDIG
+#	sync-blob bio4:condor.setspace.com $UDIG
 #  Exit Status:
 #	0	blob already exists on remote server
 #	1	blob put to remote server
