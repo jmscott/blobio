@@ -20,7 +20,6 @@ install: all
 		bio-more						\
 		bio-put							\
 		bio-put-file						\
-		bio-sync-put						\
 		bio-take						\
 		bio-unroll						\
 		bio-wrap						\
