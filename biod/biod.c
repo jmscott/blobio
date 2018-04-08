@@ -1,6 +1,13 @@
 /*
  *  Synopsis:
  *	A reference blobio server that speaks the blob.io protocol
+ *  Usage:
+ *	export BLOBIO_ROOT=/usr/local/blobio
+ *	$BLOBIO_ROOT/sbin/biod
+ *		--port 1798		#  listen on this port
+ *		--wrap-algorithm	#  digest algorithm in wrap command
+ *		--rrd-sample-duration	#  how often to generate rrd samples
+ *		--ps-title 'biod-test'	#  set the title in the process table
  *  Note:
  *	Signal handling needs to be pushed to main listen loop or cleaned
  *	up with sigaction().
