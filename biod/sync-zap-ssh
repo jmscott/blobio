@@ -1,0 +1,29 @@
+#!/bin/bash
+#
+#  Synopsis:
+#	Sync a taken local blob on a remote server via ssh blobio take command
+#  Usage:
+#	sync-take-ssh <remote-blobio-service> <ssh-authorization> <udig>
+#
+#	UDIG=bc160:a8affdfc1058fe9191b7730aaa0e1b6765d12f05
+#	sync-take-ssh blobio@condor.setspace.com $UDIG
+#  Exit Status:
+#	*	blobio take exit status
+#	126	wrong number of arguments
+#	255	ssh error
+#
+
+die()
+{
+	echo "$(basename $0): ERROR: $@" >&2
+	exit 126
+}
+
+test $# = 3 || die "wrong number of arguments: expect 3, got $#"
+SERVICE=$1
+SSH_AUTH=$2
+UDIG=$3
+
+#  does the blob already exist on remote server?
+
+exec ssh $SSH_AUTH "blobio take --udig $UDIG --service $SERVICE >/dev/null"
