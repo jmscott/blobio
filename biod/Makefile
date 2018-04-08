@@ -51,6 +51,7 @@ SBINs=									\
 	fs2udig								\
 	graph-rrd							\
 	sync-put							\
+	sync-zap-ssh							\
 	update-rrd
 LIBs=									\
 	blobio-sys5.rc.template						\
