@@ -198,8 +198,6 @@ fs_get(int *ok_no)
 
 		if (errno != EXDEV)
 			return strerror(errno);
-
-
 	}
 	if ((err = fs_copy(fs_path, output_path))) {
 		if (errno == ENOENT)
