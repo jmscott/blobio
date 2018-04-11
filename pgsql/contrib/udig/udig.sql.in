@@ -527,6 +527,7 @@ CREATE OPERATOR CLASS udig_ops
         OPERATOR        5       >	(udig, udig),
         FUNCTION        1       udig_cmp(udig, udig)
 ;
+
 CREATE OPERATOR CLASS udig_sha_ops
   DEFAULT FOR TYPE udig_sha USING btree FAMILY udig_clan AS
         OPERATOR        1       <	(udig_sha, udig_sha),
@@ -566,7 +567,7 @@ AS 'MODULE_PATHNAME', 'udig_algorithm'
 IMMUTABLE STRICT LANGUAGE C;
 
 /*
- *  RIPEMD160(RIPEMD160(SHA256)) UDig Core Type.
+ *  RIPEMD160(SHA256) UDig Core Type.
  */
 CREATE TYPE udig_bc160;					-- bc160 udig type
 
@@ -588,7 +589,7 @@ CREATE TYPE udig_bc160
 );
 
 /*
- *  Functions for core RIPEMD160(RIPEMD160(SHA256)) data types.
+ *  Functions for core RIPEMD160(SHA256) data types.
  */
 CREATE OR REPLACE FUNCTION udig_bc160_eq(udig_bc160, udig_bc160)
 RETURNS boolean
@@ -626,7 +627,7 @@ AS 'MODULE_PATHNAME', 'udig_bc160_cmp'
 IMMUTABLE STRICT LANGUAGE C;
 
 /*
- *  Functions for cross compare RIPEMD160(RIPEMD160(SHA256))-generic
+ *  Functions for cross compare RIPEMD160(SHA256)-generic
  *  UDIG data types.
  */
 CREATE OR REPLACE FUNCTION udig_bc160_eq_udig(udig_bc160, udig)
