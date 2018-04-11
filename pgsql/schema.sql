@@ -55,7 +55,7 @@ DROP TABLE IF EXISTS blobio.brr_take_ok3_recent CASCADE;
 CREATE TABLE blobio.brr_take_ok3_recent
 (
 	blob			public.udig
-					primary key,
+					PRIMARY KEY,
 	start_time		blobio.brr_timestamp,
 
 	/*
@@ -69,19 +69,19 @@ COMMENT ON TABLE blobio.brr_take_ok3_recent IS
   'most recently seen take request record for a particular blob'
 ;
 CREATE INDEX brr_take_ok3_recent_start_time ON
-	blobio.brr_take_ok3_recent(start_time);
+	blobio.brr_take_ok3_recent(start_time)
+;
 
 /*
- *  The blob size AS observed in a brr record of an existing blob.
- *  Blob size should NEVER change.
+ *  The immutable blob size AS observed in a brr record of an existing blob.
  */
 DROP TABLE IF EXISTS blobio.brr_blob_size CASCADE;
 CREATE TABLE blobio.brr_blob_size
 (
-	blob		udig
-				primary key,
+	blob		public.udig
+				PRIMARY KEY,
 	byte_count	blobio.ui63
-				not null
+				NOT NULL
 );
 COMMENT ON TABLE blobio.brr_blob_size IS
   'number bytes (octets) in the blob'
@@ -94,8 +94,8 @@ REVOKE UPDATE ON blobio.brr_blob_size FROM public;
 DROP TABLE IF EXISTS blobio.brr_ok_recent CASCADE;
 CREATE TABLE blobio.brr_ok_recent
 (
-	blob		udig
-				primary key,
+	blob		public.udig
+				PRIMARY KEY,
 	start_time	blobio.brr_timestamp,
 	wall_duration	blobio.brr_duration
 );
@@ -106,14 +106,13 @@ CREATE INDEX brr_ok_recent_start_time ON blobio.brr_ok_recent(start_time);
 
 /*
  *  A recently failed read of a blob, which implies the blob may not exist.
- *  Don't record successfull "take"s, since
- *  has been completely forgotten.
+ *  Don't record successfull "take"s.
  */
 DROP TABLE IF EXISTS blobio.brr_no_recent CASCADE;
 CREATE TABLE blobio.brr_no_recent
 (
-	blob		udig
-				primary key,
+	blob		public.udig
+				PRIMARY KEY,
 	start_time	blobio.brr_timestamp,
 	wall_duration	blobio.brr_duration
 );
@@ -129,20 +128,20 @@ CREATE INDEX brr_no_recent_start_time ON blobio.brr_no_recent(start_time);
 DROP TABLE IF EXISTS blobio.brr_discover;
 CREATE TABLE blobio.brr_discover
 (
-	blob		udig
-				primary key,
+	blob		public.udig
+				PRIMARY KEY,
 	/*
 	 *  Start time in blob request record.
 	 */
 	start_time	blobio.brr_timestamp
-				not null,
+				NOT NULL,
 	/*
 	 *  Time this database record was inserted or updated with
 	 *  an earlier time,  effective measuring discover latency.
 	 */
 	upsert_time	blobio.brr_timestamp
-				default now()
-				not null
+				DEFAULT now()
+				NOT NULL
 );
 CREATE INDEX brr_discover_start_time ON blobio.brr_discover(start_time);
 COMMENT ON TABLE blobio.brr_discover
@@ -163,13 +162,13 @@ COMMENT ON COLUMN blobio.brr_discover.upsert_time
 DROP TABLE IF EXISTS blobio.brr_wrap_ok;
 CREATE TABLE blobio.brr_wrap_ok
 (
-	blob		udig
-				primary key,
+	blob		public.udig
+				PRIMARY KEY,
 	start_time	blobio.brr_timestamp,
 	wall_duration	blobio.brr_duration,
 	insert_time	timestamptz
-				default now()
-				not null
+				DEFAULT now()
+				NOT NULL
 );
 REVOKE UPDATE ON blobio.brr_wrap_ok FROM public;
 COMMENT ON TABLE blobio.brr_wrap_ok
@@ -181,13 +180,13 @@ COMMENT ON TABLE blobio.brr_wrap_ok
 DROP TABLE IF EXISTS blobio.brr_roll_ok;
 CREATE TABLE blobio.brr_roll_ok
 (
-	blob		udig
-				primary key,
+	blob		public.udig
+				PRIMARY KEY,
 	start_time	blobio.brr_timestamp,
 	wall_duration	blobio.brr_duration,
 	insert_time	timestamptz
-				default now()
-				not null
+				DEFAULT now()
+				NOT NULL
 );
 REVOKE UPDATE ON blobio.brr_roll_ok FROM public;
 COMMENT ON TABLE blobio.brr_roll_ok
@@ -202,7 +201,7 @@ COMMENT ON TABLE blobio.brr_roll_ok
  *
  *	blobio get --udig <udig> --service bio4:localhost:1797
  *
- *  fetches a living blob.
+ *  always fetches a living blob.
  */
 DROP VIEW IF EXISTS blobio.service CASCADE;
 CREATE VIEW blobio.service AS
