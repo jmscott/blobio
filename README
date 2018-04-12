@@ -229,7 +229,7 @@ To Do:
 		-- FAILS
 		select 'sha:44e946a2889b295eeb0b9d95efe34625cc830dde'::udig_sha;
 	
-	  why?
+	  why not cast both versions?
 
 	- move log/*.[fx]dr files to spool and, after wrapping, to data/
 
@@ -237,18 +237,12 @@ To Do:
 	  BLOBIO_DIST?  Currently BLOBIO_ROOT means the actual install 
 	  directory and not the parent, which is the correct root.
 
-	- shasum on mac os is about 3 times quicker than 'blobio eat'. why?
-
 	- add option to biod to limit size of accepted blob
 
 	- investigate linux splice() system call.
 
-	- create postgres types for at least netflow.
-
 	- think about separate biod processes sharing the same data/ file system
 	  but otherwise separate.  or, explore union file systems.
-
-	- biod does not always remove run/biod.pid
 
 	- make the postgresql udig data type be an extension
 
@@ -258,26 +252,17 @@ To Do:
 	- two quick wraps in a row could generate the same wrap set?
 
 	- should BRR log files always have unique digests, modulo other servers.
+	  perhaps the first put request in the wrapped brr is a blob uniquely
+	  summarizing the state of the server and the current wrap,request.
 
 	- contemplate running the server such that the empty blob always exists
-
-	- in biod server, investigate closing down all unused file descriptiors
-	  upon forking a blob request
-
-	- what about a stats process to handle rolling, distinct udig count
-	  and blob byte count?
 
 	- think about adding fadvise to file system blob reads.
           seems natural since every open of blob file will read the entire blob.
 
-	- rename biod-logger/brr-logger/arborist processes to shorter
-		biod-log, biod-brr-log, biod-arbor
-
-	- rethink how stats are delivered to snmp or rrd graphs - udp service?
-
 	- cleanup the code in server/sha_fs.c
 
-	- create an is_empty() function in postgres/udig and in blobio client.
+	- create an is_empty() function in pgsql udig datatype.
 
 	- add support for unix domain socket, std{in,out}, inetd, and libevent
 
@@ -298,8 +283,6 @@ To Do:
 
 	- enable/disable specific commands get/put/give/take per server/per
 	  subnet
-
-	- trivial bandwidth throttling
 
 	- named pipes to flowd as another tail source
 
