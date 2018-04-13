@@ -971,8 +971,9 @@ RETURNS int4
 AS 'MODULE_PATHNAME'
 LANGUAGE C STRICT IMMUTABLE PARALLEL SAFE;
 
-//  hash indexes increase test queries by %33 on count(blobio.service) of
-//  15 millon tuples versus btree.  blobio.service is a complex view.
+--  benchmark says hash indexes increase test queries by %33 on
+--  count(blobio.service) over 15 millon tuples versus btree.
+--  blobio.service is a complex view.  storage is ssd.
 
 CREATE OPERATOR CLASS udig_ops
 DEFAULT FOR TYPE udig USING hash AS
