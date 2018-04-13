@@ -28,7 +28,7 @@ COMMENT ON DOMAIN blobio.brr_duration IS
 DROP DOMAIN IF EXISTS blobio.brr_timestamp CASCADE;
 CREATE DOMAIN blobio.brr_timestamp AS timestamptz
   CHECK (
-	value >= '2008-05-17 10:06:42'
+	value >= '2008-05-17 10:06:42'		--  birthday of blobio
   )
   NOT NULL
 ;
@@ -65,12 +65,16 @@ CREATE TABLE blobio.brr_take_ok3_recent
 	 */
 	wall_duration		blobio.brr_duration
 );
-COMMENT ON TABLE blobio.brr_take_ok3_recent IS
-  'most recently seen take request record for a particular blob'
+CREATE INDEX brr_take_ok3_recent_hash ON
+	blobio.brr_take_ok3_recent USING hash(blob)
 ;
 CREATE INDEX brr_take_ok3_recent_start_time ON
 	blobio.brr_take_ok3_recent(start_time)
 ;
+COMMENT ON TABLE blobio.brr_take_ok3_recent IS
+  'most recently seen take request record for a particular blob'
+;
+REVOKE UPDATE ON blobio.brr_take_ok3_recent FROM public;
 
 /*
  *  The immutable blob size AS observed in a brr record of an existing blob.
@@ -83,8 +87,14 @@ CREATE TABLE blobio.brr_blob_size
 	byte_count	blobio.ui63
 				NOT NULL
 );
+CREATE INDEX brr_blob_size_byte_count
+	ON brr_blob_size(byte_count)
+;
+CREATE INDEX brr_blob_size_hash
+	ON brr_blob_size USING hash(blob)
+;
 COMMENT ON TABLE blobio.brr_blob_size IS
-  'number bytes (octets) in the blob'
+  'number bytes (octets) in the blob as reported by blob request record'
 ;
 REVOKE UPDATE ON blobio.brr_blob_size FROM public;
 
@@ -99,10 +109,16 @@ CREATE TABLE blobio.brr_ok_recent
 	start_time	blobio.brr_timestamp,
 	wall_duration	blobio.brr_duration
 );
+CREATE INDEX brr_ok_recent_hash
+	ON blobio.brr_ok_recent USING hash(blob)
+;
+CREATE INDEX brr_ok_recent_start_time
+	ON blobio.brr_ok_recent(start_time)
+;
 COMMENT ON TABLE blobio.brr_ok_recent IS
   'most recently verified existence for a particular blob'
 ;
-CREATE INDEX brr_ok_recent_start_time ON blobio.brr_ok_recent(start_time);
+REVOKE UPDATE ON blobio.brr_ok_recent FROM public;
 
 /*
  *  A recently failed read of a blob, which implies the blob may not exist.
@@ -116,10 +132,16 @@ CREATE TABLE blobio.brr_no_recent
 	start_time	blobio.brr_timestamp,
 	wall_duration	blobio.brr_duration
 );
+CREATE INDEX brr_no_recent_hash
+	ON blobio.brr_no_recent USING hash(blob)
+;
+CREATE INDEX brr_no_recent_start_time
+	ON blobio.brr_no_recent(start_time)
+;
 COMMENT ON TABLE blobio.brr_no_recent IS
   'most recently failed attempt to get or eat the blob'
 ;
-CREATE INDEX brr_no_recent_start_time ON blobio.brr_no_recent(start_time);
+REVOKE UPDATE ON blobio.brr_no_recent FROM public;
 
 /*
  *  Earliest known existence of a blob.  Both the brr time
@@ -133,31 +155,34 @@ CREATE TABLE blobio.brr_discover
 	/*
 	 *  Start time in blob request record.
 	 */
-	start_time	blobio.brr_timestamp
-				NOT NULL,
+	start_time	blobio.brr_timestamp,
+
 	/*
 	 *  Time this database record was inserted or updated with
 	 *  an earlier time,  effective measuring discover latency.
 	 */
 	upsert_time	blobio.brr_timestamp
 				DEFAULT now()
-				NOT NULL
 );
-CREATE INDEX brr_discover_start_time ON blobio.brr_discover(start_time);
+CREATE INDEX brr_discover_hash
+	ON blobio.brr_discover USING hash(blob)
+;
+CREATE INDEX brr_discover_start_time
+	ON blobio.brr_discover(start_time)
+;
 COMMENT ON TABLE blobio.brr_discover
   IS
   	'the earliest known existence of a digestable blob for this service'
 ;
-
 COMMENT ON COLUMN blobio.brr_discover.start_time
   IS
   	'start time of the earliest request for the discovered blob'
 ;
-
 COMMENT ON COLUMN blobio.brr_discover.upsert_time
   IS
   	'time of sql insert or update of this tuple'
 ;
+REVOKE UPDATE ON blobio.brr_discover FROM public;
 
 DROP TABLE IF EXISTS blobio.brr_wrap_ok;
 CREATE TABLE blobio.brr_wrap_ok
@@ -166,16 +191,20 @@ CREATE TABLE blobio.brr_wrap_ok
 				PRIMARY KEY,
 	start_time	blobio.brr_timestamp,
 	wall_duration	blobio.brr_duration,
-	insert_time	timestamptz
+	insert_time	blobio.brr_timestamp
 				DEFAULT now()
-				NOT NULL
 );
-REVOKE UPDATE ON blobio.brr_wrap_ok FROM public;
+CREATE INDEX brr_wrap_ok_hash
+	ON blobio.brr_wrap_ok USING hash(blob)
+;
+CREATE INDEX brr_wrap_ok_start_time
+	ON blobio.brr_wrap_ok(start_time)
+;
 COMMENT ON TABLE blobio.brr_wrap_ok
   IS
   	'history of successfull wrap requests'
 ;
-
+REVOKE UPDATE ON blobio.brr_wrap_ok FROM public;
 
 DROP TABLE IF EXISTS blobio.brr_roll_ok;
 CREATE TABLE blobio.brr_roll_ok
@@ -184,24 +213,23 @@ CREATE TABLE blobio.brr_roll_ok
 				PRIMARY KEY,
 	start_time	blobio.brr_timestamp,
 	wall_duration	blobio.brr_duration,
-	insert_time	timestamptz
+	insert_time	blobio.brr_timestamp
 				DEFAULT now()
-				NOT NULL
 );
-REVOKE UPDATE ON blobio.brr_roll_ok FROM public;
+CREATE INDEX brr_roll_ok_hash
+	ON blobio.brr_roll_ok USING hash(blob)
+;
+CREATE INDEX brr_roll_ok_start_time
+	ON blobio.brr_roll_ok(start_time)
+;
 COMMENT ON TABLE blobio.brr_roll_ok
   IS
   	'history of successfull roll requests'
 ;
+REVOKE UPDATE ON blobio.brr_roll_ok FROM public;
 
 /*
  *  Fetchable blobs with regard to the blobio network service.
- *  In other words, for, say, service bio4:localhost:1797,
- *  if <udig> is in the table service.blob then
- *
- *	blobio get --udig <udig> --service bio4:localhost:1797
- *
- *  always fetches a living blob.
  */
 DROP VIEW IF EXISTS blobio.service CASCADE;
 CREATE VIEW blobio.service AS
@@ -311,44 +339,26 @@ CREATE TABLE blobio.biod_request_stat
 	sample_time	blobio.brr_timestamp
 				PRIMARY KEY,
 
-	success_count	blobio.ui63
-				NOT NULL,
-	error_count	blobio.ui63
-				NOT NULL,
-	timeout_count	blobio.ui63
-				NOT NULL,
-	signal_count	blobio.ui63
-				NOT NULL,
-	fault_count	blobio.ui63
-				NOT NULL,
+	success_count	blobio.ui63,
+	error_count	blobio.ui63,
+	timeout_count	blobio.ui63,
+	signal_count	blobio.ui63,
+	fault_count	blobio.ui63,
 
-	get_count	blobio.ui63
-				NOT NULL,
-	put_count	blobio.ui63
-				NOT NULL,
-	give_count	blobio.ui63
-				NOT NULL,
-	take_count	blobio.ui63
-				NOT NULL,
-	eat_count	blobio.ui63
-				NOT NULL,
-	wrap_count	blobio.ui63
-				NOT NULL,
-	roll_count	blobio.ui63
-				NOT NULL,
+	get_count	blobio.ui63,
+	put_count	blobio.ui63,
+	give_count	blobio.ui63,
+	take_count	blobio.ui63,
+	eat_count	blobio.ui63,
+	wrap_count	blobio.ui63,
+	roll_count	blobio.ui63,
 
-	chat_ok_count	blobio.ui63
-				NOT NULL,
-	chat_no_count	blobio.ui63
-				NOT NULL,
-	chat_no2_count	blobio.ui63
-				NOT NULL,
-	chat_no3_count	blobio.ui63
-				NOT NULL,
-	eat_no_count	blobio.ui63
-				NOT NULL,
+	chat_ok_count	blobio.ui63,
+	chat_no_count	blobio.ui63,
+	chat_no2_count	blobio.ui63,
+	chat_no3_count	blobio.ui63,
+	eat_no_count	blobio.ui63,
 	take_no_count	blobio.ui63
-				NOT NULL
 );
 
 COMMIT;
