@@ -955,3 +955,39 @@ ALTER OPERATOR FAMILY udig_clan USING btree ADD
   OPERATOR 5	>	(udig, udig_bc160),
   FUNCTION 1	udig_cmp_bc160	(udig, udig_bc160)
 ;
+
+CREATE FUNCTION udig_hash(udig)
+RETURNS int4
+AS 'MODULE_PATHNAME'
+LANGUAGE C STRICT IMMUTABLE PARALLEL SAFE;
+
+CREATE FUNCTION udig_sha_hash(udig_sha)
+RETURNS int4
+AS 'MODULE_PATHNAME'
+LANGUAGE C STRICT IMMUTABLE PARALLEL SAFE;
+
+CREATE FUNCTION udig_bc160_hash(udig_bc160)
+RETURNS int4
+AS 'MODULE_PATHNAME'
+LANGUAGE C STRICT IMMUTABLE PARALLEL SAFE;
+
+//  hash indexes increase test queries by %33 on count(blobio.service) of
+//  15 millon tuples versus btree.  blobio.service is a complex view.
+
+CREATE OPERATOR CLASS udig_ops
+DEFAULT FOR TYPE udig USING hash AS
+    OPERATOR    1   = (udig, udig),
+    FUNCTION    1   udig_hash(udig)
+;
+
+CREATE OPERATOR CLASS udig_sha_ops
+DEFAULT FOR TYPE udig_sha USING hash AS
+    OPERATOR    1   = (udig_sha, udig_sha),
+    FUNCTION    1   udig_sha_hash(udig_sha)
+;
+
+CREATE OPERATOR CLASS udig_bc160_ops
+DEFAULT FOR TYPE udig_bc160 USING hash AS
+    OPERATOR    1   = (udig_bc160, udig_bc160),
+    FUNCTION    1   udig_bc160_hash(udig_bc160)
+;

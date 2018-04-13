@@ -14,6 +14,7 @@
  */
 
 #include "postgres.h"
+#include "access/hash.h"
 #include "fmgr.h"
 #include "libpq/pqformat.h"             /* needed for send/recv functions */
 
@@ -44,6 +45,7 @@ Datum	udig_sha_ge(PG_FUNCTION_ARGS);
 Datum	udig_sha_lt(PG_FUNCTION_ARGS);
 Datum	udig_sha_le(PG_FUNCTION_ARGS);
 Datum	udig_sha_cmp(PG_FUNCTION_ARGS);
+Datum	udig_hash(PG_FUNCTION_ARGS);
 
 /*
  *  Core BitCoin RIPEMD160(SHA256)
@@ -55,6 +57,7 @@ Datum	udig_bc160_ge(PG_FUNCTION_ARGS);
 Datum	udig_bc160_lt(PG_FUNCTION_ARGS);
 Datum	udig_bc160_le(PG_FUNCTION_ARGS);
 Datum	udig_bc160_cmp(PG_FUNCTION_ARGS);
+Datum	udig_bc160_hash(PG_FUNCTION_ARGS);
 
 /*
  *  Cross type SHA -> UDIG
@@ -94,6 +97,7 @@ Datum	udig_le(PG_FUNCTION_ARGS);
 Datum	udig_cmp(PG_FUNCTION_ARGS);
 Datum	udig_algorithm(PG_FUNCTION_ARGS);
 Datum	udig_can_cast(PG_FUNCTION_ARGS);
+Datum	udig_hash(PG_FUNCTION_ARGS);
 
 /*
  *  Cross Type UDIG,SHA
@@ -1237,4 +1241,45 @@ udig_cmp_bc160(PG_FUNCTION_ARGS)
 	unsigned char *b = (unsigned char *)PG_GETARG_POINTER(1);
 
 	PG_RETURN_INT32(_udig_cmp_bc160(a, b));
+}
+
+PG_FUNCTION_INFO_V1(udig_hash);
+
+Datum
+udig_hash(PG_FUNCTION_ARGS)
+{
+	register uint32 h;
+
+	unsigned char *a = (unsigned char *)PG_GETARG_POINTER(0);
+
+	//  need to rehash instead of using bits from digest
+	//  in case we partion digest values
+	h = hash_any(a + 1, 20);
+
+	return UInt32GetDatum(h);	
+}
+
+PG_FUNCTION_INFO_V1(udig_sha_hash);
+
+Datum
+udig_sha_hash(PG_FUNCTION_ARGS)
+{
+	register uint32 h;
+
+
+	unsigned char *a = (unsigned char *)PG_GETARG_POINTER(0);
+	h = hash_any(a, 20);
+	return UInt32GetDatum(h);	
+}
+
+PG_FUNCTION_INFO_V1(udig_bc160_hash);
+
+Datum
+udig_bc160_hash(PG_FUNCTION_ARGS)
+{
+	register uint32 h;
+
+	unsigned char *a = (unsigned char *)PG_GETARG_POINTER(0);
+	h = hash_any(a, 20);
+	return UInt32GetDatum(h);	
 }
