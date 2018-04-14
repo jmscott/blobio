@@ -1,0 +1,136 @@
+#
+#  Synopsis:
+#	Flow for syncing a local blobio server with a remote server.
+#  Description:
+#	A local 
+#	server.  The 
+#  Usage:
+#	REMOTE_HOST=condor.setspace.com
+#	SYNC_ROOT=$BLOBIO_ROOT/sync/host/$REMOTE_HOST
+#
+#	#  make the sync directories
+#	mkdir -p $SYNC_ROOT
+#	cd $SYNC_ROOT
+#	mkdir -p run log etc
+#	ln -s $BLOBIO_ROOT/{spool,bin,sbin} . 
+#
+#	#  change this file to point to the sync target
+#	#  the ssh login to the remote should be set up
+#	#
+#	#	ssh blobio@remote.host.com
+#	#
+#	sed "s/remote[.]host[.]com/$REMOTE_HOST/" 			\
+#		$BLOBIO_ROOT/lib/sync.flow.example			>
+#		etc/sync-$REMOTE_HOST.flow
+#	export BLOBIO_ROOT=$SYNC_ROOT
+#  	flowd server etc/sync-$REMOTE_HOST.flow
+#
+
+boot
+{
+	brr_capacity = 32;
+	os_exec_capacity = 8;
+	os_exec_worker_count = 4;
+	flow_worker_count = 4;
+
+	qdr_roll_duration = "24h";
+	fdr_roll_duration = "24h";
+	xdr_roll_duration = "24h";
+	heartbeat_duration = "10s";
+}
+
+command eat_remote
+{
+	path = "bin/blobio";
+	argv = (
+		"--service",
+		"bio4:remote.host.com:1797",
+		"--udig"
+	);
+	exit_status is OK when in {0, 1};
+}
+
+command put_remote
+{
+	path = "sbin/sync-put";
+	argv = (
+		"bio4:remote.setspace.com:1797"
+	);
+	exit_status is OK when in {0, 1, 2};
+}
+
+command brr_blob_existed
+{
+	path = "true";
+}
+
+command brr_blob_taken
+{
+	path = "true";
+}
+
+tail brr
+{
+	path = "spool/biod.brr";
+}
+
+command eat_local
+{
+	path = "bin/blobio";
+	argv = (
+		"--service",
+		"bio4:localhost:1797",
+		"--udig"
+	);
+	exit_status is OK when in {0, 1};
+}
+
+#  Run ssh to remotely take a blob on localhost:1797 to /dev/null
+
+command zap_remote
+{
+	path = "sbin/sync-zap-ssh";
+	argv = (
+		"bio4:localhost:1797",
+		"blobio@remote.host.com"
+	);
+}
+
+call brr_blob_existed()
+  when
+	(
+		brr.verb == "put"
+		or
+		brr.verb == "get"
+		or
+		brr.verb == "give"
+		or
+		brr.verb == "wrap"
+		or
+		brr.verb == "roll"
+	)
+	and
+	(
+		brr.chat_history == "ok"
+		or
+		brr.chat_history == "ok,ok"
+		or
+		brr.chat_history == "ok,ok,ok"
+	)
+;
+
+call put_remote(brr.udig)
+  when
+  	brr_blob_existed.exit_status == 0	#  a blob was put locally
+	and
+  	eat_local.exit_status == 0		#  exists locally
+	and
+	eat_remote.exit_status == 1		#  does not exist remotely
+;
+
+call brr_blob_taken()
+  when
+	brr.verb == "take"
+	and
+	brr.chat_history == "ok,ok,ok"
+;

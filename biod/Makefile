@@ -55,7 +55,8 @@ SBINs=									\
 	update-rrd
 LIBs=									\
 	blobio-sys5.rc.template						\
-	blobio.rc.template
+	blobio.rc.template						\
+	sync.flow.example
 
 #  Linux requires linking to realtime timer library
 
