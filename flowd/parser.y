@@ -2,6 +2,18 @@
  *  Synopsis:
  *	Yacc grammar for 'flow' language.
  *  Note:
+ *	In command{}, the null keyword in argv=() list ought to be place
+ *	holders for required arguments.  For example,
+ *
+ *		command abc {
+ *			path = "blobio";
+ *			argv = (
+ *				"eat",
+ *				"--udig",
+ *				null,			#  argv[0]
+ *			);
+ *		}
+ *
  *	Query arguments are always strings.  Not too much of a problem in
  *	the short run, since the cast can be added in the query, put
  *	eventually ought to be added to the sql query/exec definition.
