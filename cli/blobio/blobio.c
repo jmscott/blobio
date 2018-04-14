@@ -8,9 +8,6 @@
  *	16	unexpected hash digest error
  *	17	unexpected blobio service error
  *	18	unexpected error on unix system call
- *
- *	Under OSX 10.9, an exit status 141 in various shells can indicate a
- *	SIGPIPE interupted the execution.  blobio does not exit 141.
  *  Options:
  *	--service name:end_point
  *	--udig algorithm:digest
@@ -19,18 +16,19 @@
  *	--output-path <path/to/file>
  *	--help
  *  Note:
+ *	Under OSX 10.9, an exit status 141 in various shells can indicate a
+ *	SIGPIPE interupted the execution.  blobio does not exit 141.
+ *	A SIGPIPE when reading from stdin probably out to be considered a
+ *	cancel.  Currently a SIGPIPE generated an error about the input
+ *	not matching the digest, which is confusing.
+ *
  *	Hanging blobio's processes are (rarely) seen on Mac OSX 10.12.3,
  *	implying timeouts are STILL not executing correctly.
  *
  *  	Options desperately need to be folding into a data structure.
  *  	We refuse to use getopts.
  *
- *	activation of --trace depends upon the order the options are given on
- *	the command line.
- *
  *	A shared library service might be interesting.
- *
- *	Add the exit status codes to the usage output (dork).
  *
  *	Also, the take&give exit statuses ought to reflect the various ok/no
  *	chat histories or perhaps the exit status ought to also store the
