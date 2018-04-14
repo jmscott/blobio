@@ -1,5 +1,7 @@
-//Synopsis:
+//  Synopsis:
 //	Compile a flow configuration into a network of channels.
+//  Note:
+//	The panic(no ast node (or not invoked?)) is confusing.
 
 package main
 
