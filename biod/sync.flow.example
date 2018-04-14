@@ -1,9 +1,6 @@
 #
 #  Synopsis:
 #	Flow for syncing a local blobio server with a remote server.
-#  Description:
-#	A local 
-#	server.  The 
 #  Usage:
 #	REMOTE_HOST=condor.setspace.com
 #	SYNC_ROOT=$BLOBIO_ROOT/sync/host/$REMOTE_HOST
@@ -12,16 +9,19 @@
 #	mkdir -p $SYNC_ROOT
 #	cd $SYNC_ROOT
 #	mkdir -p run log etc
-#	ln -s $BLOBIO_ROOT/{spool,bin,sbin} . 
+#	ln -s $BLOBIO_ROOT/{spool,sbin} . 
 #
-#	#  change this file to point to the sync target
-#	#  the ssh login to the remote should be set up
 #	#
-#	#	ssh blobio@remote.host.com
+#	#  change this file to point to the sync target host.
+#	#  also, the ssh login to the remote should be set up
+#	#
+#	#	ssh blobio@condor.setspace.com
 #	#
 #	sed "s/remote[.]host[.]com/$REMOTE_HOST/" 			\
 #		$BLOBIO_ROOT/lib/sync.flow.example			>
 #		etc/sync-$REMOTE_HOST.flow
+#
+#	#  start the sync server
 #	export BLOBIO_ROOT=$SYNC_ROOT
 #  	flowd server etc/sync-$REMOTE_HOST.flow
 #
@@ -43,8 +43,9 @@ command eat_remote
 {
 	path = "bin/blobio";
 	argv = (
+		"eat",
 		"--service",
-		"bio4:remote.host.com:1797",
+		"bio4:remote.setspace.com:1797",
 		"--udig"
 	);
 	exit_status is OK when in {0, 1};
@@ -78,6 +79,7 @@ command eat_local
 {
 	path = "bin/blobio";
 	argv = (
+		"eat",
 		"--service",
 		"bio4:localhost:1797",
 		"--udig"
@@ -92,7 +94,7 @@ command zap_remote
 	path = "sbin/sync-zap-ssh";
 	argv = (
 		"bio4:localhost:1797",
-		"blobio@remote.host.com"
+		"blobio@remote.setspace.com"
 	);
 }
 
@@ -119,18 +121,41 @@ call brr_blob_existed()
 	)
 ;
 
-call put_remote(brr.udig)
-  when
-  	brr_blob_existed.exit_status == 0	#  a blob was put locally
-	and
-  	eat_local.exit_status == 0		#  exists locally
-	and
-	eat_remote.exit_status == 1		#  does not exist remotely
-;
-
 call brr_blob_taken()
   when
 	brr.verb == "take"
 	and
 	brr.chat_history == "ok,ok,ok"
+;
+
+call eat_local(brr.udig)
+  when
+  	brr_blob_existed.exit_status == 0
+	or
+	brr_blob_taken.exit_status == 0
+;
+
+call eat_remote(brr.udig)
+  when
+  	brr_blob_existed.exit_status == 0
+	or
+	brr_blob_taken.exit_status == 0
+;
+
+call put_remote(brr.udig)
+  when
+  	brr_blob_existed.exit_status ==	0	#  brr proves exists
+	and
+	eat_local.exit_status == 0		#  exists locally
+	and
+	eat_remote.exit_status == 1		#  does not exist remotely
+;
+
+call zap_remote(brr.udig)
+  when
+  	brr_blob_taken.exit_status == 0		#  brr was taken
+	and
+  	eat_local.exit_status == 0		#  exists locally
+	and
+	eat_remote.exit_status == 1		#  does not exit remotely
 ;
