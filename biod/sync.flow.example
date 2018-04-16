@@ -2,28 +2,12 @@
 #  Synopsis:
 #	Flow for syncing a local blobio server with a remote server.
 #  Usage:
-#	REMOTE_HOST=condor.setspace.com
-#	SYNC_ROOT=$BLOBIO_ROOT/sync/host/$REMOTE_HOST
+#	See script make-sync-root to build directory tree for
+#	a particular host in $BLOBIO_ROOT/sync/host/remote.host.com.
 #
-#	#  make the sync directories
-#	mkdir -p $SYNC_ROOT
-#	cd $SYNC_ROOT
-#	mkdir -p run log etc
-#	ln -s $BLOBIO_ROOT/{spool,sbin} . 
-#
-#	#
-#	#  change this file to point to the sync target host.
-#	#  also, the ssh login to the remote should be set up
-#	#
-#	#	ssh blobio@condor.setspace.com
-#	#
-#	sed "s/remote[.]host[.]com/$REMOTE_HOST/" 			\
-#		$BLOBIO_ROOT/lib/sync.flow.example			>
-#		etc/sync-$REMOTE_HOST.flow
-#
-#	#  start the sync server
-#	export BLOBIO_ROOT=$SYNC_ROOT
-#  	flowd server etc/sync-$REMOTE_HOST.flow
+#	cd $BLOBIO_ROOT/sync/host/remote.host.com
+#	BLOBIO_ROOT=$(pwd)
+#	flowd server etc/sync-remote.host.com &
 #
 
 boot
@@ -75,6 +59,11 @@ tail brr
 	path = "spool/biod.brr";
 }
 
+#
+#  Does the blob exist local now, by executing
+#
+#	blobio eat --service bio4:localhost:1797 --udig brr.udig
+#
 command eat_local
 {
 	path = "bin/blobio";
@@ -87,16 +76,38 @@ command eat_local
 	exit_status is OK when in {0, 1};
 }
 
-#  Run ssh to remotely take a blob on localhost:1797 to /dev/null
+#
+#  Zap a remote blob by executing
+#
+#	ssh user@remote.host.com					\
+#		blobio take --service bio4:localhost:1797 		\
+#			--output-path /dev/null				\
+#			--udig brr.udig
+#
 
 command zap_remote
 {
-	path = "sbin/sync-zap-ssh";
+	path = "ssh";
 	argv = (
+		"user@remote.host.com",
+		"blobio",
+		"take",
+		"--service",
 		"bio4:localhost:1797",
-		"blobio@remote.setspace.com"
+		"--output-path",
+		"/dev/null",
+		"--udig"
 	);
 }
+
+#
+#  The blob existed according to blob request record.
+#
+#  Note:
+#	Including the "eat" verb means we could get into loops with the 
+#	remote server when it probes with an "eat".  Unfortunatly, the brr
+#	tuple only has the ipaddress in the netflow field, which is problematic.
+#
 
 call brr_blob_existed()
   when
@@ -151,11 +162,13 @@ call put_remote(brr.udig)
 	eat_remote.exit_status == 1		#  does not exist remotely
 ;
 
+#  only zap the blob when it does not exist locally but does exist remotely
+
 call zap_remote(brr.udig)
   when
-  	brr_blob_taken.exit_status == 0		#  brr was taken
+  	brr_blob_taken.exit_status == 0		#  blob was taken at one time
 	and
-  	eat_local.exit_status == 0		#  exists locally
+  	eat_local.exit_status == 1		#  does not exist locally
 	and
-	eat_remote.exit_status == 1		#  does not exit remotely
+	eat_remote.exit_status == 0		#  exists remotely
 ;

@@ -50,8 +50,8 @@ SBINs=									\
 	create-rrd							\
 	fs2udig								\
 	graph-rrd							\
+	reboot-sync							\
 	sync-put							\
-	sync-zap-ssh							\
 	update-rrd
 LIBs=									\
 	blobio-sys5.rc.template						\
@@ -157,7 +157,9 @@ dev-links:
 	test -e htdocs || ln -s . htdocs
 	test -e log || ln -s . log
 	test -e run || ln -s . run
+	test -e bin || ln -s . bin
 	test -e sbin || ln -s . sbin
+	test -e lib || ln -s . lib
 	test -e tmp || ln -s . tmp
 	test -e data || mkdir data
 	test -e sha_fs || mkdir sha_fs
@@ -166,7 +168,7 @@ dev-links:
 	test -e spool/wrap || mkdir spool/wrap
 
 clean-dev-links:
-	rm -rf sbin log data run
+	rm -rf htdocs log run bin sbin lib tmp data sha_fs bc160_fs spool
 
 clean:
 	rm -f $(OBJS) biod append-brr
