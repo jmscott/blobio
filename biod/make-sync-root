@@ -1,0 +1,71 @@
+#!/bin/bash
+#
+#  Synopsis:
+#	Make the sync directory for a particular host in $BLOBIO_ROOT/sync/host
+#  Usage:
+#	make-sync-root <remote host name> <remote ssh authorization>
+#
+
+die()
+{
+	echo "ERROR: $@" >&2
+	exit 1
+}
+
+_mkdir()
+{
+	D=$1
+	test -e $D && return 
+	mkdir -p $D || die "mkdir $D failed: exit status=$?"
+}
+
+_ln_root()
+{
+	S=$1
+	DIR=$BLOBIO_ROOT/$S
+	test -e $S && return
+	test -h $S && die "invalid symbolic link: $(pwd)/$S"
+	ln -s $DIR . || die "ln -s $DIR . failed: exit status=$?"
+}
+
+test $# = 2 || die "wrong number of arguments: got $#, expected 2"
+HOST="$1"
+SSH_AUTH="$2"
+
+test -n "$BLOBIO_ROOT" || die 'env not defined: BLOBIO_ROOT'
+
+cd $BLOBIO_ROOT || die "cd $BLOBIO_ROOT failed: exit status=$?"
+
+#  Verify that the blobio command is executable by local server.
+#  The remote "take" depends on blobio execution.
+
+ssh $SSH_AUTH which blobio >/dev/null ||
+		die "ssh $SSH_AUTH which blobio failed: exit status=$?"
+
+#  make sync directories
+SYNC_ROOT=$BLOBIO_ROOT/sync/host/$HOST
+_mkdir $SYNC_ROOT
+cd $SYNC_ROOT || die "cd $SYNC_ROOT failed: exit status=$?"
+_mkdir log
+_mkdir run
+_mkdir etc
+
+_ln_root sbin
+_ln_root spool
+_ln_root bin
+
+#  build a default flow file from the template file in
+#  $BLOBIO_ROOT/lib/sync.flow.example
+
+FLOW=etc/sync-$HOST.flow
+test -e $FLOW && exit 0
+TEMPLATE=$BLOBIO_ROOT/lib/sync.flow.example
+test -r $TEMPLATE || die "can not read flow template: $TEMPLATE"
+sed "s/remote[.]host[.]com/$HOST/g" $TEMPLATE 				|
+	sed "s/user@remote[.]host[.]com/$SSH_AUTH/g"			\
+	>$FLOW
+STATUS=${PIPESTATUS[*]}
+test "$STATUS" = '0 0' ||
+	die "sed template >$FLOW failed: exit status=$STATUS"
+
+exit 0
