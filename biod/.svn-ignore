@@ -37,6 +37,7 @@ sha_fs
 sha_fs.o
 signal.o
 spool
+sync
 tmp
 tmp.o
 wrap
