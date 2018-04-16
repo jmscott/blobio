@@ -1,0 +1,79 @@
+#!/bin/bash
+#
+#  Synopsis:
+#	Reboot the flowd sync processes for hosts in $BLOBIO_ROOT/sync/host
+#  Usage:
+#	#  Standalone
+#	export BLOBIO_ROOT=/usr/local/blobio
+#	reboot-sync
+#
+#	#  From cron-reboot
+#	reboot-sync
+#
+
+log()
+{
+	echo "$(date +'%Y/%m/%d %H:%M:%S'): $@"
+}
+
+die()
+{
+	log "ERROR: $@" >&2
+	exit 1
+}
+
+log 'hello, world'
+trap 'log good bye, cruel world' EXIT
+
+log "BLOBIO_ROOT: $BLOBIO_ROOT"
+
+cd $BLOBIO_ROOT || die "cd $BLOBIO_ROOT failed: exit status=$?"
+
+if [ ! -e sync/host ];  then
+	log "creating sync directory: $(pwd)/sync/host"
+	mkdir -p sync/host || die "mkdir failed: $(pwd)/sync/host"
+fi
+
+find $BLOBIO_ROOT/sync/host/ -type d -depth 1 | while read SYNC_ROOT;  do
+	HOST=$(basename $SYNC_ROOT)
+	log "sync host: $HOST"
+	cd $SYNC_ROOT || die "cd $SYNC_ROOT failed: exit status=$?"
+
+	#  stop any running processes
+	if [ -e run/flowd.pid ];  then
+		log 'file run/flowd.pid exists'
+		PID=$(cat run/flowd.pid)
+		log "killing flowd process possibly owned by $USER: #$PID"
+		pkill -F run/flowd.pid -U $USER flowd
+		STATUS=$?
+		case "$STATUS" in
+		0)
+			log "zapped flowd process with pid #$PID"
+			log 'sleeping 3 seconds will flowd (#$PID) exits ...'
+			sleep 3
+			;;
+		1)
+			log "no process matches with pid #$PID"
+			rm run/flowd.pid ||
+				die "rm run/flowd.pid failed: exit status=$?"
+			;;
+		*)
+			die "pkill failed; exit status=$?"
+			;;
+		esac
+
+		#  make sure run/flowd.pid got removed by clean exit.
+		#  otherwise, nuke flowd process with SIGKILL.
+
+		if [ -e run/flowd.pid ];  then
+			log 'ERROR: run/flowd.pid still exists'
+			log "killing #$PID with SIGKILL"
+			kill -9 $PID
+			rm -f run/flowd.pid ||
+				die "rm run/flowd.pid failed: exit status=$?"
+		fi
+	fi
+	log "starting sync flowd server: $HOST ..."
+	log "BLOBIO_ROOT for sync flowd: $SYNC_ROOT"
+	BLOBIO_ROOT=$SYNC_ROOT nohup flowd server etc/sync-$HOST.flow &
+done
