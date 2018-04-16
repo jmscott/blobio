@@ -2,6 +2,8 @@
  *  Synopsis:
  *	A driver for a trusting posix file system blobio service.
  *  Note:
+ *	/dev/null not support as --output-path.  why?
+ *	
  *  	Long (>= PATH_MAX) file paths are still problematic.
  *
  *	The input stream is not drained when the blob exists during a put/give.
@@ -32,6 +34,7 @@ extern char	algorithm[9];
 extern char	digest[129];
 extern char	end_point[129];
 extern char	*output_path;
+extern char	*null_device;
 extern int	output_fd;
 extern char	*input_path;
 extern int	input_fd;
@@ -81,12 +84,7 @@ fs_open()
 	//  build the path to the $BLOBIO_ROOT/data/<algo>_fs/ directory
 
 	*fs_path = 0;
-	buf4cat(fs_path, sizeof fs_path,
-				end_point,
-				"/data/",
-				algorithm,
-				"_fs"
-	);
+	buf4cat(fs_path, sizeof fs_path, end_point, "/data/", algorithm, "_fs");
 
 	//  if writing a blob then build path to temporary directory.
 
@@ -98,11 +96,11 @@ fs_open()
 	return (char *)0;
 }
 
-//   Note:  assume that fs_open() has been called.
-
 static char *
 fs_open_output()
 {
+	if (output_path == null_device)
+		return "null device not support as output";
 	return (char *)0;
 }
 
@@ -132,11 +130,7 @@ fs_copy(char *in_path, char *out_path)
 	//  open output path or point to standard out
 
 	if (out_path) {
-		out = uni_open_mode(
-				out_path,
-				O_WRONLY | O_CREAT, 
-				S_IRUSR | S_IRGRP
-		);
+		out = uni_open_mode(out_path, O_WRONLY|O_CREAT,S_IRUSR|S_IRGRP);
 		if (out < 0)
 			return strerror(errno);
 	} else
@@ -183,7 +177,6 @@ fs_get(int *ok_no)
 	//  link output path to source blob file
 	
 	if (output_path) {
-
 		if (uni_link(fs_path, output_path) == 0) {
 			*ok_no = 0;
 			return (char *)0;
@@ -219,10 +212,7 @@ fs_eat(int *ok_no)
 
 	bufcat(fs_path, sizeof fs_path, "/");
 	len = strlen(fs_path);
-	err = fs_service.digest->fs_path(
-				fs_path + len,
-				PATH_MAX - len
-	);
+	err = fs_service.digest->fs_path(fs_path + len, PATH_MAX - len);
 	if (err)
 		return err;
 

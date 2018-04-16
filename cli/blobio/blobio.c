@@ -35,8 +35,6 @@
  *	verb.  See exit status for child process requests in the blobio
  *	server.  a bit map may be interesting.
  *
- *	--output-path /dev/null fails, which is problematic.
- *
  *	Would be nice to eliminate stdio dependencies.  Currently stdio is
  *	required by only trace.c.
  *
@@ -81,6 +79,7 @@ char	algorithm[9] = {};
 char	digest[129] = {};
 char	*output_path = 0;
 char	*input_path = 0;
+char	*null_device = "/dev/null";
 char	end_point[129] = {};
 
 // standard in/out must remain open before calling leave()
@@ -123,27 +122,27 @@ leave(int status)
 
 	//  Note: what about closing the digest?
 
-	//  unlink() file created by --output-path, grumbling if unlink() fails.
+	//  upon error, unlink() file created by --output-path,
+	//  grumbling if unlink() fails.
 
-	if (status && status != EXIT_BAD_ARG && output_path != NULL) {
-		if (uni_unlink(output_path))
-			if (errno != ENOENT) {
-				static char panic[] =
-					"PANIC: unlink(output_path) failed: ";
-				char buf[PIPE_MAX];
-				char *err;
+	if (status && status != EXIT_BAD_ARG && output_path &&
+	    output_path != null_device && uni_unlink(output_path))
+		if (errno != ENOENT) {
+			static char panic[] =
+				"PANIC: unlink(output_path) failed: ";
+			char buf[PIPE_MAX];
+			char *err;
 
-				err = strerror(errno);
+			err = strerror(errno);
 
-				//  assemble error message about failed
-				//  unlink()
+			//  assemble error message about failed
+			//  unlink()
 
-				buf[0] = 0;
-				ecat(buf, sizeof buf, panic);
-				buf2cat(buf, sizeof buf, err, "\n");
+			buf[0] = 0;
+			ecat(buf, sizeof buf, panic);
+			buf2cat(buf, sizeof buf, err, "\n");
 
-				uni_write(2, buf, strlen(buf));
-			}
+			uni_write(2, buf, strlen(buf));
 		}
 	TRACE("good bye, cruel world");
 	_exit(status);
@@ -172,6 +171,8 @@ Examples:\n\
 	UD=sha:a0bc76c479b55b5af2e3c7c4a4d2ccf44e6c4e71\n\
 \n\
 	blobio get --service $S --udig $UD --output-path tmp.blob\n\
+\n\
+	blobio take --service $S --udig $UD --output-path /dev/null\n\
 \n\
 	UDIG=$(blobio eat --algorithm sha --input-path resume.pdf)\n\
 	blobio put --udig $UD --input-path resume.pdf --service $S\n\
@@ -480,7 +481,10 @@ parse_argv(int argc, char **argv)
 
 			if (++i == argc)
 				eopt("output-path", "missing <file path>");
-			output_path = argv[i];
+			if (strcmp(argv[i], null_device) == 0)
+				output_path = null_device;
+			else
+				output_path = argv[i];
 		} else if (strcmp("service", a) == 0) {
 			char *s, *p;
 			char name[9], *endp;
@@ -664,9 +668,10 @@ main(int argc, char **argv)
 		}
 	}
 
-	//  the output path must never exist in the file system.
+	//  the output path must never exist in the file system, unless
+	//  /dev/null
 
-	if (output_path) {
+	if (output_path && output_path != null_device) {
 		struct stat st;
 
 		if (stat(output_path, &st) == 0)
@@ -720,12 +725,11 @@ main(int argc, char **argv)
 				);
 		} else {
 			int fd;
+			int flag = O_WRONLY | O_CREAT;
 
-			fd = uni_open_mode(
-				output_path,
-				O_WRONLY | O_EXCL | O_CREAT,
-				S_IRUSR | S_IRGRP
-			);
+			if (output_path != null_device)
+				flag |= O_EXCL;
+			fd = uni_open_mode(output_path, flag, S_IRUSR|S_IRGRP);
 			if (fd == -1)
 				die3(EXIT_BAD_SRV,
 					"open(output) failed",

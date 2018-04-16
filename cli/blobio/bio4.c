@@ -44,6 +44,7 @@ extern char	algorithm[9];
 extern char	digest[129];
 extern char	end_point[129];
 extern char	*output_path;
+extern char	*null_device;
 extern int	output_fd;
 extern char	*input_path;
 extern int	input_fd;
@@ -562,11 +563,12 @@ static char *
 bio4_open_output()
 {
 	int fd;
-	fd = uni_open_mode(
-			output_path,
-			O_WRONLY | O_EXCL | O_CREAT,
-			S_IRUSR | S_IRGRP
-		);
+	int flag = O_WRONLY | O_CREAT;
+
+	if (output_path != null_device)
+		flag |= O_EXCL;		//  fail if file exists (and not null)
+
+	fd = uni_open_mode(output_path, flag, S_IRUSR | S_IRGRP);
 	if (fd == -1)
 		return strerror(errno);
 	output_fd = fd;

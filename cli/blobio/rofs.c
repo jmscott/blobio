@@ -33,6 +33,7 @@ extern char	*output_path;
 extern int	output_fd;
 extern char	*input_path;
 extern int	input_fd;
+extern char	*null_device;
 
 //  Note: rename as fs_path
 static char	fs_path[PATH_MAX + 1];
@@ -152,8 +153,10 @@ static char *
 rofs_open_output()
 {
 	_TRACE("request to open_output()");
-
 	_TRACE("open_output() done");
+
+	if (output_path == null_device)
+		return "null device not support as output";
 
 	return (char *)0;
 }
