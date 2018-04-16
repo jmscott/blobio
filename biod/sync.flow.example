@@ -29,7 +29,7 @@ command eat_remote
 	argv = (
 		"eat",
 		"--service",
-		"bio4:remote.setspace.com:1797",
+		"bio4:remote.host.com:1797",
 		"--udig"
 	);
 	exit_status is OK when in {0, 1};
@@ -39,7 +39,7 @@ command put_remote
 {
 	path = "sbin/sync-put";
 	argv = (
-		"bio4:remote.setspace.com:1797"
+		"bio4:remote.host.com:1797"
 	);
 	exit_status is OK when in {0, 1, 2};
 }
