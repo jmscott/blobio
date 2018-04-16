@@ -75,5 +75,5 @@ find $BLOBIO_ROOT/sync/host/ -type d -depth 1 | while read SYNC_ROOT;  do
 	fi
 	log "starting sync flowd server: $HOST ..."
 	log "BLOBIO_ROOT for sync flowd: $SYNC_ROOT"
-	BLOBIO_ROOT=$SYNC_ROOT nohup flowd server etc/sync-$HOST.flow &
+	BLOBIO_ROOT=$SYNC_ROOT flowd server etc/sync-$HOST.flow &
 done
