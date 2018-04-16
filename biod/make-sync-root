@@ -55,14 +55,14 @@ _ln_root spool
 _ln_root bin
 
 #  build a default flow file from the template file in
-#  $BLOBIO_ROOT/lib/sync.flow.example
+#  $BLOBIO_ROOT/lib/sync.flow.example.
 
 FLOW=etc/sync-$HOST.flow
 test -e $FLOW && exit 0
 TEMPLATE=$BLOBIO_ROOT/lib/sync.flow.example
 test -r $TEMPLATE || die "can not read flow template: $TEMPLATE"
-sed "s/remote[.]host[.]com/$HOST/g" $TEMPLATE 				|
-	sed "s/user@remote[.]host[.]com/$SSH_AUTH/g"			\
+sed "s/user@remote[.]host[.]com/$SSH_AUTH/g" $TEMPLATE 			|
+	sed "s/remote[.]host[.]com/$HOST/g"				\
 	>$FLOW
 STATUS=${PIPESTATUS[*]}
 test "$STATUS" = '0 0' ||
