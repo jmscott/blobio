@@ -50,6 +50,7 @@ SBINs=									\
 	create-rrd							\
 	fs2udig								\
 	graph-rrd							\
+	make-sync-root							\
 	reboot-sync							\
 	sync-put							\
 	update-rrd
