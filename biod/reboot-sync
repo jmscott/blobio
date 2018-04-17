@@ -50,7 +50,7 @@ find $BLOBIO_ROOT/sync/host/ -mindepth 1 -maxdepth 1 -type d 		|
 		case "$STATUS" in
 		0)
 			log "zapped flowd process with pid #$PID"
-			log 'sleeping 3 seconds will flowd (#$PID) exits ...'
+			log "sleeping 3 seconds will flowd (#$PID) exits ..."
 			sleep 3
 			;;
 		1)
