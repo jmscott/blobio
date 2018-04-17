@@ -682,7 +682,7 @@ roll(struct request *r, struct digest_module *mp)
 
 	/*
 	 *  Unlink temp file while still open, so file blocks are automatically
-	 *  freed when process exists.
+	 *  freed when process exits.
 	 *
 	 *  Note:
 	 *	Very unix specfic file system behavior.
@@ -806,8 +806,9 @@ roll(struct request *r, struct digest_module *mp)
 			 *  What about verifying the existence of the blob?
 			 */
 			if (io_unlink(path)) {
+				//  simultaneous rolls are ok
 				if (errno == ENOENT)
-					warn3(n, "brr file disappeared", n);
+					warn3(n, "brr file disappeared (ok)",n);
 				else
 					panic4(n, n, "unlink(roll brr) failed",
 							strerror(errno));
