@@ -34,10 +34,10 @@ extern char	algorithm[9];
 extern char	digest[129];
 extern char	end_point[129];
 extern char	*output_path;
-extern char	*null_device;
 extern int	output_fd;
 extern char	*input_path;
 extern int	input_fd;
+extern char	*null_device;
 
 static char	fs_path[PATH_MAX + 1];
 static char	tmp_path[PATH_MAX + 1];
@@ -81,10 +81,43 @@ fs_end_point_syntax(char *root_dir)
 static char *
 fs_open()
 {
+	struct stat st;
+
+	if (uni_access(end_point, X_OK)) {
+		if (errno == ENOENT)
+			return "blob root directory does not exist";
+		if (errno == EPERM)
+			return "no permission to search blob root directory";
+		return strerror(errno);
+	}
+			
+	//  verify the end point is, in fact, a directory
+
+	if (stat(end_point, &st))
+		return strerror(errno);
+	if (!S_ISDIR(st.st_mode))
+		return "root blob directory is not a directory";
 	//  build the path to the $BLOBIO_ROOT/data/<algo>_fs/ directory
 
 	*fs_path = 0;
 	buf4cat(fs_path, sizeof fs_path, end_point, "/data/", algorithm, "_fs");
+
+	//  reverify permissons on data/ directory
+
+	if (uni_access(fs_path, X_OK)) {
+		if (errno == ENOENT)
+			return "blob data directory does not exist";
+		if (errno == EPERM)
+			return "no permission to search blob data directory";
+		return strerror(errno);
+	}
+			
+	//  verify the data directory is, in fact, a directory
+
+	if (stat(fs_path, &st))
+		return strerror(errno);
+	if (!S_ISDIR(st.st_mode))
+		return "blob data directory is not a directory";
 
 	//  if writing a blob then build path to temporary directory.
 
@@ -99,8 +132,6 @@ fs_open()
 static char *
 fs_open_output()
 {
-	if (output_path == null_device)
-		return "null device not support as output";
 	return (char *)0;
 }
 
@@ -176,7 +207,7 @@ fs_get(int *ok_no)
 
 	//  link output path to source blob file
 	
-	if (output_path) {
+	if (output_path && output_path != null_device) {
 		if (uni_link(fs_path, output_path) == 0) {
 			*ok_no = 0;
 			return (char *)0;
