@@ -1,0 +1,92 @@
+#!/usr/bin/env perl
+#
+#  Synopsis:
+#	Build a chain of brr log files, starting from a recent udig set
+#  Usage:
+#	bio-chain head-udig-set
+#  Exit Status:
+#	0	all wrap sets exist and written
+#	1	chain terminated because set does not exist
+#	8	error occured
+#
+
+my $prog = 'bio-chain';
+
+my $BRR_RE =
+	'2\d\d\d-'							.
+		'(?:(0[0-9])|11|12)'					.
+		'(?:([012][0-9])|30|31)'
+
+;
+
+#  Note: need to verify ENV{BLOBIO_SERVICE} exists
+my $SERVICE = "--service $ENV{BLOBIO_SERVICE}";
+
+$SIG{__DIE__} = sub
+{
+	printf STDERR "$prog: ERROR: @_\n";
+	exit 8;
+};
+
+#
+#  Verify the udig is valid or does not exist.
+#
+#  Return:
+#	0	blob points to existing set of udigs
+#	1	blob does not exist
+#
+sub frisk_udig_set
+{
+	my $udig_set = $_[0];
+	my $UDIG = "--udig $udig_set";
+
+	my $command = "blobio empty $UDIG";
+	my $status = system($command) >> 8;
+	die "unexpected frisk empty udig: $udig_set" if $status == 0;
+
+	die "$command failed: exit status=$status" if $status != 1;
+
+	my $EAT;
+	$status = system("blobio eat $UDIG $SERVICE");
+	die "blobio eat frisk failed: exit status=$status" if $status > 1;
+
+	my %ELEMENTS;
+	return \%ELEMENTS if $status == 1;
+
+	#  open the set of udigs
+	my $UDIG_SET;
+	open($UDIG_SET, "blobio get $UDIG $SERVICE |") or
+				die("open(blobio frisk udig set) failed: $!");
+
+	#  scan the udig set for correctness
+	while (<$UDIG_SET>) {
+		die "blob is not udig set: $_[0]" unless
+				m/^[a-z][a-z0-9]{0,7}:[[:graph:]]{32,128}$/ &&
+				m/^[[:ascii:]]*$/
+		;
+		die "udig set has a duplicate: $udig_set"
+						if $ELEMENTS{$_};
+		$ELEMENTS{$_} = 1;
+	}
+	close($UDIG_SET) or die "close(frisk udig set) failed: $!";
+	return \%ELEMENTS;
+}
+
+die "wrong number arguments: got ", scalar(@ARGV), ', expected 1'
+	unless @ARGV == 1
+;
+
+my $udig_set = $ARGV[0];
+
+my $udig_count = 0;
+
+while ($udig_set) {
+	
+	my $ELEMENTS = frisk_udig_set($udig_set);
+	exit 1 if %${ELEMENTS} == 0;
+	print $udig_count++, "\t", $udig_set, "\n";
+
+	$udig_set = 0;
+}
+
+exit 0;
