@@ -675,7 +675,8 @@ main(int argc, char **argv)
 		struct stat st;
 
 		if (stat(output_path, &st) == 0)
-			eopt2("output-path", "refuse to overwrite",output_path);
+			eopt2("output-path", "refuse to overwrite file",
+								output_path);
 		if (errno != ENOENT)
 			eopt2("output-path", strerror(errno), output_path);
 	}
