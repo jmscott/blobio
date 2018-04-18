@@ -155,9 +155,9 @@ rofs_open_output()
 	_TRACE("request to open_output()");
 	_TRACE("open_output() done");
 
+	//  rofs requires linking
 	if (output_path == null_device)
-		return "null device not support as output";
-
+		return "null device not supported for output";
 	return (char *)0;
 }
 
