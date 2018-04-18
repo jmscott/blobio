@@ -16,10 +16,10 @@ Description:
 	
 		^[a-z][a-z0-9]{0,7}$
 
-	and the digest matches
+	and the digest matches the perl5 regex
 
-		^[[:isgraph:]]{32,128}$
-		^[[:isascii:]{32,128}$
+		^[[:graph:]]{32,128}$
+		^[[:ascii:]{32,128}$
 
 	An example udig is sha:cd50d19784897085a8d0e3e413f8612b097c03f1
 	which describes the string "hello, world\n".
