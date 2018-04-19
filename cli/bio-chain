@@ -15,14 +15,14 @@ my $prog = 'bio-chain';
 my $BRR_RE = qr{
 
 	#  start time of request: YYYY-MM-DDThh:mm:ss.ns[+-]HH:MM
-	2\d\d\d-				#  year
-		(?:(0[0-9])|11|12)-		#  month
-		(?:([012][0-9])|30|31)T		#  day followed by T
+	(2\d\d\d-				#  year
+		(?:(?:0[0-9])|11|12)-		#  month
+		(?:(?:[012][0-9])|30|31)T	#  day followed by T
 		(?:[0-2]\d):			#  hour
 		(?:[0-5]\d):			#  minute
 		(?:[0-5]\d)\.			#  second
 		(?:\d{1,9})			#  nanoseconds
-		[+-]\d\d:\d\d			#  time zone offset
+		[+-]\d\d:\d\d)			#  time zone offset
 						\t
 	#  netflow name~parameter
 	[a-z][a-z0-9]{0,7}~[[:graph:]]{1,128}
@@ -101,7 +101,8 @@ sub scan_brr_log
 {
 	my $brr_udig = $_[0];
 	my $UDIG = "--udig $brr_udig";
-	my @wrap_roll;
+	my $udig_set;
+	my $udig_verb;
 
 	my $BRR_LOG;
 	open($BRR_LOG, "blobio get $UDIG $SERVICE |") or
@@ -115,8 +116,25 @@ sub scan_brr_log
 				unless 95 <=$len&&$len <= 370;
 		die "row in brr log is not a blob request record: $_"
 				unless m/^${BRR_RE}/;
+		my $start_time = $1;
+		my $verb = $2;
+		my $udig = $3;
+		my $chat_history = $4;
+		next unless ($verb eq 'wrap' || $verb eq 'roll') &&
+				$chat_history eq 'ok';
+
+		die "more than 1 wrap in brr log: $brr_log"
+			if $verb eq 'wrap' && $udig_set && $udig_verb eq 'wrap';
+		die "more than 1 roll in brr log: $brr_log"
+			if $verb eq 'roll' && $udig_set && $udig_verb eq 'roll';
+		die "wrap after roll in brr log: $brr_log"
+			if $verb eq 'wrap' && $udig_set && $udig_verb eq 'roll';
+		$udig_set = $udig;
+		$udig_verb = $verb;
 	}
 	close($BRR_LOG) or die "close(scan brr) failed: $!";
+	die "not wrap or roll in brr log: $brr_log" unless $udig_set;
+	return "$udig_verb\t$udig_set\n";
 }
 
 die "wrong number arguments: got ", scalar(@ARGV), ', expected 1'
@@ -125,16 +143,13 @@ die "wrong number arguments: got ", scalar(@ARGV), ', expected 1'
 
 my $udig_set = $ARGV[0];
 
-my $udig_count = 0;
-
 while ($udig_set) {
 	
 	my $ELEMENTS = frisk_udig_set($udig_set);
 	exit 1 if %${ELEMENTS} == 0;
-	print $udig_count++, "\t", $udig_set, "\n";
 
 	foreach my $brr_log (keys %${ELEMENTS}) {
-		my @WRAP_ROLL = scan_brr_log($brr_log);
+		print scan_brr_log $brr_log;
 	}
 	$udig_set = 0;
 }
