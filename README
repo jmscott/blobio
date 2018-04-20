@@ -102,20 +102,20 @@ Description:
 	where nanoseconds in start_time and wall_duration is always 9 digits.
 	Seconds in wall duration is <= 10 digits (2^31).
 
-	The maximum size of a blob request record is 371 bytes.
+	The maximum size of a blob request record is 370 bytes.
 	
 		(10+1+8+1+9+1+5) + 1 +	=   start request time
 		(8+1+128) + 1 +		>=  netflow
 		(8) + 1 +		>=  verb
 		(8+1+128) + 1 +		>=  algorithm:digest
 		(8) + 1 + 		>=  chat history: max=ok,ok,ok
-		(20) + 1 +		>=  blob size
+		(19) + 1 +		>=  blob size
 		(10+1+9)		>=  wall duration
 
-		<= 371 bytes
+		<= 370 bytes
 
 	not including a trailing new-line or terminating null character.
-	Being <= 371 bytes allows easy broadcast in an UDP packet.
+	Being <= 370 bytes allows easy broadcast in an UDP packet.
 	The BRR record format is almost (extra handshake on put?) cast in stone.
 
 Protocol Flow:

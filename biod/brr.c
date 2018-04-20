@@ -45,11 +45,11 @@ static char	*RFC3339Nano =
  *	8+1+128 +	udig: algorithm:digest
  *	8	+	chat history: ok(,ok){,2}|no|ok,no|ok,ok,no
  *	1	+	<tab>
- *	20	+	signed 64 bit byte >= 0 and <= 9223372036854775807
+ *	19	+	signed 64 bit byte >= 0 and <= 9223372036854775807
  *	1	+	<tab>
  *	20		wall duration: sec32.ns9, sec32 >= 0 && ns9 <= 999999999
  */
-#define BRR_SIZE		371		//  terminating null NOT counted
+#define BRR_SIZE		370		//  terminating null NOT counted
 
 /*
  *  Answer a wrap request from a child process.
