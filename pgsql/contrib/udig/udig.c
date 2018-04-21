@@ -864,6 +864,7 @@ udig_algorithm(PG_FUNCTION_ARGS)
 	/*NOTREACHED*/
 	PG_RETURN_CSTRING("corrupted udig");
 }
+
 /*
  *  Is the text string a recognized udig.  In other words,  the text string 
  */
@@ -1282,4 +1283,41 @@ udig_bc160_hash(PG_FUNCTION_ARGS)
 	unsigned char *a = (unsigned char *)PG_GETARG_POINTER(0);
 	h = hash_any(a, 20);
 	return UInt32GetDatum(h);	
+}
+
+PG_FUNCTION_INFO_V1(udig_is_empty);
+
+/*
+ *  Is the udig the digest of a zero length blob?
+ */
+Datum
+udig_is_empty(PG_FUNCTION_ARGS)
+{
+	unsigned char *a = (unsigned char *)UDIG_VARDATA(PG_GETARG_POINTER(0));
+
+
+	switch (a[0]) {
+	case UDIG_SHA:
+		PG_RETURN_BOOL(
+		a[1]==0xda && a[2]==0x39 && a[3]==0xa3 && a[4]==0xee &&
+		a[5]==0x5e && a[6]==0x6b && a[7]==0x4b && a[8]==0x0d &&
+		a[9]==0x32 && a[10]==0x55 && a[11]==0xbf && a[12]==0xef &&
+		a[13]==0x95 && a[14]==0x60 && a[15]==0x18 && a[16]==0x90 &&
+		a[17]==0xaf && a[18]==0xd8 && a[19]==0x07 && a[20]==0x09
+		);
+	case UDIG_BC160:
+		PG_RETURN_BOOL(
+		a[1]==0xb4 && a[2]==0x72 && a[3]==0xa2 && a[4]==0x66 &&
+		a[5]==0xd0 && a[6]==0xbd && a[7]==0x89 && a[8]==0xc1 &&
+		a[9]==0x37 && a[10]==0x06 && a[11]==0xa4 && a[12]==0x13 &&
+		a[13]==0x2c && a[14]==0xcf && a[15]==0xb1 && a[16]==0x6f &&
+		a[17]==0x7c && a[18]==0x3b && a[19]==0x9f && a[20]==0xcb
+		);
+	}
+	ereport(PANIC,
+		(errcode(ERRCODE_INVALID_TEXT_REPRESENTATION),
+		errmsg("udig_is_empty: corrupted udig internal type byte"
+		)));
+	/*NOTREACHED*/
+	PG_RETURN_CSTRING("corrupted udig");
 }

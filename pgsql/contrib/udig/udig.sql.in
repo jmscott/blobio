@@ -54,6 +54,11 @@ RETURNS boolean
 AS 'MODULE_PATHNAME', 'udig_can_cast'
 LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
 
+CREATE OR REPLACE FUNCTION udig_is_empty(udig)		-- the zero length blob
+RETURNS boolean
+AS 'MODULE_PATHNAME', 'udig_is_empty'
+LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
+
 CREATE OR REPLACE FUNCTION udig_out(udig)		-- internal to cstring
 RETURNS cstring
 AS 'MODULE_PATHNAME', 'udig_out'
