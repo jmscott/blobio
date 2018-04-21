@@ -1515,7 +1515,7 @@ daemonize(int argc, char **argv)
 	 */
 	pid = fork();
 	if (pid < 0)
-		die3(n, "daemonize: fork() failed", strerror(errno));
+		die3(n, "fork() failed", strerror(errno));
 	if (pid > 0)
 		exit(0);	/* original caller */
 
