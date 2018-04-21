@@ -631,6 +631,11 @@ error5(char *msg1, char *msg2, char *msg3, char *msg4, char *msg5)
 void
 panic(char *msg)
 {
+	if (log_fd != 2) {
+		write(2, "\n", 1);
+		write(2, msg, strlen(msg));
+		write(2, "\n", 1);
+	}
 	error2("PANIC", msg);
 	if (request_pid) {
 		/*
