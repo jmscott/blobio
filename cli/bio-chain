@@ -97,12 +97,13 @@ sub frisk_udig_set
 	return \%ELEMENTS;
 }
 
+#  extract the wrap/roll tuples from a particular brr log 
+
 sub scan_brr_log
 {
 	my $brr_udig = $_[0];
 	my $UDIG = "--udig $brr_udig";
-	my $udig_set;
-	my $udig_verb;
+	my @wrap_roll;
 
 	my $BRR_LOG;
 	open($BRR_LOG, "blobio get $UDIG $SERVICE |") or
@@ -122,19 +123,10 @@ sub scan_brr_log
 		my $chat_history = $4;
 		next unless ($verb eq 'wrap' || $verb eq 'roll') &&
 				$chat_history eq 'ok';
-
-		die "more than 1 wrap in brr log: $brr_log"
-			if $verb eq 'wrap' && $udig_set && $udig_verb eq 'wrap';
-		die "more than 1 roll in brr log: $brr_log"
-			if $verb eq 'roll' && $udig_set && $udig_verb eq 'roll';
-		die "wrap after roll in brr log: $brr_log"
-			if $verb eq 'wrap' && $udig_set && $udig_verb eq 'roll';
-		$udig_set = $udig;
-		$udig_verb = $verb;
+		push @wrap_roll, "$verb	$udig	$start_time";
 	}
 	close($BRR_LOG) or die "close(scan brr) failed: $!";
-	die "not wrap or roll in brr log: $brr_log" unless $udig_set;
-	return "$udig_verb\t$udig_set\n";
+	return \@wrap_roll;
 }
 
 die "wrong number arguments: got ", scalar(@ARGV), ', expected 1'
@@ -146,12 +138,29 @@ my $udig_set = $ARGV[0];
 while ($udig_set) {
 	
 	my $ELEMENTS = frisk_udig_set($udig_set);
+
+	#  no elements in the udig set
+
 	exit 1 if %${ELEMENTS} == 0;
 
+	#  find the brr log with the roll
+
+	my $roll;
 	foreach my $brr_log (keys %${ELEMENTS}) {
-		print scan_brr_log $brr_log;
+		my $wrap_roll_row = scan_brr_log $brr_log;
+		die "brr log has no wrap or roll request: $udig_set ->$brr_log"
+					unless @$wrap_roll_row > 0;
+		for my $wr (@$wrap_roll_row) {
+			next unless $wr =~ /^roll/;
+			die "roll occurs more than one in udig set: $udig_set"
+							if $roll;
+			$roll = $wr;
+		}
 	}
-	$udig_set = 0;
+	print $udig_set, "\n", "\t-> ", $roll, "\n";
+	die "no roll in brr logs for udig set: $udig_set" unless $roll;
+	$roll = substr($roll, 5);
+	$udig_set = substr($roll, 0, index($roll, "\t"));
 }
 
 exit 0;
