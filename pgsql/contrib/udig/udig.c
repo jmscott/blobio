@@ -1128,9 +1128,9 @@ udig_bc160_cast(PG_FUNCTION_ARGS)
 	Size size;
 	unsigned char *udig;
 
-	size = VARHDRSZ + 21;		/* size bytes + udig type byte + data */
+	size = VARHDRSZ + 21;		// size bytes + udig type byte + data
 	udig = palloc(size);
-	udig[4] = UDIG_BC160;		/* bc160 type */
+	udig[4] = UDIG_BC160;		// bc160 type
 	memcpy(udig + 5, src, 20);
 	SET_VARSIZE(udig, size);
 	PG_RETURN_POINTER(udig);
@@ -1294,7 +1294,7 @@ PG_FUNCTION_INFO_V1(udig_is_empty);
 Datum
 udig_is_empty(PG_FUNCTION_ARGS)
 {
-	unsigned char *a = (unsigned char *)PG_GETARG_POINTER(0);
+	unsigned char *a = UDIG_VARDATA(PG_GETARG_POINTER(0));
 
 	switch (a[0]) {
 	case UDIG_SHA:
@@ -1330,7 +1330,7 @@ PG_FUNCTION_INFO_V1(udig_is_sha);
 Datum
 udig_is_sha(PG_FUNCTION_ARGS)
 {
-	unsigned char *a = (unsigned char *)PG_GETARG_POINTER(0);
+	unsigned char *a = UDIG_VARDATA(PG_GETARG_POINTER(0));
 
 	PG_RETURN_BOOL(*a == UDIG_SHA);
 }
@@ -1343,7 +1343,7 @@ PG_FUNCTION_INFO_V1(udig_is_bc160);
 Datum
 udig_is_bc160(PG_FUNCTION_ARGS)
 {
-	unsigned char *a = (unsigned char *)PG_GETARG_POINTER(0);
+	unsigned char *a = UDIG_VARDATA(PG_GETARG_POINTER(0));
 
 	PG_RETURN_BOOL(*a == UDIG_BC160);
 }
