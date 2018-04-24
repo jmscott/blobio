@@ -566,13 +566,32 @@ ALTER OPERATOR FAMILY udig_clan USING btree ADD
   FUNCTION 1	udig_cmp_sha	(udig, udig_sha)
 ;
 
+/*
+ *  Extract the hash algorithm name of a uniform hash
+ */
 CREATE OR REPLACE FUNCTION udig_algorithm(udig)
 RETURNS cstring
 AS 'MODULE_PATHNAME', 'udig_algorithm'
 LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
 
 /*
- *  RIPEMD160(SHA256) UDig Core Type.
+ *  Is the uniform hash a sha1?
+ */
+CREATE OR REPLACE FUNCTION udig_is_sha(udig)
+RETURNS cstring
+AS 'MODULE_PATHNAME', 'udig_is_sha'
+LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
+
+/*
+ *  Is the uniform hash the bitc ripemd160(sha256)?
+ */
+CREATE OR REPLACE FUNCTION udig_is_bc160(udig)
+RETURNS cstring
+AS 'MODULE_PATHNAME', 'udig_is_bc160'
+LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
+
+/*
+ *  BitCoin RIPEMD160(SHA256) UDig Core Type.
  */
 CREATE TYPE udig_bc160;					-- bc160 udig type
 

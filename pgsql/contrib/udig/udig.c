@@ -18,6 +18,7 @@
 #include "fmgr.h"
 #include "libpq/pqformat.h"             /* needed for send/recv functions */
 
+//  Note: what is difference between UDIG_VARDATA and PG_GETARG_POINTER?
 #define UDIG_VARDATA(p)	(unsigned char *)VARDATA(p)
 
 /*
@@ -1293,8 +1294,7 @@ PG_FUNCTION_INFO_V1(udig_is_empty);
 Datum
 udig_is_empty(PG_FUNCTION_ARGS)
 {
-	unsigned char *a = (unsigned char *)UDIG_VARDATA(PG_GETARG_POINTER(0));
-
+	unsigned char *a = (unsigned char *)PG_GETARG_POINTER(0);
 
 	switch (a[0]) {
 	case UDIG_SHA:
@@ -1320,4 +1320,30 @@ udig_is_empty(PG_FUNCTION_ARGS)
 		)));
 	/*NOTREACHED*/
 	PG_RETURN_CSTRING("corrupted udig");
+}
+
+PG_FUNCTION_INFO_V1(udig_is_sha);
+
+/*
+ *  Is the udig a sha1?
+ */
+Datum
+udig_is_sha(PG_FUNCTION_ARGS)
+{
+	unsigned char *a = (unsigned char *)PG_GETARG_POINTER(0);
+
+	PG_RETURN_BOOL(*a == UDIG_SHA);
+}
+
+PG_FUNCTION_INFO_V1(udig_is_bc160);
+
+/*
+ *  Is the udig a bc160 (ripemd160(sha256))?
+ */
+Datum
+udig_is_bc160(PG_FUNCTION_ARGS)
+{
+	unsigned char *a = (unsigned char *)PG_GETARG_POINTER(0);
+
+	PG_RETURN_BOOL(*a == UDIG_BC160);
 }
