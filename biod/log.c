@@ -257,10 +257,11 @@ listen:
 		parent_pid = getppid();
 		if (parent_pid != master_pid) {
 			snprintf(buf, sizeof buf,
-			     "parent process id changed: expected #%u, got #%u",
+			     "logger: master process id changed: "	\
+			     "expected #%u, got #%u",
 				     master_pid, parent_pid
 			);
-			warn(buf);
+			error(buf);
 			leave(1);
 		}
 		leave(0);
@@ -572,7 +573,7 @@ void
 error(char *msg)
 {
 	/*
-	 *  In request  
+	 *  In request?
 	 */
 	if (request_pid && (request_exit_status & 0x3) == 0)
 		request_exit_status = (request_exit_status & 0xFC) |

@@ -140,14 +140,18 @@ request:
 	if (status < 0)
 		panic3(n, "io_msg_read(request) failed", strerror(errno));
 	if (status == 0) {
+		char ebuf[MSG_SIZE];
+
 		info("read from client request pipe of zero bytes");
+		snprintf(ebuf, sizeof ebuf,"parent process id: #%d",getppid());
+		info(ebuf);
 		info("shutting down brr logger");
 		leave(0);
 	}
 	nread = request.len;
 	/*
-	 *  Typically the blob request child sends only a full brr record, which
-	 *  is promptly written to spool/biod.brr. 
+	 *  Typically the blob request child sends only a full brr record,
+	 *  which is promptly written to spool/biod.brr. 
 	 *
 	 *  However, a wrap request, can syncronously freeze further writes
 	 *  to the spool/biod.brr log file by sending a special record that

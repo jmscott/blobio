@@ -363,7 +363,11 @@ request:
 	if (status < 0)
 		panic3(nm, "io_msg_read(request) failed", strerror(errno));
 	if (status == 0) {
+		char ebuf[MSG_SIZE];
+
 		info("read from client request pipe of zero bytes");
+		snprintf(ebuf, sizeof ebuf,"parent process id: #%d",getppid());
+		info(ebuf);
 		info("shutting down arborist");
 		leave(0);
 	}
