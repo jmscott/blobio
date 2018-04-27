@@ -1519,7 +1519,7 @@ daemonize(int argc, char **argv)
 	if (pid < 0)
 		die3(n, "fork() failed", strerror(errno));
 	if (pid > 0)
-		exit(0);	/* original caller */
+		exit(0);	/* caller in foreground */
 
 	master_pid = logged_pid = getpid();
 
