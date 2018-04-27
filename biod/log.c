@@ -164,23 +164,31 @@ check_log_age()
 {
 	struct tm *now;
 	time_t now_t;
+	static char n[] = "logger";
 
 	time(&now_t);
 	now = localtime(&now_t);
 
 	if (now->tm_wday != log_dow) {
-		char rsd[40];
+		char rsd[MSG_SIZE], ppid[MSG_SIZE];
 
-		snprintf(rsd, sizeof rsd, "%u", rrd_sample_duration);
-		info2("logger: rrd sample duration", rsd);
-		info2("logger: closing log file", log_path);
+		snprintf(ppid, sizeof ppid,
+				"master/parent process id: #%u", getppid());
+
+		snprintf(rsd, sizeof rsd,
+				"rrd sample duration: %u", rrd_sample_duration);
+		info2(n, rsd);
+		info3(n, "elapsed running time", server_elapsed());
+		info2(n, ppid); 
+		info3(n, "closing log file", log_path);
 
 		open_log_path(1);
 		log_fd = log_path_fd;
 
-		info2("logger: opened new log file", log_path);
-		info2("logger: elapsed running time", server_elapsed());
-		info2("logger: rrd sample duration", rsd);
+		info3(n, "opened new log file", log_path);
+		info3(n, "elapsed running time", server_elapsed());
+		info2(n, rsd);
+		info2(n, ppid);
 	}
 }
 
