@@ -241,7 +241,7 @@ int
 io_unlink(const char *path)
 {
 again:
-	if (unlink(path) == 0)
+	if (unlink(path) == 0 || errno == ENOENT)
 		return 0;
 	if (errno == EINTR || errno == EAGAIN)
 		goto again;
