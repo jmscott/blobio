@@ -25,6 +25,10 @@
  *	The tmp.c code is a hack for casual users who don't use a file system
  *	volume manager.
  *  Note:
+ *	The BLOBIO_TMPDIR_MAP is am amateurish hack that needs to go away.
+ *	Volume management is the proper way to solve the problem of running out
+ *	inodes or disk space.
+ *
  *	The BLOBIO_TMPDIR_MAP values should be allowed to be separated with more
  *	than the tab character.  The carriage return, new-line and space 
  *	characters ought to be allowed.
