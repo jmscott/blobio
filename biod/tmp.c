@@ -248,6 +248,10 @@ tmp_open()
 {
 	make_map();
 
+	/*
+	 *  Note:
+	 *	Need to move BLOBIO_TMPDIR to the command line.
+	 */
 	BLOBIO_TMPDIR = getenv("BLOBIO_TMPDIR");
 	if (BLOBIO_TMPDIR == NULL) {
 		_info("env BLOBIO_TMPDIR: not defined");
