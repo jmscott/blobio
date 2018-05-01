@@ -164,7 +164,7 @@ check_log_age()
 {
 	struct tm *now;
 	time_t now_t;
-	static char n[] = "logger";
+	static char n[] = "check_log_age";
 
 	time(&now_t);
 	now = localtime(&now_t);
@@ -234,11 +234,10 @@ listen:
 		panic3(n, "select(process) failed", strerror(errno));
 
 	/*
-	 *  Natural timeout of select() ... roll the logs, captain?
+	 *  Natural timeout of select() ... roll the logs, captain.
 	 */
 	if (status == 0) {
 		check_log_age();
-		log_check_count = 1;
 		if (getppid() != master_pid)
 			leave(1);
 		goto listen;
@@ -351,7 +350,7 @@ log_open()
  *  Reset to stderr and do a quick exit.
  *
  *  Note:
- *  	Do we always no the buffer is ascii?
+ *  	Do we always know the buffer is ascii?
  */
 static void
 _panic(char *buf, int len, int nwrite)
@@ -360,6 +359,9 @@ _panic(char *buf, int len, int nwrite)
 	static char colon[] = ": ";
 	static char prefix[] = "\nERROR: PANIC: logger: _write: ";
 	char *err1 = 0, *err2 = 0;
+	char pid[24];
+
+	snprintf(pid, sizeof pid, ": %d: ", getpid());
 
 	if (nwrite < 0) {
 		err1 = "write() failed";
@@ -370,6 +372,7 @@ _panic(char *buf, int len, int nwrite)
 		err1 = "short write()";
 
 	io_write(2, prefix, sizeof prefix);
+	io_write(2, pid, strlen(pid));
 	io_write(2, err1, strlen(err1));
 	if (err2) {
 		io_write(2, colon, sizeof colon);
