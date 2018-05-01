@@ -152,6 +152,8 @@ static u8	take_no_count =	0;	//  single no on take
 
 static char	rrd_log[] = "log/biod-rrd.log";
 
+static unsigned char	in_foreground = 0;
+
 /*
  *  Exit cleanly, shutting down the logger.
  *
@@ -1464,7 +1466,6 @@ set_pid_file(char *path)
 	snprintf(buf, sizeof buf, "%d\n", getpid());
 	if (burp_text_file(buf, pid_path))
 		die3(n, "burp_text_file() failed", pid_path);
-	info2("created biod .pid file", pid_path);
 	/*
 	 *  Chmod run/biod.pid u=r,go=
 	 */
@@ -1473,7 +1474,7 @@ set_pid_file(char *path)
 }
 
 static void 
-daemonize(int argc, char **argv)
+daemonize()
 {
 	pid_t pid;
 	char buf[MSG_SIZE];
@@ -1510,7 +1511,6 @@ daemonize(int argc, char **argv)
 			die3(n, buf, strerror(e));
 		}
 	}
-	ps_title_init(argc, argv);
 
 	/*
 	 *  Put ourselves in the background.
@@ -1521,24 +1521,12 @@ daemonize(int argc, char **argv)
 	if (pid > 0)
 		exit(0);	/* caller in foreground */
 
-	master_pid = logged_pid = getpid();
-
-	ps_title_set("biod-listen", (char *)0, (char *)0);
-
-	log_open();
-	info("hello, world");
-
-	snprintf(buf, sizeof buf, "logger process id: %u", logger_pid);
-	info(buf);
-
 	/*
 	 *  Set up posix session.
 	 */
 	pid = setsid();
 	if (pid < 0)
 		die3(n, "setsid() failed", strerror(errno));
-	snprintf(buf, sizeof buf, "posix session id=%d", pid);
-	info(buf);
 	set_pid_file(pid_path);
 
 	/*
@@ -1702,6 +1690,12 @@ main(int argc, char **argv)
 			if (!module_get(argv[i]))
 				die3(o, "unknown digest algorithm", argv[i]);
 			strcpy(wrap_digest_algorithm, argv[i]);
+		} else if (strcmp("--in-foreground", argv[i]) == 0) {
+			static char o[] = "option --in-foreground";
+
+			if (in_foreground)
+				die2(o, "given more than once");
+			in_foreground = 1;
 		} else if (strncmp("--", argv[i], 2) == 0)
 			die2("unknown option", argv[i]);
 		else
@@ -1733,7 +1727,6 @@ main(int argc, char **argv)
 	BLOBIO_ROOT = getenv("BLOBIO_ROOT");
 	if (BLOBIO_ROOT == (char *)0)
 		die("environment variable BLOBIO_ROOT not defined");
-	info2("BLOBIO_ROOT", BLOBIO_ROOT);
 	/*
 	 *  Goto $BLOBIO_ROOT directory.
 	 */
@@ -1743,7 +1736,21 @@ main(int argc, char **argv)
 		die(buf);
 	}
 
-	daemonize(argc, argv);
+	ps_title_init(argc, argv);
+
+	if (!in_foreground)
+		daemonize();
+
+	master_pid = logged_pid = getpid();
+
+	log_open();
+
+	info("hello, world");
+
+	snprintf(buf, sizeof buf, "logger process id: %u", logger_pid);
+	info(buf);
+
+	info2("BLOBIO_ROOT", BLOBIO_ROOT);
 
 	info2("wrap digest algorithm", wrap_digest_algorithm);
 	/*
@@ -1800,6 +1807,7 @@ main(int argc, char **argv)
 	if (signal(SIGHUP, SIG_IGN) == SIG_ERR)
 		panic2("signal(HUP, SIG_IGN) failed", strerror(errno));
 
+	ps_title_set("biod-listen", (char *)0, (char *)0);
 	/*
 	 *  Open the socket to listen for requests.
 	 */
