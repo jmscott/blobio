@@ -50,4 +50,6 @@ log "flowd server process id is $FLOWD_PID"
 echo $FLOWD_PID >run/flowd.pid ||
 		die "echo $FLOWD_PID >run/flowd.pid failed: exit status=$?"
 
+log 'reboot sync flowd processes'
+reboot-sync || die "reboot-sync failed: exit status=$?"
 exit 0
