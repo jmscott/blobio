@@ -8,6 +8,7 @@ include ../local.mk
 install:
 	install -g $(DIST_GROUP) -o $(DIST_USER) -m ug=r,o=		\
 		blobio.flow.example					\
+		com.blobio.flowd.plist.example				\
 		contrib/udig/udig.sql.in				\
 		eat-unroll.sql						\
 		eat-wrap-missed.sql					\
