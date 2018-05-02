@@ -27,42 +27,6 @@ WARN()
 	log "WARN: $@"
 }
 
-_pkill()
-{
-	log "pkill $@ ..."
-	case "$1" in
-	[0-9]*)
-		log "kill $@ ..."
-		kill $1
-		;;
-	*)
-		log "pkill $@ ..."
-		pkill $@
-		;;
-	esac
-	STATUS=$?
-	case $STATUS in
-	0)
-		log "killed an existing biod process tree"
-		log "pausing $PAUSE secs while biod cleans up ..."
-		sleep $PAUSE
-		test -e $PID && die "pid file exists after kill: $PID"
-		;;
-	1)
-		log 'no biod process exists'
-		if [ -f $PID ];  then
-			WARN "zapping existing pid file: $PID"
-			chmod +w $PID
-			test $? -eq 0 || die "chmod $PID failed: exit status=$?"
-			rm $PID || die "rm $PID failed: exit status=$?"
-		fi
-		;;
-	*)
-		die "pkill $@ failed: exit status=$STATUS"
-		;;
-	esac
-}
-
 ACTION="$1"
 case "$BLOBIO_ROOT" in
 '')
@@ -89,9 +53,10 @@ boot)
 	rm -f $PID
 	;;
 start)
-	if [ -f $PID ];  then
-		log "is biod already running with pid #$(cat $PID)?" >&2
-		die "remove file: $PID"
+	PID_FILE=run/biod.pid
+	if [ -f $PID_FILE ];  then
+		log "is biod already running with pid #$(cat $PID_FILE)?" >&2
+		die "remove file: $PID_FILE"
 	fi
 	$BIOD --ps-title-XXXXXXXXXXXXXXXXXXXXXXX --port $PORT		\
 				--rrd-sample-duration $RRD_SAMPLE_DURATION
@@ -100,59 +65,16 @@ start)
 
 	log "pausing $PAUSE seconds while biod starts ..."
 	sleep $PAUSE
-	test -f $PID || die "missing pid file $PID, so did biod aborted"
-	log "started with pid #$(cat $PID)"
+	test -f $PID_FILE || die "no pid file $PID_FILE, so biod aborted"
+	log "started with pid #$(cat $PID_FILE)"
 	log 'tail of log file follows ...'
 	tail log/biod-$(date +'%a').log
 	;;
 stop)
-	if [ -e $PID ];  then
-		P=$(cat $PID)
-		log "stopping biod #$P ..."
-		kill $P
-		log "pausing $PAUSE seconds while biod #$P stops ..."
-		sleep $PAUSE
-		if [ -f $PID ];  then
-			WARN "biod #$P still running"
-			WARN "kill -9 #$P"
-			kill -9 $P
-		fi
-		log '... biod stopped'
-	else
-		log "biod not running since no pid file: $PID"
-	fi
+	zap-proc run/biod.pid
 	;;
 reboot)
-	if [ -e $PID ];  then
-		log "pid file exists: $PID"
-		P=$(cat $PID)
-		log "killing process #$P"
-		_pkill $P
-	fi
-	#
-	#  Zap biod that lost pid file.
-	#
-	#  Note:
-	#	Need a better qualification on which biod process to kill.
-	#	Implies only a single biod per user, which is hosed
-	#	in development
-	#
-	pgrep -o -u $USER -x biod
-
-	STATUS=$?
-	case $STATUS in
-	0)
-		WARN 'biod process exists with no pid file'
-		WARN 'killing oldest biod process'
-		_pkill -o -u $USER -x biod
-		;;
-	1)
-		log 'no running biod process'
-		;;
-	*)
-		die "pgrep biod failed: exit status=$STATUS"
-		;;
-	esac
+	zap-proc run/biod.pid
 	biod_ctl start
 	;;
 restart)

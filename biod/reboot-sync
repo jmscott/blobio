@@ -10,6 +10,7 @@
 #	#  From cron-reboot
 #	reboot-sync
 #
+PKILL_USER=$(id -un)
 
 log()
 {
@@ -34,47 +35,28 @@ if [ ! -e sync/host ];  then
 	mkdir -p sync/host || die "mkdir failed: $(pwd)/sync/host"
 fi
 
+logh()
+{
+	log "$HOST: $@"
+}
+
+dieh()
+{
+	die "$HOST: $@"
+}
+
 find $BLOBIO_ROOT/sync/host/ -mindepth 1 -maxdepth 1 -type d 		|
   while read SYNC_ROOT;  do
 	HOST=$(basename $SYNC_ROOT)
 	log "sync host: $HOST"
-	cd $SYNC_ROOT || die "cd $SYNC_ROOT failed: exit status=$?"
+	cd $SYNC_ROOT || dieh "cd $SYNC_ROOT failed: exit status=$?"
 
-	#  stop any running processes
-	if [ -e run/flowd.pid ];  then
-		log 'file run/flowd.pid exists'
-		PID=$(cat run/flowd.pid)
-		log "killing flowd process possibly owned by $USER: #$PID"
-		pkill -F run/flowd.pid -U $USER flowd
-		STATUS=$?
-		case "$STATUS" in
-		0)
-			log "zapped flowd process with pid #$PID"
-			log "sleeping 3 seconds will flowd (#$PID) exits ..."
-			sleep 3
-			;;
-		1)
-			log "no process matches with pid #$PID"
-			rm run/flowd.pid ||
-				die "rm run/flowd.pid failed: exit status=$?"
-			;;
-		*)
-			die "pkill failed; exit status=$?"
-			;;
-		esac
-
-		#  make sure run/flowd.pid got removed by clean exit.
-		#  otherwise, nuke flowd process with SIGKILL.
-
-		if [ -e run/flowd.pid ];  then
-			log 'ERROR: run/flowd.pid still exists'
-			log "killing #$PID with SIGKILL"
-			kill -9 $PID
-			rm -f run/flowd.pid ||
-				die "rm run/flowd.pid failed: exit status=$?"
-		fi
-	fi
+	zap-proc run/flowd.pid || dieh "zap-proc flowd failed: exit status=$?"
 	log "starting sync flowd server: $HOST ..."
 	log "BLOBIO_ROOT for sync flowd: $SYNC_ROOT"
 	BLOBIO_ROOT=$SYNC_ROOT flowd server etc/sync-$HOST.flow &
+	FLOWD_PID=$!
+	log "flowd process id: $FLOWD_PID"
+	echo $FLOWD_PID >run/flowd.pid ||
+		die "echo $FLOWD_PID >run/flowd.pid failed: exit status=$?"
 done

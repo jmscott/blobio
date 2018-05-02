@@ -9,6 +9,7 @@
 #
 
 PROG=$(basename $0)
+USER=$(id -un)
 
 log()
 {
@@ -35,52 +36,7 @@ log "BLOBIO_ROOT=$BLOBIO_ROOT"
 cd $BLOBIO_ROOT || die "cd $BLOBIO_ROOT failed"
 . etc/profile
 
-#
-#  Stop any running flowd process using pkill/pgrep brothers
-#
-PGREP_RE='flowd server etc/blobio.flow'
-log "pkill $PGREP_ARGV ..."
-
-pkill -u $USER -f "$PGREP_RE"
-STATUS=$?
-case $STATUS in
-0)
-	log 'flowd was running and killed'
-	;;
-1)
-	log 'no flowd process found'
-	;;
-*)
-	die "PANIC: pkill $USER flowd failed: exit status=$STATUS"
-	;;
-esac
-
-#
-#  Insure flowd has stopped
-#
-if [ $STATUS = 0 ];  then
-	TRIES=10
-	PAUSE=2
-	log "pausing $PAUSE seconds while flowd exits"
-	while sleep $PAUSE;  do
-		test $TRIES -eq 0 && die "can't kill flowd"
-		pgrep -u $USER -f "$PGREP_RE" >/dev/null
-		STATUS=$?
-		case $STATUS in
-		0)
-			log "flowd stilling running: remaining attempts: $TRIES"
-			;;
-		1)
-			log 'flowd not running'
-			break
-			;;
-		*)
-			die "pgrep $PGREP_ARGV failed: exit status=$STATUS"
-			;;
-		esac
-		TRIES=$(expr $TRIES - 1)
-	done
-fi
+zap-proc run/flowd.pid || die "zap-proc flowd failed: exit status=$?"
 
 log 'calling biod_ctl reboot ...'
 biod_ctl reboot
@@ -89,6 +45,9 @@ log 'biod_ctl reboot ok'
 
 log 'starting flowd server in background ...'
 flowd server etc/blobio.flow &
-log "flowd server process id is $!"
+FLOWD_PID=$!
+log "flowd server process id is $FLOWD_PID"
+echo $FLOWD_PID >run/flowd.pid ||
+		die "echo $FLOWD_PID >run/flowd.pid failed: exit status=$?"
 
 exit 0
