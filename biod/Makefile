@@ -58,6 +58,7 @@ LIBs=									\
 	blobio-sys5.rc.template						\
 	blobio.rc.template						\
 	com.blobio.biod.plist.example					\
+	com.blobio.sync.plist.example					\
 	sync.flow.example
 
 #  Linux requires linking to realtime timer library
