@@ -209,9 +209,6 @@ func (conf *config) server(par *parse) {
 
 	leave := func(status int) {
 
-		var f *file
-		f.unlink("run/flowd.pid")
-
 		info("good bye, cruel world")
 		Sleep(Second)
 		os.Exit(status)
@@ -235,35 +232,6 @@ func (conf *config) server(par *parse) {
 
 	info("hello, world")
 
-	//  create run/flowd.pid file
-	{
-		pid := os.Getpid()
-
-		pid_path := "run/flowd.pid"
-
-		_, err := os.OpenFile(pid_path, os.O_RDONLY, 0)
-		if err == nil {
-			WARN("process id file exists: %s", pid_path)
-			//  Note: write the pid of the previous process
-			WARN("another flowd process may be running")
-		} else if !os.IsNotExist(err) {
-			panic(err)
-		}
-
-		f, err := os.Create(pid_path)
-		if err != nil {
-			panic(err)
-		}
-		_, err = f.WriteString(Sprintf("%d\n", pid))
-		if err != nil {
-			panic(err)
-		}
-		err = f.Close()
-		if err != nil {
-			panic(err)
-		}
-		info("process id %d written to file: %s", pid, pid_path)
-	}
 	info("go version: %s", runtime.Version())
 	info("number of cpus: %d", runtime.NumCPU())
 	info("GOROOT(): %s", runtime.GOROOT())
