@@ -1179,7 +1179,7 @@ heartbeat()
 	info(buf);
 
 	snprintf(buf, sizeof buf,
-	      "chat: ok=%llu, no[123]=%llu, eat|take no=%llu|%llu",
+	      "chat: ok=%llu, no{1-3}=%llu, eat|take no=%llu|%llu",
 			chat_ok_count,
 			chat_no_count + chat_no2_count + chat_no3_count,
 			eat_no_count,
