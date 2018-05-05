@@ -13,6 +13,10 @@
  *	The log file is rolled to $BLOBIO_ROOT/log/biod-Dow.log roughly at
  *	midnight in localtime zone.
  *  Note:
+ *	Think about replacing the logger process with the postgresql model for
+ *	logging.  The postgresql model watches atomic writes to stderr from
+ *	each child process.
+ *
  *	Really, really need syslog support!
  *
  *	Yosemite shows only biod-logger still connected to a tty?
@@ -192,6 +196,9 @@ check_log_age()
 	}
 }
 
+/*
+ *  The logger process.
+ */
 static void
 logger(int process_fd)
 {
@@ -323,6 +330,7 @@ fork_logger()
 		return;
 	}
 	is_logger = 1;
+
 	/*
 	 *  In the child logger process, so shutdown the writer side
 	 *  of the pipeline.
@@ -406,13 +414,13 @@ _write(char *buf, int len)
 char *
 log_strcpy2(char *buf, int buf_size, char *msg1, char *msg2)
 {
-	if (msg1) {
+	if (msg1 && *msg1) {
 		strncpy(buf, msg1, buf_size);
-		if (msg2) {
+		if (msg2 && *msg2) {
 			strncat(buf, ": ", buf_size - (strlen(buf) + 1));
 			strncat(buf, msg2, buf_size - (strlen(buf) + 1));
 		}
-	} else if (msg2)
+	} else if (msg2 && *msg2)
 		strncpy(buf, msg2, buf_size);
 	else
 		buf[0] = 0;
@@ -422,15 +430,15 @@ log_strcpy2(char *buf, int buf_size, char *msg1, char *msg2)
 char *
 log_strcat2(char *buf, int buf_size, char *msg1, char *msg2)
 {
-	if (msg1) {
+	if (msg1 && *msg1) {
 		if (buf[0])
 			strncat(buf, ": ", buf_size - (strlen(buf) + 1));
 		strncat(buf, msg1, buf_size - (strlen(buf) + 1));
-		if (msg2) {
+		if (msg2 && *msg2) {
 			strncat(buf, ": ", buf_size - (strlen(buf) + 1));
 			strncat(buf, msg2, buf_size - (strlen(buf) + 1));
 		}
-	} else if (msg2)
+	} else if (msg2 && *msg2)
 		strncpy(buf, msg2, buf_size);
 	return buf;
 }
@@ -438,7 +446,7 @@ log_strcat2(char *buf, int buf_size, char *msg1, char *msg2)
 char *
 log_strcat3(char *buf, int buf_size, char *msg1, char *msg2, char *msg3)
 {
-	if (msg1) {
+	if (msg1 && *msg1) {
 		if (buf[0])
 			strncat(buf, ": ", buf_size - (strlen(buf) + 1));
 		strncat(buf, msg1, buf_size - (strlen(buf) + 1));
@@ -450,7 +458,7 @@ log_strcat3(char *buf, int buf_size, char *msg1, char *msg2, char *msg3)
 char *
 log_strcpy3(char *buf, int buf_size, char *msg1, char *msg2, char *msg3)
 {
-	if (msg1) {
+	if (msg1 && *msg1) {
 		strncpy(buf, msg1, buf_size);
 		return log_strcat2(buf, buf_size, msg2, msg3);
 	}
@@ -462,7 +470,7 @@ char *
 log_strcpy4(char *buf, int buf_size,
 			char *msg1, char *msg2, char *msg3, char *msg4)
 {
-	if (msg1) {
+	if (msg1 && *msg1) {
 		strncpy(buf, msg1, buf_size);
 		return log_strcat3(buf, buf_size, msg2, msg3, msg4);
 	}
@@ -470,8 +478,8 @@ log_strcpy4(char *buf, int buf_size,
 	return log_strcpy3(buf, buf_size, msg2, msg3, msg4);
 }
 
-static void
-_format(char *msg, char *buf, int buf_size)
+void
+log_format(char *msg, char *buf, int buf_size)
 {
 	struct tm *t;
 
@@ -501,7 +509,7 @@ _format(char *msg, char *buf, int buf_size)
 	 *  For a non null message, build the entry for the log file
 	 *  in a single buffer;  otherwise, for a null message get panicy.
 	 */
-	if (msg) {
+	if (msg && *msg) {
 		strncat(buf, msg, buf_size - (strlen(buf) + 1));
 		strncat(buf, "\n", buf_size - (strlen(buf) + 1));
 	}
@@ -516,7 +524,7 @@ info(char *msg)
 	char buf[MSG_SIZE];
 	int len;
 	
-	_format(msg, buf, sizeof buf);
+	log_format(msg, buf, sizeof buf);
 	len = strlen(buf);
 	if (is_logger) {
 		_write(buf, len);
@@ -547,7 +555,7 @@ log_close()
 void
 info2(char *msg1, char *msg2)
 {
-	if (msg1) {
+	if (msg1 && *msg1) {
 		char buf[MSG_SIZE];
 
 		log_strcpy2(buf, sizeof buf, msg1, msg2);
@@ -559,7 +567,7 @@ info2(char *msg1, char *msg2)
 void
 info3(char *msg1, char *msg2, char *msg3)
 {
-	if (msg1) {
+	if (msg1 && *msg1) {
 		char buf[MSG_SIZE];
 
 		log_strcpy2(buf, sizeof buf, msg1, msg2);
@@ -571,7 +579,7 @@ info3(char *msg1, char *msg2, char *msg3)
 void
 info4(char *msg1, char *msg2, char *msg3, char *msg4)
 {
-	if (msg1) {
+	if (msg1 && *msg1) {
 		char buf[MSG_SIZE];
 
 		log_strcpy2(buf, sizeof buf, msg1, msg2);
@@ -595,7 +603,7 @@ error(char *msg)
 void
 error2(char *msg1, char *msg2)
 {
-	if (msg1) {
+	if (msg1 && *msg1) {
 		char buf[MSG_SIZE];
 
 		log_strcpy2(buf, sizeof buf, msg1, msg2);
@@ -607,7 +615,7 @@ error2(char *msg1, char *msg2)
 void
 error3(char *msg1, char *msg2, char *msg3)
 {
-	if (msg1) {
+	if (msg1 && *msg1) {
 		char buf[MSG_SIZE];
 
 		log_strcpy2(buf, sizeof buf, msg1, msg2);
@@ -619,7 +627,7 @@ error3(char *msg1, char *msg2, char *msg3)
 void
 error4(char *msg1, char *msg2, char *msg3, char *msg4)
 {
-	if (msg1) {
+	if (msg1 && *msg1) {
 		char buf[MSG_SIZE];
 
 		log_strcpy2(buf, sizeof buf, msg1, msg2);
@@ -631,7 +639,7 @@ error4(char *msg1, char *msg2, char *msg3, char *msg4)
 void
 error5(char *msg1, char *msg2, char *msg3, char *msg4, char *msg5)
 {
-	if (msg1) {
+	if (msg1 && *msg1) {
 		char buf[MSG_SIZE];
 
 		log_strcpy2(buf, sizeof buf, msg1, msg2);
@@ -641,14 +649,17 @@ error5(char *msg1, char *msg2, char *msg3, char *msg4, char *msg5)
 }
 
 void
-panic(char *msg)
+panic(char *msg1)
 {
 	if (log_fd != 2) {
+		char msg[MSG_SIZE];
+
+		log_format(msg1, msg, sizeof msg);
 		write(2, "\n", 1);
 		write(2, msg, strlen(msg));
 		write(2, "\n", 1);
 	}
-	error2("PANIC", msg);
+	error2("PANIC", msg1);
 	if (request_pid) {
 		/*
 		 *  Force a panic in the child request to be a fault.
@@ -705,7 +716,7 @@ warn2(char *msg1, char *msg2)
 void
 warn3(char *msg1, char *msg2, char *msg3)
 {
-	if (msg1) {
+	if (msg1 && *msg1) {
 		char buf[MSG_SIZE];
 
 		log_strcpy2(buf, sizeof buf, msg1, msg2);
@@ -717,7 +728,7 @@ warn3(char *msg1, char *msg2, char *msg3)
 void
 warn4(char *msg1, char *msg2, char *msg3, char *msg4)
 {
-	if (msg1) {
+	if (msg1 && *msg1) {
 		char buf[MSG_SIZE];
 
 		log_strcpy3(buf, sizeof buf, msg1, msg2, msg3);
