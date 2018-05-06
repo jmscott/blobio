@@ -379,16 +379,16 @@ _panic(char *buf, int len, int nwrite)
 	else if (nwrite < len)
 		err1 = "short write()";
 
-	io_write(2, prefix, sizeof prefix);
+	io_write(2, prefix, sizeof prefix - 1);
 	io_write(2, pid, strlen(pid));
 	io_write(2, err1, strlen(err1));
 	if (err2) {
-		io_write(2, colon, sizeof colon);
+		io_write(2, colon, 2);
 		io_write(2, err2, strlen(err2));
 	}
-	io_write(2, nl, sizeof nl);
+	io_write(2, nl, 1);
 	io_write(2, buf, len);
-	io_write(2, nl, sizeof nl);
+	io_write(2, nl, 1);
 	io_unlink(pid_path);
 	exit(request_pid ? 3 : 255);
 }
