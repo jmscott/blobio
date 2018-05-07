@@ -12,7 +12,6 @@ all:
 install: all
 	install -g $(DIST_GROUP) -o $(DIST_USER) -m ugo=rx		\
 		bio-cat							\
-		bio-chain						\
 		bio-eat							\
 		bio-file 						\
 		bio-get							\
