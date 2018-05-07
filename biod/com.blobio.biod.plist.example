@@ -14,15 +14,6 @@
   <key>AbandonProcessGroup</key>
   <true/>
 
-  <key>EnvironmentVariables</key>
-  <dict>
-  	<key>PATH</key>
-	<string>/usr/local/blobio/sbin:/usr/bin:/bin</string>
-
-	<key>BLOBIO_ROOT</key>
-	<string>/usr/local/blobio</string>
-  </dict>
-
   <key>ProgramArguments</key>
   <array>
 	<string>/usr/local/blobio/sbin/biod</string>
@@ -34,6 +25,8 @@
 	<string>--in-foreground</string>
 	<string>--port</string>
 	<string>1797</string>
+	<string>--root</string>
+	<string>/usr/local/blobio</string>
 	<string>--rrd-sample-duration</string>
 	<string>60</string>
   </array>

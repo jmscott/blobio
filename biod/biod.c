@@ -247,7 +247,13 @@ leave(int exit_status)
 static void
 die(char *msg)
 {
-	if (logged_pid == 0) {			/* still booting */
+	/*
+	 *  If no logger process then we are probably still booting.
+	 */
+	if (logged_pid == 0) {
+		static char ERROR[] = "\nbiod: ERROR: ";
+
+		write(2, ERROR, sizeof ERROR - 1); 
 		write(2, msg, strlen(msg));
 		write(2, "\n", 1);
 		exit(1);
@@ -1623,7 +1629,7 @@ fork_accept(struct request *rp)
 }
 
 int
-main(int argc, char **argv)
+main(int argc, char **argv, char **env)
 {
 	char buf[MSG_SIZE];
 	sigset_t mask;
@@ -1686,7 +1692,10 @@ main(int argc, char **argv)
 			if (*argv[i] == 0)
 				die2(o, "empty algorithm");
 
-			//  verify the digest exists
+			if (wrap_digest_algorithm[0])
+				die2(o, "given more than once");
+
+			//  verify the digest module exists
 			if (!module_get(argv[i]))
 				die3(o, "unknown digest algorithm", argv[i]);
 			strcpy(wrap_digest_algorithm, argv[i]);
@@ -1696,6 +1705,16 @@ main(int argc, char **argv)
 			if (in_foreground)
 				die2(o, "given more than once");
 			in_foreground = 1;
+		} else if (strcmp("--root", argv[i]) == 0) {
+			static char o[] = "option --root";
+
+			if (++i >= argc)
+				die2(o, "missing root directory path");
+			if (BLOBIO_ROOT)
+				die2(o, "given more than once");
+			if (argv[i] == 0)
+				die2(o, "empty directory path");
+			BLOBIO_ROOT = strdup(argv[i]);
 		} else if (strncmp("--", argv[i], 2) == 0)
 			die2("unknown option", argv[i]);
 		else
@@ -1724,9 +1743,8 @@ main(int argc, char **argv)
 	if (port == 0)
 		port = BIOD_PORT;
 
-	BLOBIO_ROOT = getenv("BLOBIO_ROOT");
-	if (BLOBIO_ROOT == (char *)0)
-		die("environment variable BLOBIO_ROOT not defined");
+	if (!BLOBIO_ROOT)
+		die("option --root <directory-path> is required");
 	/*
 	 *  Goto $BLOBIO_ROOT directory.
 	 */
@@ -1750,15 +1768,25 @@ main(int argc, char **argv)
 	snprintf(buf, sizeof buf, "logger process id: %u", logger_pid);
 	info(buf);
 
-	info2("BLOBIO_ROOT", BLOBIO_ROOT);
-
 	info2("wrap digest algorithm", wrap_digest_algorithm);
+
 	/*
 	 *  Calculate current working directory.
 	 */
 	if (getcwd(buf, sizeof buf) != buf)
 		die2("getcwd() failed", strerror(errno));
 	info2("current directory", buf);
+
+	/*
+	 *  Dump process environment.  Want a minimal environment in production,
+	 *  so this dump forces keeping the enironment simple.
+	 */
+	info("dumping process environment variables ...");
+	if (*env[0])
+		for (int i = 0;  env[i];  i++)
+			info(env[i]);
+	else
+		info("no environment variables (ok)");
 
 	if (module_boot())
 		die("modules_boot() failed");
