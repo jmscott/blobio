@@ -1,0 +1,26 @@
+#
+#  Synopsis:
+#	System unit definition for blobio biod daemon
+#  Usage:
+#	# cp $BLOBIO_ROOT/lib/blobio.biod.service.example 		\
+#		/etc/systemd/system/blobio.biod.service
+#
+[Unit]
+Description=BlobIO biod Server
+After=network.target
+
+[Service]
+Type=simple
+User=blobio
+WorkingDirectory=/usr/local/blobio
+ExecStart=/usr/local/blobio/sbin/biod --ps-title-XXXXXXXXXXXXXXXXXX --port 1797 --in-foreground --root /usr/local/blobio
+KillMode=mixed
+KillSignal=SIGTERM
+TimeoutSec=20
+RestartSec=20
+Restart=always
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target
