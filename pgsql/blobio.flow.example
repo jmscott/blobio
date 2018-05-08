@@ -68,12 +68,12 @@ sql query blob_size_exists row
 
 	statement = `
 
-	SELECT exists (
-	  select
+	SELECT EXISTS (
+	  SELECT
 		blob
-	    from
+	    FROM
 		blobio.brr_blob_size
-	    where
+	    WHERE
 		blob = $1::udig
 
 	);
@@ -92,7 +92,8 @@ sql exec merge_blob_size
 		$1::udig,
 		$2::bigint
 	)
-	  ON CONFLICT do nothing
+	  ON CONFLICT
+	  	DO NOTHING
 	;
 
 	`;
@@ -108,20 +109,20 @@ sql query discover_older row
 	statement = `
 
 	SELECT
-	  (select
+	  (SELECT
 	  	start_time > $2::blobio.brr_timestamp
-	      from
+	      FROM
 	    	blobio.brr_discover
-	      where
+	      WHERE
 	    	blob = $1::udig
 	  ),
 
-	  exists (
-	    select
+	  EXISTS (
+	    SELECt
 		blob
-	    from
+	    FROM
 		blobio.brr_discover
-	    where
+	    WHERE
 		blob = $1::udig
 	  )
 	;
@@ -166,22 +167,22 @@ sql query ok_newer row
 
 	SELECT
 	  --  is the "ok" request record more recent?
-	  (select
+	  (SELECT
 	  	$2::blobio.brr_timestamp > start_time
-	    from
+	    FROM
 	    	blobio.brr_ok_recent
-	    where
+	    WHERE
 	    	blob = $1::udig
 	  ),
 
 	  --  does the record exists exist?
 
-	  exists (
-	    select
+	  EXISTS (
+	    SELECT
 		blob
-	      from
+	      FROM
 		blobio.brr_ok_recent
-	    where
+	      WHERE
 		blob = $1::udig
 	  )
 	;
@@ -223,23 +224,23 @@ sql query no_newer row
 	SELECT
 	  --  is the brr more recent that tuple in table brr_no_recent?
 	  (
-	    select
+	    SELECT
 	  	$2::blobio.brr_timestamp > start_time
-	      from
+	      FROM
 	    	blobio.brr_no_recent
-	      where
+	      WHERE
 	    	blob = $1::udig
 	  ),
 
 	  --  does the brr tuple exist in table brr_no_recent?
 
-	  exists (
-	    select
+	  EXISTS (
+	    SELECT
 		blob
-	      from
+	      FROM
 		blobio.brr_no_recent
-		    where
-			blob = $1::udig
+	      WHERE
+		blob = $1::udig
 	  )
 	;
 
@@ -279,12 +280,12 @@ sql query roll_ok_exists row
 	statement = `
 
 	SELECT EXISTS (
-		select
-			blob
-		  from
-			blobio.brr_roll_ok
-		  where
-			blob = $1::udig
+	  SELECT
+		blob
+	    FROM
+		blobio.brr_roll_ok
+	    WHERE
+		blob = $1::udig
 	);
 	
 	`;
@@ -302,7 +303,9 @@ sql exec merge_roll_ok
 		$1::udig,
 		$2::blobio.brr_timestamp,
 		$3::blobio.brr_duration
-	) ON CONFLICT do nothing;
+	) ON CONFLICT
+		DO NOTHING
+	;
 
 	`;
 }
@@ -316,11 +319,11 @@ sql query wrap_ok_exists row
 	statement = `
 
 	SELECT exists (
-	  select
+	  SELECT
 		blob
-	    from
+	    FROM
 		blobio.brr_wrap_ok
-	    where
+	    WHERE
 		blob = $1::udig
 	);
 
@@ -339,7 +342,9 @@ sql exec merge_wrap_ok
 		$1::udig,
 		$2::blobio.brr_timestamp,
 		$3::blobio.brr_duration
-	) ON CONFLICT do nothing;
+	) ON CONFLICT
+		DO NOTHING
+	;
 
 	`;
 }
@@ -354,20 +359,19 @@ sql query take_ok3_newer row
 	statement = `
 
 	SELECT
-	  (
-	    select
+	  (SELECT
 	  	$2::blobio.brr_timestamp > start_time
-	      from
+	     FROM
 	    	blobio.brr_take_ok3_recent
-	      where
+	     WHERE
 	    	blob = $1::udig
 	  ),
-	  exists (
-	    select
+	  EXISTS (
+	    SELECT
 		blob
-	      from
+	      FROM
 		blobio.brr_take_ok3_recent
-	      where
+	      WHERE
 		blob = $1::udig
 	  )
 
@@ -388,10 +392,10 @@ sql exec upsert_take_ok3_recent
 		$2::blobio.brr_timestamp,
 		$3::blobio.brr_duration
 	)
-	  on conflict (blob) do update set
+	  ON CONFLICT (blob) DO UPDATE set
 		start_time = EXCLUDED.start_time,
 		wall_duration = EXCLUDED.wall_duration
-	  where
+	  WHERE
 		OLDER.start_time < EXCLUDED.start_time
 	;
 
@@ -431,6 +435,16 @@ call blob_on_network()
 query blob_size_exists(biod.udig)
   when
   	blob_on_network.exit_status == 0
+	and
+	(
+		biod.verb == "put"
+		or
+		biod.verb == "get"
+		or
+		biod.verb == "give"
+		or
+		biod.verb == "take"
+	)
 ;
 
 query merge_blob_size(biod.udig, biod.blob_size)
