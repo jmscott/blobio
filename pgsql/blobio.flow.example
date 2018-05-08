@@ -118,7 +118,7 @@ sql query discover_older row
 	  ),
 
 	  EXISTS (
-	    SELECt
+	    SELECT
 		blob
 	    FROM
 		blobio.brr_discover
