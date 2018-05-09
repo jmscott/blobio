@@ -85,7 +85,18 @@ CREATE TABLE blobio.brr_blob_size
 	blob		public.udig
 				PRIMARY KEY,
 	byte_count	blobio.ui63
-				NOT NULL
+				NOT NULL,
+	CONSTRAINT size_check CHECK ((
+		udig_is_empty(blob) = true
+		AND
+		byte_count = 0
+	  )
+	  OR
+	  (
+		udig_is_empty(blob) = false
+		AND
+		byte_count > 0
+	))
 );
 CREATE INDEX brr_blob_size_byte_count
 	ON brr_blob_size(byte_count)
