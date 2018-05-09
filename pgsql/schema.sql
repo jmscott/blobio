@@ -87,13 +87,13 @@ CREATE TABLE blobio.brr_blob_size
 	byte_count	blobio.ui63
 				NOT NULL,
 	CONSTRAINT size_check CHECK ((
-		udig_is_empty(blob) = true
+		udig_is_empty(blob)
 		AND
 		byte_count = 0
 	  )
 	  OR
 	  (
-		udig_is_empty(blob) = false
+		not udig_is_empty(blob)
 		AND
 		byte_count > 0
 	))
