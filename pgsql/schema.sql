@@ -93,7 +93,7 @@ CREATE TABLE blobio.brr_blob_size
 	  )
 	  OR
 	  (
-		not udig_is_empty(blob)
+		NOT udig_is_empty(blob)
 		AND
 		byte_count > 0
 	))
