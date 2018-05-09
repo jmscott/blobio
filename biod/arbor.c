@@ -505,6 +505,8 @@ arbor_close()
  *  Client invocation to rename a file blob.
  *
  *  Note:
+ *	WTF: the reply from the client is ignored!
+ *
  *	Fifo is not always removed!
  */
 void
@@ -556,7 +558,7 @@ arbor_rename(char *tmp_path, char *tgt_path)
 		err = errno;
 
 		io_unlink(reply_path);
-		panic3(nm, "msg_write() failed", strerror(err));
+		panic3(nm, "msg_write(request) failed", strerror(err));
 	}
 
 	reply_fd = io_open(reply_path, O_RDONLY, 0);
@@ -564,7 +566,7 @@ arbor_rename(char *tmp_path, char *tgt_path)
 		err = errno;
 
 		io_unlink(reply_path);
-		panic4(nm, reply_path, "open(reply fifo) failed",strerror(err));
+		panic4(nm, reply_path, "open(reply fifo) failed", strerror(err));
 	}
 
 	io_msg_new(&reply, reply_fd);
@@ -576,7 +578,7 @@ arbor_rename(char *tmp_path, char *tgt_path)
 	if (status < 0)
 		panic3(nm, "msg_read(reply) failed", strerror(err));
 	if (status == 0)
-		panic2(nm, "unexpected msg_read() of 0 from reply fifo");
+		panic2(nm, "unexpected msg_read(reply) of 0 from reply fifo");
 }
 
 /*
