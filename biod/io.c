@@ -1,6 +1,6 @@
 /*
  *  Synopsis:
- *	Low level, restartable file operations.
+ *	Restartable interface to i/o unix system calls with errno honored.
  *  Note:
  *	Can the timeout code in functions read_buf() and write_buf()
  *	be moved to io_read() and io_write().
@@ -328,7 +328,7 @@ io_msg_new(struct io_message *ip, int fd)
 }
 
 /*
- *  Read a message from a stable (no timeout) byte stream.
+ *  Read an aromically written message from a stable (no timeout) byte stream.
  *  Messages in the stream are introduced with a leading length byte followed
  *  by upto 255 payload bytes.
  *
