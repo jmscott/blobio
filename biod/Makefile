@@ -58,7 +58,6 @@ LIBs=									\
 	blobio.biod.service.example					\
 	blobio.flowd.service.example					\
 	blobio.rc.template						\
-	blobio.sync.tmonk.service.example				\
 	blobio-sys5.rc.template						\
 	com.blobio.biod.plist.example					\
 	com.blobio.sync.plist.example
