@@ -59,6 +59,8 @@ struct request
 	 */
 	char	*digest;
 
+	char	*step;		//  request, bytes, reply
+
 	/*
 	 *  Number of bytes scanned ahead during the intial read of request.
 	 */

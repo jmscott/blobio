@@ -33,8 +33,8 @@ static char	hexchar[] = "0123456789abcdef";
  *  Returns
  *
  *	0	=> buffer written without error
- *	1	=> write() timed out
  *	-1	=> write() error
+ *	-2	=> write() timed out
  */
 ssize_t
 req_read(struct request *r, void *buf, size_t buf_size)
@@ -53,10 +53,14 @@ req_read(struct request *r, void *buf, size_t buf_size)
 	//  network error reading from client
 
 	if (nread == -1) {
-		snprintf(ebuf, sizeof ebuf, "read(%s) failed", r->netflow_tiny);
-		if (r->verb)
-			error4(n, r->verb, ebuf, strerror(e));
-		else
+		snprintf(ebuf, sizeof ebuf, "req read(%s) failed",
+							r->netflow_tiny);
+		if (r->verb) {
+			if (r->step)
+				error5(n, r->verb, r->step, ebuf, strerror(e));
+			else
+				error4(n, r->verb, ebuf, strerror(e));
+		} else
 			error3(n, ebuf, strerror(e));
 		errno = e;
 
@@ -67,14 +71,17 @@ req_read(struct request *r, void *buf, size_t buf_size)
 	//  timeout reading from client
 
 	snprintf(ebuf, sizeof ebuf, "read(%s) timed out", r->netflow_tiny); 
-	if (r->verb)
-		error3(n, r->verb, ebuf);
-	else
+	if (r->verb) {
+		if (r->step)
+			error4(n, r->verb, r->step, ebuf);
+		else
+			error3(n, r->verb, ebuf);
+	} else
 		error2(n, ebuf);
 
 	_SET_EXIT_TIMEOUT;
 	errno = e;
-	return 1;
+	return -2;
 }
 
 /*
@@ -85,9 +92,9 @@ blob_read(struct request *r, void *buf, size_t buf_size)
 {
 	 ssize_t nread;
 
-	 nread = req_read(r, buf, buf_size);
-	 if (nread > 0)
-	 	r->blob_size += nread;
+	nread = req_read(r, buf, buf_size);
+	if (nread > 0)
+		r->blob_size += nread;
 	return nread;
 }
 
@@ -117,9 +124,12 @@ req_write(struct request *r, void *buf, size_t buf_size)
 
 	if (status == -1) {
 		snprintf(ebuf, sizeof ebuf, "write(%s) failed",r->netflow_tiny);
-		if (r->verb)
-			error4(n, r->verb, ebuf, strerror(e));
-		else
+		if (r->verb) {
+			if (r->step)
+				error5(n, r->verb, r->step, ebuf, strerror(e));
+			else
+				error4(n, r->verb, ebuf, strerror(e));
+		} else
 			error3(n, ebuf, strerror(e));
 		_SET_EXIT_ERROR;
 		errno = e;
@@ -129,9 +139,12 @@ req_write(struct request *r, void *buf, size_t buf_size)
 	//  timeout during read()
 
 	snprintf(ebuf, sizeof ebuf, "write(%s) timed out", r->netflow_tiny);
-	if (r->verb)
-		error3(n, r->verb, ebuf);
-	else
+	if (r->verb) {
+		if (r->step)
+			error4(n, r->verb, r->step, ebuf);
+		else
+			error3(n, r->verb, ebuf);
+	} else
 		error2(n, ebuf);
 	_SET_EXIT_TIMEOUT;
 	errno = e;
@@ -163,9 +176,14 @@ add_chat_history(struct request *r, char *blurb)
 	/*
 	 *  Sanity check for overflow.
 	 */
-	if (len == 9)
-		panic3(r->verb, r->algorithm,
+	if (len == 9) {
+		if (r->step)
+			panic4(r->verb, r->step, r->algorithm,
 					"add_chat_history: blurb overflow");
+		else
+			panic3(r->verb, r->algorithm,
+					"add_chat_history: blurb overflow");
+	}
 	if (len > 0) {
 		strncat(r->chat_history, ",",
 					sizeof r->chat_history - (len + 1));
@@ -215,7 +233,10 @@ static char *
 reply_error(struct request *r, char *msg)
 {
 	error3("read_reply", r->netflow_tiny, msg);
-	error5("read_reply", r->verb, r->algorithm, r->digest, msg);
+	if (r->step)
+		error5("read_reply", r->verb, r->step, r->algorithm, msg);
+	else
+		error4("read_reply", r->verb, r->algorithm, msg);
 	_SET_EXIT_ERROR;
 	return (char *)0;
 }

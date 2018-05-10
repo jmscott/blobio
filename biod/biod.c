@@ -99,6 +99,7 @@ static struct request	req =
 {
 	.client_fd	=	-1,
 	.verb		=	0,
+	.step		=	0,
 	.algorithm	=	0,
 	.digest		=	0,
 	.scan_buf	=	0,
@@ -145,7 +146,7 @@ static u8	roll_count =	0;
 /*
  *  Request chat summaries.
  */
-static u8	chat_ok_count = 0;	//  ok, ok,ok, ok,ok,ok
+static u8	chat_ok_count = 0;	//  ok OR ok,ok, OR ok,ok,ok
 static u8	chat_no_count = 0;	//  no
 static u8	chat_no2_count =0;	//  ok,no
 static u8	chat_no3_count =0;	//  ok,ok,no
@@ -328,7 +329,7 @@ die3_NO(char *msg1, char *msg2, char *msg3)
  *	Fire digest module callbacks for "get" verb.
  *  Protocol Flow:
  *	get algorithm:digest\n		# request for blob
- *	    <ok\n[blob][close]		# server sends blob, bye
+ *	    <ok\n[bytes][close]		# server sends blob, bye
  *          <no\n[close]		# server rejects blob, bye
  */
 static int
@@ -337,25 +338,14 @@ get(struct request *rp, struct digest_module *mp)
 	request_exit_status = (request_exit_status & 0x1C) |
 					(REQUEST_EXIT_STATUS_GET << 2);
 
-	rp->verb = "get_request";
-	if ((*mp->get_request)(rp)) {
-		if (write_no(rp)) {
-			error3(rp->verb, rp->algorithm, "write_no(req) failed");
-			return 1;
-		}
-		return 0;
-	}
-	if (write_ok(rp)) {
-		error3(rp->verb, rp->algorithm, "write_ok(req) failed");
-		return 1;
-	}
+	rp->step = "request";
+	if ((*mp->get_request)(rp))
+		return write_no(rp);
+	if (write_ok(rp))
+		return -1;
 
-	rp->verb = "get_bytes";
-	if ((*mp->get_bytes)(rp)) {
-		error3(rp->verb, rp->algorithm, "callback get_bytes() failed");
-		return 1;
-	}
-	return 0;	//  write a brr record
+	rp->step = "bytes";
+	return (*mp->get_bytes)(rp);
 }
 
 /*
@@ -371,18 +361,9 @@ eat(struct request *rp, struct digest_module *mp)
 {
 	request_exit_status = (request_exit_status & 0x1C) |
 						(REQUEST_EXIT_STATUS_EAT << 2);
-	rp->verb = "eat";
-	if ((*mp->eat)(rp)) {
-		if (write_no(rp)) {
-			error3(rp->verb, rp->algorithm, "write_no() failed");
-			return 1;
-		}
-	}
-	else if (write_ok(rp)) {
-		error3(rp->verb, rp->algorithm, "write_ok() failed");
-		return 1;
-	}
-	return 0;
+	if ((*mp->eat)(rp))
+		return write_no(rp);
+	return write_ok(rp);
 }
 
 /*
@@ -399,39 +380,19 @@ eat(struct request *rp, struct digest_module *mp)
 static int
 put(struct request *rp, struct digest_module *mp)
 {
-	int status;
-
 	request_exit_status = (request_exit_status & 0x1C) |
 						(REQUEST_EXIT_STATUS_PUT << 2);
 
-	rp->verb = "put_request";
-	if ((*mp->put_request)(rp)) {
-		if (write_no(rp)) {
-			error3(rp->verb, rp->algorithm, "write_no(req) failed");
-			return 1;
-		}
-		return 0;
-	}
-	if (write_ok(rp)) {
-		error3(rp->verb, rp->algorithm, "write_ok(req) failed");
-		return 1;
-	}
+	rp->step = "request";
+	if ((*mp->put_request)(rp))
+		return write_no(rp);
+	if (write_ok(rp))
+		return -1;
 
-	rp->verb = "put_bytes";
-	status = (*mp->put_bytes)(rp);
-	if (status) {
-		error3("put", rp->algorithm, "callback put() failed");
-		/*
-		 *  If we haven't responded to the client,
-		 *  then respond with no.
-		 */
-		if (!rp->chat_history[0] && write_no(rp))
-			error3("put", rp->algorithm, "write_no() failed");
-	} else if (write_ok(rp)) {
-		error3("put", rp->algorithm, "write_ok() failed");
-		status = -1;
-	}
-	return status;
+	rp->step = "bytes";
+	if ((*mp->put_bytes)(rp))
+		return write_no(rp);
+	return write_ok(rp);
 }
 
 /*
@@ -455,8 +416,7 @@ take(struct request *rp, struct digest_module *mp)
 
 	request_exit_status = (request_exit_status & 0x1C) |
 						(REQUEST_EXIT_STATUS_TAKE << 2);
-	rp->verb = "take";
-
+	rp->step = "is_wrap";
 	/*
 	 *  Verify the blob is not an element of the current unrolled wrap
 	 *  set in the file
@@ -499,24 +459,24 @@ take(struct request *rp, struct digest_module *mp)
 		}
 	}
 
-	rp->verb = "take_request";
+	rp->step = "request";
 	if ((*mp->take_request)(rp))
 		return write_no(rp);
 	if (write_ok(rp))
 		return -1;
 
-	rp->verb = "take_bytes";
+	rp->step = "bytes";
 	if ((*mp->take_bytes)(rp))
-		return write_no(rp);
+		return -1;
 
 	/*
-	 *  Read reply from client.
+	 *  Did the client ack accepting the taken blob.
 	 */
+	rp->step = "read_reply";
 	reply = read_reply(rp);
-	if (reply == NULL) {
-		error3(rp->verb, rp->algorithm, "read_reply() failed");
-		return -1;
-	}
+	if (reply == NULL)
+		return -1;		//  error reading ok/no from client
+
 	/*
 	 *  Client replied 'no', for some reason, so just shutdown.
 	 */
@@ -527,7 +487,7 @@ take(struct request *rp, struct digest_module *mp)
 	 *  Ok, the client sucessfull took the blob,
 	 *  so call the take_ok callback.
 	 */
-	rp->verb = "take_reply";
+	rp->step = "reply";
 	if ((*mp->take_reply)(rp, reply))
 		return write_no(rp);
 	return write_ok(rp);
@@ -553,13 +513,13 @@ give(struct request *rp, struct digest_module *mp)
 	request_exit_status = (request_exit_status & 0x1C) |
 						(REQUEST_EXIT_STATUS_GIVE << 2);
 
-	rp->verb = "give_request";
+	rp->step = "request";
 	if ((*mp->give_request)(rp))
 		return write_no(rp);
 	if (write_ok(rp))
 		return -1;
 
-	rp->verb = "give_bytes";
+	rp->step = "bytes";
 
 	/*
 	 *  Server can't take blob, so write "no" to client and shutdown.
@@ -569,17 +529,15 @@ give(struct request *rp, struct digest_module *mp)
 	if (write_ok(rp))
 		return -1;
 
-	rp->verb = "give_read_reply";
+	/*
+	 *  Read reply from client acking they have zapped blob.
+	 */
+	rp->step = "read_reply";
 	reply = read_reply(rp);
 	if (reply == NULL)
 		return -1;
 
-	rp->verb = "give_reply";
-	/*
-	 *  Call give_reply() to handle the reply.
-	 *  Any error returned by give_reply() is a panicy situation
-	 *  that needs immediate attention.
-	 */
+	rp->step = "reply";
 	return (*mp->give_reply)(rp, reply);
 }
 
@@ -593,6 +551,7 @@ biod(char *verb, char *algorithm, char *digest,
 	char ps_title[5 + 4 + 1];
 
 	req.verb = verb;
+	req.step = 0;
 	if (strcmp("wrap", verb) == 0) {
 		if (algorithm[0])
 			die3_NO(verb, algorithm, "unexpected algorithm");
@@ -838,7 +797,7 @@ request()
 			}}
 		}
 	}
-	if (nr < 0)
+	if (state != STATE_HALT && nr < 0)
 		die_NO("read_buf(request) failed");
 	if (state == STATE_SCAN_VERB && v_next == verb)
 		die_NO("empty read_buf(verb)");
@@ -1864,6 +1823,7 @@ main(int argc, char **argv, char **env)
 		warn("rrd sampling disabled");
 
 	req.verb = 0;
+	req.step = 0;
 	req.client_fd = -1;
 	req.algorithm = 0;
 	req.digest = 0;
