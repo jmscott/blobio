@@ -285,7 +285,7 @@ _close(struct request *r, int *p_fd)
 {
 	int fd = *p_fd;
 
-	if (*p_fd < 0)
+	if (fd < 0)
 		return 0;
 	*p_fd = -1;
 	if (io_close(fd))
