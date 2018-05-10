@@ -846,6 +846,7 @@ sha_fs_give_reply(struct request *r, char *reply)
 {
 	(void)r;
 	(void)reply;
+
 	return 0;
 }
 
