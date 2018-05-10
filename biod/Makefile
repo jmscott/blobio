@@ -167,8 +167,8 @@ dev-links:
 	test -e lib || ln -s . lib
 	test -e tmp || ln -s . tmp
 	test -e data || mkdir data
-	test -e sha_fs || mkdir sha_fs
-	test -e bc160_fs || mkdir bc160_fs
+	test -e data/sha_fs || mkdir -p data/sha_fs
+	test -e data/bc160_fs || mkdir -p data/bc160_fs
 	test -e spool || mkdir spool
 	test -e spool/wrap || mkdir spool/wrap
 
