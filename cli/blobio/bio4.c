@@ -294,7 +294,7 @@ bio4_close()
  *	wrap algorithm
  */
 static int
-copy_request(char *command)
+make_request(char *command)
 {
 	char *c, *p;
 
@@ -459,13 +459,14 @@ read_ok_no(int *reply)
 }
 
 /*
- *  Send a get/wrap/roll command to the remote server and
- *  read the reply.
+ *  Send a get/put/take/eat/wrap/roll command to the remote server and
+ *  read the reply of either "ok" or "no".  Any other reply is an error,
+ *  including a timeout.
  *
  *	give sha:f6e723cc3642009cb74c740bd14317b207d05923\n	
  *
- *  Return 0 if 'ok' is reply, 1 if 'no' is reply,
- *  -1 otherwise.
+ *  Set *ok_no 0 if 'ok' is reply, 1 if 'no' is reply;
+ *  otherwise return error string.
  */
 static char *
 request(int *ok_no)
@@ -473,7 +474,7 @@ request(int *ok_no)
 	char *err;
 	char req[5 + 8 + 1 + 128 + 1 + 1];
 
-	if ((err = _write(server_fd, (unsigned char *)req, copy_request(req))))
+	if ((err = _write(server_fd, (unsigned char *)req, make_request(req))))
 		return err;
 
 	/*
@@ -602,9 +603,15 @@ bio4_put(int *ok_no)
 
 	//  write the put request to the remote server
 
-	if ((err = _write(server_fd, (unsigned char *)req, copy_request(req))))
+	if ((err = _write(server_fd, (unsigned char *)req, make_request(req))))
+		return err;
+	if ((err = read_ok_no(ok_no)))
 		return err;
 
+	if (*ok_no == 1)
+		return (char *)0;		//  server said no
+
+	//  write the blob to the server
 	more = 1;
 	while (more) {
 
@@ -657,10 +664,8 @@ bio4_take(int *ok_no)
 
 	//  write "take <udig>\n and read back reply and possibly the blob
 
-	if ((err = _get(ok_no, 1))) {
-		uni_write_buf(server_fd, "no\n", 3);
+	if ((err = _get(ok_no, 1)))
 		return err;
-	}
 
 	//  server replied no
 
