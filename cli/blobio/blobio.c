@@ -159,6 +159,7 @@ Options:\n\
 	--output-path   get/take target file <default stdout>\n\
 	--udig          algorithm:digest for get/put/give/take/eat/empty/roll\n\
 	--algorithm     algorithm name for local eat request\n\
+	--trace		trace i/o to standard error\n\
 	--help\n\
 Exit Status:\n\
 	0	request succeed\n\
@@ -407,6 +408,7 @@ parse_argv(int argc, char **argv)
 		 *	--algorithm name
 		 *	--input-path <path/to/file>
 		 *	--output-path <path/to/file>
+		 *	--trace
 		 */
 		if (strcmp("udig", a) == 0) {
 			char *ud;
