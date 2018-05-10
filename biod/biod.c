@@ -502,6 +502,8 @@ take(struct request *rp, struct digest_module *mp)
 	rp->verb = "take_request";
 	if ((*mp->take_request)(rp))
 		return write_no(rp);
+	if (write_ok(rp))
+		return -1;
 
 	rp->verb = "take_bytes";
 	if ((*mp->take_bytes)(rp))
