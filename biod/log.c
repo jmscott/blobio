@@ -369,7 +369,7 @@ _panic(char *buf, int len, int nwrite)
 	char *err1 = 0, *err2 = 0;
 	char pid[24];
 
-	snprintf(pid, sizeof pid, ": %d: ", getpid());
+	snprintf(pid, sizeof pid, "%d: ", getpid());
 
 	if (nwrite < 0) {
 		err1 = "write() failed";

@@ -15,6 +15,8 @@
  *	up with sigaction().
  *
  *	Need to enumerate all the environment variables upon boot up.
+ *
+ *	Taking the empty blob ought to fail.
  */
 #include <sys/stat.h>
 #include <ctype.h>
@@ -332,27 +334,28 @@ die3_NO(char *msg1, char *msg2, char *msg3)
 static int
 get(struct request *rp, struct digest_module *mp)
 {
-	int status;
-
 	request_exit_status = (request_exit_status & 0x1C) |
 					(REQUEST_EXIT_STATUS_GET << 2);
-	/*
-	 *  Note:
-	 *	Why not set verb in caller?
-	 */
-	rp->verb = "get";
-	status = (*mp->get)(rp);
-	if (status) {
-		if (status < 0)
-			error3("get", rp->algorithm, "callback get() failed");
-		/*
-		 *  If we haven't responded to the client,
-		 *  then respond with no.
-		 */
-		if (!rp->chat_history[0] && write_no(rp))
-			error3("get", rp->algorithm, "write_no() failed");
+
+	rp->verb = "get_request";
+	if ((*mp->get_request)(rp)) {
+		if (write_no(rp)) {
+			error3(rp->verb, rp->algorithm, "write_no(req) failed");
+			return 1;
+		}
+		return 0;
 	}
-	return status;
+	if (write_ok(rp)) {
+		error3(rp->verb, rp->algorithm, "write_ok(req) failed");
+		return 1;
+	}
+
+	rp->verb = "get_bytes";
+	if ((*mp->get_bytes)(rp)) {
+		error3(rp->verb, rp->algorithm, "callback get_bytes() failed");
+		return 1;
+	}
+	return 0;	//  write a brr record
 }
 
 /*
@@ -366,34 +369,32 @@ get(struct request *rp, struct digest_module *mp)
 static int
 eat(struct request *rp, struct digest_module *mp)
 {
-	int status;
-
-	rp->verb = "eat";
 	request_exit_status = (request_exit_status & 0x1C) |
 						(REQUEST_EXIT_STATUS_EAT << 2);
-	status = (*mp->eat)(rp);
-	if (status) {
-		if (status < 0)
-			error3("eat", rp->algorithm, "callback eat() failed");
-		/*
-		 *  If we haven't responded to the client,
-		 *  then respond with no.
-		 */
-		if (write_no(rp))
-			error3("eat", rp->algorithm, "write_no() failed");
-	} else
-		if (write_ok(rp))
-			error3("eat", rp->algorithm, "write_ok() failed");
-	return status;
+	rp->verb = "eat";
+	if ((*mp->eat)(rp)) {
+		if (write_no(rp)) {
+			error3(rp->verb, rp->algorithm, "write_no() failed");
+			return 1;
+		}
+	}
+	else if (write_ok(rp)) {
+		error3(rp->verb, rp->algorithm, "write_ok() failed");
+		return 1;
+	}
+	return 0;
 }
 
 /*
  *  Synopsis:
  *	Execute the put request by firing the callbacks of the digest module.
  *  Protocol Flow:
- *	>put algorithm:digest\n[blob]	# request for blob
- *	    <ok\n[close]		# server accepts blob, bye
- *          <no\n[close]		# server rejects blob, bye
+ *	>put udig\n	# request from client to put blob matching digest
+ *	  <ok\n		#   server ready for bytes matching bytes
+ *	    >[bytes]	#     blob bytes sent from client
+ *	    <ok\n	#       accepted bytes for blob
+ *	    <no\n	#       rejects bytes for blob
+ *	<no\n		#   server rejects request to put blob
  */
 static int
 put(struct request *rp, struct digest_module *mp)
@@ -402,8 +403,22 @@ put(struct request *rp, struct digest_module *mp)
 
 	request_exit_status = (request_exit_status & 0x1C) |
 						(REQUEST_EXIT_STATUS_PUT << 2);
-	rp->verb = "put";
-	status = (*mp->put)(rp);
+
+	rp->verb = "put_request";
+	if ((*mp->put_request)(rp)) {
+		if (write_no(rp)) {
+			error3(rp->verb, rp->algorithm, "write_no(req) failed");
+			return 1;
+		}
+		return 0;
+	}
+	if (write_ok(rp)) {
+		error3(rp->verb, rp->algorithm, "write_ok(req) failed");
+		return 1;
+	}
+
+	rp->verb = "put_bytes";
+	status = (*mp->put_bytes)(rp);
 	if (status) {
 		error3("put", rp->algorithm, "callback put() failed");
 		/*
@@ -412,8 +427,10 @@ put(struct request *rp, struct digest_module *mp)
 		 */
 		if (!rp->chat_history[0] && write_no(rp))
 			error3("put", rp->algorithm, "write_no() failed");
-	} else if (write_ok(rp))
+	} else if (write_ok(rp)) {
 		error3("put", rp->algorithm, "write_ok() failed");
+		status = -1;
+	}
 	return status;
 }
 
@@ -428,16 +445,18 @@ put(struct request *rp, struct digest_module *mp)
  *		>no[close]		# client rejects blob, bye
  *			<ok[close]	# we probably forget blob, bye
  *			<no[close]	# we will keep the blob, bye
+ *  Note:
+ *	Taking the empty blob ought to fail.
  */
 static int
 take(struct request *rp, struct digest_module *mp)
 {
-	int status;
 	char *reply;
 
-	rp->verb = "take";
 	request_exit_status = (request_exit_status & 0x1C) |
 						(REQUEST_EXIT_STATUS_TAKE << 2);
+	rp->verb = "take";
+
 	/*
 	 *  Verify the blob is not an element of the current unrolled wrap
 	 *  set in the file
@@ -455,10 +474,19 @@ take(struct request *rp, struct digest_module *mp)
 		int status;
 
 		snprintf(wrap_path, sizeof wrap_path, "spool/wrap/%s:%s.brr",
-				rp->algorithm, rp->digest);
+						rp->algorithm, rp->digest);
 		status = io_path_exists(wrap_path);
 		if (status < 0)
-			die3("take: stat() failed", strerror(errno), wrap_path);
+			panic4(
+				rp->verb,
+				"stat(wrap) failed",
+				strerror(errno),
+				wrap_path
+			);
+
+		/*
+		 *  A wrap log file with requested digest exists, so reply "no".
+		 */
 		if (status == 1) {
 			char wrap_udig[MAX_UDIG_SIZE + 1];
 
@@ -466,114 +494,91 @@ take(struct request *rp, struct digest_module *mp)
 						rp->algorithm, rp->digest);
 
 			error3("take", rp->netflow,"blob in unrolled wrap set");
-			error3("take", "forbidden until a next roll",
-								wrap_udig);
-			write_no(rp);
-			return 1;
+			error3("take", "forbidden until a next roll", wrap_udig);
+			return write_no(rp);
 		}
-		if (errno != ENOENT)
-			die3("take: stat() failed", strerror(errno), wrap_path);
 	}
-	status = (*mp->take_blob)(rp);
-	rp->verb = "take";
 
-	if (status) {
-		if (status < 0)
-			error3("take", rp->algorithm,
-						"callback take_blob() failed");
-		if (!rp->chat_history[0] && write_no(rp))
-			error3("take", rp->algorithm, "write_no(blob) failed");
-		return status;
-	}
+	rp->verb = "take_request";
+	if ((*mp->take_request)(rp))
+		return write_no(rp);
+
+	rp->verb = "take_bytes";
+	if ((*mp->take_bytes)(rp))
+		return write_no(rp);
+
 	/*
 	 *  Read reply from client.
 	 */
 	reply = read_reply(rp);
 	if (reply == NULL) {
-		error3("take", rp->algorithm, "read_reply() failed");
+		error3(rp->verb, rp->algorithm, "read_reply() failed");
 		return -1;
 	}
 	/*
 	 *  Client replied 'no', for some reason, so just shutdown.
 	 */
-	if (*reply == 'n') {
-		warn3("take", rp->algorithm, "client replied no to my ok?");
-		/*
-		 *  Not sure this is the correct return.
-		 */
-		return 1;
-	}
+	if (*reply == 'n')
+		return 0;
+
 	/*
 	 *  Ok, the client sucessfull took the blob,
 	 *  so call the take_ok callback.
 	 */
 	rp->verb = "take_reply";
-	status = (*mp->take_reply)(rp, reply);
-	rp->verb = "take";
-	if (status) {
-		error3("take", rp->algorithm, "callback take_reply() failed");
-		if (write_no(rp)) {
-			error3("take", rp->algorithm, "write_no(reply) failed");
-			return -1;
-		}
-	}
-	else if (write_ok(rp)) {
-		error3("take", rp->algorithm, "write_ok() failed");
-		return -1;
-	}
-	return status;
+	if ((*mp->take_reply)(rp, reply))
+		return write_no(rp);
+	return write_ok(rp);
 }
 
 /*
  *  Synopsis:
  *	Fire module callbacks for "give" verb in blobio protocol.
  *  Protocol Flow:
- *	>give algorithm:digest\n[blob]	# client sends the blob
- *	    <ok\n			# server accepts the blob
- *	        >ok[close]		# client forgets blob
- *		>no			# client still remembers blob
- *	    <no\n[close]		# server rejects blob request, bye
+ * 	>give udig\n		# request to put blog matching a udig
+ *	  <ok\n			#   server ready for blob bytes
+ *	    >[bytes]		#     send digested bytes to server
+ * 	      <ok\n		#   server accepts the bytes
+ *	        >ok[close]	#     client probably forgets blob
+ *		>no[close]	#     client might remember the blob
+ *	  <no\n[close]		#   server rejects blob give request
  */
 static int
 give(struct request *rp, struct digest_module *mp)
 {
-	int status;
 	char *reply;
 
-	rp->verb = "give";
 	request_exit_status = (request_exit_status & 0x1C) |
 						(REQUEST_EXIT_STATUS_GIVE << 2);
-	status = (*mp->give_blob)(rp);
+
+	rp->verb = "give_request";
+	if ((*mp->give_request)(rp))
+		return write_no(rp);
+	if (write_ok(rp))
+		return -1;
+
+	rp->verb = "give_bytes";
+
 	/*
 	 *  Server can't take blob, so write "no" to client and shutdown.
 	 */
-	if (status) {
-		error3("give", rp->algorithm, "callback give_blob() failed");
-		if (write_no(rp))
-			error3("give", rp->algorithm, "write_no() failed");
-		return status;
-	}
-	/*
-	 *  Server accepted blob, so acknowledge client.
-	 */
-	if (write_ok(rp)) {
-		error3("give", rp->algorithm, "write_ok() failed");
+	if ((*mp->give_bytes)(rp))
+		return write_no(rp);
+	if (write_ok(rp))
 		return -1;
-	}
+
+	rp->verb = "give_read_reply";
 	reply = read_reply(rp);
-	if (reply == NULL) {
-		error3("give", rp->algorithm, "read_reply() failed");
+	if (reply == NULL)
 		return -1;
-	}
+
+	rp->verb = "give_reply";
 	/*
 	 *  Call give_reply() to handle the reply.
 	 *  Any error returned by give_reply() is a panicy situation
 	 *  that needs immediate attention.
 	 */
-	status = (*mp->give_reply)(rp, reply);
-	if (status)
-		panic3("give", rp->algorithm, "callback give_reply() failed");
-	return status;
+	return (*mp->give_reply)(rp, reply);
 }
 
 static void
@@ -716,8 +721,8 @@ request()
 	 *  Scan for request from the client.
 	 *  We are looking for
 	 *
-	 *	UDIG_RE=[:alpha:][:alnum:]{0,7}:[[:isgraph:]]{1,128}]
-	 *	[get|put|give|take|eat|roll] $UDIG_RE\n
+	 *	UDIG_RE=[:alpha:][:alnum:]{0,7}:[[:isgraph:]]{32,128}]
+	 *	[get|put|give|take|eat|wrap|roll] $UDIG_RE\n
 	 *  
 	 *  or
 	 *
@@ -1185,7 +1190,7 @@ heartbeat()
 	info(buf);
 
 	snprintf(buf, sizeof buf,
-	      "chat: ok=%llu, no{1-3}=%llu, eat|take no=%llu|%llu",
+	      "chat: ok=%llu, no[123]=%llu, eat|take no=%llu|%llu",
 			chat_ok_count,
 			chat_no_count + chat_no2_count + chat_no3_count,
 			eat_no_count,
@@ -1622,7 +1627,7 @@ fork_accept(struct request *rp)
 		net_32addr2text(ntohl(rp->bind_address.sin_addr.s_addr)),
 		(unsigned int)ntohs(rp->bind_address.sin_port)
 	);
-		
+
 	request();
 
 	panic2(n, "unexpected return from request()");

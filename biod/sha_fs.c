@@ -2,8 +2,6 @@
 /*
  *  Synopsis:
  *	Module that manages sha digested blobs in POSIX file system.
- *  Note:
- *  	The digest is logged during an error.  This is a security hole.
  */
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -20,8 +18,6 @@
  */
 #define CHUNK_SIZE		(64 * 1024)
 
-extern char			*getenv();
-
 static char	sha_fs_root[]	= "data/sha_fs";
 static char	empty_ascii[]	= "da39a3ee5e6b4b0d3255bfef95601890afd80709";
 
@@ -34,6 +30,7 @@ struct sha_fs_request
 	char		blob_dir_path[MAX_FILE_PATH_LEN];
 	char		blob_path[MAX_FILE_PATH_LEN];
 	unsigned char	digest[20];
+	int		blob_fd;
 };
 
 static struct sha_fs_boot
@@ -48,22 +45,31 @@ static char nib2hex[] =
 };
 
 static void
-_panic(struct request *r, char *msg)
+_panic(struct request *r, char *msg1)
 {
-	char buf[MSG_SIZE];
+	char msg[MSG_SIZE];
 
-	if (r)
-		panic(log_strcpy3(buf, sizeof buf, r->verb,r->algorithm,msg));
-	else
+	if (r) {
+		char msg3[MSG_SIZE];
+
+		log_strcpy3(msg3, sizeof msg3, r->verb,r->algorithm,msg1);
+		log_format(msg3, msg, sizeof msg);
+		panic(msg);
+	} else {
+		log_format(msg1, msg, sizeof msg);
 		panic2("sha", msg);
+	}
 }
 
 static void
 _panic2(struct request *r, char *msg1, char *msg2)
 {
-	char buf[MSG_SIZE];
+	char msg[MSG_SIZE], msg12[MSG_SIZE];
 
-	_panic(r, log_strcpy2(buf, sizeof buf, msg1, msg2));
+	log_strcpy2(msg12, sizeof msg12, msg1, msg2);
+	log_format(msg12, msg, sizeof msg); 
+
+	_panic(r, msg);
 }
 
 static void
@@ -119,43 +125,19 @@ _warn3(struct request *r, char *msg1, char *msg2, char *msg3)
 	_warn2(r, log_strcpy2(buf, sizeof buf, msg1, msg2), msg3);
 }
 
-static void
-nib2digest(char *hex_digest, unsigned char *digest)
-{
-	char *h = hex_digest;
-	unsigned char *d = digest;
-	int i;
-
-	/*
-	 *  Derive the 20 byte, binary digest from the 40 
-	 *  character version.
-	 */
-	for (i = 0;  i < 40;  i++) {
-		char c = *h++;
-		unsigned char nib;
-
-		if (c >= '0' && c <= '9')
-			nib = c - '0';
-		else
-			nib = c - 'a' + 10;
-		if ((i & 1) == 0)
-			nib <<= 4;
-		d[i >> 1] |= nib;
-	}
-}
-
 static int
 sha_fs_open(struct request *r)
 {
-	struct sha_fs_request *sp;
+	struct sha_fs_request *s;
 
-	sp = (struct sha_fs_request *)malloc(sizeof *sp);
-	if (sp == NULL)
+	s = (struct sha_fs_request *)malloc(sizeof *s);
+	if (s == NULL)
 		_panic2(r, "malloc(sha_fs_request) failed", strerror(errno));
-	memset(sp, 0, sizeof *sp);
+	memset(s, 0, sizeof *s);
+	s->blob_fd = -1;
 	if (strcmp("wrap", r->verb))
-		nib2digest(r->digest, sp->digest);
-	r->open_data = (void *)sp;
+		decode_hex(r->digest, s->digest);
+	r->open_data = (void *)s;
 
 	return 0;
 }
@@ -188,10 +170,10 @@ _unlink(struct request *r, char *path, int *exists)
 static int
 zap_blob(struct request *r)
 {
-	struct sha_fs_request *sp = (struct sha_fs_request *)r->open_data;
+	struct sha_fs_request *s = (struct sha_fs_request *)r->open_data;
 	int exists = 0;
 
-	if (_unlink(r, sp->blob_path, &exists)) {
+	if (_unlink(r, s->blob_path, &exists)) {
 		_panic(r, "zap_blob: _unlink() failed");
 		return -1;
 	}
@@ -223,15 +205,21 @@ _read(struct request *r, int fd, unsigned char *buf, int buf_size)
 	return buf_size;
 }
 
-static int
-_close(struct request *r, int *p_fd)
+static void
+_close(struct request *r, char *what, int *p_fd)
 {
 	int fd = *p_fd;
 
+	if (fd == -1)
+		return;
 	*p_fd = -1;
-	if (io_close(fd))
-		_panic2(r, "close() failed", strerror(errno));
-	return 0;
+	if (io_close(fd)) {
+		char msg[MSG_SIZE];
+
+		snprintf(msg, sizeof msg,
+				"close(%s) failed: %s", what, strerror(errno));
+		_panic(r, msg);
+	}
 }
 
 /*
@@ -308,7 +296,7 @@ _mkdir(struct request *r, char *path, int exists_ok)
 static void
 blob_path(struct request *r, char *digest)
 {
-	struct sha_fs_request *sp = (struct sha_fs_request *)r->open_data;
+	struct sha_fs_request *s = (struct sha_fs_request *)r->open_data;
 	char *p, *q;
 
 	/*
@@ -326,8 +314,8 @@ blob_path(struct request *r, char *digest)
 	 *  where the final component, 'd2170b9ef' is the file containing
 	 *  the blob.
 	 */
-	strcpy(sp->blob_dir_path, boot_data.root_dir_path);
-	p = sp->blob_dir_path + strlen(sp->blob_dir_path);
+	strcpy(s->blob_dir_path, boot_data.root_dir_path);
+	p = s->blob_dir_path + strlen(s->blob_dir_path);
 	q = digest;
 
 	/*
@@ -377,43 +365,29 @@ blob_path(struct request *r, char *digest)
 	/*
 	 *  Build the path to the final resting place of the blob file.
 	 */
-	strcpy(sp->blob_path, sp->blob_dir_path);
-	strcat(sp->blob_path, "/");
-	strcat(sp->blob_path, digest + 31);
+	strcpy(s->blob_path, s->blob_dir_path);
+	strcat(s->blob_path, "/");
+	strcat(s->blob_path, digest + 31);
 }
 
 static int
-sha_fs_get(struct request *r)
+sha_fs_get_request(struct request *r)
 {
-	struct sha_fs_request *sp = (struct sha_fs_request *)r->open_data;
+	struct sha_fs_request *s = (struct sha_fs_request *)r->open_data;
+
+	blob_path(r, r->digest);
+	return _open(r, s->blob_path, &s->blob_fd);
+}
+
+static int
+sha_fs_get_bytes(struct request *r)
+{
+	struct sha_fs_request *s = (struct sha_fs_request *)r->open_data;
 	int status = 0;
 	SHA_CTX ctx;
 	unsigned char digest[20];
-	int fd;
 	unsigned char chunk[CHUNK_SIZE];
 	int nread;
-
-	blob_path(r, r->digest);
-
-	/*
-	 *  Open the file to the blob.
-	 */
-	switch (_open(r, sp->blob_path, &fd)) {
-	case 0:
-		break;
-	case ENOENT:
-		return 1;
-	default:
-		_panic(r, "_open(blob) failed");
-	}
-
-	/*
-	 *  Tell the client we have the blob.
-	 */
-	if (write_ok(r)) {
-		_error(r, "write_ok() failed");
-		goto croak;
-	}
 
 	SHA1_Init(&ctx);
 
@@ -424,7 +398,7 @@ sha_fs_get(struct request *r)
 	 *  In principle, we ought to first scan the blob file
 	 *  before sending "ok" to the requestor.
 	 */
-	while ((nread = _read(r, fd, chunk, sizeof chunk)) > 0) {
+	while ((nread = _read(r, s->blob_fd, chunk, sizeof chunk)) > 0) {
 		if (blob_write(r, chunk, nread)) {
 			_error(r, "blob_write(blob chunk) failed");
 			goto croak;
@@ -450,7 +424,7 @@ sha_fs_get(struct request *r)
 	 *	  the special case when the entire blob is read
 	 *        in first chunk.
 	 */
-	if (memcmp(sp->digest, digest, 20)) {
+	if (memcmp(s->digest, digest, 20)) {
 		_error2(r, "PANIC: stored blob doesn't match digest",
 								r->digest);
 		if (zap_blob(r))
@@ -461,8 +435,7 @@ sha_fs_get(struct request *r)
 croak:
 	status = -1;
 cleanup:
-	if (_close(r, &fd))
-		_panic(r, "_close(blob) failed");
+	_close(r, "server blob", &s->blob_fd);
 	return status;
 }
 
@@ -470,12 +443,12 @@ cleanup:
  *  Copy a local blob to a local stream.
  *
  *  Return 0 if stream matches signature, -1 otherwise.
- *  Note: this needs to be folded into sha_fs_get().
+ *  Note: this needs to be folded into sha_fs_get_bytes().
  */
 static int
 sha_fs_copy(struct request *r, int out_fd)
 {
-	struct sha_fs_request *sp = (struct sha_fs_request *)r->open_data;
+	struct sha_fs_request *s = (struct sha_fs_request *)r->open_data;
 	int status = 0;
 	SHA_CTX ctx;
 	unsigned char digest[20];
@@ -489,7 +462,7 @@ sha_fs_copy(struct request *r, int out_fd)
 	/*
 	 *  Open the file to the blob.
 	 */
-	switch (_open(r, sp->blob_path, &fd)) {
+	switch (_open(r, s->blob_path, &fd)) {
 	case 0:
 		break;
 	case ENOENT:
@@ -528,21 +501,20 @@ sha_fs_copy(struct request *r, int out_fd)
 	 *  then zap the blob from storage and get panicy.
 	 *  A corrupt blob is a bad, bad thang.
 	 */
-	if (memcmp(sp->digest, digest, 20))
+	if (memcmp(s->digest, digest, 20))
 		_panic3(r, n, "stored blob doesn't match digest", r->digest);
 	goto cleanup;
 croak:
 	status = -1;
 cleanup:
-	if (_close(r, &fd))
-		_panic2(r, n, "_close(blob) failed");
+	_close(r, "copied server blob", &fd);
 	return status;
 }
 
 static int
 sha_fs_eat(struct request *r)
 {
-	struct sha_fs_request *sp = (struct sha_fs_request *)r->open_data;
+	struct sha_fs_request *s = (struct sha_fs_request *)r->open_data;
 	int status = 0;
 	SHA_CTX ctx;
 	unsigned char digest[20];
@@ -555,7 +527,7 @@ sha_fs_eat(struct request *r)
 	/*
 	 *  Open the file to the blob.
 	 */
-	switch (_open(r, sp->blob_path, &fd)) {
+	switch (_open(r, s->blob_path, &fd)) {
 	case 0:
 		break;
 	/*
@@ -594,10 +566,9 @@ sha_fs_eat(struct request *r)
 	 *	  the special case when the entire blob is read
 	 *        in first chunk.
 	 */
-	if (memcmp(sp->digest, digest, 20))
+	if (memcmp(s->digest, digest, 20))
 		_panic2(r, "stored blob doesn't match digest", r->digest);
-	if (_close(r, &fd))
-		_panic(r, "_close(blob) failed");
+	_close(r, "server blob", &fd);
 	return status;
 }
 
@@ -610,7 +581,7 @@ static int
 eat_chunk(struct request *r, SHA_CTX *p_ctx, int fd, unsigned char *buf,
 	  int buf_size)
 {
-	struct sha_fs_request *sp = (struct sha_fs_request *)r->open_data;
+	struct sha_fs_request *s = (struct sha_fs_request *)r->open_data;
 	SHA_CTX ctx;
 	unsigned char digest[20];
 
@@ -631,11 +602,18 @@ eat_chunk(struct request *r, SHA_CTX *p_ctx, int fd, unsigned char *buf,
 	 */
 	memcpy(&ctx, p_ctx, sizeof *p_ctx);
 	SHA1_Final(digest, &ctx);
-	return memcmp(sp->digest, digest, 20) == 0 ? 1 : 0;
+	return memcmp(s->digest, digest, 20) == 0 ? 1 : 0;
 }
 
 static int
-sha_fs_put(struct request *r)
+sha_fs_put_request(struct request *r)
+{
+	(void)r;
+	return 0;
+}
+
+static int
+sha_fs_put_bytes(struct request *r)
 {
 	SHA_CTX ctx;
 	char tmp_path[MAX_FILE_PATH_LEN];
@@ -694,10 +672,13 @@ sha_fs_put(struct request *r)
 	if (r->scan_size > 0) {
 
 		//  Note: regress, sanity test ... remove later.
-		if ((u8)r->scan_size != r->blob_size)
+		if ((u8)r->scan_size != r->blob_size) {
+			io_unlink(tmp_path);
 			_panic(r, "r->scan_size != r->blob_size");
+		}
 
 		if (r->scan_size > (int)(sizeof chunk - 1)) {
+			io_unlink(tmp_path);
 			snprintf(buf, sizeof buf, "max=%lu", 
 					(long unsigned)(sizeof chunk - 1));
 			_panic2(r, "scanned chunk too big", buf);
@@ -728,7 +709,7 @@ again:
 			goto croak;
 		}
 		if (nread == 0) {
-			_error(r, "blob_read() returns 0 before digest seen");
+			_error(r, "blob_read(client) of 0 bytes");
 			goto croak;
 		}
 		switch (eat_chunk(r, &ctx, fd, cp, nread)) {
@@ -743,8 +724,6 @@ again:
 	goto again;
 
 digested:
-	if (fd >= 0)
-		_close(r, &fd);
 
 	/*
 	 *  Rename the temp blob file to the final blob path.
@@ -757,17 +736,23 @@ digested:
 croak:
 	status = -1;
 cleanup:
-	if (fd > -1)
-		_panic(r, "_close() failed");
-	if (tmp_path[0] && _unlink(r, tmp_path, (int *)0))
+	_close(r, "tmp blob", &fd);
+	if (tmp_path[0] && _unlink(r, tmp_path, (int *)0)) {
 		_panic(r, "_unlink() failed");
+		status = -1;
+	}
 	return status; 
 }
 
-static int
-sha_fs_take_blob(struct request *r)
+static int sha_fs_take_request(struct request *r)
 {
-	return sha_fs_get(r);
+	return sha_fs_get_request(r);
+}
+
+static int
+sha_fs_take_bytes(struct request *r)
+{
+	return sha_fs_get_bytes(r);
 }
 
 /*
@@ -777,7 +762,7 @@ sha_fs_take_blob(struct request *r)
 static int
 sha_fs_take_reply(struct request *r, char *reply)
 {
-	struct sha_fs_request *sp = (struct sha_fs_request *)r->open_data;
+	struct sha_fs_request *s = (struct sha_fs_request *)r->open_data;
 
 	/*
 	 *  If client replies 'ok', then delete the blob.
@@ -787,23 +772,31 @@ sha_fs_take_reply(struct request *r, char *reply)
 		int exists = 1;
 		char *slash;
 
-		if (_unlink(r, sp->blob_path, &exists))
+		if (_unlink(r, s->blob_path, &exists))
 			_panic(r, "_unlink() failed");
 		if (!exists)
 			_warn2(r, "expected blob file does not exist",
-							sp->blob_path);
+							s->blob_path);
 		/*
 		 *  Request trimming the empty directories.
 		 */
-		if ((slash = rindex(sp->blob_path, '/'))) {
+		if ((slash = rindex(s->blob_path, '/'))) {
 			*slash = 0;
-			arbor_trim(sp->blob_path);
+			arbor_trim(s->blob_path);
 			*slash = '/';
 		}
 		else
 			_panic2(r, "slash missing from blob path",
-							sp->blob_path);
+							s->blob_path);
 	}
+	return 0;
+}
+
+static int
+sha_fs_give_request(struct request *r)
+{
+	(void)r;
+
 	return 0;
 }
 
@@ -812,14 +805,14 @@ sha_fs_take_reply(struct request *r, char *reply)
  *	Client is giving us a blob.
  */
 static int
-sha_fs_give_blob(struct request *r)
+sha_fs_give_bytes(struct request *r)
 {
-	return sha_fs_put(r);
+	return sha_fs_put_bytes(r);
 }
 
 /*
  *  Synopsis:
- *	Handle client reply from give_blob().
+ *	Handle client reply from sha_fs_give_bytes().
  */
 static int
 sha_fs_give_reply(struct request *r, char *reply)
@@ -927,8 +920,11 @@ cleanup:
 static int
 sha_fs_close(struct request *r, int status)
 {
-	(void)r;
 	(void)status;
+
+	struct sha_fs_request *s = (struct sha_fs_request *)r->open_data;
+	_close(r, "blob", &s->blob_fd);
+
 	return 0;
 }
 
@@ -999,16 +995,23 @@ struct digest_module sha_fs_module =
 	.boot		=	sha_fs_boot,
 	.open		=	sha_fs_open,
 
-	.get		=	sha_fs_get,
-	.take_blob	=	sha_fs_take_blob,
+	.get_request	=	sha_fs_get_request,
+	.get_bytes	=	sha_fs_get_bytes,
+
+	.take_request	=	sha_fs_take_request,
+	.take_bytes	=	sha_fs_take_bytes,
 	.take_reply	=	sha_fs_take_reply,
 	.copy		=	sha_fs_copy,
 
-	.put		=	sha_fs_put,
-	.give_blob	=	sha_fs_give_blob,
+	.put_request	=	sha_fs_put_request,
+	.put_bytes	=	sha_fs_put_bytes,
+
+	.give_request	=	sha_fs_give_request,
+	.give_bytes	=	sha_fs_give_bytes,
 	.give_reply	=	sha_fs_give_reply,
 
 	.eat		=	sha_fs_eat,
+
 	.digest		=	sha_fs_digest,
 	.is_digest	=	sha_fs_is_digest,
 

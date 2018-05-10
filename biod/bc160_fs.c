@@ -405,7 +405,7 @@ blob_path(struct request *r, char *digest)
 }
 
 static int
-bc160_fs_get(struct request *r)
+bc160_fs_get_bytes(struct request *r)
 {
 	struct bc160_fs_request *sp = (struct bc160_fs_request *)r->open_data;
 	int status = 0;
@@ -719,7 +719,14 @@ eat_chunk(struct request *r, SHA256_CTX *sha_ctx, int fd, unsigned char *buf,
 }
 
 static int
-bc160_fs_put(struct request *r)
+bc160_fs_put_request(struct request *r)
+{
+	(void)r;
+	return 0;
+}
+
+static int
+bc160_fs_put_bytes(struct request *r)
 {
 	BC160_CTX ctx;
 	char tmp_path[MAX_FILE_PATH_LEN];
@@ -848,9 +855,9 @@ cleanup:
 }
 
 static int
-bc160_fs_take_blob(struct request *r)
+bc160_fs_take_bytes(struct request *r)
 {
-	return bc160_fs_get(r);
+	return bc160_fs_get_bytes(r);
 }
 
 /*
@@ -895,14 +902,14 @@ bc160_fs_take_reply(struct request *r, char *reply)
  *	Client is giving us a blob.
  */
 static int
-bc160_fs_give_blob(struct request *r)
+bc160_fs_give_bytes(struct request *r)
 {
-	return bc160_fs_put(r);
+	return bc160_fs_put_bytes(r);
 }
 
 /*
  *  Synopsis:
- *	Handle client reply from give_blob().
+ *	Handle client reply from bc160_fs_give_bytes().
  */
 static int
 bc160_fs_give_reply(struct request *r, char *reply)
@@ -1097,13 +1104,16 @@ struct digest_module bc160_fs_module =
 	.boot		=	bc160_fs_boot,
 	.open		=	bc160_fs_open,
 
-	.get		=	bc160_fs_get,
-	.take_blob	=	bc160_fs_take_blob,
+	.get_bytes	=	bc160_fs_get_bytes,
+
+	.take_bytes	=	bc160_fs_take_bytes,
 	.take_reply	=	bc160_fs_take_reply,
 	.copy		=	bc160_fs_copy,
 
-	.put		=	bc160_fs_put,
-	.give_blob	=	bc160_fs_give_blob,
+	.put_request	=	bc160_fs_put_request,
+	.put_bytes	=	bc160_fs_put_bytes,
+
+	.give_bytes	=	bc160_fs_give_bytes,
 	.give_reply	=	bc160_fs_give_reply,
 
 	.eat		=	bc160_fs_eat,

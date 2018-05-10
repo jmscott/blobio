@@ -96,6 +96,7 @@ struct request
 
 	void	*module_boot_data;	/* allocated by module.boot() */
 };
+
 /*
  *  Process Exit Class: Bits 1 and 2 of the request child exit status
  */
@@ -140,25 +141,29 @@ struct digest_module
 	/*
 	 *  Get a blob from this server.
 	 */
-	int	(*get)(struct request *);
+	int	(*get_request)(struct request *);
+	int	(*get_bytes)(struct request *);
 
 	/*
 	 *  Client takes a blob from a server.
 	 *  Server may forget the blob.
 	 */
-	int	(*take_blob)(struct request *);
+	int	(*take_request)(struct request *);
+	int	(*take_bytes)(struct request *);
 	int	(*take_reply)(struct request *, char *reply);
 
 	/*
 	 *  Put a blob on this server.
 	 */
-	int	(*put)(struct request *);
+	int	(*put_request)(struct request *);
+	int	(*put_bytes)(struct request *);
 
 	/*
 	 *  Give a blob to this server.
 	 *  Client may forget the blob.
 	 */
-	int	(*give_blob)(struct request *);
+	int	(*give_request)(struct request *);
+	int	(*give_bytes)(struct request *);
 	int	(*give_reply)(struct request *, char *reply);
 
 	/*
@@ -239,6 +244,8 @@ extern char	*log_strcpy4(char *buf, int buf_size,
 extern char	*log_strcat2(char *buf, int buf_size, char *msg1, char *msg2);
 extern char	*log_strcat3(char *buf, int buf_size,
 					char *msg1, char *msg2, char *msg3);
+extern void	log_format(char *msg, char *buf, int buf_size);
+
 
 extern int	burp_text_file(char *buf, char *path);
 extern int	slurp_text_file(char *path, char *buf, size_t buf_size);
@@ -327,6 +334,8 @@ extern int		blob_write(
 				void *buf,
 				size_t buf_size
 			);
+
+extern void		decode_hex(char *hex, unsigned char *bytes);
 
 /*
  *  Trivial stream orient message by single reader.

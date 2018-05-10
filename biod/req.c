@@ -1,6 +1,6 @@
 /*
  *  Synopsis:
- *	Restartable i/o operations.  The io_*() funcs never log errors.
+ *	Various support routines related to a client request.
  */
 #include <sys/time.h>
 #include <sys/stat.h>
@@ -78,7 +78,7 @@ req_read(struct request *r, void *buf, size_t buf_size)
 }
 
 /*
- *  Read a blob from the remote client.
+ *  Read a blob from the remote client, updating blob_size record.
  */
 ssize_t
 blob_read(struct request *r, void *buf, size_t buf_size)
@@ -139,7 +139,7 @@ req_write(struct request *r, void *buf, size_t buf_size)
 }
 
 /*
- *  Write a blob to the remote client.
+ *  Write a blob to the remote client, updating the blob size.
  */
 int
 blob_write(struct request *r, void *buf, size_t buf_size)
@@ -290,4 +290,27 @@ again:
 					hexchar[(reply[1] >> 4) & 0x0F],
 					hexchar[(reply[1]) & 0x0F]);
 	return reply_error(r, ebuf);
+}
+
+/*
+ *  Decode an ascii hex string to bytes.
+ */
+void
+decode_hex(char *hex, unsigned char *bytes)
+{
+	char *h = hex;
+	unsigned char *b = bytes;
+
+	for (unsigned i = 0;  *h;  i++) {
+		char c = *h++;
+		unsigned char nib;
+
+		if (c >= '0' && c <= '9')
+			nib = c - '0';
+		else
+			nib = c - 'a' + 10;
+		if ((i & 1) == 0)
+			nib <<= 4;
+		b[i >> 1] |= nib;
+	}
 }
