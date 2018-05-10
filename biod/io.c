@@ -328,7 +328,7 @@ io_msg_new(struct io_message *ip, int fd)
 }
 
 /*
- *  Read an aromically written message from a stable (no timeout) byte stream.
+ *  Read an attomically written message from a stable (no timeout) byte stream.
  *  Messages in the stream are introduced with a leading length byte followed
  *  by upto 255 payload bytes.
  *
