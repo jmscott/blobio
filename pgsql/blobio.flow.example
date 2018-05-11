@@ -466,6 +466,8 @@ query upsert_discover(biod.udig, biod.start_time)
 
 query ok_newer(biod.udig, biod.start_time)
   when
+  	biod.chat_history == "ok,ok,ok"
+	or
   	biod.chat_history == "ok,ok"
 	or
 	biod.chat_history == "ok"
