@@ -13,12 +13,14 @@ install:
 		eat-unroll.sql						\
 		eat-wrap-missed.sql					\
 		merge-biod_request_stat.sql				\
+		no-brr_blob_size.sql					\
 		schema.sql						\
 		$(DIST_ROOT)/lib
 
 	install -g $(DIST_GROUP) -o $(DIST_USER) -m u=rx,go=		\
 		cron-eat-unroll						\
 		cron-rrd2pg						\
+		cron-rummy						\
 		eat-wrap-missed						\
 		fs-eat							\
 		fs-xor-service						\

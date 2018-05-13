@@ -1,0 +1,77 @@
+#
+#  Synopsis:
+#	Find blobs in service with missing information.
+#  Usage:
+#	*/15 * * * *	cron-rummy '-1week' >>log/cron-rummy.log 2>&1
+#
+
+RUMMY_UDIG_SET=${TMPDIR:=/tmp}/$(basename $0)-$$.udig
+
+log()
+{
+	echo "$(date +'%Y/%m/%d %H:%M:%S'): $@"
+}
+
+die()
+{
+	log "ERROR: $@" >&2
+	exit 1
+}
+
+leave()
+{
+	rm -f $RUMMY_UDIG_SET || log "ERROR: rm -f $RUMMY_UDIG_SET failed"
+	log 'good bye, cruel world'
+}
+
+test $# = 1 || die 'wrong number of arguments'
+test -n "$BLOBIO_ROOT" || die "enviroment var not defined: BLOBIO_ROOT"
+
+SINCE="$1"
+
+log 'hello, world'
+trap leave EXIT
+
+log "BLOBIO_ROOT=$BLOBIO_ROOT"
+cd $BLOBIO_ROOT || die "cd $BLOBIO_ROOT failed: exit status=$?"
+. etc/profile
+
+log "since: $SINCE"
+log "tmp rummy udig set: $RUMMY_UDIG_SET"
+log "BLOBIO_SERVICE=$BLOBIO_SERVICE"
+log "PGHOST=$PGHOST"
+log "PGPORT=$PGPORT"
+log "PGUSER=$PGUSER"
+log "PGPASSWORD=$PGPASSWORD"
+log "PGDATABASE=$PGDATABASE"
+
+log "service blobs not in table brr_blob_size since $SINCE"
+psql									\
+	--file lib/no-brr_blob_size.sql					\
+	--set since="'$SINCE'"						\
+	--quiet								\
+	--no-align							\
+	--no-psqlrc							\
+	--tuples-only							\
+		>$RUMMY_UDIG_SET					||
+			die "psql >$RUMMY_UDIG_SET failed: exit status=$?"
+NO_SIZE_COUNT=$(wc -l $RUMMY_UDIG_SET | awk '{print $1}')
+log "blobs with no brr_blob_size: $NO_SIZE_COUNT"
+
+#  fetch each blob to trigger merge of row in table brr_blob_size
+
+while read UDIG;  do
+	blobio get --udig $UDIG --service $BLOBIO_SERVICE --output-path /dev/null
+	STATUS=$?
+	case $STATUS in
+	0)
+		log ">$UDIG"
+		;;
+	1)
+		log "?$UDIG"
+		;;
+	*)
+		die "blobio get /dev/null failed: exit status=$STATUS"
+		;;
+	esac
+done <$RUMMY_UDIG_SET
