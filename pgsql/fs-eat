@@ -14,10 +14,12 @@
 #
 
 PROG=$(basename $0)
-FS=${TMPDIR:=/tmp}/$PROG.fs.$$
-EAT=${TMPDIR:=/tmp}/$PROG.eat.$$
-SERVICE=${TMPDIR:=/tmp}/$PROG.service.$$
-SERVICE2=${TMPDIR:=/tmp}/$PROG.service2.$$
+WORK_DIR=${TMPDIR:=/tmp}
+
+FS=$WORK_DIR/$PROG.fs.$$
+EAT=$WORK_DIR/$PROG.eat.$$
+SERVICE=$WORK_DIR/$PROG.service.$$
+SERVICE2=$WORK_DIR/$PROG.service2.$$
 
 log()
 {
@@ -53,7 +55,12 @@ leave()
 {
 	STATUS=$?
 
-	rm -f $FS $SERVICE $SERVICE2 $EAT
+	if rm -f $FS $SERVICE $SERVICE2 $EAT;  then
+		true
+	else
+		log "ERROR: rm $WORK_DIR/{fs,eat,service} failed: exit status=$?"
+		STATUS=1
+	fi
 	log 'good bye, cruel world'
 
 	exit $STATUS
@@ -176,7 +183,13 @@ esac
 #  Eat the undiscovered blobs
 #
 while read U;  do
-	blobio eat --udig $U --service $BLOBIO_SERVICE
+
+	#
+	#  Note:
+	#	Do a "get" instead of "eat" to help remote sync which is too
+	#	stupid to understand (for now) grok local netflow.
+	#
+	blobio get --udig $U --service $BLOBIO_SERVICE --output-path /dev/null
 	STATUS=$?
 	case $STATUS in
 	0)
