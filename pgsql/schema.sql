@@ -53,8 +53,8 @@ COMMENT ON DOMAIN ui63 IS
  *  Most recently seen successfull take FROM this service.
  *  The connection chat history was ok,ok,ok, hence ok3.
  */
-DROP TABLE IF EXISTS brr_take_ok3_recent CASCADE;
-CREATE TABLE brr_take_ok3_recent
+DROP TABLE IF EXISTS brr_take_ok_recent CASCADE;
+CREATE TABLE brr_take_ok_recent
 (
 	blob			udig
 					PRIMARY KEY,
@@ -67,16 +67,16 @@ CREATE TABLE brr_take_ok3_recent
 	 */
 	wall_duration		brr_duration
 );
-CREATE INDEX brr_take_ok3_recent_hash ON
-	brr_take_ok3_recent USING hash(blob)
+CREATE INDEX brr_take_ok_recent_hash ON
+	brr_take_ok_recent USING hash(blob)
 ;
-CREATE INDEX brr_take_ok3_recent_start_time ON
-	brr_take_ok3_recent(start_time)
+CREATE INDEX brr_take_ok_recent_start_time ON
+	brr_take_ok_recent(start_time)
 ;
-COMMENT ON TABLE brr_take_ok3_recent IS
+COMMENT ON TABLE brr_take_ok_recent IS
   'most recently seen take request record for a particular blob'
 ;
-REVOKE UPDATE ON brr_take_ok3_recent FROM public;
+REVOKE UPDATE ON brr_take_ok_recent FROM public;
 
 /*
  *  The immutable blob size AS observed in a brr record of an existing blob.
@@ -168,14 +168,7 @@ CREATE TABLE brr_discover
 	/*
 	 *  Start time in blob request record.
 	 */
-	start_time	brr_timestamp,
-
-	/*
-	 *  Time this database record was inserted or updated with
-	 *  an earlier time,  effective measuring discover latency.
-	 */
-	upsert_time	brr_timestamp
-				DEFAULT now()
+	start_time	brr_timestamp
 );
 CREATE INDEX brr_discover_hash
 	ON brr_discover USING hash(blob)
@@ -190,10 +183,6 @@ COMMENT ON TABLE brr_discover
 COMMENT ON COLUMN brr_discover.start_time
   IS
   	'start time of the earliest request for the discovered blob'
-;
-COMMENT ON COLUMN brr_discover.upsert_time
-  IS
-  	'time of sql insert or update of this tuple'
 ;
 REVOKE UPDATE ON brr_discover FROM public;
 
@@ -248,7 +237,7 @@ CREATE VIEW service AS
 	d.start_time AS "discover_time"
     FROM
   	brr_ok_recent ok
-	  LEFT OUTER JOIN brr_take_ok3_recent take ON
+	  LEFT OUTER JOIN brr_take_ok_recent take ON
 	  (
 	  	take.blob = ok.blob
 		AND
@@ -280,7 +269,7 @@ CREATE VIEW taken AS
 	take.blob,
 	take.start_time AS "recent_time"
     FROM
-  	brr_take_ok3_recent take
+  	brr_take_ok_recent take
 	  LEFT OUTER JOIN brr_ok_recent ok ON
 	  (
 	  	ok.blob = take.blob
