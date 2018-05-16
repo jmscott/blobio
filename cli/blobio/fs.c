@@ -83,6 +83,9 @@ fs_open()
 {
 	struct stat st;
 
+	if (*verb == 'w')
+		return "wrap verb not supported";
+
 	if (uni_access(end_point, X_OK)) {
 		if (errno == ENOENT)
 			return "blob root directory does not exist";
@@ -105,6 +108,9 @@ fs_open()
 	//  reverify permissons on data/ directory
 
 	if (uni_access(fs_path, X_OK)) {
+write(2, "WTF: ", 4);
+write(2, fs_path, strlen(fs_path));
+write(2, "\n", 1);
 		if (errno == ENOENT)
 			return "blob data directory does not exist";
 		if (errno == EPERM)

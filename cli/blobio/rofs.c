@@ -100,6 +100,9 @@ rofs_open()
 
 	_TRACE2("blob root directory", end_point);
 
+	if (*verb == 'w')
+		return "wrap verb not supported";
+
 	//  verify permissons
 
 	if (uni_access(end_point, X_OK)) {
