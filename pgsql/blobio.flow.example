@@ -10,7 +10,7 @@ boot
 	brr_capacity = 32;
 	os_exec_capacity = 8;
 	os_exec_worker_count = 16;
-	flow_worker_count = 4;
+	flow_worker_count = 8;
 
 	qdr_roll_duration = "24h";
 	fdr_roll_duration = "24h";
@@ -23,23 +23,26 @@ tail biod
 	path = "spool/biod.brr";
 }
 
-command append_setspace_brr
-{
-	path = "sbin/append-brr";
-	argv = (
-		"../setspace/schema/setspace/spool/biod.brr"
-	);
-}
-
-call append_setspace_brr(
-	biod.start_time,
-	biod.netflow,
-	biod.verb,
-	biod.udig,
-	biod.chat_history,
-	biod.blob_size,
-	biod.wall_duration
-);
+#
+#  Uncomment to push blob request records to setspace
+#
+#command append_setspace_brr
+#{
+#	path = "sbin/append-brr";
+#	argv = (
+#		"../setspace/schema/setspace/spool/biod.brr"
+#	);
+#}
+#
+#call append_setspace_brr(
+#	biod.start_time,
+#	biod.netflow,
+#	biod.verb,
+#	biod.udig,
+#	biod.chat_history,
+#	biod.blob_size,
+#	biod.wall_duration
+#);
 
 command chat_ok
 {
@@ -142,8 +145,7 @@ sql exec upsert_discover
 		$2::blobio.brr_timestamp
 	)
 	  ON CONFLICT (blob) do update set
-		start_time = EXCLUDED.start_time,
-		upsert_time = now()
+		start_time = EXCLUDED.start_time
 	  where
 		RECENT.start_time > EXCLUDED.start_time
 	;
@@ -349,7 +351,7 @@ sql exec merge_wrap_ok
 	`;
 }
 
-sql query take_ok3_newer row
+sql query take_ok_newer row
 {
 	result row is (
 		is_newer bool,
@@ -362,7 +364,7 @@ sql query take_ok3_newer row
 	  (SELECT
 	  	$2::blobio.brr_timestamp > start_time
 	     FROM
-	    	blobio.brr_take_ok3_recent
+	    	blobio.brr_take_ok_recent
 	     WHERE
 	    	blob = $1::udig
 	  ),
@@ -370,7 +372,7 @@ sql query take_ok3_newer row
 	    SELECT
 		blob
 	      FROM
-		blobio.brr_take_ok3_recent
+		blobio.brr_take_ok_recent
 	      WHERE
 		blob = $1::udig
 	  )
@@ -379,11 +381,11 @@ sql query take_ok3_newer row
 	`;
 }
 
-sql exec upsert_take_ok3_recent
+sql exec upsert_take_ok_recent
 {
 	statement = `
 
-	INSERT into blobio.brr_take_ok3_recent as OLDER (
+	INSERT into blobio.brr_take_ok_recent as OLDER (
 		blob,
 		start_time,
 		wall_duration
@@ -516,16 +518,16 @@ query merge_wrap_ok(biod.udig, biod.start_time, biod.wall_duration)
   	wrap_ok_exists.answer == false
 ;
 
-query take_ok3_newer(biod.udig, biod.start_time)
+query take_ok_newer(biod.udig, biod.start_time)
   when
   	biod.verb == "take"
 	and
 	biod.chat_history == "ok,ok,ok"
 ;
 
-query upsert_take_ok3_recent(biod.udig, biod.start_time, biod.wall_duration)
+query upsert_take_ok_recent(biod.udig, biod.start_time, biod.wall_duration)
   when
-  	take_ok3_newer.row_exists == false
+  	take_ok_newer.row_exists == false
 	or
-	take_ok3_newer.is_newer == true
+	take_ok_newer.is_newer == true
 ;
