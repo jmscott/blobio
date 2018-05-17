@@ -76,7 +76,6 @@ CREATE INDEX brr_take_ok_recent_start_time ON
 COMMENT ON TABLE brr_take_ok_recent IS
   'most recently seen take request record for a particular blob'
 ;
-REVOKE UPDATE ON brr_take_ok_recent FROM public;
 
 /*
  *  The immutable blob size AS observed in a brr record of an existing blob.
@@ -109,7 +108,6 @@ CREATE INDEX brr_blob_size_hash
 COMMENT ON TABLE brr_blob_size IS
   'number bytes (octets) in the blob as reported by blob request record'
 ;
-REVOKE UPDATE ON brr_blob_size FROM public;
 
 /*
  *  A recently verified existence of a blob AS seen in a brr record.
@@ -131,7 +129,6 @@ CREATE INDEX brr_ok_recent_start_time
 COMMENT ON TABLE brr_ok_recent IS
   'most recently verified existence for a particular blob'
 ;
-REVOKE UPDATE ON brr_ok_recent FROM public;
 
 /*
  *  A recently failed read of a blob, which implies the blob may not exist.
@@ -154,7 +151,6 @@ CREATE INDEX brr_no_recent_start_time
 COMMENT ON TABLE brr_no_recent IS
   'most recently failed attempt to get or eat the blob'
 ;
-REVOKE UPDATE ON brr_no_recent FROM public;
 
 /*
  *  Earliest known existence of a blob.  Both the brr time
@@ -203,7 +199,6 @@ COMMENT ON TABLE brr_wrap_ok
   IS
   	'history of successfull wrap requests'
 ;
-REVOKE UPDATE ON brr_wrap_ok FROM public;
 
 DROP TABLE IF EXISTS brr_roll_ok;
 CREATE TABLE brr_roll_ok
@@ -223,7 +218,6 @@ COMMENT ON TABLE brr_roll_ok
   IS
   	'history of successfull roll requests'
 ;
-REVOKE UPDATE ON brr_roll_ok FROM public;
 
 /*
  *  Fetchable blobs with regard to the blobio network service.
