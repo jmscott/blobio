@@ -184,7 +184,6 @@ COMMENT ON COLUMN brr_discover.start_time
   IS
   	'start time of the earliest request for the discovered blob'
 ;
-REVOKE UPDATE ON brr_discover FROM public;
 
 DROP TABLE IF EXISTS brr_wrap_ok;
 CREATE TABLE brr_wrap_ok
