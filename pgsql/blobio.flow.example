@@ -88,7 +88,7 @@ sql exec merge_blob_size
 {
 	statement = `
 
-	INSERT into blobio.brr_blob_size(
+	INSERT INTO blobio.brr_blob_size(
 		blob,
 		byte_count
 	) VALUES (
@@ -96,7 +96,7 @@ sql exec merge_blob_size
 		$2::bigint
 	)
 	  ON CONFLICT
-	  	DO NOTHING
+	    DO NOTHING
 	;
 
 	`;
@@ -137,17 +137,18 @@ sql exec upsert_discover
 {
 	statement = `
 
-	INSERT into blobio.brr_discover as RECENT (
+	INSERT INTO blobio.brr_discover as RECENT (
 		blob,
 		start_time
 	) VALUES (
 		$1::udig,
 		$2::blobio.brr_timestamp
 	)
-	  ON CONFLICT (blob) do update set
+	  ON CONFLICT (blob)
+	    DO UPDATE SET
 		start_time = EXCLUDED.start_time
-	  where
-		RECENT.start_time > EXCLUDED.start_time
+	    WHERE
+		EXCLUDED.start_time < RECENT.start_time
 	;
 
 	`;
@@ -192,11 +193,13 @@ sql query ok_newer row
 	`;
 }
 
+#  the most recently seen "ok" for the blob
+
 sql exec upsert_ok_recent
 {
 	statement = `
 
-	INSERT into blobio.brr_ok_recent as OLDER (
+	INSERT INTO blobio.brr_ok_recent as OLDER (
 		blob,
 		start_time,
 		wall_duration
@@ -204,10 +207,11 @@ sql exec upsert_ok_recent
 		$1::udig,
 		$2::blobio.brr_timestamp,
 		$3::blobio.brr_duration
-	) ON CONFLICT (blob) do update set
+	) ON CONFLICT (blob)
+	    DO UPDATE SET
 		start_time =	EXCLUDED.start_time,
 		wall_duration = EXCLUDED.wall_duration
-	  where
+	    WHERE
 		OLDER.start_time < EXCLUDED.start_time
 	;
 	
@@ -250,11 +254,12 @@ sql query no_newer row
 }
 
 #  the most recently seen "no" for the blob
+
 sql exec upsert_no_recent
 {
 	statement = `
 
-	INSERT into blobio.brr_no_recent as OLDER (
+	INSERT INTO blobio.brr_no_recent as OLDER (
 		blob,
 		start_time,
 		wall_duration
@@ -262,11 +267,11 @@ sql exec upsert_no_recent
 		$1::udig,
 	      	$2::blobio.brr_timestamp,
 		$3::blobio.brr_duration
-	) ON CONFLICT (blob) do update
-	  set
+	) ON CONFLICT (blob)
+	    DO UPDATE SET
 	      	start_time =	EXCLUDED.start_time,
 		wall_duration = EXCLUDED.wall_duration
-	  where
+	    WHERE
 	  	OLDER.start_time < EXCLUDED.start_time
 	;
 
@@ -297,7 +302,7 @@ sql exec merge_roll_ok
 {
 	statement = `
 
-	INSERT into blobio.brr_roll_ok(
+	INSERT INTO blobio.brr_roll_ok(
 		blob,
 		start_time,
 		wall_duration
@@ -306,7 +311,7 @@ sql exec merge_roll_ok
 		$2::blobio.brr_timestamp,
 		$3::blobio.brr_duration
 	) ON CONFLICT
-		DO NOTHING
+	    DO NOTHING
 	;
 
 	`;
@@ -336,7 +341,7 @@ sql exec merge_wrap_ok
 {
 	statement = `
 
-	INSERT into blobio.brr_wrap_ok(
+	INSERT INTO blobio.brr_wrap_ok(
 		blob,
 		start_time,
 		wall_duration
@@ -345,7 +350,7 @@ sql exec merge_wrap_ok
 		$2::blobio.brr_timestamp,
 		$3::blobio.brr_duration
 	) ON CONFLICT
-		DO NOTHING
+	    DO NOTHING
 	;
 
 	`;
@@ -385,7 +390,7 @@ sql exec upsert_take_ok_recent
 {
 	statement = `
 
-	INSERT into blobio.brr_take_ok_recent as OLDER (
+	INSERT INTO blobio.brr_take_ok_recent as OLDER (
 		blob,
 		start_time,
 		wall_duration
@@ -394,10 +399,11 @@ sql exec upsert_take_ok_recent
 		$2::blobio.brr_timestamp,
 		$3::blobio.brr_duration
 	)
-	  ON CONFLICT (blob) DO UPDATE set
+	  ON CONFLICT (blob)
+	    DO UPDATE set
 		start_time = EXCLUDED.start_time,
 		wall_duration = EXCLUDED.wall_duration
-	  WHERE
+	    WHERE
 		OLDER.start_time < EXCLUDED.start_time
 	;
 
