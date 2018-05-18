@@ -50,17 +50,13 @@ SBINs=									\
 	create-rrd							\
 	fs2udig								\
 	graph-rrd							\
-	make-sync-root							\
-	reboot-sync							\
-	sync-put							\
 	update-rrd
 LIBs=									\
 	blobio.biod.service.example					\
 	blobio.flowd.service.example					\
 	blobio.rc.template						\
 	blobio-sys5.rc.template						\
-	com.blobio.biod.plist.example					\
-	com.blobio.sync.plist.example
+	com.blobio.biod.plist.example
 
 #  Linux requires linking to realtime timer library
 
@@ -88,17 +84,17 @@ install: all
 		bio-udig2fs						\
 		$(DIST_ROOT)/bin
 
-	install -g $(DIST_GROUP) -o $(DIST_USER) -m ugo=rx		\
+	install -g $(DIST_GROUP) -o $(DIST_USER) -m u=rx,go=		\
 		$(SBINs)						\
 		$(DIST_ROOT)/sbin
 
-	install -g $(DIST_GROUP) -o $(DIST_USER) -m u=rx,go=		\
+	install -g $(DIST_GROUP) -o $(DIST_USER) -m u=rx,go=rx,o=	\
 		$(CSRC) $(DIST_ROOT)/src
 
-	install -g $(DIST_GROUP) -o $(DIST_USER) -m u=rx,go=		\
+	install -g $(DIST_GROUP) -o $(DIST_USER) -m u=rx,g=rx,o=	\
 		$(CSRC) $(DIST_ROOT)/src/biod
 
-	install -g $(DIST_GROUP) -o $(DIST_USER) -m ug=r,o=		\
+	install -g $(DIST_GROUP) -o $(DIST_USER) -m u=rx,g=rx,o=	\
 		$(LIBs) $(DIST_ROOT)/lib
 
 biod: $(OBJS)

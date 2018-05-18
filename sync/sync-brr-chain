@@ -1,9 +1,9 @@
 #!/usr/bin/env perl
 #
 #  Synopsis:
-#	Build a directed acylic graph of wrap/roll BRR log files.
+#	Build a summary of all blobs in the "block chain" of brr log files.
 #  Usage:
-#	bio-chain head-udig-set
+#	sync-roll-chain
 #
 
 my $prog = 'sync-brr-chain';
