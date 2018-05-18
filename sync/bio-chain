@@ -1,22 +1,19 @@
 #!/usr/bin/env perl
 #
 #  Synopsis:
-#	Build a chain of brr log files, starting from a recent udig set
+#	Build a directed acylic graph of wrap/roll BRR log files.
 #  Usage:
 #	bio-chain head-udig-set
-#  Exit Status:
-#	0	all wrap sets exist and written
-#	1	chain terminated because set does not exist
-#	8	error occured
 #
 
 my $prog = 'bio-chain';
 
+#  match a blob request record in wrap
 my $BRR_RE = qr{
 
 	#  start time of request: YYYY-MM-DDThh:mm:ss.ns[+-]HH:MM
 	(2\d\d\d-				#  year
-		(?:(?:0[0-9])|11|12)-		#  month
+		(?:(?:0[0-9])|10|11|12)-	#  month
 		(?:(?:[012][0-9])|30|31)T	#  day followed by T
 		(?:[0-2]\d):			#  hour
 		(?:[0-5]\d):			#  minute
@@ -108,59 +105,91 @@ sub scan_brr_log
 	my $BRR_LOG;
 	open($BRR_LOG, "blobio get $UDIG $SERVICE |") or
 				die "open(scan brr blobio get) failed: $!";
+	my $rc = 0;
 	while (<$BRR_LOG>) {
-		die "row has non ascii characters"
-				unless m/^[[:ascii:]]*$/;
+		$rc++;
+
+		die "row $rc has non ascii characters: $brr_udig"
+						unless m/^[[:ascii:]]*$/;
 
 		my $len = length($_);
-		die "row is < 95 or > 370 characters"
-				unless 95 <=$len&&$len <= 370;
-		die "row in brr log is not a blob request record: $_"
-				unless m/^${BRR_RE}/;
+		die "row $rc is < 95 or > 370 characters: $brr_udig"
+						unless 95 <=$len&&$len <= 370;
+		die "row $rc does not match regex of brr: $brr_udig: $_"
+							unless m/^${BRR_RE}/;
 		my $start_time = $1;
 		my $verb = $2;
 		my $udig = $3;
 		my $chat_history = $4;
 		next unless ($verb eq 'wrap' || $verb eq 'roll') &&
-				$chat_history eq 'ok';
+						$chat_history eq 'ok';
 		push @wrap_roll, "$verb	$udig	$start_time";
 	}
 	close($BRR_LOG) or die "close(scan brr) failed: $!";
 	return \@wrap_roll;
 }
 
+sub WARN
+{
+	printf STDERR "WARN: ", @_, "\n";
+}
+
 die "wrong number arguments: got ", scalar(@ARGV), ', expected 1'
-	unless @ARGV == 1
+					unless @ARGV == 1
 ;
 
 my $udig_set = $ARGV[0];
 
+my $what = 'udig_set';
 while ($udig_set) {
-	
+
 	my $ELEMENTS = frisk_udig_set($udig_set);
 
 	#  no elements in the udig set
 
 	exit 1 if %${ELEMENTS} == 0;
 
-	#  find the brr log with the roll
+	#  for the given set of brr logs, find the
 
-	my $roll;
+	my ($roll, $wrap);
 	foreach my $brr_log (keys %${ELEMENTS}) {
 		my $wrap_roll_row = scan_brr_log $brr_log;
-		die "brr log has no wrap or roll request: $udig_set ->$brr_log"
-					unless @$wrap_roll_row > 0;
-		for my $wr (@$wrap_roll_row) {
-			next unless $wr =~ /^roll/;
-			die "roll occurs more than one in udig set: $udig_set"
-							if $roll;
-			$roll = $wr;
+		unless (@$wrap_roll_row > 0) {
+			WARN "no wrap or roll in brr log: $brr_log";
+			next;
 		}
+		die "brr log has no wrap or roll request: $brr_log"
+						unless @$wrap_roll_row > 0;
+		$wrap = '';
+		for my $wr (@$wrap_roll_row) {
+			my ($verb, $udig, $start_time) = split("\t", $wr);
+			if ($verb eq 'wrap') {
+				die 'wrap occurs more than once in brr log: ' .
+				     $brr_log if $wrap;
+				 $wrap = $udig;
+			} else {
+				die 'roll occurs more than one in udig set: ' .
+							$udig_set if $roll;
+				$roll = $udig;
+			}
+		}
+		if ($roll) {
+			print "brr_log/$brr_log	roll/$roll\n";
+		} else {
+			print "brr_log/$brr_log	wrap/$wrap\n";
+		}
+		print "udig_set/$udig_set	brr_log/$brr_log\n";
 	}
-	print $udig_set, "\n", "\t-> ", $roll, "\n";
-	die "no roll in brr logs for udig set: $udig_set" unless $roll;
-	$roll = substr($roll, 5);
-	$udig_set = substr($roll, 0, index($roll, "\t"));
+	if ($roll) {
+		$udig_set = $roll;
+	} else {
+		WARN "no roll in any brr logs in udig_set: $udig_set";
+		next unless $wrap;
+
+		die "no wrap in any brr logs in udig_set: $udig_set"
+								unless $wrap;
+		$udig_set = $wrap;
+	}
 }
 
 exit 0;
