@@ -64,8 +64,9 @@ install: all
 		-m u=rwx,go= -d $(DIST_ROOT)/sbin
 	install -g $(DIST_GROUP) -o $(DIST_USER)			\
 		-m u=rwx,go= -d $(DIST_ROOT)/etc
+	#  need group read for possible other services
 	install -g $(DIST_GROUP) -o $(DIST_USER)			\
-		-m u=rwx,go= -d $(DIST_ROOT)/spool
+		-m u=rwx,g=rx,o= -d $(DIST_ROOT)/spool
 	install -g $(DIST_GROUP) -o $(DIST_USER)			\
 		-m u=rwx,go= -d $(DIST_ROOT)/spool/wrap
 	install -g $(DIST_GROUP) -o $(DIST_USER)			\
