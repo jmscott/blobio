@@ -84,8 +84,8 @@ while read LOCAL_BLOB;  do
 	blobio eat --udig $LOCAL_BLOB --service $REMOTE_SERVICE
 	STATUS=$?
 	test $STATUS = 0 && continue
-	test $STATUS != 1 || die 3 "blob eat remote failed: exit status=$STATUS"
-	sync-put $REMOTE_SERVICE $BLOB ||
+	test $STATUS != 1 && die 3 "blob eat remote failed: exit status=$STATUS"
+	sync-put $REMOTE_SERVICE $LOCAL_BLOB ||
 			die "sync-put $REMOTE_SERVICE failed: exit status=$?"
 done <BLOB_SET
 STATUS=${PIPESTATUS[*]}
