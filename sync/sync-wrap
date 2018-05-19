@@ -1,0 +1,91 @@
+#
+#  Synopsis:
+#	Sync blob in wrap set by blobio get them into /dev/null
+#  Usage:
+#	sync-wrap <remote-service> <wrap-udig>
+#	sync-wrap bio4:condor.setspace.com:1797
+#  Exit Status:
+#	0	no error, all blobs sunk
+#	1	a blob does not exist
+#	2	invocation error
+#	3	unknown error fetching blob
+#  Note
+#	Eventually the blobs will eaten locally.  Currently the sync-put
+#	called by flowd ignores all "eat" requests.  Eventually local
+#	"eat" will be distinguished from remote eats.  Need to add function
+#	service_tcp4_remote_host() to flowd language.
+#
+
+PROG=$(basename $0)
+
+die()
+{
+	STATUS=$1
+	shift
+	echo "$PROG: ERROR: $@" >&2
+	exit $STATUS
+}
+
+test $# = 2 || die 2 "wrong number of arguments, got $#, expected 2"
+test -n "$BLOBIO_SERVICE" ||
+			die 2 'environment variable not defined: BLOBIO_SERVICE'
+
+REMOTE_SERVICE="$1"
+LOCAL_SERVICE="--service $BLOBIO_SERVICE"
+WRAP_UDIG=$2
+
+#  make and goto the work directory
+
+WORK_DIR=${TMPDIR:=/tmp}/$PROG-$$.d
+mkdir -p $WORK_DIR || die 3 "mkdir $WORK_DIR failed: $?"
+cd $WORK_DIR || die 3 "cd $WORK_DIR failed: exit status=$?"
+trap "cd ..;  rm -rf $WORK_DIR" EXIT TERM
+
+#  fetch the local wrap blob
+
+blobio get $LOCAL_SERVICE --udig $WRAP_UDIG --output-path WRAP_SET
+STATUS=$?
+case $STATUS in
+0)
+	;;
+1)
+	die 1 "local wrap set does not exist: $WRAP_UDIG"
+	;;
+*)
+	die 3 "blobio eat wrap failed: exit status=$?"
+	;;
+esac
+
+#  build the set of existing blobs in the brr log
+
+while read BRR_LOG;  do
+	blobio get --udig $BRR_LOG $LOCAL_SERVICE
+	STATUS=$?
+	case $STATUS in
+	0)
+		;;
+	1)
+		die 1 "brr log does not exist: $BRR_LOG"
+		;;
+	*)
+		die 3 "blobio get brr log failed: exit status=$STATUS"
+		;;
+	esac
+done <WRAP_SET | fgrep 'ok	' | cut -f4 | sort -u >BLOB_SET
+
+STATUS=${PIPESTATUS[*]}
+test "$STATUS" = '0 0 0 0' ||
+		die 3 "read wrap set | sort failed: exit status=$STATUS"
+
+while read LOCAL_BLOB;  do
+
+	#  is the blob already on the remote server?
+	blobio eat --udig $LOCAL_BLOB --service $REMOTE_SERVICE
+	STATUS=$?
+	test $STATUS = 0 && continue
+	test $STATUS != 1 || die 3 "blob eat remote failed: exit status=$STATUS"
+	sync-put $REMOTE_SERVICE $BLOB ||
+			die "sync-put $REMOTE_SERVICE failed: exit status=$?"
+done <BLOB_SET
+STATUS=${PIPESTATUS[*]}
+exit 0
