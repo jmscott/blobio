@@ -1,3 +1,4 @@
+#!/bin/bash
 #
 #  Synopsis:
 #	Sync blob in wrap set by blobio get them into /dev/null
