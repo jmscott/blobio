@@ -15,9 +15,7 @@
 include local.mk
 
 all:
-ifdef DIST_ROOT
 	cd biod;	$(MAKE) $(MAKEFLAGS) all
-endif
 	cd cli;		$(MAKE) $(MAKEFLAGS) all
 	cd flowd;	$(MAKE) $(MAKEFLAGS) all
 	cd www;		$(MAKE) $(MAKEFLAGS) all
@@ -41,23 +39,15 @@ ifeq "$(DIST_ROOT)" "/usr/local"
 	exit 1
 endif
 
-ifdef DIST_ROOT
 	cd flowd;	$(MAKE) $(MAKEFLAGS) distclean
 	cd www;		$(MAKE) $(MAKEFLAGS) distclean
 	rm -rf $(DIST_ROOT)/bin
 	rm -rf $(DIST_ROOT)/lib
 	rm -rf $(DIST_ROOT)/sbin
 	rm -rf $(DIST_ROOT)/src
-endif
 
 install: all
-ifdef PREFIX
-	echo "Installing to $(PREFIX)"
-	test -d $(PREFIX)/bin && cp cli/blobio/blobio $(PREFIX)/bin
-endif
-
 	#  setup the directories
-ifdef DIST_ROOT
 	install -g $(DIST_GROUP) -o $(DIST_USER)			\
 		-d $(DIST_ROOT)
 	install -g $(DIST_GROUP) -o $(DIST_USER)			\
@@ -73,27 +63,31 @@ ifdef DIST_ROOT
 	install -g $(DIST_GROUP) -o $(DIST_USER)			\
 		-m u=rwx,go= -d $(DIST_ROOT)/sbin
 	install -g $(DIST_GROUP) -o $(DIST_USER)			\
-		-d $(DIST_ROOT)/lib
+		-m u=rwx,go= -d $(DIST_ROOT)/etc
 	install -g $(DIST_GROUP) -o $(DIST_USER)			\
-		-d $(DIST_ROOT)/etc
+		-m u=rwx,go= -d $(DIST_ROOT)/spool
 	install -g $(DIST_GROUP) -o $(DIST_USER)			\
-		-d $(DIST_ROOT)/log
+		-m u=rwx,go= -d $(DIST_ROOT)/spool/wrap
 	install -g $(DIST_GROUP) -o $(DIST_USER)			\
-		-d $(DIST_ROOT)/run
+		-m u=rwx,go= -d $(DIST_ROOT)/log
 	install -g $(DIST_GROUP) -o $(DIST_USER)			\
-		-d $(DIST_ROOT)/spool
-	install -g $(DIST_GROUP) -o $(DIST_USER) 			\
-		-d $(DIST_ROOT)/spool/wrap
+		-m u=rwx,go= -d $(DIST_ROOT)/run
 	install -g $(DIST_GROUP) -o $(DIST_USER)			\
-		-d $(DIST_ROOT)/tmp
+		-m u=rwx,go= -d $(DIST_ROOT)/tmp
 	install -g $(DIST_GROUP) -o $(DIST_USER)			\
-		-d $(DIST_ROOT)/data
-	install -g $(DIST_GROUP) -o $(DIST_USER)			\
-		-d $(DIST_ROOT)/www
+		-m u=rwx,go= -d $(DIST_ROOT)/data
 	install -g $(DIST_GROUP) -o $(DIST_USER) 			\
 		-d $(DIST_ROOT)/data/sha_fs
 	install -g $(DIST_GROUP) -o $(DIST_USER) 			\
 		-d $(DIST_ROOT)/data/sha_fs/tmp
+	install -g $(DIST_GROUP) -o $(DIST_USER)			\
+		-m u=rwx,go= -d $(DIST_ROOT)/sync
+	install -g $(DIST_GROUP) -o $(DIST_USER)			\
+		-m u=rwx,go= -d $(DIST_ROOT)/sync/host
+	install -g $(DIST_GROUP) -o $(DIST_USER)			\
+		-d $(DIST_ROOT)/lib
+	install -g $(DIST_GROUP) -o $(DIST_USER)			\
+		-d $(DIST_ROOT)/www
 	install -g $(DIST_GROUP) -o $(DIST_USER) -m ugo=rx		\
 		pgsql/bio-merge-service					\
 		$(DIST_ROOT)/bin
@@ -118,7 +112,7 @@ ifdef DIST_ROOT
 	cd pgsql; $(MAKE) install
 	cd flowd; $(MAKE) install
 	cd www; $(MAKE) install
-endif
+	cd sync;  $(MAKE) install
 
 dev-links:
 	test -e log || ln -s . log
