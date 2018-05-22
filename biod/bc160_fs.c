@@ -365,7 +365,7 @@ _mkdir(struct request *r, char *path, int exists_ok)
  *  and the entire path to the blob file.
  */
 static void
-blob_path(struct request *r, char *digest)
+make_path(struct request *r, char *digest)
 {
 	struct bc160_fs_request *s = (struct bc160_fs_request *)r->open_data;
 	char *p, *q;
@@ -446,7 +446,7 @@ bc160_fs_get_request(struct request *r)
 {
 	struct bc160_fs_request *s = (struct bc160_fs_request *)r->open_data;
 
-	blob_path(r, r->digest);
+	make_path(r, r->digest);
 	return _open(r, s->blob_path, &s->blob_fd);
 }
 
@@ -542,7 +542,7 @@ bc160_fs_copy(struct request *r, int out_fd)
 	int nread;
 	static char n[] = "bc160_fs_write";
 
-	blob_path(r, r->digest);
+	make_path(r, r->digest);
 
 	/*
 	 *  Open the file to the blob.
@@ -615,7 +615,7 @@ bc160_fs_eat(struct request *r)
 	unsigned char chunk[CHUNK_SIZE];
 	int nread;
 
-	blob_path(r, r->digest);
+	make_path(r, r->digest);
 
 	if (_open(r, s->blob_path, &s->blob_fd) == ENOENT)
 		return 1;
@@ -837,7 +837,7 @@ digested:
 	/*
 	 *  Rename the temp blob file to the final blob path.
 	 */
-	blob_path(r, r->digest);
+	make_path(r, r->digest);
 
 	arbor_rename(tmp_path,
 			((struct bc160_fs_request *)r->open_data)->blob_path);
@@ -1023,7 +1023,7 @@ bc160_fs_digest(struct request *r, int fd, char *hex_digest)
 	/*
 	 *  Move the blob from the temporary file to the blob file.
 	 */
-	blob_path(r, hex_digest);
+	make_path(r, hex_digest);
 	arbor_move(tmp_path,
 		((struct bc160_fs_request *)r->open_data)->blob_path);
 	tmp_path[0] = 0;
