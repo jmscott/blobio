@@ -1,7 +1,7 @@
 #!/bin/bash
 #
 #  Synopsis:
-#	Sync blob in wrap set by blobio get them into /dev/null
+#	Sync all blob derived from a wrap set by "blobio get >/dev/null"
 #  Usage:
 #	sync-wrap <remote-service> <wrap-udig>
 #	sync-wrap bio4:condor.setspace.com:1797
