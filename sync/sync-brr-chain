@@ -129,9 +129,13 @@ my $tail_wrap_set = <$TAIL_WRAP>;
 close($TAIL_WRAP) or die "close(blobio wrap) failed: $!";
 chomp $tail_wrap_set;
 
+die 'tail wrap set is not udig' unless $tail_wrap_set =~ m/^${UDIG_RE}$/;
+
 print <<END;
 #  Tail Wrap Set: $tail_wrap_set
 END
+
+my $oldest_wrap_set = $tail_wrap_set;
 
 my $status = system("blobio roll --udig $tail_wrap_set $SERVICE");
 print <<END;
@@ -209,6 +213,7 @@ while ($wrap_set) {
 	last unless $roll_set;
 	push @ROLL_SET, $roll_set;
 	$wrap_set = $roll_set;
+	$oldest_wrap_set = $wrap_set;
 }
 
 my $brr_log_count = scalar(%BRR_LOG);
@@ -223,6 +228,7 @@ print <<END;
 #
 #  BRR Log Count: $brr_log_count logs
 #  Roll Set Count: $roll_set_count sets
+#  Oldest Wrap Set: $oldest_wrap_set
 #  UDig Count: $udig_count blobs
 #
 END
