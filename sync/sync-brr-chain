@@ -3,7 +3,7 @@
 #  Synopsis:
 #	Build a summary of all blobs in the "block chain" of brr log files.
 #  Usage:
-#	sync-roll-chain
+#	sync-brr-chain
 #
 
 my $prog = 'sync-brr-chain';
