@@ -5,6 +5,7 @@
 #  Usage:
 #	sync-brr-chain
 #
+my $date = `date`;
 
 use File::Temp;
 
@@ -61,17 +62,35 @@ my $BRR_RE = qr{
 						\n
 }sx;
 
-#  Note: need to verify ENV{BLOBIO_SERVICE} exists
-my $SERVICE = "--service $ENV{BLOBIO_SERVICE}";
-
 $SIG{__DIE__} = sub
 {
 	printf STDERR "$prog: ERROR: @_\n";
 	exit 8;
 };
 
+my $BLOBIO_SERVICE = $ENV{BLOBIO_SERVICE};
+die 'environment variable not defined: BLOBIO_SERVICE' unless $BLOBIO_SERVICE;
+my $SERVICE = "--service $BLOBIO_SERVICE";
+my $BLOBIO_GET_SERVICE = $ENV{BLOBIO_GET_SERVICE} ?
+				$ENV{BLOBIO_GET_SERVICE} :
+				$ENV{BLOBIO_SERVICE}
+;
+my $GET_SERVICE = "--service $BLOBIO_GET_SERVICE";
+
+chomp $date;
+print <<END;
+#
+#  Job Start Time: $date
+#
+#  BLOBIO_SERVICE: $BLOBIO_SERVICE
+#  BLOBIO_GET_SERVICE: $BLOBIO_GET_SERVICE
+END
+
 my $tmp_file = File::Temp->new()->filename;
 die "can not create temp file name: $!" unless $tmp_file;
+print <<END;
+#  Temp Work File: $tmp_file
+END
 
 #
 #  Verify the udig is valid or does not exist.
@@ -91,7 +110,7 @@ sub frisk_wrap_set
 	die "blobio frisk empty failed: exit status=$status" if $status != 1;
 
 	my $EAT;
-	$status = system("blobio eat $UDIG $SERVICE");
+	$status = system("blobio eat $UDIG $GET_SERVICE");
 	die "blobio eat frisk failed: exit status=$status" if $status > 1;
 
 	my %ELEMENTS;
@@ -99,7 +118,7 @@ sub frisk_wrap_set
 
 	#  open the set of udigs
 	my $WRAP_SET;
-	open($WRAP_SET, "blobio get $UDIG $SERVICE |") or
+	open($WRAP_SET, "blobio get $UDIG $GET_SERVICE |") or
 				die("open(blobio frisk wrap set) failed: $!");
 
 	#  scan the udig set for correctness
@@ -127,17 +146,9 @@ die "wrong number arguments: got ", scalar(@ARGV), ', expected 0'
 
 die 'environment var not defined: BLOBIO_SERVICE' unless $ENV{BLOBIO_SERVICE};
 
-my $date = `date`;
-chomp $date;
-print <<END;
-#
-#  Job Start Time: $date
-#
-#  BLOBIO_SERVICE: $ENV{BLOBIO_SERVICE}
-END
-
 my $TAIL_WRAP;
-open($TAIL_WRAP, "blobio wrap $SERVICE |") or die "open(blobio wrap) failed: $!";
+open($TAIL_WRAP, "blobio wrap $SERVICE |") or
+		die "open(blobio wrap) failed: $!";
 my $tail_wrap_set = <$TAIL_WRAP>;
 close($TAIL_WRAP) or die "close(blobio wrap) failed: $!";
 chomp $tail_wrap_set;
@@ -179,7 +190,7 @@ while ($wrap_set) {
 
 		my $command = 'blobio get '				.
 			      "--udig $brr_log "			.
-			      $SERVICE					.
+			      $GET_SERVICE				.
 			      " --output-path $tmp_file"
 		;
 		if (my $status = system($command)) {
