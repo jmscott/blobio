@@ -6,9 +6,19 @@
 #	sync-brr-chain
 #
 
+use File::Temp;
+
 my $prog = 'sync-brr-chain';
 
-my (%BRR_LOG, @ROLL_SET, %UDIG, %WRAP_SET, $MIN_START_TIME, $MAX_START_TIME);
+my (
+	%BRR_LOG,
+	@ROLL_SET,
+	%UDIG,
+	%WRAP_SET,
+	$MIN_BRR_LOG_START_TIME,
+	$MAX_BRR_LOG_START_TIME,
+	%NO_BRR_LOG,
+);
 
 #  match a udig
 
@@ -60,6 +70,9 @@ $SIG{__DIE__} = sub
 	exit 8;
 };
 
+my $tmp_file = File::Temp->new()->filename;
+die "can not create temp file name: $!" unless $tmp_file;
+
 #
 #  Verify the udig is valid or does not exist.
 #
@@ -87,7 +100,7 @@ sub frisk_wrap_set
 	#  open the set of udigs
 	my $WRAP_SET;
 	open($WRAP_SET, "blobio get $UDIG $SERVICE |") or
-				die("open(blobio frisk udig set) failed: $!");
+				die("open(blobio frisk wrap set) failed: $!");
 
 	#  scan the udig set for correctness
 	while (<$WRAP_SET>) {
@@ -114,11 +127,11 @@ die "wrong number arguments: got ", scalar(@ARGV), ', expected 0'
 
 die 'environment var not defined: BLOBIO_SERVICE' unless $ENV{BLOBIO_SERVICE};
 
-my $Date = `date`;
-chomp $Date;
+my $date = `date`;
+chomp $date;
 print <<END;
 #
-#  Date: $Date
+#  Job Start Time: $date
 #
 #  BLOBIO_SERVICE: $ENV{BLOBIO_SERVICE}
 END
@@ -164,10 +177,25 @@ while ($wrap_set) {
 		next if $BRR_LOG{$brr_log};
 		$BRR_LOG{$brr_log} = 1;
 
+		my $command = 'blobio get '				.
+			      "--udig $brr_log "			.
+			      $SERVICE					.
+			      " --output-path $tmp_file"
+		;
+		if (my $status = system($command)) {
+			$status >>= 8;
+			die "blobio get brr log failed: exit status=$status"
+				unless $status == 1
+			;
+			print "#  NO BRR Log: $brr_log\n"
+					unless $NO_BRR_LOG{$brr_log};
+			$NO_BRR_LOG{$brr_log} = 1;
+			next;
+		}
+			
 		my $BRR_LOG;
-		open($BRR_LOG, "blobio get --udig $brr_log $SERVICE |") or
-				die "open(blobio get brr log) failed: $!";
-
+		open($BRR_LOG, "<$tmp_file") or
+					die "open(tmp brr log) failed: $!";
 		my $rc = 0;
 		while (<$BRR_LOG>) {
 			$rc++;
@@ -178,17 +206,17 @@ while ($wrap_set) {
 			my $udig = $3;
 			my $chat_history = $4;
 
-			$MAX_START_TIME = $start_time
+			$MAX_BRR_LOG_START_TIME = $start_time
 			  if
-			  	$MAX_START_TIME eq ''
+			  	$MAX_BRR_LOG_START_TIME eq ''
 				or
-			  	$start_time > $MAX_START_TIME
+			  	$start_time > $MAX_BRR_LOG_START_TIME
 			;
-			$MIN_START_TIME = $start_time
+			$MIN_BRR_LOG_START_TIME = $start_time
 			  if
-			  	$MIN_START_TIME eq ''
+			  	$MIN_BRR_LOG_START_TIME eq ''
 				or
-			  	$start_time < $MIN_START_TIME
+			  	$start_time < $MIN_BRR_LOG_START_TIME
 			;
 
 			next if $chat_history =~ /no$/;
@@ -199,6 +227,7 @@ while ($wrap_set) {
 					if $start_time > $UDIG{$udig}
 			} else {
 				$UDIG{$udig} = $start_time;
+				print $udig, "\n";
 			}
 
 			next unless $verb eq 'roll' && $chat_history eq 'ok';
@@ -209,6 +238,7 @@ while ($wrap_set) {
 			$roll_set = $udig;
 		}
 		close($BRR_LOG) or die "close(blobio get brr log) failed: $!";
+		unlink($tmp_file) or die "unlink(tmp brr log) failed: $!";
 	}
 	last unless $roll_set;
 	push @ROLL_SET, $roll_set;
@@ -220,21 +250,23 @@ my $brr_log_count = scalar(%BRR_LOG);
 my $roll_set_count = scalar(@ROLL_SET);
 my $udig_count = scalar(%UDIG);
 my $udig_set_count = scalar(%UDIG);
+my $no_brr_log_set_count = scalar(%NO_BRR_LOG);
+$date = `date`;
+chomp $date;
 
 print <<END;
 #
-#  Min Start Time: $MIN_START_TIME
-#  Max Start Time: $MAX_START_TIME
+#  Min BRR Log Start Time: $MIN_BRR_LOG_START_TIME
+#  Max BRR Log Start Time: $MAX_BRR_LOG_START_TIME
 #
 #  BRR Log Count: $brr_log_count logs
 #  Roll Set Count: $roll_set_count sets
 #  Oldest Wrap Set: $oldest_wrap_set
 #  UDig Count: $udig_count blobs
+#  No BRR Log Count: $no_brr_log_set_count blobs
+#
+#  Job End Time: $date
 #
 END
-
-foreach my $udig (keys %UDIG) {
-	print $udig, "\n";
-}
 
 exit 0;
