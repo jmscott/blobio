@@ -76,11 +76,15 @@ install: all
 	install -g $(DIST_GROUP) -o $(DIST_USER)			\
 		-m u=rwx,go= -d $(DIST_ROOT)/tmp
 	install -g $(DIST_GROUP) -o $(DIST_USER)			\
-		-m u=rwx,go= -d $(DIST_ROOT)/data
+		-m u=rwx,g=x,o= -d $(DIST_ROOT)/data
 	install -g $(DIST_GROUP) -o $(DIST_USER) 			\
-		-d $(DIST_ROOT)/data/sha_fs
+		-m u=rwx,g=x,o= -d $(DIST_ROOT)/data/sha_fs
 	install -g $(DIST_GROUP) -o $(DIST_USER) 			\
-		-d $(DIST_ROOT)/data/sha_fs/tmp
+		-m u=rwx,go= -d $(DIST_ROOT)/data/sha_fs/tmp
+	install -g $(DIST_GROUP) -o $(DIST_USER) 			\
+		-m u=rwx,g=x,o= -d $(DIST_ROOT)/data/bc160_fs
+	install -g $(DIST_GROUP) -o $(DIST_USER) 			\
+		-m u=rwx,go= -d $(DIST_ROOT)/data/bc160_fs/tmp
 	install -g $(DIST_GROUP) -o $(DIST_USER)			\
 		-m u=rwx,go= -d $(DIST_ROOT)/sync
 	install -g $(DIST_GROUP) -o $(DIST_USER)			\
