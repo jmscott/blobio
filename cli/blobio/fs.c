@@ -224,9 +224,8 @@ fs_get(int *ok_no)
 		if (errno == ENOENT)
 			return (char *)0;
 
-		//  error is NOT link() across file systems
-
-		if (errno != EXDEV)
+		//  linking not allowed, either cross link or permissions
+		if (errno != EXDEV && errno != EPERM)
 			return strerror(errno);
 	}
 	if ((err = fs_copy(fs_path, output_path))) {

@@ -210,10 +210,13 @@ rofs_get(int *ok_no)
 				*ok_no = 1;
 				return (char *)0;
 			}
-			return strerror(errno);
+			//  cross-link or link not permitted
+			if (errno != EXDEV && errno != EPERM)
+				return strerror(errno);
+		} else {
+			*ok_no = 0;
+			return (char *)0;
 		}
-		*ok_no = 0;
-		return (char *)0;
 	}
 
 	//  no output path so copy blob to output file
