@@ -204,7 +204,7 @@ const (
 %token	DATA_SOURCE_NAME
 %token  TRACE_BOOL
 %token	DRIVER_NAME
-%token	EQ
+%token	EQ EQ_REGEXP
 %token	EQ_BOOL
 %token	EQ_STRING
 %token	EQ_UINT64
@@ -549,6 +549,13 @@ rel_op:
 	  {
 	  	$$ = &ast{
 			yy_tok:	EQ,
+		};
+	  }
+	|
+	  EQ_REGEXP
+	  {
+	  	$$ = &ast{
+			yy_tok:	EQ_REGEXP,
 		};
 	  }
 	|
@@ -1009,60 +1016,8 @@ qualify:
 		l := yylex.(*yyLexState)
 		left := $1
 
-	  	//  verify the comparisons make sense
-
-		//  verify that the PROJECT_BRR or command.exit_status
-		//  are compared to a constant of a matching type.
-
-		if $1.yy_tok == PROJECT_BRR {
-
-			//  if the brr field is a blob size compared to a
-			//  uint, then reparent the with a CAST_UINT64 node
-
-			if $1.brr_field == brr_BLOB_SIZE {
-				if $3.yy_tok != UINT64 {
-					l.error(
-					  "%s.blob_size not compared to uint64",
-						  $1.tail.name)
-					return 0
-				}
-				left = &ast{
-						yy_tok:	CAST_UINT64,
-						left:	left,
-				}
-				if $2.yy_tok == EQ {
-					$2.yy_tok = EQ_UINT64
-				} else {
-					$2.yy_tok = NEQ_UINT64
-				}
-				$2.uint64 = $3.uint64
-			} else {
-				if $3.yy_tok != STRING {
-					l.error("%s.%s not compared to string",
-						$1.tail.name, $1.brr_field)
-					return 0
-				}
-				if $2.yy_tok == EQ {
-					$2.yy_tok = EQ_STRING
-				} else {
-					$2.yy_tok = NEQ_STRING
-				}
-				$2.string = $3.string
-			}
-		} else {
-			//  <command>.exit_status == ...
-
-			if $3.yy_tok != UINT64 {
-				l.error("%s.exit_status not compared to uint64",
-						  $1.string)
-				return 0
-			}
-			if $2.yy_tok == EQ {
-				$2.yy_tok = EQ_UINT64
-			} else {
-				$2.yy_tok = NEQ_UINT64
-			}
-			$2.uint64 = $3.uint64
+		if l.wire_rel_op($1, $2, $3) == false {
+			return 0
 		}
 	  	$2.left = left;
 	  	$2.right = nil
@@ -2507,6 +2462,9 @@ func (l *yyLexState) Lex(yylval *yySymType) (tok int) {
 		if err != nil {
 			goto PARSE_ERROR
 		}
+		if tok == NEQ {
+			return NEQ
+		}
 		return tok
 	}
 	return int(c)
@@ -2533,6 +2491,68 @@ func (l *yyLexState) Error(msg string) {
 	if l.err == nil {			//  only report first error
 		l.err = l.mkerror("%s", msg)
 	}
+}
+
+//  wire in posible casts and verifuy correctness of expression
+
+func (l *yyLexState) wire_rel_op(left, op, right *ast) bool {
+
+	//  verify the comparisons make sense
+
+	//  verify that the PROJECT_BRR or command.exit_status
+	//  are compared to a constant of a matching type.
+
+	if left.yy_tok == PROJECT_BRR {
+
+		//  if the brr field is a blob size compared to a
+		//  uint, then reparent the with a CAST_UINT64 node
+
+		if left.brr_field == brr_BLOB_SIZE {
+			if right.yy_tok != UINT64 {
+				l.error(
+				  "%s.blob_size not compared to uint64",
+							  left.tail.name)
+				return false
+			}
+			left = &ast{
+					yy_tok:	CAST_UINT64,
+					left:	left,
+			}
+			if op.yy_tok == EQ {
+				op.yy_tok = EQ_UINT64
+			} else {
+				op.yy_tok = NEQ_UINT64
+			}
+			op.uint64 = right.uint64
+		} else {
+			if right.yy_tok != STRING {
+				l.error("%s.%s not compared to string",
+					left.tail.name, left.brr_field)
+				return false
+			}
+			if op.yy_tok == EQ {
+				op.yy_tok = EQ_STRING
+			} else {
+				op.yy_tok = NEQ_STRING
+			}
+			op.string = right.string
+		}
+	} else {
+		//  <command>.exit_status == ...
+
+		if right.yy_tok != UINT64 {
+			l.error("%s.exit_status not compared to uint64",
+					  left.string)
+			return false
+		}
+		if op.yy_tok == EQ {
+			op.yy_tok = EQ_UINT64
+		} else {
+			op.yy_tok = NEQ_UINT64
+		}
+		op.uint64 = right.uint64
+	}
+	return true
 }
 
 func (conf *config) parse(in io.RuneReader) (
