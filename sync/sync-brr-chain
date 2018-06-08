@@ -19,6 +19,8 @@ my (
 	$MIN_BRR_LOG_START_TIME,
 	$MAX_BRR_LOG_START_TIME,
 	%NO_BRR_LOG,
+	%BYTE_COUNT,
+	$sum_blob_size,
 );
 
 #  match a udig
@@ -40,7 +42,8 @@ my $BRR_RE = qr{
 		(?:[0-5]\d):			#  minute
 		(?:[0-5]\d)\.			#  second
 		(?:\d{1,9})			#  nanoseconds
-		[+-]\d\d:\d\d)			#  time zone offset
+		[+-]\d\d:\d\d			#  time zone offset
+	)
 						\t
 	#  netflow name~parameter
 	[a-z][a-z0-9]{0,7}~[[:graph:]]{1,128}
@@ -55,7 +58,7 @@ my $BRR_RE = qr{
 	(ok|(?:ok,ok)|(?:ok,ok,ok)|no|(?:ok,no)|(?:ok,ok,no))
 						\t
 	#  blob size
-	\d{1,19}				\t
+	(\d{1,19})				\t
 
 	#  wall time duration: sec32.nsec
 	\d{1,10}\.\d{9}
@@ -216,6 +219,7 @@ while ($wrap_set) {
 			my $verb = $2;
 			my $udig = $3;
 			my $chat_history = $4;
+			my $blob_size = $5;
 
 			$MAX_BRR_LOG_START_TIME = $start_time
 			  if
@@ -235,11 +239,13 @@ while ($wrap_set) {
 			#  record most recent successfull start_time time
 			if ($UDIG{$udig}) {
 				$UDIG{$udig} = $start_time
-					if $start_time > $UDIG{$udig}
+					if $start_time > $UDIG{$udig};
 			} else {
 				$UDIG{$udig} = $start_time;
 				print $udig, "\n";
 			}
+			$sum_blob_size += $blob_size unless $BYTE_COUNT{$udig};
+			$BYTE_COUNT{$udig} = 1;
 
 			next unless $verb eq 'roll' && $chat_history eq 'ok';
 
@@ -262,8 +268,27 @@ my $roll_set_count = scalar(@ROLL_SET);
 my $udig_count = scalar(%UDIG);
 my $udig_set_count = scalar(%UDIG);
 my $no_brr_log_set_count = scalar(%NO_BRR_LOG);
+
+my $average_blob_size;
+$average_blob_size = sprintf('%0.f', $sum_blob_size / $udig_count)
+			if $udig_count > 0
+;
 $date = `date`;
 chomp $date;
+
+my $pretty_sum_blob_size = $sum_blob_size;
+if ($sum_blob_size >= 1099511627776) {		#  terabytes
+	$pretty_sum_blob_size = sprintf('%.fTB', $sum_blob_size /1099511627776);
+
+} elsif ($sum_blob_size >= 1073741824) {	#  gigabytes
+	$pretty_sum_blob_size = sprintf('%.fGB', $sum_blob_size / 1073741824);
+} elsif ($sum_blob_size >= 1048576) {		#  megabytes
+	$pretty_sum_blob_size = sprintf('%.fMB', $sum_blob_size / 1048576);
+} elsif ($sum_blob_size >= 1024) {
+	$pretty_sum_blob_size = sprintf('%.fKB', $sum_blob_size / 1024);
+} else {
+	$pretty_sum_blob_size = "$sum_blob_size bytes";
+}
 
 print <<END;
 #
@@ -274,6 +299,8 @@ print <<END;
 #  Roll Set Count: $roll_set_count sets
 #  Oldest Wrap Set: $oldest_wrap_set
 #  UDig Count: $udig_count blobs
+#  Total Blob Size: $pretty_sum_blob_size
+#  Average Blob Size: $average_blob_size bytes
 #  No BRR Log Count: $no_brr_log_set_count blobs
 #
 #  Job End Time: $date
