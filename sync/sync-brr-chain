@@ -20,6 +20,7 @@ my (
 	$MAX_BRR_LOG_START_TIME,
 	%NO_BRR_LOG,
 	%BYTE_COUNT,
+	%TAKEN,
 	$sum_blob_size,
 );
 
@@ -236,20 +237,32 @@ while ($wrap_set) {
 
 			next if $chat_history =~ /no$/;
 
-			#  record most recent successfull start_time time
-			if ($UDIG{$udig}) {
-				$UDIG{$udig} = $start_time
-					if $start_time > $UDIG{$udig};
-			} else {
-				$UDIG{$udig} = $start_time;
-				print $udig, "\n";
+			#  blob was blob taken
+
+			if ($verb eq 'take') {
+				#  flag as taken unless seen more recently
+				$TAKEN{$udig} = 1 unless $UDIG{$udig};
+				next;
 			}
-			$sum_blob_size += $blob_size unless $BYTE_COUNT{$udig};
-			$BYTE_COUNT{$udig} = 1;
+
+			#  has the blob been taken prior to now.
+			#  this algorithm is not strickly correct
+			#  since the blob may be flapping
+
+			next if $TAKEN{$udig};
+
+			#  record blob
+
+			unless ($UDIG{$udig}) {
+				$UDIG{$udig} = 1;
+				print $udig, "\n";
+				$sum_blob_size += $blob_size;
+				$BYTE_COUNT{$udig} = 1;
+			}
 
 			next unless $verb eq 'roll' && $chat_history eq 'ok';
 
-			die "roll defined more than once in udig set: $wrap_set"
+			die "roll defined more than once in udig set: $roll_set"
 				if $roll_set
 			;
 			$roll_set = $udig;
@@ -268,6 +281,7 @@ my $roll_set_count = scalar(@ROLL_SET);
 my $udig_count = scalar(%UDIG);
 my $udig_set_count = scalar(%UDIG);
 my $no_brr_log_set_count = scalar(%NO_BRR_LOG);
+my $taken_count = scalar(%TAKEN);
 
 my $average_blob_size;
 $average_blob_size = sprintf('%0.f', $sum_blob_size / $udig_count)
@@ -302,6 +316,7 @@ print <<END;
 #  Total Blob Size: $pretty_sum_blob_size
 #  Average Blob Size: $average_blob_size bytes
 #  No BRR Log Count: $no_brr_log_set_count blobs
+#  Taken Count: $taken_count blobs
 #
 #  Job End Time: $date
 #
