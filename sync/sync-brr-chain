@@ -21,6 +21,7 @@ my (
 	%NO_BRR_LOG,
 	%BYTE_COUNT,
 	%TAKEN,
+	%OK_VERB_COUNT,
 	$sum_blob_size,
 );
 
@@ -237,6 +238,8 @@ while ($wrap_set) {
 
 			next if $chat_history =~ /no$/;
 
+			$OK_VERB_COUNT{$verb}++;
+
 			#  blob was blob taken
 
 			if ($verb eq 'take') {
@@ -310,7 +313,16 @@ print <<END;
 #  Max BRR Log Start Time: $MAX_BRR_LOG_START_TIME
 #
 #  BRR Log Count: $brr_log_count logs
-#  Roll Set Count: $roll_set_count sets
+#
+#  Eat Ok Count: $OK_VERB_COUNT{eat}
+#  Get Ok Count: $OK_VERB_COUNT{get}
+#  Put Ok Count: $OK_VERB_COUNT{put}
+#  Give Ok Count: $OK_VERB_COUNT{give}
+#  Take Ok Count: $OK_VERB_COUNT{take}
+#  Wrap Ok Count: $OK_VERB_COUNT{wrap}
+#  Roll Ok Count: $OK_VERB_COUNT{roll}
+#
+#  Frisked Roll Set Count: $roll_set_count sets
 #  Oldest Wrap Set: $oldest_wrap_set
 #  UDig Count: $udig_count blobs
 #  Total Blob Size: $pretty_sum_blob_size
