@@ -5,26 +5,27 @@
  *  Most recently seen successfull take FROM this service.
  *  The connection chat history was ok,ok,ok, hence ok3.
  */
-CREATE TEMP TABLE rolled
+CREATE TEMP TABLE chain
 (
 	blob			udig
 					PRIMARY KEY
 );
-CREATE INDEX rolled_hash ON
-	rolled USING hash(blob)
+CREATE INDEX chain_hash ON
+	chain USING hash(blob)
 ;
 
-\copy rolled from go.udig
-ANALYZE rolled;
+\copy chain from chain.udig
+ANALYZE chain;
 
 \pset tuples_only
 \pset format unaligned
-\o rolled.udig
+\o chain-not-in-service.udig
 WITH out_of_service AS (
   SELECT
-	r.blob
+	c.blob
   FROM
-  	rolled r LEFT OUTER JOIN service s ON (s.blob = r.blob)
+  	chain c
+	  LEFT OUTER JOIN service s ON (s.blob = c.blob)
   WHERE
   	s.blob is null
 )

@@ -22,7 +22,6 @@ my (
 	%BYTE_COUNT,
 	%TAKEN,
 	%OK_VERB_COUNT,
-	$sum_blob_size,
 );
 
 #  match a udig
@@ -240,28 +239,19 @@ while ($wrap_set) {
 
 			$OK_VERB_COUNT{$verb}++;
 
-			#  blob was blob taken
+			#  blob was taken
 
 			if ($verb eq 'take') {
 				#  flag as taken unless seen more recently
-				$TAKEN{$udig} = 1 unless $UDIG{$udig};
+				$TAKEN{$udig} = 1;
+				delete $UDIG{$udig} if $UDIG{$udig};
 				next;
 			}
 
-			#  has the blob been taken prior to now.
-			#  this algorithm is not strickly correct
-			#  since the blob may be flapping
-
-			next if $TAKEN{$udig};
-
 			#  record blob
 
-			unless ($UDIG{$udig}) {
-				$UDIG{$udig} = 1;
-				print $udig, "\n";
-				$sum_blob_size += $blob_size;
-				$BYTE_COUNT{$udig} = 1;
-			}
+			$UDIG{$udig} = $blob_size unless $UDIG{$udig};
+			delete $TAKEN{$udig} if $TAKEN{$udig};
 
 			next unless $verb eq 'roll' && $chat_history eq 'ok';
 
@@ -279,10 +269,15 @@ while ($wrap_set) {
 	$oldest_wrap_set = $wrap_set;
 }
 
+my $sum_blob_size = 0;
+for my $udig (keys %UDIG) {
+	$sum_blob_size += $UDIG{$udig};
+	print $udig, "\n";
+}
+
 my $brr_log_count = scalar(%BRR_LOG);
 my $roll_set_count = scalar(@ROLL_SET);
 my $udig_count = scalar(%UDIG);
-my $udig_set_count = scalar(%UDIG);
 my $no_brr_log_set_count = scalar(%NO_BRR_LOG);
 my $taken_count = scalar(%TAKEN);
 
@@ -325,7 +320,7 @@ print <<END;
 #  Frisked Roll Set Count: $roll_set_count sets
 #  Oldest Wrap Set: $oldest_wrap_set
 #  UDig Count: $udig_count blobs
-#  Total Blob Size: $pretty_sum_blob_size
+#  Total Blob Size: $pretty_sum_blob_size ($sum_blob_size bytes)
 #  Average Blob Size: $average_blob_size bytes
 #  No BRR Log Count: $no_brr_log_set_count blobs
 #  Taken Count: $taken_count blobs
