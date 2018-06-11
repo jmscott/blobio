@@ -41,13 +41,14 @@
 
 PROG=$(basename $0)
 START_TIME=$(date +'%s')
-PSQL_SEARCH_PATH='blobio,public'
 
-SERVICE_UDIG=${TMPDIR:=/tmp}/$PROG.service.$$
-SERVICE_COMM=${TMPDIR:=/tmp}/$PROG.comm.$$
+WORK_DIR=${TMPDIR:=/tmp}/$PROG.$$
 
-TAKEN_UDIG=${TMODIR:=/tmp}/$PROG.taken.$$
-TAKEN_COMM=${TMPDIR:=/tmp}/$PROG.taken.comm.$$
+SERVICE_UDIG=service.udig
+SERVICE_COMM=comm.out
+
+TAKEN_UDIG=taken.udig
+TAKEN_COMM=taken.comm.out
 
 BLOBIO_SERVICE2=
 PGHOST2=
@@ -55,7 +56,6 @@ PGPORT2=
 PGUSER2=
 PGDATABASE2=
 KEEP_TEMP=no
-
 
 SINCE=
 
@@ -91,8 +91,12 @@ die()
 
 leave()
 {
-	test $KEEP_TEMP = no &&
-		rm -f $SERVICE_UDIG $SERVICE_COMM $TAKEN_UDIG $TAKEN_COMM
+	#  cleanup the work directory
+
+	test $KEEP_TEMP = no					&&
+		test -d "$WORK_DIR"				&&
+		cd ..						&&
+		rm -rf "$WORK_DIR"
 	log "elapsed time: $(expr $(date +'%s') - $START_TIME) seconds"
 	log 'good bye, cruel world'
 }
@@ -227,24 +231,28 @@ log "second PGPORT=$PGPORT2"
 log "second PGUSER=$PGUSER2"
 log "second PGDATABASE=$PGDATABASE2"
 
+log "work dir: $WORK_DIR"
+mkdir $WORK_DIR || die "mkdir failed: $WORK_DIR"
+cd $WORK_DIR || die "cd $WORK_DIR failed"
+
 case "$SINCE" in
 '')
 	log 'syncing all blobs'
 	SQL="
-select
+SELECT
 	blob
-  from
+  FROM
   	service
-  order by
-  	blob asc
+  ORDER BY
+  	blob ASC
 ;
 "
 	TAKEN_SQL="
-select
+SELECT
 	blob
-  from
+  FROM
   	taken
-  order by
+  ORDER BY
   	blob
 ;
 "
@@ -255,24 +263,24 @@ select
 	#
 	log "syncing since: $SINCE"
 	SQL="
-select
+SELECT
 	blob
-  from
+  FROM
   	service
-  where
+  WHERE
   	discover_time >= $SINCE
-  order by
+  ORDER BY
   	blob asc
 ;
 "
 	TAKEN_SQL="
-select
+SELECT
 	blob
-  from
+  FROM
   	taken
-  where
+  WHERE
   	recent_time >= $SINCE
-  order by
+  ORDER BY
   	blob
 ;
 "
@@ -286,18 +294,19 @@ SQL_PSET="
 \\set ON_ERROR_STOP
 \\pset format unaligned
 \\pset tuples_only on
-set search_path to $PSQL_SEARCH_PATH;
+SET search_path TO blobio,public;
 "
 
 #
 #  Fetch first, local udigs
 #
 PGWHO="$PGUSER@$PGHOST:$PGPORT/$PGDATABASE"
+log "keep temp: $KEEP_TEMP"
 if [ $KEEP_TEMP = yes ];  then
 	log "temporary service udig file: $SERVICE_UDIG"
 	log "temporary taken udig file: $TAKEN_UDIG"
 fi
-log "fetching service&taken from $BLOBIO_SERVICE: $PGWHO ..."
+log "fetching service & taken from $BLOBIO_SERVICE: $PGWHO ..."
 psql --no-psqlrc --quiet <<END
 $SQL_PSET
 
