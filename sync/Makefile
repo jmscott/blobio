@@ -16,6 +16,7 @@ SBINs=									\
 LIBs=									\
 	blobio.sync.remote.service.example				\
 	com.blobio.sync.plist.example					\
+	not-in-service.sql						\
 
 install:
 	install -g $(DIST_GROUP) -o $(DIST_USER)			\
@@ -34,3 +35,6 @@ install:
 distclean:
 	cd $(DIST_ROOT)/sbin && rm -f $(SBINs)
 	cd $(DIST_ROOT)/lib && rm -f $(LIBs)
+
+dev-links:
+	test -e lib || ln -s . lib
