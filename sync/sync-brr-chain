@@ -226,13 +226,13 @@ while ($wrap_set) {
 			  if
 			  	$MAX_BRR_LOG_START_TIME eq ''
 				or
-			  	$start_time > $MAX_BRR_LOG_START_TIME
+			  	$start_time gt $MAX_BRR_LOG_START_TIME
 			;
 			$MIN_BRR_LOG_START_TIME = $start_time
 			  if
 			  	$MIN_BRR_LOG_START_TIME eq ''
 				or
-			  	$start_time < $MIN_BRR_LOG_START_TIME
+			  	$start_time le $MIN_BRR_LOG_START_TIME
 			;
 
 			next if $chat_history =~ /no$/;
@@ -247,6 +247,11 @@ while ($wrap_set) {
 				delete $UDIG{$udig} if $UDIG{$udig};
 				next;
 			}
+
+print <<END if $udig eq 'sha:0033ecf111ac9a59439dca7193e1e9a82561b52e';
+#  WTF: BRR Log: $brr_log
+#  WTF: UDig: $udig
+END
 
 			#  record blob
 
