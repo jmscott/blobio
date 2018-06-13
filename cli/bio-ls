@@ -1,0 +1,64 @@
+#!/bin/bash
+#
+#  Synopsis:
+#	Details about blobs in SQL blobio schema.
+#  Usage:
+#	bio-ls sha:c59f2c4f35b56a4bdf2d2c9f4a9984f2049cf2d4
+#	bio-ls <blob-set.udig
+#  Enviroment:
+#	BLOBIO_PG{HOST, PORT, USER, PASSWORD, DATABASE}
+#
+
+export PGHOST=${BLOBIO_PGHOST:=/tmp}
+export PGPORT=${BLOBIO_PGPORT:=5432}
+export PGUSER=${BLOBIO_PGUSER:=postgres}
+export PGPASSWORD=${BLOBIO_PGPASSWORD:=}
+export PGDATABASE=${BLOBIO_PGDATABASE:=blobio}
+
+die()
+{
+	echo "$(basename $0): ERROR: $@" >&1
+	exit 1
+}
+
+_ls()
+{
+	psql --no-psqlrc --quiet <<END || die "psql failed: exit status=$?"
+\\set ON_ERROR_STOP
+\\x on
+\\pset tuples_only
+\\pset null Unknown
+
+SELECT
+	s.blob AS " ",
+	regexp_replace(age(now(), s.discover_time)::text, '\..*', '') || ' ago'
+		AS "Discovered",
+	regexp_replace(age(now(), s.recent_time)::text, '\..*', '') || ' ago'
+		AS "Recent Verify",
+	pg_size_pretty(bs.byte_count) AS "Size",
+	s.discover_time AS "Discovered @",
+	s.recent_time AS "Verified @"
+  FROM
+  	blobio.service s
+	  LEFT OUTER JOIN blobio.brr_blob_size bs ON (bs.blob = s.blob)
+  WHERE
+  	s.blob = '$1'
+;
+END
+}
+
+case $# in
+0)
+	while read UDIG;  do
+		_ls $UDIG
+	done
+	;;
+*)
+	while [ $# -gt 0 ];  do
+		_ls $1
+		shift
+	done
+	;;
+esac
+
+exit 0

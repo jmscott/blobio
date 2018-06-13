@@ -16,6 +16,7 @@ install: all
 		bio-file 						\
 		bio-get							\
 		bio-give						\
+		bio-ls							\
 		bio-merge						\
 		bio-more						\
 		bio-put							\
