@@ -120,7 +120,7 @@ bio4_end_point_syntax(char *end_point)
 		while ((c = *cp++)) {
 			if (!isdigit(c))
 				return "non decimal digit in port";
-			if (cp - colon >= 6)
+			if (cp - colon > 6)
 				return "port has > 5 decimal digits";
 		}
 	} else
