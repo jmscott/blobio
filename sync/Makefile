@@ -15,6 +15,7 @@ SBINs=									\
 
 LIBs=									\
 	blobio.sync.remote.service.example				\
+	com.blobio.ssh-tunnel.remote.plist.example			\
 	com.blobio.sync.plist.example					\
 	not-in-service.sql						\
 

@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>com.blobio.ssh-tunnel.remote</string>
+
+  <key>KeepAlive</key>
+  <dict>
+  	<key>SuccessfulExit</key>
+	<false/>
+	<key>NetworkState</key>
+        <true/>
+  </dict>
+
+  <key>ProcessType</key>
+  <string>Background</string>
+
+  <key>AbandonProcessGroup</key>
+  <false/>
+
+  <key>ProgramArguments</key>
+  <array>
+  	<!--
+		Map local ports on remote machine
+
+			localhost:15432 -> me:5432
+			localhost:11797 -> me:1797
+
+		The remote flowd sync points to localhost:15432 for
+		postgresql database and localhost:11797 for blobio server.
+	-->
+	<string>/usr/bin/ssh</string>
+	<string>tunnel-remote</string>
+	<string>-N</string>
+	<string>-R</string>
+	<string>15432:localhost:5432</string>
+	<string>-R</string>
+	<string>11797:localhost:1797</string>
+  </array>
+
+  <key>RunAtLoad</key>
+  <true/>
+
+  <key>UserName</key>
+  <string>blobio</string>
+
+  <key>GroupName</key>
+  <string>staff</string>
+
+  <key>WorkingDirectory</key>
+  <string>/usr/local/blobio</string>
+
+  <key>StandardErrorPath</key>
+  <string>/Users/blobio/log/launchd-ssh-tunnel-remote.log</string>
+
+  <key>StandardOutPath</key>
+  <string>/Users/blobio/log/launchd-ssh-tunnel-remote.log</string>
+
+  <key>Disabled</key>
+  <false/>
+
+</dict>
+</plist>
