@@ -15,19 +15,19 @@
 include local.mk
 
 all:
-	cd biod;	$(MAKE) $(MAKEFLAGS) all
-	cd cli;		$(MAKE) $(MAKEFLAGS) all
-	cd flowd;	$(MAKE) $(MAKEFLAGS) all
-	cd www;		$(MAKE) $(MAKEFLAGS) all
+	cd biod;	$(MAKE) $(MFLAGS) all
+	cd cli;		$(MAKE) $(MFLAGS) all
+	cd flowd;	$(MAKE) $(MFLAGS) all
+	cd www;		$(MAKE) $(MFLAGS) all
 
 clean:
-	cd biod;	$(MAKE) $(MAKEFLAGS) clean
-	cd flowd;	$(MAKE) $(MAKEFLAGS) clean
-	cd cli;		$(MAKE) $(MAKEFLAGS) clean
-	cd www;		$(MAKE) $(MAKEFLAGS) clean
+	cd biod;	$(MAKE) $(MFLAGS) clean
+	cd flowd;	$(MAKE) $(MFLAGS) clean
+	cd cli;		$(MAKE) $(MFLAGS) clean
+	cd www;		$(MAKE) $(MFLAGS) clean
 
 distclean:
-	cd biod;	$(MAKE) $(MAKEFLAGS) distclean
+	cd biod;	$(MAKE) $(MFLAGS) distclean
 
 ifeq "$(DIST_ROOT)" "/usr"
 	@echo 'refuse to distclean /usr'
@@ -39,8 +39,8 @@ ifeq "$(DIST_ROOT)" "/usr/local"
 	exit 1
 endif
 
-	cd flowd;	$(MAKE) $(MAKEFLAGS) distclean
-	cd www;		$(MAKE) $(MAKEFLAGS) distclean
+	cd flowd;	$(MAKE) $(MFLAGS) distclean
+	cd www;		$(MAKE) $(MFLAGS) distclean
 	rm -rf $(DIST_ROOT)/bin
 	rm -rf $(DIST_ROOT)/lib
 	rm -rf $(DIST_ROOT)/sbin
@@ -106,18 +106,19 @@ install: all
 	install -g $(DIST_GROUP) -o $(DIST_USER) -m ug=r,o=		\
 		bash_login-dev.example					\
 		crontab.example						\
+		hamlet.txt						\
 		profile.example						\
 		psqlrc.example						\
 		$(DIST_ROOT)/lib
 	install -g $(DIST_GROUP) -o $(DIST_USER) -m ug=r,o=		\
 		README							\
 		$(DIST_ROOT)/lib/README.blobio
-	cd biod; $(MAKE) install
-	cd cli; $(MAKE) install
-	cd pgsql; $(MAKE) install
-	cd flowd; $(MAKE) install
-	cd www; $(MAKE) install
-	cd sync;  $(MAKE) install
+	cd biod;	$(MAKE) $(MFLAGS) install
+	cd cli;		$(MAKE) $(MFLAGS) install
+	cd pgsql;	$(MAKE) $(MFLAGS) install
+	cd flowd;	$(MAKE) $(MFLAGS) install
+	cd www;		$(MAKE) $(MFLAGS) install
+	cd sync;	$(MAKE) $(MFLAGS) install
 
 dev-links:
 	test -e log || ln -s . log
@@ -125,9 +126,8 @@ dev-links:
 	test -e cgi-bin || ln -s . cgi-bin
 	test -e lib || ln -s . lib
 
-#  Note:  breaks on gnu make!
 world:
-	$(MAKE) $(MAKEFLAGS) clean
-	$(MAKE) $(MAKEFLAGS) all
-	$(MAKE) $(MAKEFLAGS) distclean
-	$(MAKE) $(MAKEFLAGS) install
+	$(MAKE) $(MFLAGS) clean
+	$(MAKE) $(MFLAGS) all
+	$(MAKE) $(MFLAGS) distclean
+	$(MAKE) $(MFLAGS) install

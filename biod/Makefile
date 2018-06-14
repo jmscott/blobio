@@ -178,7 +178,7 @@ distclean:
 	test ! -e $(SBIN) || (cd $(SBIN);  rm -f $(SBINs))
 	test ! -e $(LIB) || (cd $(LIB);  rm -f $(LIBs))
 world:
-	$(MAKE) $(MAKEFLAGS) clean
-	$(MAKE) $(MAKEFLAGS) all
-	$(MAKE) $(MAKEFLAGS) distclean
-	$(MAKE) $(MAKEFLAGS) install
+	$(MAKE) $(MFLAGS) clean
+	$(MAKE) $(MFLAGS) all
+	$(MAKE) $(MFLAGS) distclean
+	$(MAKE) $(MFLAGS) install

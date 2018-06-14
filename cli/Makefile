@@ -7,7 +7,7 @@ include ../blobio.mk
 include ../local.mk
 
 all:
-	cd blobio;	$(MAKE) all
+	cd blobio;	$(MAKE) $(MFLAGS) all
 
 install: all
 	install -g $(DIST_GROUP) -o $(DIST_USER) -m ugo=rx		\
@@ -27,7 +27,6 @@ install: all
 		bio-wrap-roll						\
 		bio-zap							\
 		$(DIST_ROOT)/bin
-	cd blobio;	$(MAKE) install
-
+	cd blobio;	$(MAKE) $(MFLAGS) install
 clean:
-	cd blobio;  $(MAKE) clean
+	cd blobio;  $(MAKE) $(MFLAGS) clean
