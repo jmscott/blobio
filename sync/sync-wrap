@@ -4,7 +4,6 @@
 #	Sync all blob derived from a wrap set by "blobio get >/dev/null"
 #  Usage:
 #	sync-wrap <remote-service> <wrap-udig>
-#	sync-wrap bio4:condor.setspace.com:1797
 #  Exit Status:
 #	0	no error, all blobs sunk
 #	1	a blob does not exist
