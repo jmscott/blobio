@@ -199,7 +199,11 @@ call sync_zap(brr.udig)
 
 call sync_wrap(brr.udig)
   when
-	brr.verb == "wrap"
+	(
+		brr.verb == "wrap"
+		or
+		brr.verb == "roll"
+	)
 	and
 	brr.chat_history == "ok"
 ;
