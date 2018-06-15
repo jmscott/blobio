@@ -87,5 +87,4 @@ while read LOCAL_BLOB;  do
 	sync-put $REMOTE_SERVICE $LOCAL_BLOB ||
 			die "sync-put $REMOTE_SERVICE failed: exit status=$?"
 done <BLOB_SET
-STATUS=${PIPESTATUS[*]}
 exit 0
