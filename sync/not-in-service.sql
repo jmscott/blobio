@@ -34,20 +34,36 @@ SELECT
 \echo
 \echo Chain count is :chain_count
 
-WITH out_of_service AS (
-  SELECT
+\echo select blobs in chain that are known to be taken
+\o chain-taken.udig
+SELECT
 	c.blob
   FROM
   	chain c
-	  LEFT OUTER JOIN service s ON (s.blob = c.blob)
-  WHERE
-  	s.blob is null
-)
-  SELECT
-  	o.blob
+  	  JOIN taken t ON (t.blob = c.blob)
+;
+
+\echo select blobs in chain that are known to be missing
+\o chain-missing.udig
+SELECT
+	c.blob
+  FROM
+  	chain c
+  	  JOIN missing m ON (m.blob = c.blob)
+;
+
+\echo Select blobs not in service
+SELECT
+  	c.blob
     FROM
-    	out_of_service o
-	  LEFT OUTER JOIN taken t ON (t.blob = o.blob)
+    	chain c
+    	  LEFT OUTER JOIN service s ON (s.blob = c.blob)
+	  LEFT OUTER JOIN taken t ON (t.blob = c.blob)
+	  LEFT OUTER JOIN missing m ON (m.blob = c.blob)
     WHERE
-    	o.blob is null
+    	s.blob IS NULL		--  not in service
+	AND
+    	t.blob IS NULL		--  not known to be taken
+	AND
+	m.blob IS NULL		--  not known to be missing
 ;
