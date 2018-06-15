@@ -1,0 +1,205 @@
+#
+#  Synopsis:
+#	Flow for syncing a local blobio server with a remote server.
+#  Usage:
+#	See script make-sync-root to build directory tree for
+#	a particular host in $BLOBIO_ROOT/sync/host.
+#
+#	make-sync-root remote.setspace.com blobio@remote.setspace.com
+#	cd $BLOBIO_ROOT/sync/host/remote.setspace.com
+#	BLOBIO_ROOT=$(pwd)
+#
+#	#  test server, but typically start from systemd or launchd
+#	flowd server etc/sync-remote.setspace.com &
+#
+
+boot
+{
+	brr_capacity = 64;
+	os_exec_capacity = 16;
+	os_exec_worker_count = 16;
+	flow_worker_count = 8;
+
+	qdr_roll_duration = "24h";
+	fdr_roll_duration = "24h";
+	xdr_roll_duration = "24h";
+	heartbeat_duration = "10s";
+}
+
+#  remote blobio biod server.
+#  typically ssh tunnel to remote biod server.
+
+command eat_remote
+{
+	path = "blobio";
+	argv = (
+		"eat",
+		"--service",
+		"bio4:127.0.0.1:11797",
+		"--udig"
+	);
+	exit_status is OK when in {0, 1};
+}
+
+#  put blob to remote blobio biod server.
+#  typically ssh tunnel to remote biod server.
+
+command sync_put
+{
+	path = "sync-put";
+	argv = (
+		"bio4:127.0.0.1:11797"
+	);
+	exit_status is OK when in {0, 1, 2};
+}
+
+#  sync wrapped blobs to remote blobio biod server.
+#  typically ssh tunnel to remote biod server.
+
+command sync_wrap
+{
+	path = "sync-wrap";
+	argv = (
+		"bio4:127.0.0.1:11797"
+	);
+	exit_status is OK when in {0};
+}
+
+command brr_blob_existed
+{
+	path = "true";
+}
+
+command brr_blob_taken
+{
+	path = "true";
+}
+
+tail brr
+{
+	path = "spool/biod.brr";
+}
+
+#
+#  Test if the blob exists locally now, by executing
+#
+#	blobio eat --service bio4:localhost:1797 --udig brr.udig
+#
+command eat_local
+{
+	path = "blobio";
+	argv = (
+		"eat",
+		"--service",
+		"bio4:localhost:1797",
+		"--udig"
+	);
+	exit_status is OK when in {0, 1};
+}
+
+#
+#  Zap a remote blob by executing take on remote server via ssh.
+#
+#	ssh blobio@remote.setspace.com					\
+#		blobio take --service bio4:localhost:1797 		\
+#			--output-path /dev/null				\
+#			--udig brr.udig
+#
+
+command sync_zap
+{
+	path = "ssh";
+	argv = (
+		"tunnel-remote",
+		"blobio",
+		"take",
+		"--service",
+		"bio4:localhost:1797",
+		"--output-path",
+		"/dev/null",
+		"--udig"
+	);
+}
+
+#
+#  The blob existed according to blob request record.
+#
+#  Note:
+#	Including the "eat" verb means we could get into loops with the 
+#	remote server when it probes with an "eat".  Unfortunatly, the brr
+#	tuple only has the ipaddress in the netflow field, which is problematic.
+#
+
+call brr_blob_existed()
+  when
+	(
+		brr.verb == "put"
+		or
+		brr.verb == "get"
+		or
+		brr.verb == "give"
+		or
+		brr.verb == "wrap"
+		or
+		brr.verb == "roll"
+	)
+	and
+	(
+		brr.chat_history == "ok"
+		or
+		brr.chat_history == "ok,ok"
+		or
+		brr.chat_history == "ok,ok,ok"
+	)
+;
+
+call brr_blob_taken()
+  when
+	brr.verb == "take"
+	and
+	brr.chat_history == "ok,ok,ok"
+;
+
+call eat_local(brr.udig)
+  when
+  	brr_blob_existed.exit_status == 0
+	or
+	brr_blob_taken.exit_status == 0
+;
+
+call eat_remote(brr.udig)
+  when
+  	brr_blob_existed.exit_status == 0
+	or
+	brr_blob_taken.exit_status == 0
+;
+
+call sync_put(brr.udig)
+  when
+  	brr_blob_existed.exit_status ==	0	#  brr proves exists
+	and
+	eat_local.exit_status == 0		#  exists locally
+	and
+	eat_remote.exit_status == 1		#  does not exist remotely
+;
+
+#  only zap the blob when it does not exist locally but does exist remotely
+
+call sync_zap(brr.udig)
+  when
+  	brr_blob_taken.exit_status == 0		#  blob was taken at one time
+	and
+  	eat_local.exit_status == 1		#  does not exist locally
+	and
+	eat_remote.exit_status == 0		#  exists remotely
+;
+
+
+#  push all blobs in wrap set to remote server
+
+call sync_wrap(brr.udig)
+  when
+	brr.verb == "wrap"
+	and
+	brr.chat_history == "ok"
+;
