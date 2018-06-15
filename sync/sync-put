@@ -29,7 +29,7 @@ test $# = 2 || die 255 "wrong number of arguments: got $#, expected 2"
 SERVICE=$1
 UDIG=$2
 
-#  put the blob to the remote server
+#  pipe the blob to the remote server
 
 blobio get --udig $UDIG --service $BLOBIO_SERVICE			|
 	blobio put --udig $UDIG --service $SERVICE
