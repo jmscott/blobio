@@ -6,10 +6,7 @@
   <string>com.blobio.biod</string>
 
   <key>KeepAlive</key>
-  <dict>
-  	<key>SuccessfulExit</key>
-	<false/>
-  </dict>
+  <true/>
 
   <key>ProcessType</key>
   <string>Background</string>

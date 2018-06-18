@@ -17,8 +17,6 @@
 	  <key>/tmp/.s.PGSQL.5432</key>
 	  <true/>
 	</dict>
-	<key>SuccessfulExit</key>
-	<false/>
   </dict>
 
   <key>RunAtLoad</key>

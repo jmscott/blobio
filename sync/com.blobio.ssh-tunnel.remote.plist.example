@@ -6,12 +6,6 @@
   <string>com.blobio.ssh-tunnel.remote</string>
 
   <key>KeepAlive</key>
-  <dict>
-  	<key>SuccessfulExit</key>
-	<false/>
-  </dict>
-
-  <key>NetworkState</key>
   <true/>
 
   <key>ProcessType</key>

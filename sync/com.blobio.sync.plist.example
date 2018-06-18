@@ -3,7 +3,7 @@
 <plist version="1.0">
 <dict>
   <key>Label</key>
-  <string>com.blobio.sync.condor</string>
+  <string>com.blobio.sync.remote</string>
 
   <key>KeepAlive</key>
   <dict>
@@ -17,14 +17,9 @@
 	  <key>/tmp/.s.PGSQL.5432</key>
 	  <true/>
 	</dict>
-	<key>SuccessfulExit</key>
-	<false/>
   </dict>
 
   <key>RunAtLoad</key>
-  <true/>
-
-  <key>NetworkState</key>
   <true/>
 
   <key>ProcessType</key>
@@ -39,7 +34,7 @@
 	<string>/usr/local/blobio/sbin:/usr/local/blobio/bin:/usr/local/pgsql/bin:/usr/local/bin:/usr/bin:/bin</string>
 
 	<key>BLOBIO_ROOT</key>
-	<string>/usr/local/blobio/sync/host/condor.setspace.com</string>
+	<string>/usr/local/blobio/sync/host/remote.setspace.com</string>
 
 	<key>BLOBIO_ALGORITHM</key>
 	<string>bc160</string>
@@ -58,7 +53,7 @@
 		appears in the process table.
 	-->
 	<string>server</string>
-	<string>etc/sync-condor.setspace.com.flow</string>
+	<string>etc/sync-remote.setspace.com.flow</string>
   </array>
 
   <key>Disabled</key>
@@ -71,13 +66,13 @@
   <string>staff</string>
 
   <key>WorkingDirectory</key>
-  <string>/usr/local/blobio/sync/host/condor.setspace.com</string>
+  <string>/usr/local/blobio/sync/host/remote.setspace.com</string>
 
   <key>StandardErrorPath</key>
-  <string>/Users/blobio/log/launchd-sync-condor.log</string>
+  <string>/Users/blobio/log/launchd-sync-remote.log</string>
 
   <key>StandardOutPath</key>
-  <string>/Users/blobio/log/launchd-sync-condor.log</string>
+  <string>/Users/blobio/log/launchd-sync-remote.log</string>
 
 </dict>
 </plist>
