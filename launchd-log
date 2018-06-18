@@ -36,7 +36,10 @@ PROG="$PROG: $(basename $1)"
 log "hello, world"
 trap leave EXIT TERM INT QUIT
 log "executing: $@"
-$@
-STATUS=$?
+$@ 2>&1 | while read LINE;  do
+	log $LINE
+done
+STATUS=${PIPESTATUS[*]}
 log "process exited with status: $STATUS" 
+STATUS=$(echo $STATUS | awk '{print $1}')
 exit $STATUS
