@@ -3,7 +3,7 @@
 <plist version="1.0">
 <dict>
   <key>Label</key>
-  <string>com.blobio.sync.remote</string>
+  <string>com.blobio.sync.condor</string>
 
   <key>KeepAlive</key>
   <dict>
@@ -24,6 +24,9 @@
   <key>RunAtLoad</key>
   <true/>
 
+  <key>NetworkState</key>
+  <true/>
+
   <key>ProcessType</key>
   <string>Background</string>
 
@@ -36,7 +39,7 @@
 	<string>/usr/local/blobio/sbin:/usr/local/blobio/bin:/usr/local/pgsql/bin:/usr/local/bin:/usr/bin:/bin</string>
 
 	<key>BLOBIO_ROOT</key>
-	<string>/usr/local/blobio/sync/host/remote.setspace.com</string>
+	<string>/usr/local/blobio/sync/host/condor.setspace.com</string>
 
 	<key>BLOBIO_ALGORITHM</key>
 	<string>bc160</string>
@@ -48,13 +51,14 @@
 
   <key>ProgramArguments</key>
   <array>
+	<string>sbin/launchd-log</string>
 	<string>bin/flowd</string>
 	<!-- Note:
 		ps-title hack must first argument in order to change what
 		appears in the process table.
 	-->
 	<string>server</string>
-	<string>etc/sync-remote.setspace.com.flow</string>
+	<string>etc/sync-condor.setspace.com.flow</string>
   </array>
 
   <key>Disabled</key>
@@ -67,13 +71,13 @@
   <string>staff</string>
 
   <key>WorkingDirectory</key>
-  <string>/usr/local/blobio/sync/host/remote.setspace.com</string>
+  <string>/usr/local/blobio/sync/host/condor.setspace.com</string>
 
   <key>StandardErrorPath</key>
-  <string>/Users/blobio/log/launchd-sync-remote.log</string>
+  <string>/Users/blobio/log/launchd-sync-condor.log</string>
 
   <key>StandardOutPath</key>
-  <string>/Users/blobio/log/launchd-sync-remote.log</string>
+  <string>/Users/blobio/log/launchd-sync-condor.log</string>
 
 </dict>
 </plist>

@@ -1,8 +1,11 @@
 #
 #  Synopsis:
-#	Log start/stop of process execed by launchd.
+#	Trivial help script to Log start/stop of process execed by launchd.
 #  Usage:
 #	launchd-log bin/flowd server etc/blobio.flow
+#  Note:
+#	No blobio daemon requires launchd-log.  The script is just a cheap
+#	replacement for a more proper syslog facility.
 #  Exit Status:
 #	*	exit status of launched process
 #  	127	unexpected error in launchd-log

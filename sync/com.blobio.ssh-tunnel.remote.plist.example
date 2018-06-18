@@ -9,9 +9,10 @@
   <dict>
   	<key>SuccessfulExit</key>
 	<false/>
-	<key>NetworkState</key>
-        <true/>
   </dict>
+
+  <key>NetworkState</key>
+  <true/>
 
   <key>ProcessType</key>
   <string>Background</string>
@@ -21,11 +22,13 @@
 
   <key>ProgramArguments</key>
   <array>
+  	<string>sbin/launchd-log</string>
   	<!--
 		Map local ports on remote machine
 
 			localhost:15432 -> me:5432
 			localhost:11797 -> me:1797
+			localhost:10022 -> me:22
 
 		The remote flowd sync points to localhost:15432 for
 		postgresql database and localhost:11797 for blobio server.
@@ -37,6 +40,8 @@
 	<string>15432:localhost:5432</string>
 	<string>-R</string>
 	<string>11797:localhost:1797</string>
+	<string>-R</string>
+	<string>10022:localhost:22</string>
   </array>
 
   <key>RunAtLoad</key>

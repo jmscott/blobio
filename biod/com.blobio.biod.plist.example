@@ -15,10 +15,11 @@
   <string>Background</string>
 
   <key>AbandonProcessGroup</key>
-  <true/>
+  <false/>
 
   <key>ProgramArguments</key>
   <array>
+	<string>sbin/launchd-log</string>
 	<string>/usr/local/blobio/sbin/biod</string>
 	<!-- Note:
 		ps-title hack must first argument in order to change what
