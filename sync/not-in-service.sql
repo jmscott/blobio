@@ -41,6 +41,8 @@ SELECT
   FROM
   	chain c
   	  JOIN taken t ON (t.blob = c.blob)
+  ORDER BY
+    	c.blob
 ;
 
 \echo select blobs in chain that are known to be missing
@@ -50,20 +52,35 @@ SELECT
   FROM
   	chain c
   	  JOIN missing m ON (m.blob = c.blob)
+  ORDER BY
+    	c.blob
 ;
 
 \echo Select blobs not in service
+\o chain-not-in-service.udig
 SELECT
   	c.blob
-    FROM
-    	chain c
+  FROM
+	chain c
     	  LEFT OUTER JOIN service s ON (s.blob = c.blob)
 	  LEFT OUTER JOIN taken t ON (t.blob = c.blob)
 	  LEFT OUTER JOIN missing m ON (m.blob = c.blob)
-    WHERE
+  WHERE
     	s.blob IS NULL		--  not in service
 	AND
     	t.blob IS NULL		--  not known to be taken
 	AND
 	m.blob IS NULL		--  not known to be missing
+  ORDER BY
+    	c.blob
+;
+
+\echo Select :chain_count blobs in chain
+\o chain.udig
+SELECT
+	c.blob
+  FROM
+  	chain c
+  ORDER BY
+  	c.blob
 ;
