@@ -4,6 +4,9 @@
 #	Build a summary of all blobs in the "block chain" of brr log files.
 #  Usage:
 #	sync-brr-chain
+#  Note:
+#	Arggh.  The BRR scan algorithm is broken.  We incorrectly
+#	assume that the udig is in time order.
 #
 my $date = `date`;
 
@@ -183,7 +186,7 @@ while ($wrap_set) {
 
 	#  no elements in the udig set
 
-	exit 1 if %${ELEMENTS} == 0;
+	last if %${ELEMENTS} == 0;
 
 	#  scan the brr logs for timestamped udigs
 
@@ -248,11 +251,6 @@ while ($wrap_set) {
 				next;
 			}
 
-print <<END if $udig eq 'sha:0033ecf111ac9a59439dca7193e1e9a82561b52e';
-#  WTF: BRR Log: $brr_log
-#  WTF: UDig: $udig
-END
-
 			#  record blob
 
 			$UDIG{$udig} = $blob_size unless $UDIG{$udig};
@@ -305,6 +303,12 @@ if ($sum_blob_size >= 1099511627776) {		#  terabytes
 	$pretty_sum_blob_size = sprintf('%.fKB', $sum_blob_size / 1024);
 } else {
 	$pretty_sum_blob_size = "$sum_blob_size bytes";
+}
+
+for (keys %TAKEN) {
+	print <<END;
+#  Take: $_
+END
 }
 
 print <<END;
