@@ -3,11 +3,14 @@
 #  Synopsis:
 #	Build a summary of all blobs in the "block chain" of brr log files.
 #  Usage:
-#	sync-brr-chain
-#  Note:
-#	Arggh.  The BRR scan algorithm is broken.  We incorrectly
-#	assume that the udig is in time order.
+#	#  See stats on chain
+#	sync-brr-chain | grep '^#'
 #
+#	#  See blobs in service, according to the chain
+#	sync-brr-chain | grep '^#'
+#
+$| = 1;
+
 my $date = `date`;
 
 use File::Temp;
@@ -16,7 +19,6 @@ my $prog = 'sync-brr-chain';
 
 my (
 	%BRR_LOG,
-	@ROLL_SET,
 	%UDIG,
 	%WRAP_SET,
 	$MIN_BRR_LOG_START_TIME,
@@ -25,6 +27,8 @@ my (
 	%BYTE_COUNT,
 	%TAKEN,
 	%OK_VERB_COUNT,
+	%UDIG_AFTER,
+	%NO_EXIST,
 );
 
 #  match a udig
@@ -99,8 +103,17 @@ print <<END;
 #  Temp Work File: $tmp_file
 END
 
+sub udig_after
+{
+	die 'udig_after: empty tuples' unless $_[0] && $_[1];
+	my $after = "$_[0]	$_[1]";
+
+	return if $UDIG_AFTER{$after};
+	$UDIG_AFTER{$after} = 1;
+}
+
 #
-#  Verify the udig is valid or does not exist.
+#  Verify the wrap set of udigs is valid by extracting udigs or croak.
 #
 #  Return:
 #	0	blob points to existing set of udigs
@@ -108,11 +121,16 @@ END
 #
 sub frisk_wrap_set
 {
-	my $udig_set = $_[0];
-	my $UDIG = "--udig $udig_set";
+	my ($wrap_set, $source_brr_log) = @_;
+
+	return $WRAP_SET{$wrap_set} if $WRAP_SET{$wrap_set};
+
+	udig_after $source_brr_log, $wrap_set if $source_brr_log;
+
+	my $UDIG = "--udig $wrap_set";
 
 	my $status = system("blobio empty $UDIG") >> 8;
-	die "unexpected frisk empty udig: $udig_set" if $status == 0;
+	die "unexpected frisk empty udig: $wrap_set" if $status == 0;
 
 	die "blobio frisk empty failed: exit status=$status" if $status != 1;
 
@@ -121,6 +139,7 @@ sub frisk_wrap_set
 	die "blobio eat frisk failed: exit status=$status" if $status > 1;
 
 	my %ELEMENTS;
+	$WRAP_SET{$wrap_set} = \%ELEMENTS;
 	return \%ELEMENTS if $status == 1;
 
 	#  open the set of udigs
@@ -135,20 +154,18 @@ sub frisk_wrap_set
 				m/^[a-z][a-z0-9]{0,7}:[[:graph:]]{32,128}$/ &&
 				m/^[[:ascii:]]*$/
 		;
-		die "udig set has a duplicate: $udig_set" if $ELEMENTS{$_};
+		die "udig set has a duplicate: $wrap_set" if $ELEMENTS{$_};
 		$ELEMENTS{$_} = 1;
+
+		udig_after $wrap_set, $_;
+		udig_after $source_brr_log, $_ if $source_brr_log;
 	}
 	close($WRAP_SET) or die "close(frisk udig set) failed: $!";
 	return \%ELEMENTS;
 }
 
-sub WARN
-{
-	printf STDERR "WARN: ", @_, "\n";
-}
-
 die "wrong number arguments: got ", scalar(@ARGV), ', expected 0'
-					unless @ARGV == 0
+							unless @ARGV == 0
 ;
 
 die 'environment var not defined: BLOBIO_SERVICE' unless $ENV{BLOBIO_SERVICE};
@@ -171,16 +188,19 @@ my $oldest_wrap_set = $tail_wrap_set;
 my $status = system("blobio roll --udig $tail_wrap_set $SERVICE");
 print <<END;
 #  Roll Exit Status: $status
+#
 END
 
 die "blobio roll failed: exit status=$status" if $status;
 
 my $wrap_set = $tail_wrap_set;
 
+#  the wrap/roll sets are not ordered, so scan brr logs looking for wrap/roll
+#  requests to build an order relation between udigs.
+
 while ($wrap_set) {
 
 	die "tail wrap set seen twice: $wrap_set" if $WRAP_SET{$wrap_set};
-	$WRAP_SET{$wrap_set} = 1;
 
 	my $ELEMENTS = frisk_wrap_set($wrap_set);
 
@@ -210,7 +230,7 @@ while ($wrap_set) {
 			$NO_BRR_LOG{$brr_log} = 1;
 			next;
 		}
-			
+
 		my $BRR_LOG;
 		open($BRR_LOG, "<$tmp_file") or
 					die "open(tmp brr log) failed: $!";
@@ -219,57 +239,133 @@ while ($wrap_set) {
 			$rc++;
 			die "row $rc is not brr in log: $brr_log"
 							unless m/^${BRR_RE}$/;
-			my $start_time = $1;
 			my $verb = $2;
-			my $udig = $3;
+			my $wrap_udig = $3;
 			my $chat_history = $4;
-			my $blob_size = $5;
 
-			$MAX_BRR_LOG_START_TIME = $start_time
-			  if
-			  	$MAX_BRR_LOG_START_TIME eq ''
-				or
-			  	$start_time gt $MAX_BRR_LOG_START_TIME
-			;
-			$MIN_BRR_LOG_START_TIME = $start_time
-			  if
-			  	$MIN_BRR_LOG_START_TIME eq ''
-				or
-			  	$start_time le $MIN_BRR_LOG_START_TIME
+			next if $chat_history =~ /no$/ ||
+			        ($verb ne 'wrap' && $verb ne 'roll')
 			;
 
-			next if $chat_history =~ /no$/;
-
-			$OK_VERB_COUNT{$verb}++;
-
-			#  blob was taken
-
-			if ($verb eq 'take') {
-				#  flag as taken unless seen more recently
-				$TAKEN{$udig} = 1;
-				delete $UDIG{$udig} if $UDIG{$udig};
-				next;
-			}
-
-			#  record blob
-
-			$UDIG{$udig} = $blob_size unless $UDIG{$udig};
-			delete $TAKEN{$udig} if $TAKEN{$udig};
+			udig_after $wrap_set, $brr_log;
+			udig_after $wrap_udig, $brr_log;
 
 			next unless $verb eq 'roll' && $chat_history eq 'ok';
 
 			die "roll defined more than once in udig set: $roll_set"
 				if $roll_set
 			;
-			$roll_set = $udig;
+			$roll_set = $wrap_udig;
 		}
 		close($BRR_LOG) or die "close(blobio get brr log) failed: $!";
 		unlink($tmp_file) or die "unlink(tmp brr log) failed: $!";
 	}
 	last unless $roll_set;
-	push @ROLL_SET, $roll_set;
+
+	#  going backwards in time
+	udig_after $roll_set, $wrap_set;
 	$wrap_set = $roll_set;
 	$oldest_wrap_set = $wrap_set;
+}
+
+#
+#  Topologically sort the udigs to determine order of scanning wrap set.
+#
+
+my $AFTER;
+open($AFTER, ">$tmp_file") or die "open($tmp_file) failed: $!";
+print $AFTER $_, "\n" foreach keys %UDIG_AFTER;
+close($AFTER) or die "close($tmp_file) failed: $!";
+
+my $TSORT;
+open($TSORT, "tsort $tmp_file |") or die "open(tsort |) failed: $!";
+
+my @BRR_LOG;
+while (<$TSORT>) {
+	chomp;
+	push @BRR_LOG, $_ if $BRR_LOG{$_};
+}
+close($TSORT) or die "close(tsort) failed: $!";
+unlink($tmp_file) or die "unlink(tmp after) failed: $!";
+
+@BRR_LOG = reverse @BRR_LOG;
+
+print "#  BRR Log: $_\n" foreach @BRR_LOG;
+
+foreach my $brr_log (@BRR_LOG) {
+
+	my $command = 'blobio get '				.
+		      "--udig $brr_log "			.
+		      $GET_SERVICE				.
+		      " --output-path $tmp_file"
+	;
+	if (my $status = system($command)) {
+		$status >>= 8;
+		die "blobio get brr log failed: exit status=$status"
+					unless $status == 1
+		;
+		next;
+	}
+
+	my $BRR_LOG;
+	open($BRR_LOG, "<$tmp_file") or die "open(tmp brr log) failed: $!";
+
+
+	my @BRR = <$BRR_LOG>;
+	close $BRR_LOG or die "close(tmp brr) failed: $!";
+	unlink $tmp_file or die "unlink(tmp brr) failed: $!";
+
+	my $rc = @BRR;
+
+	#  loop through 
+	foreach (reverse @BRR) {
+		die "row $rc is not brr in log: $brr_log" unless m/^${BRR_RE}$/;
+		my $start_time = $1;
+		my $verb = $2;
+		my $udig = $3;
+		my $chat_history = $4;
+		my $blob_size = $5;
+
+		$MAX_BRR_LOG_START_TIME = $start_time
+		  if
+		  	$MAX_BRR_LOG_START_TIME eq ''
+			or
+		  	$start_time gt $MAX_BRR_LOG_START_TIME
+		;
+		$MIN_BRR_LOG_START_TIME = $start_time
+		  if
+		  	$MIN_BRR_LOG_START_TIME eq ''
+			or
+		  	$start_time le $MIN_BRR_LOG_START_TIME
+		;
+
+		if ($chat_history =~ /no$/) {
+			$NO_EXIST{$udig} = 1
+				if $UDIG{$udig} eq '' &&
+				   ($verb eq 'eat' || $verb eq 'get')
+			;
+			next
+		}
+
+		$OK_VERB_COUNT{$verb}++;
+
+		#  blob was taken
+
+		if ($verb eq 'take') {
+			#  flag as taken unless seen more recently
+			$NO_EXIST{$udig} = $TAKEN{$udig} = 1
+						unless $UDIG{$udig};
+			next;
+		}
+		next if $TAKEN{$udig} || $NO_EXIST{$udig};
+		$UDIG{$udig} = $blob_size
+		  if
+			$UDIG{$udig} eq ''				&&
+			$verb ne 'wrap'					&&
+			$verb ne 'roll'
+		;
+		--$rc;
+	}
 }
 
 my $sum_blob_size = 0;
@@ -279,10 +375,10 @@ for my $udig (keys %UDIG) {
 }
 
 my $brr_log_count = scalar(%BRR_LOG);
-my $roll_set_count = scalar(@ROLL_SET);
 my $udig_count = scalar(%UDIG);
 my $no_brr_log_set_count = scalar(%NO_BRR_LOG);
 my $taken_count = scalar(%TAKEN);
+my $no_exist_count = %NO_EXIST;
 
 my $average_blob_size;
 $average_blob_size = sprintf('%0.f', $sum_blob_size / $udig_count)
@@ -325,9 +421,8 @@ print <<END;
 #  Take Ok Count: $OK_VERB_COUNT{take}
 #  Wrap Ok Count: $OK_VERB_COUNT{wrap}
 #  Roll Ok Count: $OK_VERB_COUNT{roll}
+#  No Exist Count: $no_exist_count
 #
-#  Frisked Roll Set Count: $roll_set_count sets
-#  Oldest Wrap Set: $oldest_wrap_set
 #  UDig Count: $udig_count blobs
 #  Total Blob Size: $pretty_sum_blob_size ($sum_blob_size bytes)
 #  Average Blob Size: $average_blob_size bytes
