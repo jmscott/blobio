@@ -22,7 +22,6 @@
 
 			localhost:15432 -> me:5432
 			localhost:11797 -> me:1797
-			localhost:10022 -> me:22
 
 		The remote flowd sync points to localhost:15432 for
 		postgresql database and localhost:11797 for blobio server.
