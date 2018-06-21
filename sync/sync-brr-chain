@@ -161,52 +161,100 @@ sub frisk_wrap_set
 		udig_after $source_brr_log, $_ if $source_brr_log;
 	}
 	close($WRAP_SET) or die "close(frisk udig set) failed: $!";
-	return \%ELEMENTS;
+	return $WRAP_SET{$wrap_set};
 }
 
 die "wrong number arguments: got ", scalar(@ARGV), ', expected 0'
-							unless @ARGV == 0
+			unless @ARGV == 0 || @ARGV == 2 || @ARGV == 4
 ;
+
+sub opt_die
+{
+	my $opt = shift @_;
+	die "option --$opt", join(':', @_);
+}
+
+my ($start_wrap_set, $stop_wrap_set);
+while (@ARGV > 0) {
+	my $arg = shift @ARGV;
+
+	if ($arg eq '--start-wrap-set') {
+		my sub _die {
+			opt_die 'start-wrap-set', @_;
+		}
+
+		_die 'defined more than once' if $start_wrap_set;
+		$start_wrap_set = shift @ARGV;
+
+		_die 'not a udig', $start_wrap_set
+				unless $start_wrap_set =~ m/^${UDIG_RE}$/
+		;
+	} elsif ($arg eq '--stop-wrap-set') {
+		my sub _die {
+			opt_die 'stop-wrap-set', @_;
+		}
+
+		_die 'defined more than once' if $stop_wrap_set;
+		$stop_wrap_set = shift @ARGV;
+
+		_die 'not a udig', $stop_wrap_set
+				unless $stop_wrap_set =~ m/^${UDIG_RE}$/
+		;
+	} elsif ($arg =~ m/^--/) {
+		die "unknown option: $arg";
+	} else {
+		die "unknown command line argument: $arg";
+	}
+}
 
 die 'environment var not defined: BLOBIO_SERVICE' unless $ENV{BLOBIO_SERVICE};
 
-my $TAIL_WRAP;
-open($TAIL_WRAP, "blobio wrap $SERVICE |") or
-		die "open(blobio wrap) failed: $!";
-my $tail_wrap_set = <$TAIL_WRAP>;
-close($TAIL_WRAP) or die "close(blobio wrap) failed: $!";
-chomp $tail_wrap_set;
+unless ($start_wrap_set) {
+	my $TAIL_WRAP;
+	open($TAIL_WRAP, "blobio wrap $SERVICE |") or
+					die "open(blobio wrap) failed: $!";
+	my $tail_wrap_set = <$TAIL_WRAP>;
+	close($TAIL_WRAP) or die "close(blobio wrap) failed: $!";
+	chomp $tail_wrap_set;
 
-die 'tail wrap set is not udig' unless $tail_wrap_set =~ m/^${UDIG_RE}$/;
-
-print <<END;
+	die 'tail wrap set is not udig' unless $tail_wrap_set =~m/^${UDIG_RE}$/;
+	print <<END;
 #  Tail Wrap Set: $tail_wrap_set
 END
 
-my $oldest_wrap_set = $tail_wrap_set;
-
-my $status = system("blobio roll --udig $tail_wrap_set $SERVICE");
-print <<END;
-#  Roll Exit Status: $status
-#
+	my $status = system("blobio roll --udig $tail_wrap_set $SERVICE");
+	print <<END;
+	#  Roll Exit Status: $status
+	#
 END
 
-die "blobio roll failed: exit status=$status" if $status;
+	die "blobio roll failed: exit status=$status" if $status;
+}
 
-my $wrap_set = $tail_wrap_set;
+print <<END;
+#  Start Wrap Set: $start_wrap_set
+#  Stop Wrap Set: $stop_wrap_set
+END
+
+my $wrap_set = $start_wrap_set;
 
 #  the wrap/roll sets are not ordered, so scan brr logs looking for wrap/roll
-#  requests to build an order relation between udigs.
+#  requests to build an "after" order relation on udigs.
 
+my $oldest_wrap_set;
 while ($wrap_set) {
 
+	#  cheap sanity test
 	die "tail wrap set seen twice: $wrap_set" if $WRAP_SET{$wrap_set};
 
 	my $ELEMENTS = frisk_wrap_set($wrap_set);
 
 	#  no elements in the udig set
 
-	last if %${ELEMENTS} == 0;
+	if ($${ELEMENTS} == 0) {
+		$oldest_wrap_set = $wrap_set;
+		last;
+	}
 
 	#  scan the brr logs for timestamped udigs
 
@@ -260,7 +308,7 @@ while ($wrap_set) {
 		close($BRR_LOG) or die "close(blobio get brr log) failed: $!";
 		unlink($tmp_file) or die "unlink(tmp brr log) failed: $!";
 	}
-	last unless $roll_set;
+	last if $roll_set eq '' || $roll_set eq $stop_wrap_set;
 
 	#  going backwards in time
 	udig_after $roll_set, $wrap_set;
@@ -268,10 +316,17 @@ while ($wrap_set) {
 	$oldest_wrap_set = $wrap_set;
 }
 
-#
-#  Topologically sort the udigs to determine order of scanning wrap set.
-#
+print <<END;
+#  Oldest Wrap Set: $oldest_wrap_set
+END
 
+$stop_wrap_set = $oldest_wrap_set unless $stop_wrap_set;
+
+#
+#  Topologically sort the udigs to determine order of scanning
+#  the brr log files.  We do this because the wrap_set is not ordered
+#  by time (or any order).
+#
 my $AFTER;
 open($AFTER, ">$tmp_file") or die "open($tmp_file) failed: $!";
 print $AFTER $_, "\n" foreach keys %UDIG_AFTER;
