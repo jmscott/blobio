@@ -23,11 +23,11 @@ die()
 
 _ls()
 {
-	psql --no-psqlrc --quiet <<END || die "psql failed: exit status=$?"
-\\set ON_ERROR_STOP
+	psql --no-psqlrc --quiet <<END || die "psql detail failed: exit status=$?"
 \\x on
 \\pset tuples_only
 \\pset null Unknown
+\\set ON_ERROR_STOP 1
 
 SELECT
 	s.blob AS " ",
@@ -47,11 +47,29 @@ SELECT
 END
 }
 
+recent_udig()
+{
+	psql --no-psqlrc --quiet <<END || die "psql recent failed: exit status=$?"
+\\pset tuples_only
+\\set ON_ERROR_STOP 1
+
+SELECT
+	blob
+  FROM
+  	blobio.service
+  WHERE
+  	discover_time >= now() + '-24 hours'
+  ORDER BY
+  	discover_time DESC
+  LIMIT
+  	1
+;
+END
+}
+
 case $# in
 0)
-	while read UDIG;  do
-		_ls $UDIG
-	done
+	_ls $(recent_udig)
 	;;
 *)
 	while [ $# -gt 0 ];  do
