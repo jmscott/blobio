@@ -9,6 +9,8 @@
  *		--rrd-sample-duration	#  how often to generate rrd samples
  *		--ps-title 'biod-test'	#  set the title in the process table
  *  Note:
+ *	Should a "wrap" never return an empty udig?
+ *
  *	Biod probably panics on a network flap.
  *
  *	Signal handling needs to be pushed to main listen loop or cleaned
