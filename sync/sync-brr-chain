@@ -35,7 +35,7 @@ my (
 	$MIN_RECENT_TIME,
 	$MAX_RECENT_TIME,
 	%NO_BRR_LOG,
-	%BYTE_COUNT,
+	%BLOB_SIZE,
 	%TAKEN,
 	%OK_VERB_COUNT,
 	%UDIG_AFTER,
@@ -343,8 +343,8 @@ while ($wrap_set) {
 
 	#  going backwards in time
 	udig_after $roll_set, $wrap_set;
-	$wrap_set = $roll_set;
 	$oldest_wrap_set = $wrap_set;
+	$wrap_set = $roll_set;
 }
 
 print <<END;
@@ -430,8 +430,11 @@ foreach my $brr_log (@BRR_LOG) {
 
 		if ($chat_history =~ /no$/) {
 			$NO_EXIST{$udig} = 1
-				if $UDIG{$udig} eq '' &&
-				   ($verb eq 'eat' || $verb eq 'get')
+				if $UDIG{$udig} eq ''			&&
+				(
+				   	$verb eq 'eat'			||
+					$verb eq 'get'
+				)
 			;
 			next
 		}
@@ -459,19 +462,17 @@ foreach my $brr_log (@BRR_LOG) {
 		  	$start_time le $MIN_RECENT_TIME
 		;
 		next if $TAKEN{$udig} || $NO_EXIST{$udig};
-		$UDIG{$udig} = $blob_size
-		  if
-			$UDIG{$udig} eq ''				&&
-			$verb ne 'wrap'					&&
-			$verb ne 'roll'
-		;
+		unless ($UDIG{$udig}) {
+			$UDIG{$udig} = 1;
+			$BLOB_SIZE{$udig} = $blob_size;
+		}
 		--$rc;
 	}
 }
 
 my $sum_blob_size = 0;
-for my $udig (keys %UDIG) {
-	$sum_blob_size += $UDIG{$udig};
+for my $udig (keys %BLOB_SIZE) {
+	$sum_blob_size += $BLOB_SIZE{$udig};
 	print $udig, "\n";
 }
 
