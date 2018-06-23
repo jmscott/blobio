@@ -3,8 +3,17 @@
 #  Synopsis:
 #	Build a summary of all blobs in the "block chain" of brr log files.
 #  Usage:
-#	#  See stats on chain
+#	#  See stats on entire chain of wrap-sets.
+#	#  the start wrap set is derived by requesting a wrap/roll
+#	#  on $BLOBIO_SERVICE
+#
 #	sync-brr-chain | grep '^#'
+#
+#	#  See stats bounded by two inclusive wrap sets
+#
+#	START_WRAP=bc160:983bb9f30c935600135c002e1974cf27fcf15cd8
+#	STOP_WRAP=bc160:ee0fad120ce49e34b8d2c72c160c1a948c27d526
+#	sync-brr-chain --start-wrap $START_WRAP --stop-wrap-set $STOP_WRAP
 #
 #	#  See blobs in service, according to the chain
 #	sync-brr-chain | grep '^#'
@@ -23,6 +32,8 @@ my (
 	%WRAP_SET,
 	$MIN_BRR_LOG_START_TIME,
 	$MAX_BRR_LOG_START_TIME,
+	$MIN_RECENT_TIME,
+	$MAX_RECENT_TIME,
 	%NO_BRR_LOG,
 	%BYTE_COUNT,
 	%TAKEN,
@@ -142,7 +153,12 @@ sub frisk_wrap_set
 	$WRAP_SET{$wrap_set} = \%ELEMENTS;
 	return \%ELEMENTS if $status == 1;
 
-	#  open the set of udigs
+	#
+	#  Open the wrap set of udigs.
+	#
+	#  Note:
+	#	What if the set does not exist?
+	#
 	my $WRAP_SET;
 	open($WRAP_SET, "blobio get $UDIG $GET_SERVICE |") or
 				die("open(blobio frisk wrap set) failed: $!");
@@ -174,6 +190,16 @@ sub opt_die
 	my $opt = shift @_;
 	die "option --$opt", join(':', @_);
 }
+
+$OK_VERB_COUNT{get} =
+	$OK_VERB_COUNT{put} =
+	$OK_VERB_COUNT{give} =
+	$OK_VERB_COUNT{take} =
+	$OK_VERB_COUNT{wrap} =
+	$OK_VERB_COUNT{roll} =
+	$OK_VERB_COUNT{eat} =
+	0
+;
 
 my ($start_wrap_set, $stop_wrap_set);
 while (@ARGV > 0) {
@@ -236,6 +262,10 @@ print <<END;
 #  Start Wrap Set: $start_wrap_set
 END
 
+print <<END if $stop_wrap_set;
+#  Stop Wrap Set: $stop_wrap_set
+END
+
 my $wrap_set = $start_wrap_set;
 
 #  the wrap/roll sets are not ordered, so scan brr logs looking for wrap/roll
@@ -262,6 +292,8 @@ while ($wrap_set) {
 	foreach my $brr_log (keys %${ELEMENTS}) {
 		next if $BRR_LOG{$brr_log};
 		$BRR_LOG{$brr_log} = 1;
+
+		udig_after $wrap_set, $brr_log;
 
 		my $command = 'blobio get '				.
 			      "--udig $brr_log "			.
@@ -295,7 +327,6 @@ while ($wrap_set) {
 			        ($verb ne 'wrap' && $verb ne 'roll')
 			;
 
-			udig_after $wrap_set, $brr_log;
 			udig_after $wrap_udig, $brr_log;
 
 			next unless $verb eq 'roll' && $chat_history eq 'ok';
@@ -320,7 +351,12 @@ print <<END;
 #  Oldest Wrap Set: $oldest_wrap_set
 END
 
-$stop_wrap_set = $oldest_wrap_set unless $stop_wrap_set;
+unless ($stop_wrap_set) {
+	$stop_wrap_set = $oldest_wrap_set unless $stop_wrap_set;
+	print <<END;
+#  Stop Wrap Set: $stop_wrap_set
+END
+}
 
 #
 #  Topologically sort the udigs to determine order of scanning
@@ -344,8 +380,6 @@ close($TSORT) or die "close(tsort) failed: $!";
 unlink($tmp_file) or die "unlink(tmp after) failed: $!";
 
 @BRR_LOG = reverse @BRR_LOG;
-
-print "#  BRR Log: $_\n" foreach @BRR_LOG;
 
 foreach my $brr_log (@BRR_LOG) {
 
@@ -412,6 +446,18 @@ foreach my $brr_log (@BRR_LOG) {
 						unless $UDIG{$udig};
 			next;
 		}
+		$MAX_RECENT_TIME = $start_time
+		  if
+		  	$MAX_RECENT_TIME eq ''
+			or
+		  	$start_time gt $MAX_RECENT_TIME
+		;
+		$MIN_RECENT_TIME = $start_time
+		  if
+		  	$MIN_RECENT_TIME eq ''
+			or
+		  	$start_time le $MIN_RECENT_TIME
+		;
 		next if $TAKEN{$udig} || $NO_EXIST{$udig};
 		$UDIG{$udig} = $blob_size
 		  if
@@ -463,6 +509,9 @@ END
 }
 
 print <<END;
+#
+#  Min Recent Time: $MIN_RECENT_TIME
+#  Max Recent Time: $MAX_RECENT_TIME
 #
 #  Min BRR Log Start Time: $MIN_BRR_LOG_START_TIME
 #  Max BRR Log Start Time: $MAX_BRR_LOG_START_TIME
