@@ -167,6 +167,7 @@ sub frisk_wrap_set
 die "wrong number arguments: got ", scalar(@ARGV), ', expected 0'
 			unless @ARGV == 0 || @ARGV == 2 || @ARGV == 4
 ;
+die 'environment var not defined: BLOBIO_SERVICE' unless $ENV{BLOBIO_SERVICE};
 
 sub opt_die
 {
@@ -207,7 +208,7 @@ while (@ARGV > 0) {
 	}
 }
 
-die 'environment var not defined: BLOBIO_SERVICE' unless $ENV{BLOBIO_SERVICE};
+#  if no wrap set then start with fresh wrap/roll
 
 unless ($start_wrap_set) {
 	my $TAIL_WRAP;
@@ -224,16 +225,15 @@ END
 
 	my $status = system("blobio roll --udig $tail_wrap_set $SERVICE");
 	print <<END;
-	#  Roll Exit Status: $status
-	#
+#  Roll Exit Status: $status
+#
 END
-
+	$start_wrap_set = $tail_wrap_set;
 	die "blobio roll failed: exit status=$status" if $status;
 }
 
 print <<END;
 #  Start Wrap Set: $start_wrap_set
-#  Stop Wrap Set: $stop_wrap_set
 END
 
 my $wrap_set = $start_wrap_set;
@@ -251,7 +251,7 @@ while ($wrap_set) {
 
 	#  no elements in the udig set
 
-	if ($${ELEMENTS} == 0) {
+	if (%$ELEMENTS == 0) {
 		$oldest_wrap_set = $wrap_set;
 		last;
 	}
