@@ -18,6 +18,7 @@ LIBs=									\
 	com.blobio.ssh-tunnel.remote.plist.example			\
 	com.blobio.sync.plist.example					\
 	not-in-service.sql						\
+	service-by-interval.sql						\
 	sync-remote.flow.example					\
 
 install:
