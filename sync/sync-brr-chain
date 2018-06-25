@@ -2,6 +2,10 @@
 #
 #  Synopsis:
 #	Build a summary of all blobs in the "block chain" of brr log files.
+#  Options:
+#	--start-wrap-set <udig>
+#	--stop-wrap-set <udig>
+#	--trace-blob <udig>
 #  Usage:
 #	#  See stats on entire chain of wrap-sets.
 #	#  the start wrap set is derived by requesting a wrap/roll
@@ -27,6 +31,9 @@ use File::Temp;
 my $prog = 'sync-brr-chain';
 
 my (
+	$start_wrap_set,
+	$stop_wrap_set,
+	$trace_blob,
 	%BRR_LOG,
 	%UDIG,
 	%WRAP_SET,
@@ -201,7 +208,6 @@ $OK_VERB_COUNT{get} =
 	0
 ;
 
-my ($start_wrap_set, $stop_wrap_set);
 while (@ARGV > 0) {
 	my $arg = shift @ARGV;
 
@@ -229,6 +235,17 @@ while (@ARGV > 0) {
 		_die3 'not a udig', $stop_wrap_set
 				unless $stop_wrap_set =~ m/^${UDIG_RE}$/
 		;
+	} elsif ($arg eq '--trace-blob') {
+		sub _die4 {
+			opt_die 'trace-blob', @_;
+		}
+
+		_die4 'defined more than once' if $trace_blob;
+		$trace_blob = shift @ARGV;
+		_die4 'not a udig', $trace_blob
+				unless $trace_blob =~ m/^${UDIG_RE}$/
+		;
+
 	} elsif ($arg =~ m/^--/) {
 		die "unknown option: $arg";
 	} else {
@@ -321,22 +338,34 @@ while ($wrap_set) {
 			$rc++;
 			die "row $rc is not brr in log: $brr_log"
 							unless m/^${BRR_RE}$/;
+			my $start_time = $1;
 			my $verb = $2;
-			my $wrap_udig = $3;
+			my $udig = $3;
 			my $chat_history = $4;
 
+			print <<END if $trace_blob eq $udig;
+#
+#  Trace: UDig: $udig
+#  Trace: BRR: $brr_log
+#  Trace: Row Count: $rc
+#  Trace: Start Time: $start_time
+#  Trace: Verb/Chat: $verb/$chat_history
+#
+END
+
+			#  Looking for a wrap/roll blob
 			next if $chat_history =~ /no$/ ||
 			        ($verb ne 'wrap' && $verb ne 'roll')
 			;
 
-			udig_after $wrap_udig, $brr_log;
+			udig_after $udig, $brr_log;
 
 			next unless $verb eq 'roll' && $chat_history eq 'ok';
 
 			die "roll defined more than once in udig set: $roll_set"
 				if $roll_set
 			;
-			$roll_set = $wrap_udig;
+			$roll_set = $udig;
 		}
 		close($BRR_LOG) or die "close(blobio get brr log) failed: $!";
 		unlink($tmp_file) or die "unlink(tmp brr log) failed: $!";
