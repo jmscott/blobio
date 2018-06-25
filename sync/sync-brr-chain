@@ -206,25 +206,27 @@ while (@ARGV > 0) {
 	my $arg = shift @ARGV;
 
 	if ($arg eq '--start-wrap-set') {
-		my sub _die {
+		#  Note: uggh, no proper closure in older perl!
+		sub _die2 {
 			opt_die 'start-wrap-set', @_;
 		}
 
-		_die 'defined more than once' if $start_wrap_set;
+		_die2 'defined more than once' if $start_wrap_set;
 		$start_wrap_set = shift @ARGV;
 
-		_die 'not a udig', $start_wrap_set
+		_die2 'not a udig', $start_wrap_set
 				unless $start_wrap_set =~ m/^${UDIG_RE}$/
 		;
 	} elsif ($arg eq '--stop-wrap-set') {
-		my sub _die {
+		#  Note: uggh, no proper closure in older perl!
+		sub _die3 {
 			opt_die 'stop-wrap-set', @_;
 		}
 
-		_die 'defined more than once' if $stop_wrap_set;
+		_die3 'defined more than once' if $stop_wrap_set;
 		$stop_wrap_set = shift @ARGV;
 
-		_die 'not a udig', $stop_wrap_set
+		_die3 'not a udig', $stop_wrap_set
 				unless $stop_wrap_set =~ m/^${UDIG_RE}$/
 		;
 	} elsif ($arg =~ m/^--/) {
