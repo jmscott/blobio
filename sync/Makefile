@@ -9,9 +9,9 @@ include ../local.mk
 SBINs=									\
 	make-sync-root							\
 	reboot-sync							\
-	sync-brr-chain							\
 	sync-put							\
 	sync-wrap							\
+	walk-wrap-set							\
 
 LIBs=									\
 	blobio.sync.remote.service.example				\
