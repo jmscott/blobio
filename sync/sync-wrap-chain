@@ -1,0 +1,72 @@
+#!/bin/bash
+#
+#  Synopsis:
+#	Sync all blobs across a chain of wrap sets by "blobio get >/dev/null"
+#  Usage:
+#	sync-wrap-chain <remote-service> <stop-wrap-set-udig>
+#  Exit Status:
+#	0	no error, all blobs sunk across the chain of wrap sets.
+#	1	a blob does not exist
+#	2	invocation error
+#	3	unknown error fetching blob
+#  Note
+#	Eventually the blobs will eaten locally.  Currently the sync-put
+#	called by flowd ignores all "eat" requests.  Eventually local
+#	"eat" will be distinguished from remote eats.  Need to add function
+#	service_tcp4_remote_host() to flowd language.
+#
+
+PROG=$(basename $0)
+
+log()
+{
+	echo "$PROG: $@"
+}
+
+die()
+{
+	STATUS=$1
+	shift
+	log "ERROR: $@" >&2
+	exit $STATUS
+}
+
+leave()
+{
+	#  zap the temporary worlk directory
+	if [ -n "$WORK_DIR" -a -e $WORK_DIR ];  then
+		cd ..
+		rm -rf $WORK_DIR
+	fi
+	log 'good bye, cruel world'
+	exit
+}
+
+test $# = 2 || die 2 "wrong number of arguments, got $#, expected 2"
+REMOTE_BLOBIO_SERVICE="$1"
+STOP_WRAP_UDIG=$2
+
+log 'hello, world'
+trap leave EXIT QUIT INT TERM
+
+#  go to BLOBIO_ROOT and source in etc/profile
+
+test -n "$BLOBIO_ROOT" || die 2 'env variable not defined: BLOBIO_ROOT'
+cd $BLOBIO_ROOT || die 3 "cd $BLOBIO_ROOT failed: exit status=$?"
+. etc/profile || die 3 "$(pwd)/etc/profile failed"
+test -n "$BLOBIO_SERVICE" || die 'environment not defined: BLOBIO_SERVICE'
+
+log "remote blobio service: $REMOTE_BLOBIO_SERVICE"
+log "local blobio service: $BLOBIO_SERVICE"
+LOCAL_SERVICE="--service $BLOBIO_SERVICE"
+
+test -e etc/STOP-WRAP-SET ||
+			die 3 "no stop wrap-set file: $(pwd)/etc/STOP-WRAP-SET"
+STOP_WRAP_SET=$(cat etc/STOP-WRAP-SET)
+log "stop wrap set: $STOP_WRAP_SET"
+
+#  make and goto the work directory
+
+WORK_DIR=${TMPDIR:=/tmp}/$PROG-$$.d
+mkdir -p $WORK_DIR || die 3 "mkdir $WORK_DIR failed: $?"
+cd $WORK_DIR || die 3 "cd $WORK_DIR failed: exit status=$?"

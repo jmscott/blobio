@@ -1,0 +1,5 @@
+#
+#  Synopsis:
+#	Example 
+#
+export BLOBIO_SERVICE=fs:/usr/local/blobio

@@ -11,6 +11,7 @@ SBINs=									\
 	reboot-sync							\
 	sync-put							\
 	sync-wrap							\
+	sync-wrap-chain							\
 	walk-wrap-set							\
 
 LIBs=									\
@@ -18,6 +19,7 @@ LIBs=									\
 	com.blobio.ssh-tunnel.remote.plist.example			\
 	com.blobio.sync.plist.example					\
 	not-in-service.sql						\
+	profile-sync.example						\
 	service-by-interval.sql						\
 	sync-remote.flow.example					\
 
@@ -41,3 +43,4 @@ distclean:
 
 dev-links:
 	test -e lib || ln -s . lib
+	test -e etc || ln -s . etc
