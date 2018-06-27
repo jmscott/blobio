@@ -6,18 +6,7 @@
   <string>com.blobio.sync.remote</string>
 
   <key>KeepAlive</key>
-  <dict>
-	<!--  Wait for PostgreSQL to start.
-
-	      Note: I (jmscott) could never get OtherJobEnabled to unload
-	            flowd when postgresql unloaded.  Not sure why.
-	-->
-  	<key>PathState</key>
-	<dict>
-	  <key>/tmp/.s.PGSQL.5432</key>
-	  <true/>
-	</dict>
-  </dict>
+  <true/>
 
   <key>RunAtLoad</key>
   <true/>
@@ -34,7 +23,7 @@
 	<string>/usr/local/blobio/sbin:/usr/local/blobio/bin:/usr/local/pgsql/bin:/usr/local/bin:/usr/bin:/bin</string>
 
 	<key>BLOBIO_ROOT</key>
-	<string>/usr/local/blobio/sync/host/remote.setspace.com</string>
+	<string>/usr/local/blobio/sync/host/remote</string>
 
 	<key>BLOBIO_ALGORITHM</key>
 	<string>bc160</string>
@@ -53,7 +42,7 @@
 		appears in the process table.
 	-->
 	<string>server</string>
-	<string>etc/sync-remote.setspace.com.flow</string>
+	<string>etc/sync-remote.flow</string>
   </array>
 
   <key>Disabled</key>
@@ -66,7 +55,7 @@
   <string>staff</string>
 
   <key>WorkingDirectory</key>
-  <string>/usr/local/blobio/sync/host/remote.setspace.com</string>
+  <string>/usr/local/blobio/sync/host/remote</string>
 
   <key>StandardErrorPath</key>
   <string>/Users/blobio/log/launchd-sync-remote.log</string>

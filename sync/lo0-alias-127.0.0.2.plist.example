@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+
+<!--
+  Synopsis:
+  	Bring up lo0 interface/lo0-alias 127.0.0.2 for segregating outside
+	traffic from condor.setspace.com tunneled via ssh.  Mac OS/X
+	requires explicit routing og 127.0.0.2, unlike Linux, which brings
+	up all of 127.0.0.0/8
+-->
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>lo0-alias-127.0.0.2</string>
+
+  <key>KeepAlive</key>
+  <dict>
+	<key>NetworkState</key>
+	<true/>
+  </dict>
+
+  <key>ProgramArguments</key>
+  <array>
+  	<string>/sbin/ifconfig</string>
+	<string>lo0</string>
+	<string>alias</string>
+	<string>127.0.0.2</string>
+	<string>up</string>
+  </array>
+
+  <key>RunAtLoad</key>
+  <true/>
+
+  <key>Disabled</key>
+  <false/>
+
+</dict>
+</plist>
