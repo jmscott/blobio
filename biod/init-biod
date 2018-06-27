@@ -1,0 +1,28 @@
+#
+#  Synopsis:
+#	Initiaize a new biod server
+#  Usage:
+#	#  Make blobio system in home directory
+#	export BLOBIO_ROOT=$HOME/opt/blobio
+#	mkdir -p $BLOBIO_ROOT
+#
+#	#  Pull source code from github
+#	mkdir $HOME/dev
+#	cd $HOME/dev
+#	svn checkout https://github.com/jmscott/blobio
+#
+#	#  On Mac, build blobio code in $BLOBIO_ROOT
+#	cd blobio/trunk 
+#	cp local-macosx.mk.example local.mk
+#	make world
+#
+#	#  Build initial wrap set
+#	PATH=$BLOBIO_ROOT/sbin:$BLOBO_ROOT/bin:$PATH
+#	init-biod
+#	biod_ctl start
+#	#
+#	#  create first wrap set from json profile file in
+#	#  $BLOBIO_root/etc/profile.json
+#	bio-put etc/profile.json
+#	bio-wrap-roll >etc/roll/first-wrap-set.udig
+#	cp etc/roll/first-wrap.udig etc/roll/stop-wrap-set.udig
