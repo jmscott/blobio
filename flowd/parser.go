@@ -330,7 +330,7 @@ const yyEofCode = 1
 const yyErrCode = 2
 const yyInitialStackSize = 16
 
-//line parser.y:2006
+//line parser.y:2004
 var keyword = map[string]int{
 	"and":                  yy_AND,
 	"argv":                 ARGV,
@@ -2898,7 +2898,7 @@ yydefault:
 		}
 	case 69:
 		yyDollar = yyS[yypt-1 : yypt+1]
-		//line parser.y:1513
+		//line parser.y:1512
 		{
 			if !(yylex.(*yyLexState)).put_sqlstate(yyDollar[1].string) {
 				return 0
@@ -2906,7 +2906,7 @@ yydefault:
 		}
 	case 70:
 		yyDollar = yyS[yypt-3 : yypt+1]
-		//line parser.y:1520
+		//line parser.y:1519
 		{
 			if !(yylex.(*yyLexState)).put_sqlstate(yyDollar[3].string) {
 				return 0
@@ -2914,7 +2914,7 @@ yydefault:
 		}
 	case 73:
 		yyDollar = yyS[yypt-3 : yypt+1]
-		//line parser.y:1535
+		//line parser.y:1534
 		{
 			l := yylex.(*yyLexState)
 			if l.seen_driver_name {
@@ -2932,7 +2932,7 @@ yydefault:
 		}
 	case 74:
 		yyDollar = yyS[yypt-3 : yypt+1]
-		//line parser.y:1552
+		//line parser.y:1551
 		{
 			l := yylex.(*yyLexState)
 			if l.seen_data_source_name {
@@ -2950,7 +2950,7 @@ yydefault:
 		}
 	case 75:
 		yyDollar = yyS[yypt-3 : yypt+1]
-		//line parser.y:1569
+		//line parser.y:1568
 		{
 			l := yylex.(*yyLexState)
 			if l.seen_max_idle_conns {
@@ -2964,7 +2964,7 @@ yydefault:
 		}
 	case 76:
 		yyDollar = yyS[yypt-3 : yypt+1]
-		//line parser.y:1582
+		//line parser.y:1581
 		{
 			l := yylex.(*yyLexState)
 			if l.seen_max_open_conns {
@@ -2978,7 +2978,7 @@ yydefault:
 		}
 	case 79:
 		yyDollar = yyS[yypt-3 : yypt+1]
-		//line parser.y:1603
+		//line parser.y:1602
 		{
 			l := yylex.(*yyLexState)
 			l.error("unknown database: %s", yyDollar[3].string)
@@ -2986,7 +2986,7 @@ yydefault:
 		}
 	case 80:
 		yyDollar = yyS[yypt-3 : yypt+1]
-		//line parser.y:1610
+		//line parser.y:1609
 		{
 			l := yylex.(*yyLexState)
 
@@ -3018,7 +3018,7 @@ yydefault:
 		}
 	case 81:
 		yyDollar = yyS[yypt-3 : yypt+1]
-		//line parser.y:1641
+		//line parser.y:1640
 		{
 			l := yylex.(*yyLexState)
 			if yyDollar[3].string == "" {
@@ -3055,7 +3055,7 @@ yydefault:
 		}
 	case 82:
 		yyDollar = yyS[yypt-5 : yypt+1]
-		//line parser.y:1677
+		//line parser.y:1676
 		{
 			l := yylex.(*yyLexState)
 
@@ -3077,7 +3077,7 @@ yydefault:
 		}
 	case 83:
 		yyDollar = yyS[yypt-3 : yypt+1]
-		//line parser.y:1698
+		//line parser.y:1697
 		{
 			l := yylex.(*yyLexState)
 
@@ -3100,7 +3100,7 @@ yydefault:
 		}
 	case 88:
 		yyDollar = yyS[yypt-1 : yypt+1]
-		//line parser.y:1730
+		//line parser.y:1729
 		{
 			l := yylex.(*yyLexState)
 			if l.seen_boot {
@@ -3112,7 +3112,7 @@ yydefault:
 		}
 	case 89:
 		yyDollar = yyS[yypt-5 : yypt+1]
-		//line parser.y:1741
+		//line parser.y:1740
 		{
 			yylex.(*yyLexState).in_boot = false
 			yyVAL.ast = &ast{
@@ -3121,7 +3121,7 @@ yydefault:
 		}
 	case 90:
 		yyDollar = yyS[yypt-8 : yypt+1]
-		//line parser.y:1750
+		//line parser.y:1749
 		{
 			l := yylex.(*yyLexState)
 			/*
@@ -3143,7 +3143,7 @@ yydefault:
 		}
 	case 91:
 		yyDollar = yyS[yypt-1 : yypt+1]
-		//line parser.y:1771
+		//line parser.y:1769
 		{
 			l := yylex.(*yyLexState)
 			if l.command != nil {
@@ -3155,13 +3155,13 @@ yydefault:
 		}
 	case 92:
 		yyDollar = yyS[yypt-3 : yypt+1]
-		//line parser.y:1779
+		//line parser.y:1777
 		{
 			yyDollar[2].command.name = yyDollar[3].string
 		}
 	case 93:
 		yyDollar = yyS[yypt-7 : yypt+1]
-		//line parser.y:1780
+		//line parser.y:1778
 		{
 			l := yylex.(*yyLexState)
 			if len(l.config.command) > 255 {
@@ -3185,7 +3185,7 @@ yydefault:
 		}
 	case 94:
 		yyDollar = yyS[yypt-2 : yypt+1]
-		//line parser.y:1803
+		//line parser.y:1801
 		{
 			yyDollar[1].ast.right = &ast{
 				yy_tok: WHEN,
@@ -3197,7 +3197,7 @@ yydefault:
 		}
 	case 95:
 		yyDollar = yyS[yypt-4 : yypt+1]
-		//line parser.y:1814
+		//line parser.y:1812
 		{
 			yyDollar[1].ast.right = &ast{
 				yy_tok: WHEN,
@@ -3207,7 +3207,7 @@ yydefault:
 		}
 	case 96:
 		yyDollar = yyS[yypt-2 : yypt+1]
-		//line parser.y:1823
+		//line parser.y:1821
 		{
 			yyDollar[1].ast.right = &ast{
 				yy_tok: WHEN,
@@ -3220,7 +3220,7 @@ yydefault:
 		}
 	case 97:
 		yyDollar = yyS[yypt-4 : yypt+1]
-		//line parser.y:1835
+		//line parser.y:1833
 		{
 			yyDollar[1].ast.right = &ast{
 				yy_tok: WHEN,
@@ -3231,7 +3231,7 @@ yydefault:
 		}
 	case 98:
 		yyDollar = yyS[yypt-3 : yypt+1]
-		//line parser.y:1845
+		//line parser.y:1843
 		{
 			l := yylex.(*yyLexState)
 			l.sql_database = &sql_database{
@@ -3240,7 +3240,7 @@ yydefault:
 		}
 	case 99:
 		yyDollar = yyS[yypt-7 : yypt+1]
-		//line parser.y:1851
+		//line parser.y:1849
 		{
 			l := yylex.(*yyLexState)
 			if l.sql_database.driver_name == "" {
@@ -3257,7 +3257,7 @@ yydefault:
 		}
 	case 100:
 		yyDollar = yyS[yypt-4 : yypt+1]
-		//line parser.y:1867
+		//line parser.y:1865
 		{
 			l := yylex.(*yyLexState)
 			l.sql_query_row = &sql_query_row{
@@ -3269,7 +3269,7 @@ yydefault:
 		}
 	case 101:
 		yyDollar = yyS[yypt-8 : yypt+1]
-		//line parser.y:1876
+		//line parser.y:1874
 		{
 			l := yylex.(*yyLexState)
 			q := l.sql_query_row
@@ -3306,7 +3306,7 @@ yydefault:
 		}
 	case 102:
 		yyDollar = yyS[yypt-3 : yypt+1]
-		//line parser.y:1912
+		//line parser.y:1910
 		{
 			l := yylex.(*yyLexState)
 			l.sql_exec = &sql_exec{
@@ -3315,7 +3315,7 @@ yydefault:
 		}
 	case 103:
 		yyDollar = yyS[yypt-7 : yypt+1]
-		//line parser.y:1918
+		//line parser.y:1916
 		{
 			l := yylex.(*yyLexState)
 			ex := l.sql_exec
@@ -3348,13 +3348,13 @@ yydefault:
 		}
 	case 104:
 		yyDollar = yyS[yypt-1 : yypt+1]
-		//line parser.y:1954
+		//line parser.y:1952
 		{
 			yyVAL.go_kind = reflect.Bool
 		}
 	case 105:
 		yyDollar = yyS[yypt-2 : yypt+1]
-		//line parser.y:1961
+		//line parser.y:1959
 		{
 			l := yylex.(*yyLexState)
 			q := l.sql_query_row
@@ -3380,13 +3380,13 @@ yydefault:
 		}
 	case 108:
 		yyDollar = yyS[yypt-1 : yypt+1]
-		//line parser.y:1994
+		//line parser.y:1992
 		{
 			yylex.(*yyLexState).ast_root = yyDollar[1].ast
 		}
 	case 109:
 		yyDollar = yyS[yypt-2 : yypt+1]
-		//line parser.y:1999
+		//line parser.y:1997
 		{
 			s := yyDollar[1].ast
 			for ; s.next != nil; s = s.next {
