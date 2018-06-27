@@ -58,8 +58,11 @@ start)
 		log "is biod already running with pid #$(cat $PID_FILE)?" >&2
 		die "remove file: $PID_FILE"
 	fi
-	$BIOD --ps-title-XXXXXXXXXXXXXXXXXXXXXXX --port $PORT		\
-				--rrd-sample-duration $RRD_SAMPLE_DURATION
+	$BIOD								\
+		--root $BLOBIO_ROOT					\
+		--port $PORT						\
+		--ps-title-XXXXXXXXXXXXXXXXXXXXXXX			\
+		--rrd-sample-duration $RRD_SAMPLE_DURATION
 	STATUS=$?
 	test $STATUS = 0 || die "biod failed to start: exit status=$STATUS"
 
