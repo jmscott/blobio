@@ -1456,6 +1456,9 @@ daemonize()
 
 	/*
 	 *  Server always runs as user blobio.
+	 *
+	 *  Note:
+	 *	This code is probably not needed with modern init managers.
 	 */
 	if (getuid() == 0) {
 		struct passwd *pwd = getpwnam("blobio");
