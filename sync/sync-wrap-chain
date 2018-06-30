@@ -1,7 +1,7 @@
 #!/bin/bash
 #
 #  Synopsis:
-#	Sync all blobs across a chain of wrap sets by "blobio get >/dev/null"
+#	Sync all blobs in a chain of wrap sets by doing "blobio eat >/dev/null"
 #  Usage:
 #	sync-wrap-chain <remote-service> <stop-wrap-set-udig>
 #  Exit Status:
