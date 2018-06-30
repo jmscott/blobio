@@ -1,6 +1,6 @@
 /*
  *  Synopsis:
- *	Manage log file for server PANIC|ERROR|WARN or info messages
+ *	Manage log file for server PANIC|ERROR|WARN|INFO or info messages
  *  Description:
  *	Typical process logging with 4 tagged levels, PANIC|ERROR|WARN,
  *	and one untagged INFO level to a reliable, rolled file.  The levels 
