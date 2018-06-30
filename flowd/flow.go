@@ -10,6 +10,7 @@ package main
 
 import (
 	"database/sql"
+	"regexp"
 	"strconv"
 	"sync"
 
@@ -582,6 +583,74 @@ func (flo *flow) eq_string(
 				flow:    flo,
 			}
 
+		}
+	}()
+	return out
+}
+
+func (flo *flow) match_string(
+	rex_const *regexp.Regexp,
+	in string_chan,
+) (out bool_chan) {
+
+	out = make(bool_chan)
+
+	go func() {
+		defer close(out)
+
+		for flo = flo.get(); flo != nil; flo = flo.get() {
+
+			sv := <-in
+			if sv == nil {
+				return
+			}
+
+			var b, is_null bool
+
+			if sv.is_null {
+				is_null = true
+			} else {
+				b = rex_const.MatchString(sv.string)
+			}
+			out <- &bool_value{
+				bool:    b,
+				is_null: is_null,
+				flow:    flo,
+			}
+		}
+	}()
+	return out
+}
+
+func (flo *flow) no_match_string(
+	rex_const *regexp.Regexp,
+	in string_chan,
+) (out bool_chan) {
+
+	out = make(bool_chan)
+
+	go func() {
+		defer close(out)
+
+		for flo = flo.get(); flo != nil; flo = flo.get() {
+
+			sv := <-in
+			if sv == nil {
+				return
+			}
+
+			var b, is_null bool
+
+			if sv.is_null {
+				is_null = true
+			} else {
+				b = rex_const.MatchString(sv.string) == false
+			}
+			out <- &bool_value{
+				bool:    b,
+				is_null: is_null,
+				flow:    flo,
+			}
 		}
 	}()
 	return out

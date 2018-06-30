@@ -49,6 +49,7 @@ import (
 	"errors"
 	"io"
 	"reflect"
+	"regexp"
 	"strconv"
 	"unicode"
 	"unicode/utf8"
@@ -121,6 +122,7 @@ type ast struct {
 	yy_tok	int
 	bool
 	string
+	regexp	*regexp.Regexp
 	uint64
 	uint8
 	brr_field
@@ -204,9 +206,9 @@ const (
 %token	DATA_SOURCE_NAME
 %token  TRACE_BOOL
 %token	DRIVER_NAME
-%token	EQ EQ_REGEXP
+%token	EQ MATCH
 %token	EQ_BOOL
-%token	EQ_STRING
+%token	EQ_STRING  MATCH_STRING
 %token	EQ_UINT64
 %token	EXIT_STATUS
 %token	FDR_ROLL_DURATION
@@ -220,9 +222,9 @@ const (
 %token	MAX_OPEN_CONNS
 %token	MEMSTAT_DURATION
 %token	NAME
-%token	NEQ
+%token	NEQ NO_MATCH
 %token	NEQ_BOOL
-%token	NEQ_STRING
+%token	NEQ_STRING NO_MATCH_STRING
 %token	NEQ_UINT64
 %token	NETFLOW
 %token	OS_EXEC_CAPACITY
@@ -552,10 +554,17 @@ rel_op:
 		};
 	  }
 	|
-	  EQ_REGEXP
+	  MATCH
 	  {
 	  	$$ = &ast{
-			yy_tok:	EQ_REGEXP,
+			yy_tok:	MATCH,
+		};
+	  }
+	|
+	  NO_MATCH
+	  {
+	  	$$ = &ast{
+			yy_tok:	NO_MATCH,
 		};
 	  }
 	|
@@ -1059,15 +1068,33 @@ qualify:
 				left:		$1,
 			}
 		case $1.is_string() && $3.is_string():
-			if rel_tok == EQ {
+
+			var rex *regexp.Regexp
+			var err error
+
+			switch rel_tok {
+			case EQ:
 				rel_tok = EQ_STRING
-			} else {
+			case NEQ:
 				rel_tok = NEQ_STRING
+			case MATCH:
+				rel_tok = MATCH_STRING
+				rex, err = regexp.Compile($3.string)
+			case NO_MATCH:
+				rel_tok = NO_MATCH_STRING
+				rex, err = regexp.Compile($3.string)
+			default:
+				panic("impossible relop");
+			}
+			if err != nil {
+				l.error("can not compile regex: %s",$3.string);
+				return 0
 			}
 			$$ = &ast{
 				yy_tok:		rel_tok,
 
 				string:		$3.string,
+				regexp:		rex,
 				left:		$1,
 			}
 		default:
@@ -2451,19 +2478,41 @@ func (l *yyLexState) Lex(yylval *yySymType) (tok int) {
 		return STRING
 	}
 	if c == '=' {
-		tok, err = lookahead(l, '=', EQ, int('='))
+
+		//  string equality: ==
+		tok, err = lookahead(l, '=', EQ, 0)
+		if err != nil {
+			goto PARSE_ERROR
+		}
+		if tok == EQ {
+			return tok
+		}
+
+		//  match regular expression: =~
+
+		tok, err = lookahead(l, '~', MATCH, '=')
 		if err != nil {
 			goto PARSE_ERROR
 		}
 		return tok
 	}
 	if c == '!' {
-		tok, err = lookahead(l, '=', NEQ, int('!'))
+
+		//  string inequality: !=
+
+		tok, err = lookahead(l, '=', NEQ, 0)
 		if err != nil {
 			goto PARSE_ERROR
 		}
 		if tok == NEQ {
-			return NEQ
+			return tok
+		}
+
+		//  regular expression not matches: !~
+
+		tok, err = lookahead(l, '~', NO_MATCH, '=')
+		if err != nil {
+			goto PARSE_ERROR
 		}
 		return tok
 	}
@@ -2493,7 +2542,7 @@ func (l *yyLexState) Error(msg string) {
 	}
 }
 
-//  wire in posible casts and verifuy correctness of expression
+//  wire in posible casts and verify correctness of expression
 
 func (l *yyLexState) wire_rel_op(left, op, right *ast) bool {
 
@@ -2530,12 +2579,32 @@ func (l *yyLexState) wire_rel_op(left, op, right *ast) bool {
 					left.tail.name, left.brr_field)
 				return false
 			}
-			if op.yy_tok == EQ {
+
+			var err error
+
+			switch op.yy_tok {
+			case EQ:
 				op.yy_tok = EQ_STRING
-			} else {
+				op.string = right.string
+			case NEQ:
 				op.yy_tok = NEQ_STRING
+				op.string = right.string
+			case MATCH:
+				op.yy_tok = MATCH_STRING
+				op.regexp = right.regexp
+				op.regexp, err = regexp.Compile(right.string)
+			case NO_MATCH:
+				op.yy_tok = NO_MATCH_STRING
+				op.regexp = right.regexp
+				op.regexp, err = regexp.Compile(right.string)
+			default:
+				panic("impossible relop");
 			}
-			op.string = right.string
+			if err != nil {
+				l.error(
+				  "can not compile regexp: %s", right.string)
+				return false
+			}
 		}
 	} else {
 		//  <command>.exit_status == ...

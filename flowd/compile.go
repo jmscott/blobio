@@ -266,6 +266,10 @@ func (cmpl *compile) compile() fdr_chan {
 			a2b[a] = flo.eq_string(a.string, a2s[a.left])
 		case NEQ_STRING:
 			a2b[a] = flo.neq_string(a.string, a2s[a.left])
+		case MATCH_STRING:
+			a2b[a] = flo.match_string(a.regexp, a2s[a.left])
+		case NO_MATCH_STRING:
+			a2b[a] = flo.no_match_string(a.regexp, a2s[a.left])
 		case EQ_BOOL:
 			a2b[a] = flo.eq_bool(a.bool, a2b[a.left])
 		case yy_OR:
