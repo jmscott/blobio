@@ -6,6 +6,7 @@
 #	--start-wrap-set <udig>
 #	--stop-wrap-set <udig>
 #	--trace-blob <udig>
+#	--stop-brr-count
 #  Usage:
 #	#  See stats on entire chain of wrap-sets.
 #	#  the start wrap set is derived by requesting a wrap/roll
@@ -37,6 +38,7 @@ my (
 	$start_wrap_set,
 	$stop_wrap_set,
 	$trace_blob,
+	$stop_brr_log_count,
 	%BRR_LOG,
 	%UDIG,
 	%WRAP_SET,
@@ -249,6 +251,16 @@ while (@ARGV > 0) {
 				unless $trace_blob =~ m/^${UDIG_RE}$/
 		;
 
+	} elsif ($arg eq '--stop-brr-log-count') {
+		sub _die5 {
+			opt_die 'stop-brr-log-count', @_;
+		}
+
+		_die5 'defined more than once' if $stop_brr_log_count;
+		$stop_brr_log_count = shift @ARGV;
+		_die5 'not a u32 count', $stop_brr_log_count
+				unless $stop_brr_log_count =~ m/^[0-9]{1,19}$/;
+		;
 	} elsif ($arg =~ m/^--/) {
 		die "unknown option: $arg";
 	} else {
@@ -372,6 +384,10 @@ END
 		}
 		close($BRR_LOG) or die "close(blobio get brr log) failed: $!";
 		unlink($tmp_file) or die "unlink(tmp brr log) failed: $!";
+		if (scalar(%BRR_LOG) >= $stop_brr_log_count){
+			$roll_set = $wrap_set = undef;
+			last;
+		}
 	}
 	last if $roll_set eq '' || $roll_set eq $stop_wrap_set;
 
