@@ -1,0 +1,25 @@
+#
+#  Synopsis:
+#	Eat all blobs in a chain that are not in the service table.
+#  Usage:
+#	rummy-service stop-brr-log-count
+#
+
+log()
+{
+	echo "$(date +'%Y/%m/%d %H:%M:%S'): $@"
+}
+
+leave()
+{
+	echo 'good bye, cruel world'
+}
+
+die()
+{
+	log "ERROR: $@" >&2
+	exit 1
+}
+
+log 'hello, world'
+trap leave EXIT
