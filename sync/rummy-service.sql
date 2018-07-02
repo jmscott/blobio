@@ -75,6 +75,17 @@ SELECT
     	c.blob
 ;
 
+\echo Select no in service blob with no in entry in table brr_blob_size
+\o chain-no-brr_blob_size.udig
+SELECT
+	c.blob
+  FROM
+  	chain c
+	  LEFT OUTER JOIN brr_blob_size bs ON (bs.blob = c.blob)
+  WHERE
+  	bs.blob IS NULL
+;
+
 \echo Select :chain_count blobs in chain
 \o chain.udig
 SELECT

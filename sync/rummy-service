@@ -68,6 +68,16 @@ STATUS=${PIPESTATUS[*]}
 test "$STATUS" = '0 0' ||
 	die "fgrep WALK-WRAP-SET | psql failed: exit status=$STATUS"
 
-test -e chain.udig || die "udig file does not exit: chain.udig"
-CHAIN_COUNT=$(wc -l chain.udig | awk '{print $1}')
-log "chain blob count: $CHAIN_COUNT"
+count_udig()
+{
+	FILE=$1
+	test -e $FILE || die "udig file does not exist: $FILE"
+	COUNT=$(wc -l $FILE | awk '{print $1}')
+	log "$(basename $FILE .udig): $COUNT blobs":
+}
+
+count_udig chain.udig
+count_udig chain-not-in-service.udig
+count_udig chain-taken.udig
+count_udig chain-missing.udig
+count_udig chain-no-brr_blob_size.udig
