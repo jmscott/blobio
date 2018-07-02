@@ -1,9 +1,12 @@
+#!/bin/bash
 #
 #  Synopsis:
 #	Eat all blobs in a chain that are not in the service table.
 #  Usage:
 #	rummy-service stop-brr-log-count
 #
+
+WORK_DIR=${TMPDIR:=/tmp}/$(basename $0)-$$.d
 
 log()
 {
@@ -12,7 +15,11 @@ log()
 
 leave()
 {
-	echo 'good bye, cruel world'
+	if [ -d $WORK_DIR ];  then
+		cd ..
+		rm -rf $WORK_DIR
+	fi
+	log 'good bye, cruel world'
 }
 
 die()
@@ -23,3 +30,44 @@ die()
 
 log 'hello, world'
 trap leave EXIT
+
+test $# = 1 || die 'wrong number of arguments'
+test -n "$BLOBIO_ROOT" || die "BLOBIO_ROOT not defined"
+log "BLOBIO_ROOT=$BLOBIO_ROOT"
+log "PATH=$PATH"
+log "PGHOST=$PGHOST"
+log "PGPORT=$PGPORT"
+log "PGUSER=$PGUSER"
+log "PGPASSWORD=$PGPASSWORD"
+log "PGDATABASE=$PGDATABASE"
+
+SQL=$BLOBIO_ROOT/lib/rummy-service.sql
+log "rummy sql: $SQL"
+test -r $SQL || die "can not read sql file: $SQL"
+
+STOP_BRR_LOG_COUNT=$1
+[[ "$STOP_BRR_LOG_COUNT" =~ ^[1-9][0-9]{0,18}$ ]] ||
+		die "stop brr count: not an integer: $STOP_BRR_LOG_COUNT"
+log "stop brr count: $STOP_BRR_LOG_COUNT"
+
+log "work directory: $WORK_DIR"
+test -d $WORK_DIR && die "refuse to overwrite existing work dir: $WORK_DIR"
+mkdir -p $WORK_DIR || die "mkdir $WORK_DIR failed: exit status=$?"
+
+cd $WORK_DIR || die "cd $WORK_DIR failed: exit status=$?"
+
+log "walking wrap chain: $STOP_BRR_LOG_COUNT log files ..."
+walk-wrap-set --stop-brr-log-count $STOP_BRR_LOG_COUNT >WALK-WRAP-SET	||
+				die "walk-wrap-set failed: exit status=$?"
+log 'extracting meta data about wrap chain ...'
+fgrep '#' WALK-WRAP-SET
+
+log 'extracting blobs in service ...'
+fgrep -v '#' WALK-WRAP-SET | psql --file $SQL
+STATUS=${PIPESTATUS[*]}
+test "$STATUS" = '0 0' ||
+	die "fgrep WALK-WRAP-SET | psql failed: exit status=$STATUS"
+
+test -e chain.udig || die "udig file does not exit: chain.udig"
+CHAIN_COUNT=$(wc -l chain.udig | awk '{print $1}')
+log "chain blob count: $CHAIN_COUNT"

@@ -21,6 +21,7 @@ LIBs=									\
 	lo0-alias-127.0.0.2.plist.example				\
 	not-in-service.sql						\
 	profile-sync.example						\
+	rummy-service.sql						\
 	service-by-interval.sql						\
 	sync-remote.flow.example					\
 
@@ -43,5 +44,6 @@ distclean:
 	cd $(DIST_ROOT)/lib && rm -f $(LIBs)
 
 dev-links:
+	test -e sbin || ln -s . sbin
 	test -e lib || ln -s . lib
 	test -e etc || ln -s . etc
