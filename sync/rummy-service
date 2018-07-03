@@ -32,8 +32,13 @@ log 'hello, world'
 trap leave EXIT
 
 test $# = 1 || die 'wrong number of arguments'
+
 test -n "$BLOBIO_ROOT" || die "BLOBIO_ROOT not defined"
 log "BLOBIO_ROOT=$BLOBIO_ROOT"
+cd $BLOBIO_ROOT || die "cd $BLOBIO_ROOT failed: exit status=$?"
+
+test -r && . etc/profile
+
 log "PATH=$PATH"
 log "PGHOST=$PGHOST"
 log "PGPORT=$PGPORT"
