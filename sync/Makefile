@@ -40,6 +40,10 @@ install:
 	install -g $(DIST_GROUP) -o $(DIST_USER) -m u=rx,go=		\
 		$(SBINs)						\
 		$(DIST_ROOT)/sbin
+	install -g $(DIST_GROUP) -o $(DIST_USER) -m ug=r,o=		\
+		$(LIBs)							\
+		$(DIST_ROOT)/lib
+
 distclean:
 	cd $(DIST_ROOT)/sbin && rm -f $(SBINs)
 	cd $(DIST_ROOT)/lib && rm -f $(LIBs)
