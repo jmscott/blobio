@@ -9,6 +9,7 @@ include ../local.mk
 SBINs=									\
 	make-sync-root							\
 	reboot-sync							\
+	rummy-service							\
 	sync-put							\
 	sync-wrap							\
 	sync-wrap-chain							\
