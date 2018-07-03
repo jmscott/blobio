@@ -52,8 +52,8 @@ test -r $SQL || die "can not read sql file: $SQL"
 
 STOP_BRR_LOG_COUNT=$1
 [[ "$STOP_BRR_LOG_COUNT" =~ ^[1-9][0-9]{0,18}$ ]] ||
-		die "stop brr count: not an integer: $STOP_BRR_LOG_COUNT"
-log "stop brr count: $STOP_BRR_LOG_COUNT"
+		die "stop brr log count: not an integer: $STOP_BRR_LOG_COUNT"
+log "stop brr log count: $STOP_BRR_LOG_COUNT"
 
 log "work directory: $WORK_DIR"
 test -d $WORK_DIR && die "refuse to overwrite existing work dir: $WORK_DIR"
