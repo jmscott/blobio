@@ -3,7 +3,7 @@
 #  Synopsis:
 #	Eat all blobs in a chain that are not in the service table.
 #  Usage:
-#	rummy-service stop-brr-log-count
+#	rummy stop-brr-log-count
 #
 
 WORK_DIR=${TMPDIR:=/tmp}/$(basename $0)-$$.d
@@ -49,7 +49,7 @@ log "PGUSER=$PGUSER"
 log "PGPASSWORD=$PGPASSWORD"
 log "PGDATABASE=$PGDATABASE"
 
-SQL=$BLOBIO_ROOT/lib/rummy-service.sql
+SQL=$BLOBIO_ROOT/lib/rummy.sql
 log "rummy sql: $SQL"
 test -r $SQL || die "can not read sql file: $SQL"
 

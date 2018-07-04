@@ -9,7 +9,7 @@ include ../local.mk
 SBINs=									\
 	make-sync-root							\
 	reboot-sync							\
-	rummy-service							\
+	rummy								\
 	sync-put							\
 	sync-wrap							\
 	sync-wrap-chain							\
@@ -22,7 +22,7 @@ LIBs=									\
 	lo0-alias-127.0.0.2.plist.example				\
 	not-in-service.sql						\
 	profile-sync.example						\
-	rummy-service.sql						\
+	rummy.sql							\
 	service-by-interval.sql						\
 	sync-remote.flow.example					\
 
