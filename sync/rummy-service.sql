@@ -75,7 +75,7 @@ SELECT
     	c.blob
 ;
 
-\echo Select no in service blob with no in entry in table brr_blob_size
+\echo Select blobs in service with no brr size entry
 \o chain-no-brr_blob_size.udig
 SELECT
 	c.blob

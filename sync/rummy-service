@@ -33,9 +33,12 @@ trap leave EXIT
 
 test $# = 1 || die 'wrong number of arguments'
 
-test -n "$BLOBIO_ROOT" || die "BLOBIO_ROOT not defined"
+test -n "$BLOBIO_ROOT" || die "environment not defined: BLOBIO_ROOT"
 log "BLOBIO_ROOT=$BLOBIO_ROOT"
 cd $BLOBIO_ROOT || die "cd $BLOBIO_ROOT failed: exit status=$?"
+
+test -n "$BLOBIO_SERVICE" || die "environment not defined: BLOBIO_SERVICE"
+log "BLOBIO_SERVICE=$BLOBIO_SERVICE"
 
 test -r && . etc/profile
 
@@ -86,3 +89,24 @@ count_udig chain-not-in-service.udig
 count_udig chain-taken.udig
 count_udig chain-missing.udig
 count_udig chain-no-brr_blob_size.udig
+
+
+log 'fetching blobs with no entry in table brr_blob_size ...'
+while read UDIG;  do
+	blobio get							\
+		--udig $UDIG						\
+		--service $BLOBIO_SERVICE				\
+		--output-path /dev/null
+	STATUS=$?
+	case $STATUS in
+	0)
+		log ">$UDIG"
+		;;
+	1)
+		log "WARN: ?$UDIG"
+		;;
+	*)
+		die "blobio get $BLOBIO_SERVICE failed: exit status=$STATUS"
+		;;
+	esac
+done <chain-no-brr_blob_size.udig
