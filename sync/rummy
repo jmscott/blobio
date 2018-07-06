@@ -1,9 +1,12 @@
 #!/bin/bash
 #
 #  Synopsis:
-#	Eat all blobs in a chain that are not in the service table.
+#	Eat blobs that are not in the table "service" or "brr_blob_size"
 #  Usage:
-#	rummy stop-brr-log-count
+#	rummy <stop-brr-log-count>
+#
+#	#  look at blobs back the previous 24 * 3 brr log files
+#	rummy 72
 #
 
 WORK_DIR=${TMPDIR:=/tmp}/$(basename $0)-$$.d
