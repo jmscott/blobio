@@ -42,8 +42,10 @@ cd $BLOBIO_ROOT || die "cd $BLOBIO_ROOT failed: exit status=$?"
 
 test -n "$BLOBIO_SERVICE" || die "environment not defined: BLOBIO_SERVICE"
 log "BLOBIO_SERVICE=$BLOBIO_SERVICE"
+log "BLOBIO_GET_SERVICE=$BLOBIO_GET_SERVICE"
 
-test -r && . etc/profile
+test -r etc/profile || die "can not read file: $(pwd)/etc/profile"
+. etc/profile
 
 log "PATH=$PATH"
 log "PGHOST=$PGHOST"
@@ -76,8 +78,16 @@ fgrep '#' WALK-WRAP-SET
 log 'extracting blobs in service ...'
 fgrep -v '#' WALK-WRAP-SET | psql --file $SQL
 STATUS=${PIPESTATUS[*]}
-test "$STATUS" = '0 0' ||
+
+case "$STATUS" in
+'0 0')
+	;;
+'1 0')
+	die 'impossible: no blobs found in wrap chain'
+	;;
+*)
 	die "fgrep WALK-WRAP-SET | psql failed: exit status=$STATUS"
+esac
 
 count_udig()
 {

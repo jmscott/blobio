@@ -50,6 +50,7 @@ my (
 	%BLOB_SIZE,
 	%TAKEN,
 	%OK_VERB_COUNT,
+	%NO_VERB_COUNT,
 	%UDIG_AFTER,
 	%NO_EXIST,
 );
@@ -113,8 +114,7 @@ my $GET_SERVICE = "--service $BLOBIO_GET_SERVICE";
 
 chomp $date;
 print <<END;
-#
-#  Job Start Time: $date
+#  BlobIO Walk Wrap Set: $date
 #
 #  BLOBIO_SERVICE: $BLOBIO_SERVICE
 #  BLOBIO_GET_SERVICE: $BLOBIO_GET_SERVICE
@@ -210,6 +210,16 @@ $OK_VERB_COUNT{get} =
 	$OK_VERB_COUNT{wrap} =
 	$OK_VERB_COUNT{roll} =
 	$OK_VERB_COUNT{eat} =
+	0
+;
+
+$NO_VERB_COUNT{get} =
+	$NO_VERB_COUNT{put} =
+	$NO_VERB_COUNT{give} =
+	$NO_VERB_COUNT{take} =
+	$NO_VERB_COUNT{wrap} =
+	$NO_VERB_COUNT{roll} =
+	$NO_VERB_COUNT{eat} =
 	0
 ;
 
@@ -449,14 +459,33 @@ foreach my $brr_log (@BRR_LOG) {
 	my $BRR_LOG;
 	open($BRR_LOG, "<$tmp_file") or die "open(tmp brr log) failed: $!";
 
-
+	#  slurp up brr records
 	my @BRR = <$BRR_LOG>;
 	close $BRR_LOG or die "close(tmp brr) failed: $!";
 	unlink $tmp_file or die "unlink(tmp brr) failed: $!";
 
 	my $rc = @BRR;
 
-	#  loop through 
+	#
+	#  loop through indivual brr records in reverse time order.
+	#  the most recent record in row order (not start_time) determines
+	#  if the blob exists or not.
+	#
+	#  Note:
+	#	the row order algorithm is not quite correct, since, in theory,
+	#	an "eat" of a non-existent blob could start before
+	#	but finish after a simultaneous ok "put" of the same blob.
+	#	the row order might see the failed "eat" after the
+	#	succesfull put.  fortunatley in typical use the "eat"
+	#	is invoked sequentially before the "put" in the same
+	#	code:
+	#
+	#		blobio eat ...
+	#		if not exists then
+	#			blobio put
+	#
+	#	but, in principal, the algorithm is incorrect.
+	#
 	foreach (reverse @BRR) {
 		die "row $rc is not brr in log: $brr_log" unless m/^${BRR_RE}$/;
 		my $start_time = $1;
@@ -464,6 +493,8 @@ foreach my $brr_log (@BRR_LOG) {
 		my $udig = $3;
 		my $chat_history = $4;
 		my $blob_size = $5;
+
+		#  find the bounds for the start times for the whole brr log
 
 		$MAX_BRR_LOG_START_TIME = $start_time
 		  if
@@ -479,6 +510,7 @@ foreach my $brr_log (@BRR_LOG) {
 		;
 
 		if ($chat_history =~ /no$/) {
+			$NO_VERB_COUNT{$verb}++;
 			$NO_EXIST{$udig} = 1
 				if $UDIG{$udig} eq ''			&&
 				(
@@ -486,12 +518,12 @@ foreach my $brr_log (@BRR_LOG) {
 					$verb eq 'get'
 				)
 			;
-			next
+			next;
 		}
 
 		$OK_VERB_COUNT{$verb}++;
 
-		#  blob was taken
+		#  blob was taken succesfully, so does not exist
 
 		if ($verb eq 'take') {
 			#  flag as taken unless seen more recently
@@ -512,46 +544,48 @@ foreach my $brr_log (@BRR_LOG) {
 		  	$start_time le $MIN_RECENT_TIME
 		;
 		next if $TAKEN{$udig} || $NO_EXIST{$udig};
-		unless ($UDIG{$udig}) {
-			$UDIG{$udig} = 1;
-			$BLOB_SIZE{$udig} = $blob_size;
-		}
+		$UDIG{$udig} = 1;
+		$BLOB_SIZE{$udig} = $blob_size
+			if
+				$verb eq 'get'			||
+				$verb eq 'put'			||
+				$verb eq 'give'
+		;
 		--$rc;
 	}
 }
 
 my $sum_blob_size = 0;
-for my $udig (keys %BLOB_SIZE) {
+for my $udig (keys %UDIG) {
 	$sum_blob_size += $BLOB_SIZE{$udig};
 	print $udig, "\n";
 }
 
-my $brr_log_count = scalar(%BRR_LOG);
-my $udig_count = scalar(%UDIG);
-my $no_brr_log_set_count = scalar(%NO_BRR_LOG);
-my $taken_count = scalar(%TAKEN);
-my $no_exist_count = %NO_EXIST;
+my $brr_log_count = scalar(keys %BRR_LOG);
+my $udig_count = scalar(keys %UDIG);
+my $no_brr_log_set_count = scalar(keys %NO_BRR_LOG);
+my $taken_count = scalar(keys %TAKEN);
+my $no_exist_count = scalar(keys %NO_EXIST);
 
-my $average_blob_size;
-$average_blob_size = sprintf('%0.f', $sum_blob_size / $udig_count)
-			if $udig_count > 0
+my $average_blob_size = 0;
+$average_blob_size = pretty_size($sum_blob_size / $udig_count)
+						if $udig_count > 0
 ;
 $date = `date`;
 chomp $date;
 
-my $pretty_sum_blob_size = $sum_blob_size;
-if ($sum_blob_size >= 1099511627776) {		#  terabytes
-	$pretty_sum_blob_size = sprintf('%.fTB', $sum_blob_size /1099511627776);
+sub pretty_size
+{
+	my $size = $_[0];
 
-} elsif ($sum_blob_size >= 1073741824) {	#  gigabytes
-	$pretty_sum_blob_size = sprintf('%.fGB', $sum_blob_size / 1073741824);
-} elsif ($sum_blob_size >= 1048576) {		#  megabytes
-	$pretty_sum_blob_size = sprintf('%.fMB', $sum_blob_size / 1048576);
-} elsif ($sum_blob_size >= 1024) {
-	$pretty_sum_blob_size = sprintf('%.fKB', $sum_blob_size / 1024);
-} else {
-	$pretty_sum_blob_size = "$sum_blob_size bytes";
+	return sprintf('%.fTB', $size / 1099511627776) if $size >=1099511627776;
+	return sprintf('%.fGB', $size / 1073741824) if $size >= 1073741824;
+	return sprintf('%.fMB', $size / 1048576) if $size >= 1048576;
+	return sprintf('%.fKB', $size / 1024) if $size >= 1024;
+	return "$size bytes";
 }
+
+my $pretty_sum_blob_size = pretty_size $sum_blob_size;
 
 for (keys %TAKEN) {
 	print <<END;
@@ -577,6 +611,14 @@ print <<END;
 #  Wrap Ok Count: $OK_VERB_COUNT{wrap}
 #  Roll Ok Count: $OK_VERB_COUNT{roll}
 #  No Exist Count: $no_exist_count
+#
+#  Eat No Count: $NO_VERB_COUNT{eat}
+#  Get No Count: $NO_VERB_COUNT{get}
+#  Put No Count: $NO_VERB_COUNT{put}
+#  Give No Count: $NO_VERB_COUNT{give}
+#  Take No Count: $NO_VERB_COUNT{take}
+#  Wrap No Count: $NO_VERB_COUNT{wrap}
+#  Roll No Count: $NO_VERB_COUNT{roll}
 #
 #  UDig Count: $udig_count blobs
 #  Total Blob Size: $pretty_sum_blob_size ($sum_blob_size bytes)
