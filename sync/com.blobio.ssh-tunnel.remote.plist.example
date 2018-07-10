@@ -3,7 +3,7 @@
 <plist version="1.0">
 <dict>
   <key>Label</key>
-  <string>com.blobio.ssh-tunnel.remote</string>
+  <string>com.blobio.ssh-tunnel.condor</string>
 
   <key>KeepAlive</key>
   <true/>
@@ -17,25 +17,53 @@
   <key>ProgramArguments</key>
   <array>
   	<string>sbin/launchd-log</string>
-  	<!--
-		Map local ports on remote machine
+	<!--	****************  BEGIN SSH CONFIG  *********************
+		tunnel-condor is an aliases in ~blobio/.ssh/config:
 
-			localhost:15432 -> me:5432
-			localhost:11797 -> me:1797
-			localhost:10022 -> me:22
+		Host tunnel-condor
+			Hostname condor.setspace.com
 
-		The remote flowd sync points to localhost:15432 for
-		postgresql database and localhost:11797 for blobio server.
+			#  Croak when remote open of socket fails 
+			#  launchd will restart.
+
+			ExitOnForwardFailure yes
+
+			#  Number of seconds that client waits before
+			#  pinging server.  helps with firewall reapers
+			#  of stale sockets.
+
+			ServerAliveInterval 60
+
+			#  Try 4 pings before closing socket and aborting
+			ServerAliveCountMax 4
+
 	-->
 	<string>/usr/bin/ssh</string>
-	<string>tunnel-remote</string>
-	<string>-N</string>
+	<string>tunnel-condor</string>
+
+	<!--	*****************  END SSH CONFIG  ******************** -->
+
+	<!--	*****************  START BLOBIO BIOD CONFIG  ***************
+
+		Advertise blobio:1797 to condor.
+		We use local ips in 127.0.0.1/24 to differentiate local
+		requests from remote requests in brr log files.
+		Such differntiation is needed for syncing algorithm.
+	-->
+
+	<!--
+		Local 127.0.0.2:1797 is advertised on Remote condor:11797
+	-->
 	<string>-R</string>
-	<string>15432:localhost:5432</string>
-	<string>-R</string>
-	<string>11797:localhost:1797</string>
-	<string>-R</string>
-	<string>10022:localhost:22</string>
+	<string>11797:127.0.0.2:1797</string>
+
+	<!--
+		Local 127.0.0.2:1797 is advertised on remote 127.0.0.1:11797.
+	-->
+	<string>-L</string>
+	<string>127.0.0.1:11797:127.0.0.2:1797</string>
+
+	<!--	*****************  END BLOBIO CONFIG  *************** -->
   </array>
 
   <key>RunAtLoad</key>
@@ -51,10 +79,10 @@
   <string>/usr/local/blobio</string>
 
   <key>StandardErrorPath</key>
-  <string>/Users/blobio/log/launchd-ssh-tunnel-remote.log</string>
+  <string>/Users/blobio/log/launchd-ssh-tunnel-condor.log</string>
 
   <key>StandardOutPath</key>
-  <string>/Users/blobio/log/launchd-ssh-tunnel-remote.log</string>
+  <string>/Users/blobio/log/launchd-ssh-tunnel-condor.log</string>
 
   <key>Disabled</key>
   <false/>
