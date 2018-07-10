@@ -1,9 +1,26 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  Synopsis:
+	Bidirectional ssh tunneling of biod on port 1797 on 127.0.0.[12] subnet.
+  Usage:
+  	$  sudo -i
+	#  cd /Library/LaunchDamons
+	#  HOST=condor
+	#  FQ_HOST=condor.setspace.com
+	#  BLOBIO_ROOT=/usr/local/blobio
+	#  EXAMPLE=$BLOBIO_ROOT/lib/com.blobio.ssh-tunnel.remote.plist.example
+	#
+  	#  sed "/<plist/,$s/remote.blobio.com/$FQ_HOST/g" $EXAMPLE	|
+	#	sed "<plist/,$s/remote/$HOST/g				>
+	#		com.blobio.ssh-tunnel-$HOST.plist
+	#  lanuchctl load com.blobio.ssh-tunnel-$HOST.plist
+	#  launchctl status com.blobio.ssh-tunnel.$HOST
+-->
 <plist version="1.0">
 <dict>
   <key>Label</key>
-  <string>com.blobio.ssh-tunnel.condor</string>
+  <string>com.blobio.ssh-tunnel.remote</string>
 
   <key>KeepAlive</key>
   <true/>
@@ -16,12 +33,13 @@
 
   <key>ProgramArguments</key>
   <array>
-  	<string>sbin/launchd-log</string>
-	<!--	****************  BEGIN SSH CONFIG  *********************
-		tunnel-condor is an aliases in ~blobio/.ssh/config:
+	<!--	************  BEGIN SSH CONNECTION CONFIG  *****************
 
-		Host tunnel-condor
-			Hostname condor.setspace.com
+		tunnel-remote is an aliases in ~blobio/.ssh/config.
+		SSH alias is necessary for keep alive parameters.
+
+		Host tunnel-remote
+			Hostname remote.blobio.com
 
 			#  Croak when remote open of socket fails 
 			#  launchd will restart.
@@ -37,22 +55,28 @@
 			#  Try 4 pings before closing socket and aborting
 			ServerAliveCountMax 4
 
+		Note:
+			sbin/launchd-log is only needed to timestamp restarts of
+			ssh on connection drops.  Better would be for ssh to
+			log via syslog, but not sure how to enable such logging
+			in ssh without using -v.
 	-->
+  	<string>sbin/launchd-log</string><!--  only to log ssh restarts -->
 	<string>/usr/bin/ssh</string>
-	<string>tunnel-condor</string>
+	<string>tunnel-remote</string>
+	<!--	*************  END SSH CONNECTION CONFIG  **************** -->
 
-	<!--	*****************  END SSH CONFIG  ******************** -->
 
 	<!--	*****************  START BLOBIO BIOD CONFIG  ***************
 
-		Advertise blobio:1797 to condor.
+		Advertise blobio:1797 to remote and remote:1797 to local.
 		We use local ips in 127.0.0.1/24 to differentiate local
 		requests from remote requests in brr log files.
-		Such differntiation is needed for syncing algorithm.
+		Such differentiation is needed for syncing algorithm.
 	-->
 
 	<!--
-		Local 127.0.0.2:1797 is advertised on Remote condor:11797
+		Local 127.0.0.2:1797 is advertised on Remote remote:11797
 	-->
 	<string>-R</string>
 	<string>11797:127.0.0.2:1797</string>
@@ -79,10 +103,10 @@
   <string>/usr/local/blobio</string>
 
   <key>StandardErrorPath</key>
-  <string>/Users/blobio/log/launchd-ssh-tunnel-condor.log</string>
+  <string>/Users/blobio/log/launchd-ssh-tunnel-remote.log</string>
 
   <key>StandardOutPath</key>
-  <string>/Users/blobio/log/launchd-ssh-tunnel-condor.log</string>
+  <string>/Users/blobio/log/launchd-ssh-tunnel-remote.log</string>
 
   <key>Disabled</key>
   <false/>
