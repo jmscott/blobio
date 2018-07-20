@@ -6,8 +6,8 @@
   Usage:
   	$  sudo -i
 	#  cd /Library/LaunchDamons
-	#  HOST=condor
-	#  FQ_HOST=condor.setspace.com
+	#  HOST=remote
+	#  FQ_HOST=remote.setspace.com
 	#  BLOBIO_ROOT=/usr/local/blobio
 	#  EXAMPLE=$BLOBIO_ROOT/lib/com.blobio.ssh-tunnel.remote.plist.example
 	#
@@ -64,6 +64,7 @@
   	<string>sbin/launchd-log</string><!--  only to log ssh restarts -->
 	<string>/usr/bin/ssh</string>
 	<string>tunnel-remote</string>
+	<string>-N</string>
 	<!--	*************  END SSH CONNECTION CONFIG  **************** -->
 
 
@@ -76,16 +77,23 @@
 	-->
 
 	<!--
-		Local 127.0.0.2:1797 is advertised on Remote remote:11797
+		Remote 11797 is sent to local blobio protocol on 127.0.0.2:1797
 	-->
 	<string>-R</string>
 	<string>11797:127.0.0.2:1797</string>
 
 	<!--
-		Local 127.0.0.2:1797 is advertised on remote 127.0.0.1:11797.
+		Local 127.0.0.1:11797 is sent to remote blobio protocol
+		127.0.0.2:1797.
 	-->
 	<string>-L</string>
 	<string>127.0.0.1:11797:127.0.0.2:1797</string>
+
+	<!--
+		Remote 10022 is sent to local 127.0.0.2:22
+	-->
+	<string>-R</string>
+	<string>10022:127.0.0.2:22</string>
 
 	<!--	*****************  END BLOBIO CONFIG  *************** -->
   </array>
