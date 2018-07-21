@@ -1,19 +1,14 @@
 #!/bin/bash
 #
 #  Synopsis:
-#	Sync all blobs in a chain of wrap sets by doing "blobio eat >/dev/null"
+#	Network efficient remote sync of blobs in a chain of wrap sets
 #  Usage:
-#	sync-wrap-chain <remote-service> <stop-wrap-set-udig>
+#	sync-wrap-chain <local|remote> <remote-service> <stop-wrap-set-udig>
 #  Exit Status:
 #	0	no error, all blobs sunk across the chain of wrap sets.
 #	1	a blob does not exist
 #	2	invocation error
 #	3	unknown error fetching blob
-#  Note
-#	Eventually the blobs will eaten locally.  Currently the sync-put
-#	called by flowd ignores all "eat" requests.  Eventually local
-#	"eat" will be distinguished from remote eats.  Need to add function
-#	service_tcp4_remote_host() to flowd language.
 #
 
 PROG=$(basename $0)
