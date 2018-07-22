@@ -103,7 +103,6 @@ count_udig chain-taken.udig
 count_udig chain-missing.udig
 count_udig chain-no-brr_blob_size.udig
 
-
 log 'fetching blobs with no entry in table brr_blob_size ...'
 while read UDIG;  do
 	blobio get							\
