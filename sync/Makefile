@@ -52,3 +52,11 @@ dev-links:
 	test -e sbin || ln -s . sbin
 	test -e lib || ln -s . lib
 	test -e etc || ln -s . etc
+
+dev-sync:
+	rm -rf sync
+	mkdir sync && cd sync 							&&\
+		ln -s . etc							&&\
+		ln -s . host							&&\
+		ln -s . tmp							&&\
+		cp ../profile-sync.example profile
