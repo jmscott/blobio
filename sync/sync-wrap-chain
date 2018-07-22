@@ -60,7 +60,7 @@ log "stop brr log count: $STOP_BRR_LOG_COUNT"
 
 test -n "$BLOBIO_ROOT" || die 'env variable not defined: BLOBIO_ROOT'
 cd $BLOBIO_ROOT || die "cd $BLOBIO_ROOT failed: exit status=$?"
-test -r etc/profile || die "profile does not exit: $(pwd)/etc/profile"
+test -r etc/profile || die "profile does not exist: $(pwd)/etc/profile"
 . etc/profile || die "$(pwd)/etc/profile failed"
 test -n "$BLOBIO_SERVICE" || die 'environment not defined: BLOBIO_SERVICE'
 
@@ -73,6 +73,7 @@ test -r etc/profile || die "sync profile does not exit: $(pwd)/etc/profile"
 . etc/profile || die "$(pwd)/etc/profile failed"
 test -n "$BLOBIO_SYNC_SSH_AUTH" ||
 			die 'environment not defined: BLOBIO_SYNC_SSH_AUTH'
+
 log "sync ssh auth: $BLOBIO_SYNC_SSH_AUTH"
 
 #  make the work dir
