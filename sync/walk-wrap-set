@@ -200,7 +200,7 @@ die 'environment var not defined: BLOBIO_SERVICE' unless $ENV{BLOBIO_SERVICE};
 sub opt_die
 {
 	my $opt = shift @_;
-	die "option --$opt", join(':', @_);
+	die "option --$opt ", join(':', @_);
 }
 
 $OK_VERB_COUNT{get} =
