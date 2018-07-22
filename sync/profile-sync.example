@@ -1,5 +1,13 @@
 #
 #  Synopsis:
-#	Example 
+#	Profile for sync processes, dotted in after $BLOBIO_ROOT/etc/profile.
+#  Usage:
+#	SYNC_ROOT=$BLOBIO_ROOT/sync/host/condor.setspace.com
+#	cp $BLOBIO_ROOT/etc/profile-sync.example $SYNC_ROOT/etc/profile
 #
-export BLOBIO_SERVICE=fs:/usr/local/blobio
+
+#  Remote ssh authorization
+export BLOBIO_SYNC_SSH_AUTH=blobio@condor
+
+#  For work directory
+export TMPDIR=$BLOBIO_ROOT/sync/host/condor/tmp

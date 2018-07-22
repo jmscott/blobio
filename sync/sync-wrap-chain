@@ -1,14 +1,13 @@
 #!/bin/bash
 #
 #  Synopsis:
-#	Network efficient remote sync of blobs in a chain of wrap sets
+#	Efficently sync a remote blobio server from a local chain of wrap sets.
 #  Usage:
-#	sync-wrap-chain <local|remote> <remote-service> <stop-wrap-set-udig>
+#	sync-wrap-chain <local|remote> <remote host> <stop brr log count>
 #  Exit Status:
 #	0	no error, all blobs sunk across the chain of wrap sets.
-#	1	a blob does not exist
-#	2	invocation error
-#	3	unknown error fetching blob
+#	1	wrong number of arguments
+#	2	unknown error
 #
 
 PROG=$(basename $0)
@@ -21,15 +20,23 @@ log()
 die()
 {
 	STATUS=$1
-	shift
+	case "$STATUS" in
+	[0-9])
+		shift
+		;;
+	*)
+		STATUS=2
+		;;
+	esac
+
 	log "ERROR: $@" >&2
 	exit $STATUS
 }
 
 leave()
 {
-	#  zap the temporary worlk directory
-	if [ -n "$WORK_DIR" -a -e $WORK_DIR ];  then
+	#  zap the temporary work directory
+	if [ -n "$WORK_DIR" -a -e "$WORK_DIR" ];  then
 		cd ..
 		rm -rf $WORK_DIR
 	fi
@@ -37,31 +44,49 @@ leave()
 	exit
 }
 
-test $# = 2 || die 2 "wrong number of arguments, got $#, expected 2"
-REMOTE_BLOBIO_SERVICE="$1"
-STOP_WRAP_UDIG=$2
-
+test $# = 3 || die 1 "wrong number of arguments, got $#, expected 3"
 log 'hello, world'
 trap leave EXIT QUIT INT TERM
 
-#  go to BLOBIO_ROOT and source in etc/profile
+DIRECTION=$1
+SYNC_HOST=$2
+STOP_BRR_LOG_COUNT=$3
 
-test -n "$BLOBIO_ROOT" || die 2 'env variable not defined: BLOBIO_ROOT'
-cd $BLOBIO_ROOT || die 3 "cd $BLOBIO_ROOT failed: exit status=$?"
-. etc/profile || die 3 "$(pwd)/etc/profile failed"
+log "direction: $DIRECTION"
+log "sync host: $SYNC_HOST"
+log "stop brr log count: $STOP_BRR_LOG_COUNT"
+
+#  Local profile in $BLOBIO_ROOT/etc/profile
+
+test -n "$BLOBIO_ROOT" || die 'env variable not defined: BLOBIO_ROOT'
+cd $BLOBIO_ROOT || die "cd $BLOBIO_ROOT failed: exit status=$?"
+test -r etc/profile || die "profile does not exit: $(pwd)/etc/profile"
+. etc/profile || die "$(pwd)/etc/profile failed"
 test -n "$BLOBIO_SERVICE" || die 'environment not defined: BLOBIO_SERVICE'
 
-log "remote blobio service: $REMOTE_BLOBIO_SERVICE"
-log "local blobio service: $BLOBIO_SERVICE"
-LOCAL_SERVICE="--service $BLOBIO_SERVICE"
+#  Remote profile in $BLOBIO_ROOT/sync/host/$SYNC_HOST/etc/profile
 
-test -e etc/STOP-WRAP-SET ||
-			die 3 "no stop wrap-set file: $(pwd)/etc/STOP-WRAP-SET"
-STOP_WRAP_SET=$(cat etc/STOP-WRAP-SET)
-log "stop wrap set: $STOP_WRAP_SET"
+SYNC_ROOT=$BLOBIO_ROOT/sync/host/$SYNC_HOST
+log "sync root: $SYNC_ROOT"
+cd $SYNC_ROOT || die "cd $SYNC_ROOT failed: exit status=$?"
+test -r etc/profile || die "sync profile does not exit: $(pwd)/etc/profile"
+. etc/profile || die "$(pwd)/etc/profile failed"
+test -n "$BLOBIO_SYNC_SSH_AUTH" ||
+			die 'environment not defined: BLOBIO_SYNC_SSH_AUTH'
+log "sync ssh auth: $BLOBIO_SYNC_SSH_AUTH"
 
-#  make and goto the work directory
+#  make the work dir
 
-WORK_DIR=${TMPDIR:=/tmp}/$PROG-$$.d
-mkdir -p $WORK_DIR || die 3 "mkdir $WORK_DIR failed: $?"
-cd $WORK_DIR || die 3 "cd $WORK_DIR failed: exit status=$?"
+TMPDIR=${TMPDIR:=/tmp}
+WORK_DIR=$TMPDIR/$PROG-$$.d
+log "work dir: $WORK_DIR"
+mkdir $WORK_DIR || die "mkdir $WORK_DIR failed: exit status=$?"
+cd $WORK_DIR || die "cd $WORK_DIR failed: exit status=$?"
+
+log "walking $STOP_BRR_LOG_COUNT brr logs back ..."
+walk-wrap-set --stop-brr-log-count $STOP_BRR_LOG_COUNT >WALK_WRAP_SET	||
+			die "walk-wrap-set failed: exit status=$?"
+test -s WALK_WRAP_SET || die 'walk wrap set is empty'
+
+grep '#' WALK_WRAP_SET
+ls
