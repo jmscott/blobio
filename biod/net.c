@@ -2,6 +2,8 @@
  *  Synopsis:
  *	Low level, network stream i/o with explicit timeouts.
  *  Note:
+ *	Need to review the timeout code in net_*() functions.
+ *
  *	Consider a 'net' data structure.
  *
  *	Explict, global timeouts are used instead of setsockopt(SO_RCVTIMEO).
@@ -106,6 +108,8 @@ again:
 	if (e == EINTR || e == EAGAIN) {
 		/*
 		 *  Timeout.
+		 *  We can only catch the alarm once,
+		 *  then process must exit.
 		 */
 		if (alarm_caught) {
 			alarm_caught = 0;
