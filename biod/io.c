@@ -30,10 +30,6 @@
 #include "macosx.h"
 #endif
 
-#define DUMP_BUF_SIZE		(10 * 1024)
-#define SLURP_TEXT_TIMEOUT	10
-#define BURP_TEXT_TIMEOUT	10
-
 int
 io_open(char *path, int flags, int mode)
 {

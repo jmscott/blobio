@@ -33,7 +33,6 @@
 #include "biod.h"
 
 #define LOG_SELECT_TIMEOUT	5		/* seconds */
-#define LOG_MIN_NREAD		22		/* YYYY/MM/DD hh:mm:ss #[0]9] */
 
 extern pid_t		master_pid;
 extern pid_t		logger_pid;
