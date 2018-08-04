@@ -4,8 +4,12 @@
 #  Usage:
 #	launchd-log bin/flowd server etc/blobio.flow
 #  Note:
-#	No blobio daemon requires launchd-log.  The script is just a cheap
-#	replacement for a more proper syslog facility.
+#	Can a pre/post script be invoked from ~/.ssh.config during
+#	authentification or connection.  If so, then a simple
+#
+#		"date >>$HOME/log/launchd.log"
+#
+#	could replace this launch-log!
 #  Exit Status:
 #	*	exit status of launched process
 #  	127	unexpected error in launchd-log
