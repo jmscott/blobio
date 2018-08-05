@@ -24,9 +24,8 @@
 
 /*
  *  How many bytes to read and write the blobs from either client or fs.
- *  Note: might want to make the get chunk size be much bigger than the put.
  */
-#define CHUNK_SIZE		(64 * 1024)
+#define CHUNK_SIZE		(4 * 1024)
 
 extern char			*getenv();
 

@@ -16,7 +16,7 @@
  *  How many bytes to read and write the blobs from either client or fs.
  *  Note: might want to make the get chunk size be much bigger than the put.
  */
-#define CHUNK_SIZE		(64 * 1024)
+#define CHUNK_SIZE		(4 * 1024)
 
 static char	sha_fs_root[]	= "data/sha_fs";
 static char	empty_ascii[]	= "da39a3ee5e6b4b0d3255bfef95601890afd80709";
