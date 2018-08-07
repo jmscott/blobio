@@ -1827,17 +1827,6 @@ main(int argc, char **argv, char **env)
 	} else
 		warn("rrd sampling disabled");
 
-	req.verb = 0;
-	req.step = 0;
-	req.client_fd = -1;
-	req.algorithm = 0;
-	req.digest = 0;
-	req.scan_buf = 0;
-	req.scan_size = 0;
-	req.open_data = 0;
-	req.blob_size = 0;
-	req.read_timeout = REQUEST_READ_TIMEOUT;
-	req.write_timeout = REQUEST_WRITE_TIMEOUT;
 	memset(req.chat_history, 0, sizeof req.chat_history);
 	req.remote_len = sizeof req.remote_address;
 
