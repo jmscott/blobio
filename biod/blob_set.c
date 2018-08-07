@@ -1,6 +1,8 @@
 /*
  *  Synopsis:
  *	Simple functions to get/put small blobs in memory
+ *  Note:
+ *	Contemplate replacing djb hash with 64bit siphash.
  */
 #include "biod.h"
 
