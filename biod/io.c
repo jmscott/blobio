@@ -6,6 +6,10 @@
  *	be moved to io_read() and io_write().  Currently timeouts apply
  *	only to network level read/write, which seems incomplete.
  *
+ *	Need to investigate if restarting on EINTR is even needed, now
+ *	that BSD style signal handling occurs.  Not clear to me how EINTR
+ *	behaves on network file systems.
+ *
  *	EAGAIN is not caught.  Historically EAGAIN meant that the process
  *	would have been suspended and not to "try again".  Unfortunatly
  *	certain NFS clients have used EAGAIN when, for example, mounting over
