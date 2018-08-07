@@ -2,8 +2,6 @@
  *  Synopsis:
  *	Low level, network stream i/o with explicit timeouts.
  *  Note:
- *	Need to review the timeout code in net_*() functions.
- *
  *	Consider a 'net' data structure.
  *
  *	Explict, global timeouts are used instead of setsockopt(SO_RCVTIMEO).
@@ -105,9 +103,10 @@ again:
 	/*
 	 *  Retry or timeout.
 	 */
-	if (e == EINTR || e == EAGAIN) {
+	if (e == EINTR) {
 		/*
 		 *  Timeout.
+		 *
 		 *  We can only catch the alarm once,
 		 *  then process must exit.
 		 */
@@ -179,7 +178,7 @@ again:
 	if (nread < 0) {
 		char tbuf[27];
 
-		if (e != EINTR && e != EAGAIN) {
+		if (e != EINTR) {
 			error3(n, "read() failed", strerror(e));
 			errno = e;
 			return -1;
@@ -259,7 +258,7 @@ again:
 	if (nwrite < 0) {
 		char tbuf[20];
 
-		if (e != EINTR && e != EAGAIN) {
+		if (e != EINTR) {
 			error3(n, "write() failed", strerror(errno));
 			errno = e;
 			return -1;

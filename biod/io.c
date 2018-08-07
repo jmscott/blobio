@@ -3,17 +3,13 @@
  *	Restartable interface to i/o unix system calls with errno honored.
  *  Note:
  *	Can the timeout code in functions read_buf() and write_buf()
- *	be moved to io_read() and io_write().
+ *	be moved to io_read() and io_write().  Currently timeouts apply
+ *	only to network level read/write, which seems incomplete.
  *
- *	The file local variable 'alarm_caught' probably needs to be part of
- *	the signal context.
- *
- *  	Need to prefix the global functions with 'os' instead of 'io'
- *  	and rename this os.c  Probably ought to move the read/write*() into
- *	different file.
- *
- *  	Verify that EGAIN is tested properly.  I (jmscott) still not sure what
- *  	EGAIN REALLY means.
+ *	EAGAIN is not caught.  Historically EAGAIN meant that the process
+ *	would have been suspended and not to "try again".  Unfortunatly
+ *	certain NFS clients have used EAGAIN when, for example, mounting over
+ *	the network.
  */
 #include <sys/time.h>
 #include <sys/stat.h>
@@ -38,7 +34,7 @@ again:
 	fd = open(path, flags, mode);
 	if (fd >= 0)
 		return fd;
-	if (errno == EINTR || errno == EAGAIN)
+	if (errno == EINTR)
 		goto again;
 	return -1;
 }
@@ -65,7 +61,7 @@ again:
 	nread = read(fd, buf, count);
 	if (nread >= 0)
 		return nread;
-	if (errno == EINTR || errno == EAGAIN)
+	if (errno == EINTR)
 		goto again;
 	return (size_t)-1;
 }
@@ -82,7 +78,7 @@ again:
 	nwritten = write(fd, buf, count);
 	if (nwritten >= 0)
 		return nwritten;
-	if (errno == EINTR || errno == EAGAIN)
+	if (errno == EINTR)
 		goto again;
 	return (size_t)-1;
 }
@@ -113,7 +109,7 @@ again:
 	if (pipe(fds) == 0)
 		return 0;
 
-	if (errno == EINTR || errno == EAGAIN)
+	if (errno == EINTR)
 		goto again;
 	return -1;
 }
@@ -128,7 +124,7 @@ io_close(int fd)
 again:
 	if (close(fd) == 0)
 		return 0;
-	if (errno == EINTR || errno == EAGAIN)
+	if (errno == EINTR)
 		goto again;
 	return -1;
 }
@@ -138,7 +134,7 @@ io_stat(const char *path, struct stat *st)
 {
 again:
 	if (stat(path, st)) {
-		if (errno == EINTR || errno == EAGAIN)
+		if (errno == EINTR)
 			goto again;
 		return -1;
 	}
@@ -150,7 +146,7 @@ io_lstat(const char *path, struct stat *st)
 {
 again:
 	if (lstat(path, st)) {
-		if (errno == EINTR || errno == EAGAIN)
+		if (errno == EINTR)
 			goto again;
 		return -1;
 	}
@@ -177,7 +173,7 @@ again:
 	status = select(nfds, readfds, writefds, errorfds, timeout);
 	if (status >= 0)
 		return status;
-	if (errno == EINTR || errno == EAGAIN)
+	if (errno == EINTR)
 		goto again;
 	return -1;
 }
@@ -191,7 +187,7 @@ again:
 	id = waitpid(pid, stat_loc, options);
 	if (id >= 0)
 		return id;
-	if (errno == EINTR || errno == EAGAIN)
+	if (errno == EINTR)
 		goto again;
 	return -1;
 }
@@ -202,7 +198,7 @@ io_rename(char *old_path, char *new_path)
 again:
 	if (rename(old_path, new_path) == 0)
 		return 0;
-	if (errno == EINTR || errno == EAGAIN)
+	if (errno == EINTR)
 		goto again;
 	return -1;
 }
@@ -215,7 +211,7 @@ io_readdir(DIR *dirp)
 again:
 	if ((dp = readdir(dirp)))
 		return dp;
-	if (errno == EINTR || errno == EAGAIN)
+	if (errno == EINTR)
 		goto again;
 	return (struct dirent *)0;
 }
@@ -228,7 +224,7 @@ again:
 	dp = opendir(path);
 	if (dp)
 		return dp;
-	if (errno == EINTR || errno == EAGAIN)
+	if (errno == EINTR)
 		goto again;
 	return (DIR *)0;
 }
@@ -239,7 +235,7 @@ io_unlink(const char *path)
 again:
 	if (unlink(path) == 0 || errno == ENOENT)
 		return 0;
-	if (errno == EINTR || errno == EAGAIN)
+	if (errno == EINTR)
 		goto again;
 	return -1;
 }
@@ -250,7 +246,7 @@ io_rmdir(const char *path)
 again:
 	if (rmdir(path) == 0)
 		return 0;
-	if (errno == EINTR || errno == EAGAIN)
+	if (errno == EINTR)
 		goto again;
 	return -1;
 }
@@ -264,7 +260,7 @@ again:
 	fd = mkfifo(path, mode);
 	if (fd >= 0)
 		return fd;
-	if (errno == EINTR || errno == EAGAIN)
+	if (errno == EINTR)
 		goto again;
 	return -1;
 }
@@ -275,7 +271,7 @@ io_chmod(char *path, mode_t mode)
 again:
 	if (chmod(path, mode) == 0)
 		return 0;
-	if (errno == EINTR || errno == EAGAIN)
+	if (errno == EINTR)
 		goto again;
 	return -1;
 }
@@ -289,7 +285,7 @@ again:
 	o = lseek(fd, offset, whence);
 	if (o > -1)
 		return o;
-	if (errno == EINTR || errno == EAGAIN)
+	if (errno == EINTR)
 		goto again;
 	return (off_t)-1;
 }
@@ -300,7 +296,7 @@ io_fstat(int fd, struct stat *buf)
 again:
 	if (fstat(fd, buf) == 0)
 		return 0;
-	if (errno == EINTR || errno == EAGAIN)
+	if (errno == EINTR)
 		goto again;
 	return -1;
 }
@@ -311,7 +307,7 @@ io_closedir(DIR *dp)
 again:
 	if (closedir(dp) == 0)
 		return 0;
-	if (errno == EINTR || errno == EAGAIN)
+	if (errno == EINTR)
 		goto again;
 	return -1;
 }
@@ -324,7 +320,7 @@ io_msg_new(struct io_message *ip, int fd)
 }
 
 /*
- *  Read an attomically written message from a stable (no timeout) byte stream.
+ *  Read an atomically written message from a stable (no timeout) byte stream.
  *  Messages in the stream are introduced with a leading length byte followed
  *  by upto 255 payload bytes.
  *
@@ -425,7 +421,7 @@ io_mkdir(const char *pathname, mode_t mode)
 again:
 	if (mkdir(pathname, mode) == 0)
 		return 0;
-	if (errno == EINTR || errno == EAGAIN)
+	if (errno == EINTR)
 		goto again;
 	return -1;
 }

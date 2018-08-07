@@ -45,7 +45,6 @@
 
 #define BIOD_PORT		1797
 
-#define ACCEPT_TIMEOUT		3
 #define MAX_VERB_SIZE		5
 
 /*
@@ -66,6 +65,11 @@
 }
 	
 #define HEARTBEAT		10	/* 10 seconds */
+/*
+ *  Note:
+ *	Should ACCEPT_TIMEOUT default to same as READ?WRITE?
+ */
+#define ACCEPT_TIMEOUT		3	/* 3 seconds */
 #define REQUEST_READ_TIMEOUT	20	/* 20 seconds */
 #define REQUEST_WRITE_TIMEOUT	20	/* 20 seconds */
 #define LEAVE_PAUSE		2	/* 2 seconds */
@@ -130,7 +134,7 @@ static u8	connect_count = 0;	//  socket connections answered
  */
 static u8	success_count =	0;	//  exit ok
 static u8	error_count =	0;	//  error talking with client
-static u8	timeout_count =	0;	//  timeout reading from client
+static u8	timeout_count =	0;	//  timeout read()/write() with client
 static u8	signal_count =	0;	//  terminated with signal
 static u8	fault_count =	0;	//  faulted (panic in request)
 
@@ -873,7 +877,7 @@ request()
  *	  ------00	normal request  - successful request
  *	  ------01	client error	- unknown verb, bad udig syntax,
  *					  read error taking to client
- *	  ------10	hard time out	- read timeout occured (network/disk)
+ *	  ------10	hard time out	- read()/write() timeout occured
  *	  ------11	fault		- error affecting server stability
  *
  *  	Verb - Bits 3, 4, and 5
@@ -969,9 +973,6 @@ again:
 		/*
 		 *  Process exited abnormally with signal, so log status.
 		 *  No brr record is ever generated for a signaled process.
-		 *
-		 *  Note:
-		 *  	How are timeouts handled?
 		 */
 		if (WIFSIGNALED(status)) {
 			char buf[128];
@@ -1100,7 +1101,7 @@ again:
 		}
 	}
 	if (corpse) {
-		if (errno == EINTR || errno == EAGAIN)
+		if (errno == EINTR)
 			goto again;
 		panic3(n, "waitpid(WNOHANG) failed", strerror(errno));
 	}
@@ -1385,7 +1386,7 @@ try_bind:
 	if (bind(listen_fd, (const void *)&req.bind_address,
 						sizeof req.bind_address) < 0) {
 		int e = errno;
-		if (e == EINTR || e == EAGAIN)
+		if (e == EINTR)
 			goto try_bind;
 
 		snprintf(buf, sizeof buf, "bind(%s:%d) failed",
@@ -1402,7 +1403,7 @@ try_listen:
 	if (listen(listen_fd, SOMAXCONN) < 0) {
 		int e = errno;
 
-		if (e == EINTR || e == EAGAIN)
+		if (e == EINTR)
 			goto try_listen;
 		die2("listen() failed", strerror(errno));
 	}
@@ -1836,6 +1837,10 @@ accept_request:
 			(struct sockaddr *)&req.remote_address,
 			&req.remote_len,
 			&req.client_fd,
+			/*
+			 *  Note:
+			 *	Should ACCCEPT_TIMEOUT match read/write timeout?
+			 */
 			ACCEPT_TIMEOUT)) {
 	case -1:
 		die2("accept(server listen socket) failed", strerror(errno));
