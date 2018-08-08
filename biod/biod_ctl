@@ -43,6 +43,7 @@ BIOD=$BLOBIO_ROOT/sbin/biod
 test -r etc/profile && . etc/profile
 PORT=${BLOBIO_BIOD_PORT:=1797}
 PID=$BLOBIO_ROOT/run/biod.pid
+NET_TIMEOUT=${BLOBIO_NET_TIMEOUT:=20}
 
 #  duration in seconds to write rrd samples to log/biod-rrd.log.
 #  0 disables.
@@ -62,7 +63,8 @@ start)
 		--root $BLOBIO_ROOT					\
 		--port $PORT						\
 		--ps-title-XXXXXXXXXXXXXXXXXXXXXXX			\
-		--rrd-sample-duration $RRD_SAMPLE_DURATION
+		--rrd-sample-duration $RRD_SAMPLE_DURATION		\
+		--net-timeout $NET_TIMEOUT
 	STATUS=$?
 	test $STATUS = 0 || die "biod failed to start: exit status=$STATUS"
 

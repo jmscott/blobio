@@ -70,9 +70,8 @@
  *	Should ACCEPT_TIMEOUT default to same as READ?WRITE?
  */
 #define ACCEPT_TIMEOUT		3	/* 3 seconds */
-#define REQUEST_READ_TIMEOUT	20	/* 20 seconds */
-#define REQUEST_WRITE_TIMEOUT	20	/* 20 seconds */
-#define LEAVE_PAUSE		2	/* 2 seconds */
+#define NET_TIMEOUT		20	/* 20 seconds for net read/write */
+#define LEAVE_PAUSE		2	/* pause seconds before exiting */
 
 extern pid_t	brr_logger_pid;
 extern pid_t	logged_pid;
@@ -101,6 +100,8 @@ static char		*BLOBIO_ROOT = 0;
 #define DEFAULT_WRAP_DIGEST_ALGORITHM	"bc160"
 static char		wrap_digest_algorithm[MAX_ALGORITHM_SIZE+1];
 
+static int	net_timeout = -1;
+
 static struct request	req =
 {
 	.client_fd	=	-1,
@@ -112,8 +113,8 @@ static struct request	req =
 	.scan_size	=	0,
 	.open_data	=	0,
 	.blob_size	=	0,
-	.read_timeout	=	REQUEST_READ_TIMEOUT,
-	.write_timeout	=	REQUEST_WRITE_TIMEOUT
+	.read_timeout	=	NET_TIMEOUT,
+	.write_timeout	=	NET_TIMEOUT
 };
 
 static int		listen_fd = -1;
@@ -1687,6 +1688,36 @@ main(int argc, char **argv, char **env)
 			if (argv[i] == 0)
 				die2(o, "empty directory path");
 			BLOBIO_ROOT = strdup(argv[i]);
+		} else if (strcmp("--net-timeout", argv[i]) == 0) {
+			static char o[] = "option --net-timeout";
+			char *tmo;
+			unsigned j, sec;
+
+			if (++i >= argc)
+				die2(o, "missing timeout seconds");
+			tmo = argv[i];
+			if (net_timeout >= 0)
+				die2(o, "given more than once");
+			if (argv[i] == 0)
+				die2(o, "empty seconds");
+
+			if (!isdigit(tmo[0]))
+				die3(o, "unexpected seconds or timeout", tmo);
+
+			if (strlen(tmo) > 3)
+				die3(o,"seconds must be < 4 digits", tmo);
+			for (j = 1;  tmo[j] && j < 4;  j++) {
+				if (isdigit(tmo[j]))
+					continue;
+				die3(o, "non digit in timeout seconds", tmo);
+			}
+			if (sscanf(tmo, "%u", &sec) != 1)
+				die3(o, "sscanf(timeout seconds) failed", tmo);
+			if (sec > 255)
+				die3(o, "timeout > 255 seconds", tmo);
+			if (sec == 0)
+				die2(o, "timeout is 0");
+			net_timeout = (u1)sec;
 		} else if (strncmp("--", argv[i], 2) == 0)
 			die2("unknown option", argv[i]);
 		else
@@ -1709,6 +1740,9 @@ main(int argc, char **argv, char **env)
 		sprintf(ebuf, r2small, rrd_sample_duration, ACCEPT_TIMEOUT);
 		die(ebuf);
 	}
+
+	if (net_timeout == -1)
+		net_timeout = NET_TIMEOUT;
 
 	time(&start_time);
 
@@ -1812,7 +1846,6 @@ main(int argc, char **argv, char **env)
 	 *  Open the socket to listen for requests.
 	 */
 	open_listen(port);
-	info("accepting incoming requests ...");
 	snprintf(buf, sizeof buf, "socket accept timeout: %u seconds",
 						ACCEPT_TIMEOUT);
 	info(buf);
@@ -1828,9 +1861,18 @@ main(int argc, char **argv, char **env)
 	} else
 		warn("rrd sampling disabled");
 
+	if (net_timeout > 0) {
+		snprintf(buf, sizeof buf, "net timeout: %ds sec", net_timeout);
+
+		info(buf);
+	} else
+		warn("net timeout: disabled");
+
 	memset(req.chat_history, 0, sizeof req.chat_history);
 	req.remote_len = sizeof req.remote_address;
+	req.read_timeout = req.write_timeout = net_timeout;
 
+	info("accepting incoming requests ...");
 accept_request:
 	switch (net_accept(
 			listen_fd,
