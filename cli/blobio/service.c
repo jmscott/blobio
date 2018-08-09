@@ -1,8 +1,6 @@
 /*
  *  Synopsis:
  *	Blob Service Module
- *  Note:
- *	Should the timeout code sit above any service?
  */
 #include "blobio.h"
 
