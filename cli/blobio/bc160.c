@@ -1,6 +1,8 @@
 /*
  *  Synopsis:
  *	Bitcoin Hash RIPEMD160(SHA256(blob))
+ *  Note:
+ *  	Not a timed read() since assumed to be local file.
  */
 #ifdef BC160_FS_MODULE    
 

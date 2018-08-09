@@ -2,7 +2,7 @@
  *  Synopsis:
  *	openssl SHA1 client digest module interface routines.
  *  Note:
- *  	Why does sha_request exist at all?
+ *  	Not a timed read() since assumed to be local file.
  */
 #ifdef SHA_FS_MODULE    
 
@@ -223,6 +223,9 @@ _trace(char *msg)
 
 /*
  *  Digest data on input and update the global digest[129] array.
+ *
+ *  Note:
+ *	Not a timed read(), since assumed to be local file.
  */
 static char *
 sha_eat_input()

@@ -50,7 +50,9 @@ extern char	*input_path;
 extern int	input_fd;
 
 static int server_fd = -1;
-static unsigned int timeout =	25;
+static char host[256];
+static uint16_t port;
+static unsigned int timeout =	20;
 
 struct service bio4_service;
 
@@ -85,54 +87,74 @@ ctrace2(char *msg1, char *msg2)
 }
 
 /*
- *  Check the syntax of host:port.  Host name must be > 0 and < 128 bytes.
- *  Port must be >= 0 and <= 65535 as a parsed decimal unsigned int.
- *
- *  Note:
- *  	The host name is not checked for well formed UTF8.
+ *  Parse the host name/ip4, port and optional timeout from the end point.
  */
 static char *
 bio4_end_point_syntax(char *end_point)
 {
-	char *cp, *colon;
+	char *ep, c;
+	char buf[6], *bp;
 
-	_TRACE("request to end_point_syntax()");
+	TRACE2("end point syntax", end_point);
 
-	//  find colon in host:port
+	/*
+	 *  Extract the ascii DNS host or ip4 address.
+	 */
+	bp = host;
+	ep = end_point;
+	while ((c = *ep++) && c != ':') {
+		if (!isalnum(c) && c != '.')
+			return "non alpha numeric or . char in host/ip4";
+		*bp++ = c;
+	}
+	if (c != ':')
+		return "no colon at after hostname or ip4";
+	*bp = 0;
+	if (*ep == '?')
+		return "no port number before query argument";
+	/*
+	 *  Extract port number > 0 and < 65536
+	 */
+	bp = buf;
+	while ((c = *ep++) && isdigit(c)) {
+		if (bp - buf > 5)
+			return "> 5 chars in port number";
+		*bp++ = c;
+	}
+	if (bp == buf)
+		return "no port number after colon";
+	*bp = 0;
+	port = atoi(buf);
+	if (port == 0)
+		return "port number can not be 0";
+	if (port > 65535)
+		return "port number > 65535";
+	if (!c)
+		return (char *)0;
 
-	colon = strchr(end_point, ':');
-	if (!colon)
-		return "missing colon in endpoint";
-
-	//  verify the host is > 0 && < HOST_NAME_MAX bytes.
-
-	if (colon == end_point)
-		return "empty host";
-	if (colon - end_point > HOST_NAME_MAX)
-		return "host name is too many bytes";
-	cp = colon + 1;
-
-	//  verify the port is > 0 and < 6 ascii decimal digits
-
-	if (*cp) {
-		char c;
-
-		while ((c = *cp++)) {
-			if (!isdigit(c))
-				return "non decimal digit in port";
-			if (cp - colon > 6)
-				return "port has > 5 decimal digits";
-		}
-	} else
-		return "missing port";
-
-	//  verify port <= 65535
-
-	if (atoi(colon + 1) > 65535)
-		return "port > 65535";
-
-	_TRACE("end_point_syntax() done");
-
+	/*
+	 *  Is a timeout specified as a query fragment on the URI:
+	 *
+	 *	?tmo=[0-9]{1,3}
+	 */
+	if (c != '?')
+		return "expected ? char after port number";
+	if (*ep++ != 't' || *ep++ != 'm' || *ep++ != 'o' || *ep++ != '=')
+		return "expected tmo= in query fragment";
+	if (!isdigit(*ep))
+		return "missing seconds after tmo= in query fragment";
+	bp = buf;
+	while ((c = *ep++)) {
+		if (!isdigit(c))
+			return "expected digit in tmo query fragment";
+		if (bp - buf > 2)
+			return "too many digits in timeout seconds";
+		*bp++ = c;
+	}
+	*bp = 0;
+	timeout = atoi(buf);
+	if (timeout > 255)
+		return "timeout > 255 seconds";
 	return (char *)0;
 }
 
@@ -357,26 +379,32 @@ catch_read_ALRM(int sig)
 static char *
 _write(int fd, unsigned char *buf, int buf_size)
 {
+	char *err = 0;
+
 	_TRACE("request to write()");
 
-	if (signal(SIGALRM, catch_write_ALRM) == SIG_ERR)
-		return strerror(errno);
-
-	alarm(timeout);
-	if (uni_write_buf(fd, buf, buf_size))
-		return strerror(errno);
-	alarm(0);
-
-	if (signal(SIGALRM, SIG_IGN) == SIG_ERR)
-		return strerror(errno);
+	if (timeout > 0) {
+		if (signal(SIGALRM, catch_write_ALRM) == SIG_ERR)
+			return strerror(errno);
+		alarm(timeout);
+	}
+	if (uni_write_buf(fd, (unsigned char *)buf, buf_size))
+		err = strerror(errno);
+	if (timeout > 0) {
+		if (signal(SIGALRM, SIG_IGN) == SIG_ERR && !err)
+			err = strerror(errno);
+		alarm(0);
+	}
 
 #ifdef COMPILE_TRACE
 	_TRACE("write() ok, hex dump follows ...");
-	if (tracing)
-		hexdump(buf, buf_size, '<');
-#endif
+	if (err) {
+		_TRACE2("ERROR", err);
+	} else if (tracing)
+		hexdump((unsigned char*)buf, buf_size, '<');
 	_TRACE("write() done");
-	return (char *)0;
+#endif
+	return err;
 }
 
 /*
@@ -386,36 +414,40 @@ _write(int fd, unsigned char *buf, int buf_size)
 static char *
 _read(int fd, unsigned char *buf, int buf_size, int *nread)
 {
+	char *err = 0;
 	int nr;
 
 	_TRACE("request to read()");
 
-	if (signal(SIGALRM, catch_read_ALRM) == SIG_ERR)
-		return strerror(errno);
-
-	alarm(timeout);
-	nr = uni_read(fd, buf, buf_size);
-	if (nr < 0)
-		return strerror(errno);
-	alarm(0);
-
-	//  Note: should the signal be reset to previous handler?
-
-	if (signal(SIGALRM, SIG_IGN) == SIG_ERR)
-		return strerror(errno);
+	if (timeout > 0) {
+		if (signal(SIGALRM, catch_read_ALRM) == SIG_ERR)
+			return strerror(errno);
+		alarm(timeout);
+	}
+	if ((nr = uni_read(fd, (unsigned char *)buf, buf_size)) < 0)
+		err = strerror(errno);
+		
+	if (timeout > 0) {
+		if (signal(SIGALRM, SIG_IGN) == SIG_ERR && !err)
+			err = strerror(errno);
+		alarm(0);
+	}
 
 #ifdef COMPILE_TRACE
-	if (tracing) {
+	if (err) {
+		_TRACE2("ERROR", err);
+	} else if (tracing) {
 		if (nr > 0) {
-			_trace("read() ok, hex dump follows ...");
-			hexdump(buf, nr, '>');
+			_TRACE("read() ok, hex dump follows ...");
+			hexdump((unsigned char *)buf, nr, '>');
 		} else
-			_trace("read() returned 0 bytes");
+			_TRACE("read() returned 0 bytes");
 	}
 #endif
-	*nread = nr;
+	if (nr > 0)
+		*nread = nr;
 	_TRACE("read() done");
-	return (char *)0;
+	return err;
 }
 
 /*
@@ -425,7 +457,8 @@ _read(int fd, unsigned char *buf, int buf_size, int *nread)
 static char *
 read_ok_no(int *reply)
 {
-	char buf[3], *err;
+	char unsigned buf[3];
+	char *err;
 	int nread = 0;
 
 	/*
@@ -434,7 +467,7 @@ read_ok_no(int *reply)
 	while (nread < 3) {
 		int nr;
 
-		err =  _read(server_fd, (unsigned char *)buf, 3 - nread, &nr);
+		err =  _read(server_fd, buf, 3 - nread, &nr);
 		if (err)
 			return err;
 		if (nr == 0)
@@ -603,7 +636,12 @@ bio4_put(int *ok_no)
 
 	//  write the put request to the remote server
 
-	if ((err = _write(server_fd, (unsigned char *)req, make_request(req))))
+	err = _write(
+		server_fd,
+		(unsigned char *)req,
+		make_request(req)
+	);
+	if (err)
 		return err;
 	if ((err = read_ok_no(ok_no)))
 		return err;
@@ -639,7 +677,7 @@ bio4_put(int *ok_no)
 			_trace("write ok");
 			if (more)
 				_TRACE("more data to digest");
-			hexdump(buf, nread, '<');
+			hexdump((unsigned char *)buf, nread, '<');
 		}
 #endif
 	}
@@ -675,7 +713,7 @@ bio4_take(int *ok_no)
 	//  server replied "ok" and we read the blob successfully,
 	//  so reply to server with "ok\n"
 
-	if (uni_write_buf(server_fd, "ok\n", 3))
+	if (_write(server_fd, (unsigned char *)"ok\n", 3))
 		return strerror(errno);
 	if((err = read_ok_no(ok_no)))
 		return err;
@@ -712,12 +750,12 @@ bio4_give(int *ok_no)
 		if (status == -1 && errno != ENOENT) {
 
 			int e = errno;
-			uni_write_buf(server_fd, "no\n", 3);
+			_write(server_fd, (unsigned char *)"no\n", 3);
 			return strerror(e);
 		}
-		if (uni_write_buf(server_fd, "ok\n", 3))
+		if (_write(server_fd, (unsigned char *)"ok\n", 3))
 			return strerror(errno);
-	} else if (uni_write_buf(server_fd, "ok\n", 3))
+	} else if (_write(server_fd, (unsigned char *)"ok\n", 3))
 		return strerror(errno);
 
 	_TRACE("give() done");
@@ -753,11 +791,17 @@ bio4_wrap(int *ok_no)
 
 	while (nread < sizeof udig -1) {
 		int nr;
+		char *err;
 		
-		nr = uni_read(server_fd, udig + nread, sizeof udig - 1 - nread);
+		err = _read(
+			server_fd,
+			(unsigned char*)udig + nread,
+			sizeof udig - 1 - nread,
+			&nr
+		);
+		if (err)
+			return err;
 
-		if (nr < 0)
-			return strerror(errno);
 		if (nr == 0)
 			return "read() returned unexpected 0 bytes";
 		nread += nr;
@@ -767,7 +811,7 @@ bio4_wrap(int *ok_no)
 	if (nread >= sizeof udig - 1)
 		return "failed to read udig from server";
 
-	if (uni_write_buf(output_fd, udig, nread))
+	if (_write(output_fd, (unsigned char *)udig, nread))
 		return strerror(errno);
 
 	_TRACE("wrap() done");
