@@ -43,6 +43,9 @@
  *	perhaps adding a plus to the end of algorithm name.
  *
  *		--algorithm sha+
+ *
+ *	The service structure only understands ascii [:graph:] chars,
+ *	which will be a problem for DNS host names.
  */
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -520,8 +523,9 @@ parse_argv(int argc, char **argv)
 			if (!sp)
 				eservice("unknown service", name);
 
-			//  extract the end point of the service.
-
+			/*
+			 *  End point > 0 and < 256 characters
+			 */
 			p++;
 			if (strlen(p) > 255)
 				eservice("end point > 255 characters", s);
@@ -529,7 +533,17 @@ parse_argv(int argc, char **argv)
 				eservice("missing <end point>", s);
 			endp = p;
 
-			//  validate the syntax of the end point
+			/*
+			 *  Verify that the end point are all graphic
+			 *  characters.
+			 */
+			while (*p) {
+				if (!isgraph(*p))
+					eservice("non graph char", name);
+				p++;
+			}
+
+			//  validate the syntax of the specific end point
 
 			err = sp->end_point_syntax(endp);
 			if (err)
