@@ -18,7 +18,7 @@ again:
 	errno = 0;
 	if (close(fd) == 0)
 		return 0;
-	if (errno == EINTR || errno == EAGAIN)
+	if (errno == EINTR)
 		goto again;
 	return -1;
 }
@@ -40,7 +40,7 @@ again:
 
 	//  write of zero only occurs on interupted system call?
 
-	if (errno == EINTR || errno == EAGAIN)
+	if (errno == EINTR)
 		goto again;
 	return -1;
 }
@@ -84,7 +84,7 @@ again:
 	nread = read(fd, buf, count);
 	if (nread >= 0)
 		return nread;
-	if (errno == EINTR || errno == EAGAIN)
+	if (errno == EINTR)
 		goto again;
 	return -1;
 }
@@ -99,7 +99,7 @@ again:
 	fd = open(path, flags);
 	if (fd >= 0)
 		return fd;
-	if (errno == EINTR || errno == EAGAIN)
+	if (errno == EINTR)
 		goto again;
 	return -1;
 }
@@ -114,7 +114,7 @@ again:
 	fd = open(path, flags, mode);
 	if (fd >= 0)
 		return fd;
-	if (errno == EINTR || errno == EAGAIN)
+	if (errno == EINTR)
 		goto again;
 	return -1;
 }
@@ -126,7 +126,7 @@ again:
 	errno = 0;
 	if (link(oldpath, newpath) == 0)
 		return 0;
-	if (errno == EINTR || errno == EAGAIN)
+	if (errno == EINTR)
 		goto again;
 	return -1;
 }
@@ -138,7 +138,7 @@ again:
 	errno = 0;
 	if (unlink(path) == 0)
 		return 0;
-	if (errno == EINTR || errno == EAGAIN)
+	if (errno == EINTR)
 		goto again;
 	return -1;
 }
@@ -150,7 +150,7 @@ again:
 	errno = 0;
 	if (access(path, mode) == 0)
 		return 0;
-	if (errno == EINTR || errno == EAGAIN)
+	if (errno == EINTR)
 		goto again;
 	return -1;
 }
