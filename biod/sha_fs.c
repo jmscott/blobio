@@ -2,6 +2,10 @@
 /*
  *  Synopsis:
  *	Module that manages sha digested blobs in POSIX file system.
+ *  Note:
+ *	The tmp file path does not include the digest.  Not a serious problem
+ *	since the odds of two different blobs having the same digest
+ *	for two different algorithms is slim.  Still needs to be addressed.
  */
 #include <sys/types.h>
 #include <sys/stat.h>
