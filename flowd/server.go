@@ -484,11 +484,12 @@ func (conf *config) server(par *parse) {
 
 			//  no completed flows seen, no blob requests in queue
 			case sfc == 0 && bl == 0:
-				info("blob requests in queue: 0")
+				info("no blob requests in queue")
 				continue
 
 			//  no completed flows seen, but unresolved exist
 			case sfc == 0:
+				info("blob requests in queue: %d", bl)
 				WARN("no fdr samples seen in %.0f sec", hb)
 				WARN("all jobs may be running > %.0f sec", hb)
 				WARN("perhaps increase heartbeat duration")
