@@ -174,7 +174,6 @@ sub frisk_wrap_set
 	my $WRAP_SET;
 	open($WRAP_SET, "blobio get $UDIG $GET_SERVICE |") or
 				die("open(blobio frisk wrap set) failed: $!");
-
 	#  scan the udig set for correctness
 	while (<$WRAP_SET>) {
 		chomp;
@@ -189,6 +188,7 @@ sub frisk_wrap_set
 		udig_after $source_brr_log, $_ if $source_brr_log;
 	}
 	close($WRAP_SET) or die "close(frisk udig set) failed: $!";
+	$UDIG{$wrap_set} = 1;
 	return $WRAP_SET{$wrap_set};
 }
 
