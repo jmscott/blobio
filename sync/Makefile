@@ -25,6 +25,7 @@ LIBs=									\
 	rummy.sql							\
 	service-by-interval.sql						\
 	sync-remote.flow.example					\
+	syncness.sql							\
 
 install:
 	install -g $(DIST_GROUP) -o $(DIST_USER)			\
