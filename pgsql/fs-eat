@@ -8,18 +8,17 @@
 #  Exit Status:
 #  	0	no errors
 #  	1	error
-#  Depends:
-#	fs2udig
-#	well known gnu comm program
 #
 
 PROG=$(basename $0)
 WORK_DIR=${TMPDIR:=/tmp}
 
+#  Note: /tmp getting to cluttered.  need to create work dir in tmp.
 FS=$WORK_DIR/$PROG.fs.$$
 EAT=$WORK_DIR/$PROG.eat.$$
 SERVICE=$WORK_DIR/$PROG.service.$$
 SERVICE2=$WORK_DIR/$PROG.service2.$$
+NO_FS=$WORK_DIR/$PROG.no_fs.$$
 
 log()
 {
@@ -55,10 +54,11 @@ leave()
 {
 	STATUS=$?
 
-	if rm -f $FS $SERVICE $SERVICE2 $EAT;  then
+	if rm -f $FS $SERVICE $SERVICE2 $EAT $NO_FS;  then
 		true
 	else
-		log "ERROR: rm $WORK_DIR/{fs,eat,service} failed: exit status=$?"
+		MSG="rm $WORK_DIR/{fs,eat,service,service2,no_fs} failed"
+		log "ERROR: $MSG: exit status=$?"
 		STATUS=1
 	fi
 	log 'good bye, cruel world'
@@ -180,7 +180,7 @@ case "$C" in
 esac
 
 #
-#  Eat the undiscovered blobs
+#  Get the undiscovered blobs
 #
 while read U;  do
 
@@ -203,3 +203,31 @@ while read U;  do
 		;;
 	esac
 done <$EAT
+log 'finding blobs in service table not in the file system'
+comm -1 -3 $FS $SERVICE2 | tr -d ' ' >$NO_FS
+log "$(wc -l $NO_FS | awk '{print $1}') blobs not in file system"
+
+#
+#  Eat the non existent blobs
+#
+while read U;  do
+
+	#
+	#  Note:
+	#	Do a "get" instead of "eat" to help remote sync which is too
+	#	stupid to understand (for now) grok local netflow.
+	#
+	blobio get --udig $U --service $BLOBIO_SERVICE --output-path /dev/null
+	STATUS=$?
+	case $STATUS in
+	0)
+		log "WARN: blob in fs: $U"
+		;;
+	1)
+		log "?$U"
+		;;
+	*)
+		die "blobio eat $UDIG $BLOBIO_SERVICE failed"
+		;;
+	esac
+done <$NO_FS
