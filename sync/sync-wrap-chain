@@ -44,9 +44,12 @@ leave()
 {
 	#  zap the temporary work directory
 	if [ -n "$WORK_DIR" -a -e "$WORK_DIR" ];  then
+		test -e PUT_COUNT && log "put count: $(cat PUT_COUNT)"
+		test -e EXISTS_COUNT && log "put count: $(cat EXISTS_COUNT)"
 		cd ..
 		rm -rf $WORK_DIR
 	fi
+
 	log 'good bye, cruel world'
 	exit
 }
@@ -77,6 +80,9 @@ log "work dir: $WORK_DIR"
 mkdir $WORK_DIR || die "mkdir $WORK_DIR failed: exit status=$?"
 cd $WORK_DIR || die "cd $WORK_DIR failed: exit status=$?"
 
+echo 0 >PUT_COUNT
+echo 0 >EXISTS_COUNT
+
 log "walking $STOP_BRR_LOG_COUNT brr logs back ..."
 walk-wrap-set --stop-brr-log-count $STOP_BRR_LOG_COUNT >WALK_WRAP_SET	||
 			die "walk-wrap-set failed: exit status=$?"
@@ -95,6 +101,8 @@ grep '^[a-z][a-z0-9].*:' WALK_WRAP_SET | while read U;  do
 	case $STATUS in
 	0)
 		log "@$U"
+		C=$(expr $(cat EXISTS_COUNT) + 1)
+		echo $C >EXISTS_COUNT
 		continue
 		;;
 	1)
@@ -109,6 +117,8 @@ grep '^[a-z][a-z0-9].*:' WALK_WRAP_SET | while read U;  do
 	case "$STATUS" in
 	'0 0')
 		log ">$U"
+		C=$(expr $(cat PUT_COUNT) + 1)
+		echo $C >PUT_COUNT
 		;;
 	'1 '*)
 		die "local blob does not exist: $U"
