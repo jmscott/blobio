@@ -100,7 +100,7 @@ grep '^[a-z][a-z0-9].*:' WALK_WRAP_SET | while read U;  do
 	1)
 		;;
 	*)
-		die "blobio eat failed: exit status=$?"
+		die "blobio eat failed: exit status=$STATUS"
 		;;
 	esac
 
