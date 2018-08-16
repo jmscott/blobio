@@ -83,7 +83,7 @@ cd $WORK_DIR || die "cd $WORK_DIR failed: exit status=$?"
 echo 0 >PUT_COUNT
 echo 0 >EXISTS_COUNT
 
-log "walking $STOP_BRR_LOG_COUNT brr logs back ..."
+log "walking $STOP_BRR_LOG_COUNT brr logs back in time ..."
 walk-wrap-set --stop-brr-log-count $STOP_BRR_LOG_COUNT >WALK_WRAP_SET	||
 			die "walk-wrap-set failed: exit status=$?"
 test -s WALK_WRAP_SET || die 'walk wrap set is empty'
@@ -125,6 +125,52 @@ grep '^[a-z][a-z0-9].*:' WALK_WRAP_SET | while read U;  do
 		;;
 	*)
 		die "blobio get | put failed: exit status=$STATUS"
+		;;
+	esac
+done
+
+TAKE_COUNT=$(
+	grep '^#  Take: [a-z].*:' WALK_WRAP_SET				|
+	wc -l								|  
+	awk '{print $1}'
+)
+log "take count: $TAKE_COUNT"
+log 'syncing taken blobs ...'
+grep '^#  Take: [a-z].*:' WALK_WRAP_SET 				|
+	sed 's/^#  Take: //'						|
+	while read U;  do
+	UDIG="--udig $U"
+
+	#  Verify blob does NOT exist locally.
+	#  If blob exists then skip that blob
+
+	blobio eat $UDIG $SERVICE
+	STATUS=$?
+	case $STATUS in
+	0)
+		log "WARN: blob exists locally: $U"
+		log "WARN: skipping sync"
+		continue
+		;;
+	1)
+		;;
+	*)
+		die "take: local: blobio eat failed: exist status=$STATUS"
+		;;
+	esac
+
+	#  Take the blob from the remote server
+	blobio take $UDIG $REMOTE_SERVICE --output-path /dev/null
+	STATUS=$?
+	case $STATUS in
+	0)
+		log "-$U"
+		;;
+	1)
+		log "?$U"
+		;;
+	*)
+		die "take; remote: blobio take failed: exit status=$STATUS"
 		;;
 	esac
 done
