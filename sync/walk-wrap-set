@@ -395,7 +395,10 @@ END
 		}
 		close($BRR_LOG) or die "close(blobio get brr log) failed: $!";
 		unlink($tmp_file) or die "unlink(tmp brr log) failed: $!";
-		if (scalar(%BRR_LOG) >= $stop_brr_log_count){
+		if (
+			$stop_brr_log_count > 0				&&
+			scalar(%BRR_LOG) >= $stop_brr_log_count
+		){
 			$roll_set = $wrap_set = undef;
 			last;
 		}
@@ -525,6 +528,8 @@ foreach my $brr_log (@BRR_LOG) {
 		$OK_VERB_COUNT{$verb}++;
 
 		#  blob was taken succesfully, so does not exist
+		#
+		#  Note: could a taken wrap set be tagged prematuraly in %UDIG?
 
 		if ($verb eq 'take') {
 			#  flag as taken unless seen more recently
