@@ -45,7 +45,7 @@ leave()
 	#  zap the temporary work directory
 	if [ -n "$WORK_DIR" -a -e "$WORK_DIR" ];  then
 		test -e PUT_COUNT && log "put count: $(cat PUT_COUNT)"
-		test -e EXISTS_COUNT && log "put count: $(cat EXISTS_COUNT)"
+		test -e EXISTS_COUNT && log "exists count: $(cat EXISTS_COUNT)"
 		cd ..
 		rm -rf $WORK_DIR
 	fi
