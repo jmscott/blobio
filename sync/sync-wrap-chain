@@ -148,8 +148,7 @@ grep '^#  Take: [a-z].*:' WALK_WRAP_SET 				|
 	STATUS=$?
 	case $STATUS in
 	0)
-		log "WARN: blob exists locally: $U"
-		log "WARN: skipping sync"
+		log "WARN: skipping sync since blob exists locally: @$U"
 		continue
 		;;
 	1)
@@ -170,7 +169,7 @@ grep '^#  Take: [a-z].*:' WALK_WRAP_SET 				|
 		log "?$U"
 		;;
 	*)
-		die "take; remote: blobio take failed: exit status=$STATUS"
+		die "take: remote: blobio take failed: exit status=$STATUS"
 		;;
 	esac
 done
