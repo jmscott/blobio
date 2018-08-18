@@ -444,7 +444,7 @@ _read(int fd, unsigned char *buf, int buf_size, int *nread)
 			_TRACE("read() returned 0 bytes");
 	}
 #endif
-	if (nr > 0)
+	if (err == (char *)0)
 		*nread = nr;
 	_TRACE("read() done");
 	return err;
