@@ -256,7 +256,7 @@ again:
 		panic3(n, "setitimer(REAL, 0) failed", strerror(errno));
 
 	if (nwrite < 0) {
-		char tbuf[20];
+		char tbuf[64];
 
 		if (e != EINTR) {
 			error3(n, "write() failed", strerror(errno));

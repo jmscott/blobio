@@ -819,6 +819,7 @@ request()
 		switch (len) {
 		case 0:
 			panic("unexpected empty length of chat history");
+			break;
 			;;
 		case 2:
 			/*
@@ -1590,7 +1591,7 @@ fork_accept(struct request *rp)
 		net_32addr2text(ntohl(rp->remote_address.sin_addr.s_addr)));
 	snprintf(rp->netflow, sizeof rp->netflow - 1,
 		"tcp4~%s:%u;%s:%u",
-		rp->netflow_tiny,
+		net_32addr2text(ntohl(rp->remote_address.sin_addr.s_addr)),
 		(unsigned int)ntohs(rp->remote_address.sin_port),
 		net_32addr2text(ntohl(rp->bind_address.sin_addr.s_addr)),
 		(unsigned int)ntohs(rp->bind_address.sin_port)
@@ -1887,6 +1888,7 @@ accept_request:
 	case -1:
 		die2("accept(server listen socket) failed", strerror(errno));
 		/*NOTREACHED*/
+		break;
 	case 0:
 		connect_count++;
 		fork_accept(&req);
@@ -1895,6 +1897,7 @@ accept_request:
 		break;
 	default:
 		panic("net_accept() returned impossible value");
+		/*NOTREACHED*/
 	}
 	catch_CHLD(SIGCHLD);		//  reap kids, put rrd stats, heartbeat
 	goto accept_request;
