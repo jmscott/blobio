@@ -124,11 +124,12 @@ bio4_end_point_syntax(char *end_point)
 	if (bp == buf)
 		return "no port number after colon";
 	*bp = 0;
-	port = atoi(buf);
-	if (port == 0)
+	int p = atoi(buf);
+	if (p == 0)
 		return "port number can not be 0";
-	if (port > 65535)
+	if (p > 65535)
 		return "port number > 65535";
+	port = (uint16_t)p;
 	if (!c)
 		return (char *)0;
 
