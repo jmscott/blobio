@@ -125,9 +125,9 @@ chew(unsigned char *chunk, int size)
  *  Synopsis:
  *	Update the partial digest with a chunk read from a get request.
  *  Returns:
- *	-1	invalid signature
- *	0	ok, no more to read, blob seen
- *	1	more to read, continue, blob not seen
+ *	"0"	ok, no more to read, blob seen
+ *	"1"	more to read, continue, blob not seen
+ *	"..."	error message
  */
 static char *
 sha_get_update(unsigned char *src, int src_size)
