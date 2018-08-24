@@ -52,8 +52,8 @@ PATH=$BLOBIO_ROOT/bin:$BLOBIO_ROOT/sbin:$PGHOME/bin:$PATH
 
 export TMPDIR=$BLOBIO_ROOT/tmp
 if [ ! -e $TMPDIR ];  then
-	mkdir -p $TMPDIR/tmp || exit 1
+	mkdir -p $TMPDIR || exit 1
 fi
 
-#  ubuntu 4.4 needs this defined
+#  ubuntu 4.4 needs USER defined
 USER=${USER:=$LOGNAME}
