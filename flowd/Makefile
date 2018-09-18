@@ -1,6 +1,8 @@
 #
 #  Synopsis:
 #  	Development make rules
+#  Note:
+#	Change call to goyacc to yacc
 #
 include ../blobio.mk
 include ../local.mk
