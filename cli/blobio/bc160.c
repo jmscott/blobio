@@ -2,6 +2,9 @@
  *  Synopsis:
  *	Bitcoin Hash RIPEMD160(SHA256(blob))
  *  Note:
+ *	Thinks about a version of bc160 named bc20 which uses base64 encoding.
+ *	Important that openssl be able to encode in base58
+ *
  *  	Not a timed read() since assumed to be local file.
  */
 #ifdef BC160_FS_MODULE    
