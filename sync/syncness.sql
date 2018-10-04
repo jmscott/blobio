@@ -9,10 +9,11 @@
  *	will be close but the wall_duration will be large, so the blob
  *	is technically not sunk ... which this report does not clarify.
  */
-\timing on
+\set ON_ERROR_STOP on
 set search_path to blobio,public;
 
 \x on
+\timing on
 SELECT
 	now() AS "Now",
 	inet_server_addr() || ':' || inet_server_port() AS "Server:Port",
@@ -41,6 +42,9 @@ SELECT
 
 \timing off
 \x off
+\pset tuples_only on
+\pset format unaligned
+
 \o :udig_out
 SELECT
 	s.blob
