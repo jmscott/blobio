@@ -37,10 +37,6 @@
   <array>
 	<string>sbin/launchd-log</string>
 	<string>bin/flowd</string>
-	<!-- Note:
-		ps-title hack must first argument in order to change what
-		appears in the process table.
-	-->
 	<string>server</string>
 	<string>etc/sync-remote.flow</string>
   </array>
