@@ -59,7 +59,7 @@ _ln_root bin
 
 FLOW=etc/sync-$HOST.flow
 test -e $FLOW && exit 0
-TEMPLATE=$BLOBIO_ROOT/lib/sync.flow.example
+TEMPLATE=$BLOBIO_ROOT/lib/sync-remote.flow.example
 test -r $TEMPLATE || die "can not read flow template: $TEMPLATE"
 sed "s/user@remote[.]host[.]com/$SSH_AUTH/g" $TEMPLATE 			|
 	sed "s/remote[.]host[.]com/$HOST/g"				\
