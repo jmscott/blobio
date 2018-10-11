@@ -70,7 +70,7 @@ install: all
 	install -g $(DIST_GROUP) -o $(DIST_USER)			\
 		-m u=rwx,go= -d $(DIST_ROOT)/spool/wrap
 	install -g $(DIST_GROUP) -o $(DIST_USER)			\
-		-m u=rwx,go= -d $(DIST_ROOT)/log
+		-m u=rwx,g=rx,o= -d $(DIST_ROOT)/log
 	install -g $(DIST_GROUP) -o $(DIST_USER)			\
 		-m u=rwx,go= -d $(DIST_ROOT)/run
 	install -g $(DIST_GROUP) -o $(DIST_USER)			\
@@ -86,9 +86,9 @@ install: all
 	install -g $(DIST_GROUP) -o $(DIST_USER) 			\
 		-m u=rwx,go= -d $(DIST_ROOT)/data/bc160_fs/tmp
 	install -g $(DIST_GROUP) -o $(DIST_USER)			\
-		-m u=rwx,go= -d $(DIST_ROOT)/sync
+		-m u=rwx,g=rx,o= -d $(DIST_ROOT)/sync
 	install -g $(DIST_GROUP) -o $(DIST_USER)			\
-		-m u=rwx,go= -d $(DIST_ROOT)/sync/host
+		-m u=rwx,g=rx,o= -d $(DIST_ROOT)/sync/host
 	install -g $(DIST_GROUP) -o $(DIST_USER)			\
 		-d $(DIST_ROOT)/lib
 	install -g $(DIST_GROUP) -o $(DIST_USER)			\

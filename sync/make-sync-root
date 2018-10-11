@@ -17,6 +17,7 @@ _mkdir()
 	D=$1
 	test -e $D && return 
 	mkdir -p $D || die "mkdir $D failed: exit status=$?"
+	chmod u=rwx,g=rx,o= $D || die "chmod $D failed: exit status=$?"
 }
 
 _ln_root()
