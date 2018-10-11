@@ -475,6 +475,8 @@ read_ok_no(int *reply)
 			return "unexpected end of stream reading reply";
 		nread += nr;
 	}
+	if (nread != 3)
+		return "reply not three characters";
 
 	/*
 	 *  Look for "ok\n" or "no\n" from the server.
