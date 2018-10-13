@@ -7,6 +7,8 @@
 #	bio-ls <blob-set.udig
 #  Enviroment:
 #	BLOBIO_PG{HOST, PORT, USER, PASSWORD, DATABASE}
+#  Note:
+#	Incorrect code when service table is empty.
 #
 
 export PGHOST=${BLOBIO_PGHOST:=${PGHOST:=/tmp}}
@@ -33,13 +35,13 @@ SELECT
 	s.blob AS " ",
 	regexp_replace(age(now(), s.discover_time)::text, '\..*', '') || ' ago'
 		AS "Discovered",
-	regexp_replace(age(now(), s.recent_time)::text, '\..*', '') || ' ago'
+	regexp_replace(age(now(), s.recent_verify_time)::text, '\..*', '') || ' ago'
 		AS "Recent Verify",
 	pg_size_pretty(bs.byte_count) ||
 		' (' || bs.byte_count || ' bytes)'
 		AS "Size",
 	s.discover_time AS "Discovered @",
-	s.recent_time AS "Verified @"
+	s.recent_verify_time AS "Recently Verified @"
   FROM
   	blobio.service s
 	  LEFT OUTER JOIN blobio.brr_blob_size bs ON (bs.blob = s.blob)

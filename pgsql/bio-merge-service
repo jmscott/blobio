@@ -279,7 +279,7 @@ SELECT
   FROM
   	taken
   WHERE
-  	recent_time >= $SINCE
+  	recent_verify_time >= $SINCE
   ORDER BY
   	blob
 ;

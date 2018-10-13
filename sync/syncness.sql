@@ -37,7 +37,7 @@ SELECT
   	service s
 	  JOIN brr_blob_size bs ON (bs.blob = s.blob)
   WHERE
-  	s.recent_time >= now() + :since
+  	s.recent_verify_time >= now() + :since
 ;
 
 \timing off
@@ -52,7 +52,7 @@ SELECT
   	service s
 	  JOIN brr_blob_size bs ON (bs.blob = s.blob)
   WHERE
-  	s.recent_time >= now() + :since
+  	s.recent_verify_time >= now() + :since
   ORDER BY
   	s.blob
 ;

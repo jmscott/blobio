@@ -23,7 +23,6 @@ LIBs=									\
 	not-in-service.sql						\
 	profile-sync.example						\
 	rummy.sql							\
-	service-by-interval.sql						\
 	sync-remote.flow.example					\
 	syncness.sql							\
 

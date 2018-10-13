@@ -226,7 +226,7 @@ DROP VIEW IF EXISTS service CASCADE;
 CREATE VIEW service AS
   SELECT
 	ok.blob,
-	ok.start_time AS "recent_time",
+	ok.start_time AS "recent_verify_time",
 	d.start_time AS "discover_time"
     FROM
   	brr_ok_recent ok
@@ -260,7 +260,7 @@ DROP VIEW IF EXISTS taken CASCADE;
 CREATE VIEW taken AS
   SELECT
 	take.blob,
-	take.start_time AS "recent_time"
+	take.start_time AS "recent_verify_time"
     FROM
   	brr_take_ok_recent take
 	  LEFT OUTER JOIN brr_ok_recent ok ON
