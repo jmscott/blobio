@@ -41,7 +41,7 @@ SELECT
 		' (' || bs.byte_count || ' bytes)'
 		AS "Size",
 	s.discover_time AS "Discovered @",
-	s.recent_verify_time AS "Recently Verified @"
+	s.recent_verify_time AS "Verified @"
   FROM
   	blobio.service s
 	  LEFT OUTER JOIN blobio.brr_blob_size bs ON (bs.blob = s.blob)
