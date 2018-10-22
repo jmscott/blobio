@@ -35,6 +35,6 @@ esac
 #
 find *_fs -follow -type f -print			|
 	grep -v '^[^/]*/tmp/'				|
-	grep -v 'sha_fs\/.*[.]'				|
+	egrep -v '(sha|bc160)_fs\/.*[.]'		|
 	sed 's/_fs\//:/'				|
 	sed 's/\///g'
