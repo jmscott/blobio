@@ -50,7 +50,6 @@ SBINs=									\
 	create-rrd							\
 	fs2udig								\
 	graph-rrd							\
-	udig2fs								\
 	update-rrd
 LIBs=									\
 	blobio.biod.service.example					\
