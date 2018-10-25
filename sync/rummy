@@ -40,12 +40,12 @@ test -n "$BLOBIO_ROOT" || die "environment not defined: BLOBIO_ROOT"
 log "BLOBIO_ROOT=$BLOBIO_ROOT"
 cd $BLOBIO_ROOT || die "cd $BLOBIO_ROOT failed: exit status=$?"
 
+test -r etc/profile || die "can not read file: $(pwd)/etc/profile"
+. etc/profile
+
 test -n "$BLOBIO_SERVICE" || die "environment not defined: BLOBIO_SERVICE"
 log "BLOBIO_SERVICE=$BLOBIO_SERVICE"
 log "BLOBIO_GET_SERVICE=$BLOBIO_GET_SERVICE"
-
-test -r etc/profile || die "can not read file: $(pwd)/etc/profile"
-. etc/profile
 
 log "PATH=$PATH"
 log "PGHOST=$PGHOST"
