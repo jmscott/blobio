@@ -12,11 +12,8 @@
 #	Existence is not verified for the underlying blob file.
 #
 #  Usage:
-#	# compare udig to shasum of all pdf blobs
-#
-#	$ cat pdf.udig | udig2fs-path | while read UDIG FILE;  do
-#		echo $UDIG $(shasum $BLOBIO_ROOT/data/$FILE | awk '{print $1}')
-#	done
+#	bio-fs2udig bc160:aa70473d7a1b524e4d64bf1b0e50ee84fba8d7be ...
+#	bio-fs2udig <WRAP_SET
 #
 
 my $PROG = 'udig2fs';
@@ -28,13 +25,15 @@ sub udig2fs
 	$udig =~ s/^\s+|\s+$//g;
 
 	die "unrecognized udig: $udig"
-			unless $udig =~ /^([a-z]{1,8}):([[:graph:]]{32,128})$/;
-	my ($algorithm, $digest) = ($1, $2);
+		unless $udig =~ /^([a-z][a-z0-9]{0,7}):([[:graph:]]{32,128})$/;
+	my ($algo, $digest) = ($1, $2);
 
-	die "unknown algorithm: $algorithm" unless $algorithm eq 'sha';
+	die "unknown algorithm: $algo"
+				unless $algo eq 'sha' || $algo eq 'bc160';
 
-	my $fs = 'sha_fs';
-	die "unexpected sha digest: $digest" unless $digest =~ /^[0-9a-f]{40}$/;
+	my $fs = "${algo}_fs";
+	die "unexpected $algo digest: $digest"
+				unless $digest =~ /^[0-9a-f]{40}$/;
 
 	# sha path: 0/3c/c0cb/347e4f88/642e5470c76d0747/21f18c741
 
