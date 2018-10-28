@@ -6,15 +6,22 @@
 #	Sync local blobs derived from a chain of logs of wrapped blob request
 #	requests.  The source is the local server in $BLOBIO_SERVICE.
 #	The remote server is specified on the command line.  Each blob
-#	is verified on the remote server with an "eat" request.
+#	is verified on the remote server with an "eat" request.  Successful
+#	eats are cached.
 #  Usage:
-#	sync-wrap-chain <remote service> <stop brr log count>
+#	sync-wrap-chain <remote host> <stop brr log count> 
+#	sync-wrap-chain condor.setspace.com 24
+#	
 #  Exit Status:
 #	0	no error, all blobs sunk across the chain of wrap sets.
 #	1	wrong number of arguments
 #	2	unknown error
 #  Note:
 #	Deleted blobs are not zapped.
+#
+#	Can the variable EXISTS_COUNT be replaced with global bash variable?
+#
+#	Need to run sync process in $BLOBIO_ROOT/sync/host/$SYNC_HOST.
 #
 
 PROG=$(basename $0)
@@ -55,22 +62,37 @@ leave()
 }
 
 test $# = 2 || die 1 "wrong number of arguments, got $#, expected 2"
-REMOTE_SERVICE=$1
+SYNC_HOST=$1
 STOP_BRR_LOG_COUNT=$2
+
 log 'hello, world'
 trap leave EXIT QUIT INT TERM
 
-log "remote service: $REMOTE_SERVICE"
+log "sync host: $SYNC_HOST"
 log "stop brr log count: $STOP_BRR_LOG_COUNT"
-
-#  Local profile in $BLOBIO_ROOT/etc/profile
 
 test -n "$BLOBIO_ROOT" || die 'env variable not defined: BLOBIO_ROOT'
 cd $BLOBIO_ROOT || die "cd $BLOBIO_ROOT failed: exit status=$?"
+
+#  Local profile in $BLOBIO_ROOT/etc/profile
+
 test -r etc/profile || die "profile does not exist: $(pwd)/etc/profile"
 . etc/profile || die "$(pwd)/etc/profile failed"
 test -n "$BLOBIO_SERVICE" || die 'environment not defined: BLOBIO_SERVICE'
-log "local blobio service: $BLOBIO_SERVICE"
+LOCAL_SERVICE=$BLOBIO_SERVICE
+log "local blobio service: $LOCAL_SERVICE"
+
+#  Get the remote service from $SYNC_ROOT/etc/profile
+SYNC_ROOT=$BLOBIO_ROOT/sync/host/$SYNC_HOST
+log "sync root: $SYNC_ROOT"
+test -d $SYNC_ROOT || die "sync root dir does not exist: $SYNC_ROOT"
+SYNC_PROFILE=$SYNC_ROOT/etc/profile
+test -e $P || die "sync profile does not exist: $SYNC_PROFILE"
+unset BLOBIO_SERVICE
+. $SYNC_PROFILE
+test -n "$BLOBIO_SERVICE" || die "BLOBIO_SERVICE not defined: $SYNC_PROFILE"
+SYNC_SERVICE=$BLOBIO_SERVICE
+log "sync service: $SYNC_SERVICE"
 
 #  make the temporary work dir
 
@@ -84,22 +106,34 @@ echo 0 >PUT_COUNT
 echo 0 >EXISTS_COUNT
 
 log "walking $STOP_BRR_LOG_COUNT brr logs back in time ..."
-walk-wrap-set --stop-brr-log-count $STOP_BRR_LOG_COUNT >WALK_WRAP_SET	||
+BLOBIO_SERVICE=$LOCAL_SERVICE walk-wrap-set				\
+	--stop-brr-log-count $STOP_BRR_LOG_COUNT >WALK_WRAP_SET	||
 			die "walk-wrap-set failed: exit status=$?"
 test -s WALK_WRAP_SET || die 'walk wrap set is empty'
 
 #  dump the stats of this chain of wrap set
 grep '#' WALK_WRAP_SET
 
-REMOTE_SERVICE="--service $REMOTE_SERVICE"
-SERVICE="--service $BLOBIO_SERVICE"
+SYNC_SERVICE="--service $SYNC_SERVICE"
+SERVICE="--service $LOCAL_SERVICE"
 log 'syncing local blobs to remote service'
-grep '^[a-z][a-z0-9].*:' WALK_WRAP_SET | while read U;  do
+grep '^[a-z][a-z0-9].*:' WALK_WRAP_SET					|
+	bio-udig2fs							|
+	while IFS=$'\t' read -r U P;  do
+
+	#  has the blob already been verified on the remote server
+	EXISTS=$SYNC_ROOT/cache/exists/$P
+	test -e $EXISTS && continue
+
+	#  poll the remote server
 	UDIG="--udig $U"
-	blobio eat $REMOTE_SERVICE $UDIG
+	blobio eat $SYNC_SERVICE $UDIG
 	STATUS=$?
 	case $STATUS in
 	0)
+		ED=$(dirname $EXISTS)
+		mkdir -p $ED || die "mkdir $ED failed: exit status=$?"
+		>$EXISTS || die ">$EXISTS failed"
 		log "@$U"
 		C=$(expr $(cat EXISTS_COUNT) + 1)
 		echo $C >EXISTS_COUNT
@@ -112,7 +146,7 @@ grep '^[a-z][a-z0-9].*:' WALK_WRAP_SET | while read U;  do
 		;;
 	esac
 
-	blobio get $SERVICE $UDIG | blobio put $REMOTE_SERVICE $UDIG
+	blobio get $SERVICE $UDIG | blobio put $SYNC_SERVICE $UDIG
 	STATUS=${PIPESTATUS[*]}
 	case "$STATUS" in
 	'0 0')
@@ -159,7 +193,7 @@ grep '^#  Take: [a-z].*:' WALK_WRAP_SET 				|
 	esac
 
 	#  Take the blob from the remote server
-	blobio take $UDIG $REMOTE_SERVICE --output-path /dev/null
+	blobio take $UDIG $SYNC_SERVICE --output-path /dev/null
 	STATUS=$?
 	case $STATUS in
 	0)
