@@ -584,10 +584,13 @@ sub pretty_size
 {
 	my $size = $_[0];
 
-	return sprintf('%.fTB', $size / 1099511627776) if $size >=1099511627776;
-	return sprintf('%.fGB', $size / 1073741824) if $size >= 1073741824;
-	return sprintf('%.fMB', $size / 1048576) if $size >= 1048576;
-	return sprintf('%.fKB', $size / 1024) if $size >= 1024;
+	return sprintf('%.0fTB', $size / 1099511627776)
+						if $size >=1099511627776;
+	return sprintf('%.0fGB', $size / 1073741824)
+						if $size >= 1073741824;
+	return sprintf('%.0fMB', $size / 1048576)
+						if $size >= 1048576;
+	return sprintf('%.0fKB', $size / 1024) if $size >= 1024;
 	return "$size bytes";
 }
 
