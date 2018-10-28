@@ -87,7 +87,7 @@ SYNC_ROOT=$BLOBIO_ROOT/sync/host/$SYNC_HOST
 log "sync root: $SYNC_ROOT"
 test -d $SYNC_ROOT || die "sync root dir does not exist: $SYNC_ROOT"
 SYNC_PROFILE=$SYNC_ROOT/etc/profile
-test -e $P || die "sync profile does not exist: $SYNC_PROFILE"
+test -e $SYNC_PROFILE || die "sync profile does not exist: $SYNC_PROFILE"
 unset BLOBIO_SERVICE
 . $SYNC_PROFILE
 test -n "$BLOBIO_SERVICE" || die "BLOBIO_SERVICE not defined: $SYNC_PROFILE"
