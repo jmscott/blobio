@@ -23,6 +23,8 @@
 #
 #	Need to run sync process in $BLOBIO_ROOT/sync/host/$SYNC_HOST.
 #
+#	Does cache need to remove taken blobs?
+#
 
 PROG=$(basename $0)
 
@@ -81,6 +83,8 @@ test -r etc/profile || die "profile does not exist: $(pwd)/etc/profile"
 test -n "$BLOBIO_SERVICE" || die 'environment not defined: BLOBIO_SERVICE'
 LOCAL_SERVICE=$BLOBIO_SERVICE
 log "local blobio service: $LOCAL_SERVICE"
+LOCAL_GET_SERVICE=${BLOBIO_GET_SERVICE:=$BLOBIO_SERVICE}
+log "local blobio get service: $LOCAL_GET_SERVICE"
 
 #  Get the remote service from $SYNC_ROOT/etc/profile
 SYNC_ROOT=$BLOBIO_ROOT/sync/host/$SYNC_HOST
@@ -115,7 +119,7 @@ test -s WALK_WRAP_SET || die 'walk wrap set is empty'
 grep '#' WALK_WRAP_SET
 
 SYNC_SERVICE="--service $SYNC_SERVICE"
-SERVICE="--service $LOCAL_SERVICE"
+GET_SERVICE="--service $LOCAL_GET_SERVICE"
 log 'syncing local blobs to remote service'
 grep '^[a-z][a-z0-9].*:' WALK_WRAP_SET					|
 	bio-udig2fs							|
@@ -131,9 +135,11 @@ grep '^[a-z][a-z0-9].*:' WALK_WRAP_SET					|
 	STATUS=$?
 	case $STATUS in
 	0)
+		#  update cache directory
 		ED=$(dirname $EXISTS)
 		mkdir -p $ED || die "mkdir $ED failed: exit status=$?"
 		>$EXISTS || die ">$EXISTS failed"
+
 		log "@$U"
 		C=$(expr $(cat EXISTS_COUNT) + 1)
 		echo $C >EXISTS_COUNT
@@ -146,7 +152,7 @@ grep '^[a-z][a-z0-9].*:' WALK_WRAP_SET					|
 		;;
 	esac
 
-	blobio get $SERVICE $UDIG | blobio put $SYNC_SERVICE $UDIG
+	blobio get $GET_SERVICE $UDIG | blobio put $SYNC_SERVICE $UDIG
 	STATUS=${PIPESTATUS[*]}
 	case "$STATUS" in
 	'0 0')
