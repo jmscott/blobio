@@ -184,7 +184,7 @@ grep '^#  Take: [a-z].*:' WALK_WRAP_SET 				|
 	#  Verify blob does NOT exist locally.
 	#  If blob exists then skip that blob
 
-	blobio eat $UDIG $SERVICE
+	blobio eat $UDIG $GET_SERVICE
 	STATUS=$?
 	case $STATUS in
 	0)
