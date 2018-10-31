@@ -22,6 +22,8 @@
 #
 #	#  See blobs in service, according to the chain
 #	walk-wrap-set | grep '^#'
+#
+#	walk-wrap-set --stop-brr-log-count 3
 #  Note:
 #	If a stop-wrap is specificed but does not exist in the block chain
 #	then an error ought to occur.
@@ -53,6 +55,7 @@ my (
 	%NO_VERB_COUNT,
 	%UDIG_AFTER,
 	%NO_EXIST,
+	%NETFLOW_TCP4_SOURCE,
 );
 
 #  match a udig
@@ -78,7 +81,7 @@ my $BRR_RE = qr{
 	)
 						\t
 	#  netflow name~parameter
-	[a-z][a-z0-9]{0,7}~[[:graph:]]{1,128}
+	([a-z][a-z0-9]{0,7}~[[:graph:]]{1,128})
 						\t
 	#  request verb
 	(get|put|give|take|eat|wrap|roll)
@@ -365,9 +368,10 @@ while ($wrap_set) {
 			die "row $rc is not brr in log: $brr_log"
 							unless m/^${BRR_RE}$/;
 			my $start_time = $1;
-			my $verb = $2;
-			my $udig = $3;
-			my $chat_history = $4;
+			my $netflow = $2;
+			my $verb = $3;
+			my $udig = $4;
+			my $chat_history = $5;
 
 			print <<END if $trace_blob eq $udig;
 #
@@ -378,6 +382,9 @@ while ($wrap_set) {
 #  Trace: Verb/Chat: $verb/$chat_history
 #
 END
+
+			++$NETFLOW_TCP4_SOURCE{"$1 answered $2"}
+				if $netflow =~/^tcp4~([^:]+):\d+;(.*)/;
 
 			#  Looking for a wrap/roll blob
 			next if $chat_history =~ /no$/ ||
@@ -493,10 +500,11 @@ foreach my $brr_log (@BRR_LOG) {
 	foreach (reverse @BRR) {
 		die "row $rc is not brr in log: $brr_log" unless m/^${BRR_RE}$/;
 		my $start_time = $1;
-		my $verb = $2;
-		my $udig = $3;
-		my $chat_history = $4;
-		my $blob_size = $5;
+		my $netflow = $2;
+		my $verb = $3;
+		my $udig = $4;
+		my $chat_history = $5;
+		my $blob_size = $6;
 
 		#  find the bounds for the start times for the whole brr log
 
@@ -512,6 +520,8 @@ foreach my $brr_log (@BRR_LOG) {
 			or
 		  	$start_time le $MIN_BRR_LOG_START_TIME
 		;
+		++$NETFLOW_TCP4_SOURCE{"$1 answered $2"}
+					if $netflow =~/^tcp4~([^:]+):\d+;(.*)/;
 
 		if ($chat_history =~ /no$/) {
 			$NO_VERB_COUNT{$verb}++;
@@ -634,6 +644,14 @@ print <<END;
 #  Average Blob Size: $average_blob_size bytes
 #  No BRR Log Count: $no_brr_log_set_count blobs
 #  Taken Count: $taken_count blobs
+#
+#  Netflow TCP4 Source
+END
+print <<END for sort keys %NETFLOW_TCP4_SOURCE;
+#	$_ $NETFLOW_TCP4_SOURCE{$_} requests
+END
+
+print <<END;
 #
 #  Job End Time: $date
 #
