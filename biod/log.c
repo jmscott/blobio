@@ -167,7 +167,6 @@ check_log_age()
 {
 	struct tm *now;
 	time_t now_t;
-	static char n[] = "check_log_age";
 
 	time(&now_t);
 	now = localtime(&now_t);
@@ -180,18 +179,18 @@ check_log_age()
 
 		snprintf(rsd, sizeof rsd,
 				"rrd sample duration: %u", rrd_sample_duration);
-		info2(n, rsd);
-		info3(n, "elapsed running time", server_elapsed());
-		info2(n, ppid); 
-		info3(n, "closing log file", log_path);
+		info(rsd);
+		info2("elapsed running time", server_elapsed());
+		info(ppid); 
+		info2("closing log file", log_path);
 
 		open_log_path(1);
 		log_fd = log_path_fd;
 
-		info3(n, "opened new log file", log_path);
-		info3(n, "elapsed running time", server_elapsed());
-		info2(n, rsd);
-		info2(n, ppid);
+		info2("opened new log file", log_path);
+		info2("elapsed running time", server_elapsed());
+		info(rsd);
+		info(ppid);
 	}
 }
 
