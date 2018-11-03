@@ -43,23 +43,23 @@ info "sync root: $SYNC_ROOT"
 cd $SYNC_ROOT || die "cd $SYNC_ROOT failed: exit status=$?"
 
 if [ ! -e cache/exists ];  then
-	info "WARN: dir cache/exists does not exist"
+	info "WARN: dir cache/exists does not exist, so nothing to do"
 	exit 0
 fi
 
-info "purging stale files in cache/exists: $STALE_DAYS days ..."
+info "purging stale files in cache/exists/: $STALE_DAYS days ..."
 find cache/exists -type f -follow -atime +$STALE_DAYS -delete
-test $? = 0 || die "find cache/exists failed: exit status=$?"
+test $? = 0 || die "find cache/exists/ failed: exit status=$?"
 
-info 'purging empty directories: cache/exists ...'
+info 'purging empty directories: cache/exists/ ...'
 find cache/exists -mindepth 1 -follow -type d -empty -delete
-test $? = 0 || die "find cache/exists empty failed: exit status=$?"
+test $? = 0 || die "find cache/exists/ empty failed: exit status=$?"
 
-info 'counting files in cache/exists ...'
+info 'counting files in dir cache/exists/ ...'
 C=$(find cache/exists -type f | wc -l | awk '{print $1}')
 case "$C" in
 [0-9]*)
-	info "cache/exist: $C files"
+	info "cache/exist/: $C files"
 	;;
 *)
 	die "find cache/exists | wc -l failed"
