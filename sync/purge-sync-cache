@@ -1,0 +1,69 @@
+#!/bin/bash
+#
+#  Synopsis:
+#	Purge cached files and directories for a particular sunk host.
+#  Usage:
+#	purge-sync-cache <stale-days> <sync-host>
+#	purge-sync-cache 7 condor.setspace.com
+#
+
+info()
+{
+	echo "$(date +'%Y/%m/%d %H:%M:%S'): $@"
+}
+
+die()
+{
+	info "ERROR: $@" >&2
+	exit 1
+}
+
+test $# = 2 || die "wrong number of arguments: got $#, expected 2"
+
+info 'hello, world'
+trap 'info good bye, cruel world' EXIT
+
+test -n "$BLOBIO_ROOT" || die 'environment not defined: BLOBIO_ROOT'
+info "BLOBIO_ROOT: $BLOBIO_ROOT"
+
+case "$1" in
+[1-9]*)
+	STALE_DAYS=$1
+	;;
+*)
+	die "unknown stale days: $1"
+	;;
+esac
+info "stale days: $STALE_DAYS days"
+
+SYNC_HOST="$2"
+info "sync host: $SYNC_HOST"
+SYNC_ROOT=$BLOBIO_ROOT/sync/host/$SYNC_HOST
+info "sync root: $SYNC_ROOT"
+cd $SYNC_ROOT || die "cd $SYNC_ROOT failed: exit status=$?"
+
+if [ ! -e cache/exists ];  then
+	info "WARN: dir cache/exists does not exist"
+	exit 0
+fi
+
+info "purging stale files in cache/exists: $STALE_DAYS days ..."
+find cache/exists -type f -follow -atime +$STALE_DAYS -delete
+test $? = 0 || die "find cache/exists failed: exit status=$?"
+
+info 'purging empty directories: cache/exists ...'
+find cache/exists -mindepth 1 -follow -type d -empty -delete
+test $? = 0 || die "find cache/exists empty failed: exit status=$?"
+
+info 'counting files in cache/exists ...'
+C=$(find cache/exists -type f | wc -l | awk '{print $1}')
+case "$C" in
+[0-9]*)
+	info "cache/exist: $C files"
+	;;
+*)
+	die "find cache/exists | wc -l failed"
+	;;
+esac
+
+exit 0

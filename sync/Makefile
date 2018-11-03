@@ -8,6 +8,7 @@ include ../local.mk
 
 SBINs=									\
 	make-sync-root							\
+	purge-sync-cache						\
 	reboot-sync							\
 	rummy								\
 	sync-put							\
@@ -55,8 +56,8 @@ dev-links:
 
 dev-sync:
 	rm -rf sync
-	mkdir sync && cd sync 							&&\
-		ln -s . etc							&&\
-		ln -s . host							&&\
-		ln -s . tmp							&&\
+	mkdir sync && cd sync 						&&\
+		ln -s . etc						&&\
+		ln -s . host						&&\
+		ln -s . tmp						&&\
 		cp ../profile-sync.example profile
