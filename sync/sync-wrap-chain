@@ -127,7 +127,11 @@ grep '^[a-z][a-z0-9].*:' WALK_WRAP_SET					|
 
 	#  has the blob already been verified on the remote server
 	EXISTS=$SYNC_ROOT/cache/exists/$P
-	test -e $EXISTS && continue
+	if [ -e $EXISTS ];  then
+		#  reset atime for purge scripts
+		touch -a $EXISTS || die "touch $EXISTS failed: exit status=$?"
+		continue
+	fi
 
 	#  poll the remote server
 	UDIG="--udig $U"
