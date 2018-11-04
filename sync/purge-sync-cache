@@ -47,13 +47,19 @@ if [ ! -e cache/exists ];  then
 	exit 0
 fi
 
-info "purging stale files in cache/exists/: $STALE_DAYS days ..."
-find cache/exists -type f -follow -atime +$STALE_DAYS -delete
-test $? = 0 || die "find cache/exists/ failed: exit status=$?"
+info "purging files and empty dirs in cache/exists/: $STALE_DAYS days ..."
 
-info 'purging empty directories: cache/exists/ ...'
-find cache/exists -mindepth 1 -follow -type d -empty -delete
-test $? = 0 || die "find cache/exists/ empty failed: exit status=$?"
+find cache/exists							\
+	-mindepth 1							\
+	-depth								\
+	\(								\
+		\( -type f -a -atime +$STALE_DAYS \)			\
+		-o							\
+		\( -type d -a -empty \)					\
+	\)								\
+	-print								\
+	-delete
+test $? = 0 || die "find cache/exists/ -delete failed: exit status=$?"
 
 info 'counting files in dir cache/exists/ ...'
 C=$(find cache/exists -type f | wc -l | awk '{print $1}')
