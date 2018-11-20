@@ -645,7 +645,7 @@ print <<END;
 #  No BRR Log Count: $no_brr_log_set_count blobs
 #  Taken Count: $taken_count blobs
 #
-#  Netflow TCP4 Source
+#  Netflow TCP4 Source:
 END
 print <<END for sort keys %NETFLOW_TCP4_SOURCE;
 #	$_ $NETFLOW_TCP4_SOURCE{$_} requests
