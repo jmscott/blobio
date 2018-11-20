@@ -55,6 +55,7 @@ leave()
 	if [ -n "$WORK_DIR" -a -e "$WORK_DIR" ];  then
 		test -e PUT_COUNT && log "put count: $(cat PUT_COUNT)"
 		test -e EXISTS_COUNT && log "exists count: $(cat EXISTS_COUNT)"
+		test -e CACHED_COUNT && log "cached  count: $(cat CACHED_COUNT)"
 		cd ..
 		rm -rf $WORK_DIR
 	fi
@@ -108,6 +109,7 @@ cd $WORK_DIR || die "cd $WORK_DIR failed: exit status=$?"
 
 echo 0 >PUT_COUNT
 echo 0 >EXISTS_COUNT
+echo 0 >CACHED_COUNT
 
 log "walking $STOP_BRR_LOG_COUNT brr logs back in time ..."
 BLOBIO_SERVICE=$LOCAL_SERVICE walk-wrap-set				\
@@ -130,6 +132,8 @@ grep '^[a-z][a-z0-9].*:' WALK_WRAP_SET					|
 	if [ -e $EXISTS ];  then
 		#  reset atime for purge scripts
 		touch -a $EXISTS || die "touch $EXISTS failed: exit status=$?"
+		C=$(expr $(cat CACHED_COUNT) + 1)
+		echo $C >CACHED_COUNT
 		continue
 	fi
 
