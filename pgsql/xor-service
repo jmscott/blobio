@@ -1,7 +1,7 @@
 #!/bin/bash
 #
 #  Synopsis:
-#	Show blobs not in $BLOBIO_PG and 
+#	Show
 #  Usage:
 #	xor-service							\
 #		--pghost condor.setspace.com				\
@@ -11,9 +11,21 @@
 #  Note:
 #	PGPASSWORD can not be passed on the command line.
 
+PROG=$(basename $0)
+PSQL='psql --no-psqlrc --quiet --tuples-only --no-align'
+SERVICE1_UDIG=${TMPDIR:=/tmp}/$PROG-service1-$$.udig
+SERVICE2_UDIG=${TMPDIR:=/tmp}/$PROG-service2-$$.udig
+
 info()
 {
 	echo "$(date +'%Y/%m/%d %H:%M:%S'): $@"
+}
+
+leave()
+{
+	rm -f $SERVICE_UDIG1 $SERVICE_UDIG2 ||
+				info "ERROR: rm tmp failed: exit status=$?" >&2
+	info 'good bye, cruel world'
 }
 
 die()
@@ -26,7 +38,7 @@ PG2arg()
 {
 	NAME=$1
 	VAL=$2
-	CMD="test -z \"\$BLOBIO2_PG$(echo $NAME | tr '[a-z]' '[A-Z]')\""
+	CMD="test -z \"\$PG2$(echo $NAME | tr '[a-z]' '[A-Z]')\""
 	eval $CMD
 	STATUS=$?
 	test $STATUS = 0 || die "option --pg$NAME: given more than once"
@@ -37,7 +49,7 @@ PG1arg()
 {
 	NAME=$1
 
-	CMD="test -z \"\$BLOBIO_PG$(echo $NAME | tr '[a-z]' '[A-Z]')\""
+	CMD="test -z \"\$PG$(echo $NAME | tr '[a-z]' '[A-Z]')\""
 	eval $CMD
 	STATUS=$?
 	test $STATUS = 0 || die "option --pg$NAME: given more than once"
@@ -50,13 +62,13 @@ while [ "$1" ];  do
 	case "$1" in
 	--pghost)
 		shift
-		BLOBIO2_PGHOST=$(PG2arg host "$1")
-		test -n "$BLOBIO2_PGHOST" || exit 1
+		PG2HOST=$(PG2arg host "$1")
+		test -n "$PG2HOST" || exit 1
 		;;
 	--pgport)
 		shift
-		BLOBIO2_PGPORT=$(PG2arg port "$1")
-		case "$BLOBIO2_PGPORT" in
+		PG2PORT=$(PG2arg port "$1")
+		case "$PG2PORT" in
 		[0-9]*)
 			;;
 		'')
@@ -66,13 +78,13 @@ while [ "$1" ];  do
 		;;
 	--pguser)
 		shift
-		BLOBIO2_PGUSER=$(PG2arg user "$1")
-		test -n "$BLOBIO2_PGUSER" || exit 1
+		PG2USER=$(PG2arg user "$1")
+		test -n "$PG2USER" || exit 1
 		;;
 	--pgdatabase)
 		shift
-		BLOBIO2_PGDATABASE=$(PG2arg database "$1")
-		test -n "$BLOBIO2_PGDATABASE" || exit 1
+		PG2DATABASE=$(PG2arg database "$1")
+		test -n "$PG2DATABASE" || exit 1
 		;;
 	--*)
 		die "unknown option: $1"
@@ -85,26 +97,38 @@ while [ "$1" ];  do
 done
 
 info 'hello, world'
-trap 'info good bye, cruel world' EXIT
+trap leave EXIT
 
-BLOBIO_PGHOST=${BLOBIO_PGHOST:=$PGHOST}
-test -n "$BLOBIO_PGHOST" || die "BLOBIO_PGHOST or PGHOST not defined"
-info "first PGHOST: $BLOBIO_PGHOST"
+PGHOST=${PGHOST:=$PGHOST}
+test -n "$PGHOST" || die "PGHOST or PGHOST not defined"
+info "first PGHOST: $PGHOST"
 
-BLOBIO_PGPORT=${BLOBIO_PGPORT:=$PGPORT}
-test -n "$BLOBIO_PGPORT" || die "BLOBIO_PGPORT or PGPORT not defined"
-info "first PGPORT: $BLOBIO_PGPORT"
+PGPORT=${PGPORT:=$PGPORT}
+test -n "$PGPORT" || die "PGPORT or PGPORT not defined"
+info "first PGPORT: $PGPORT"
 
-BLOBIO_PGUSER=${BLOBIO_PGUSER:=$PGUSER}
-test -n "$BLOBIO_PGUSER" || die "BLOBIO_PGUSER or PGUSER not defined"
-info "first PGUSER: $BLOBIO_PGUSER"
+PGUSER=${PGUSER:=$PGUSER}
+test -n "$PGUSER" || die "PGUSER or PGUSER not defined"
+info "first PGUSER: $PGUSER"
 
-BLOBIO_PGDATABASE=${BLOBIO_PGDATABASE:=$PGDATABASE}
-test -n "$BLOBIO_PGDATABASE" ||
-			die "BLOBIO_PGDATABASE or PGDATABASE not defined"
-info "first PGDATABASE: $BLOBIO_PGDATABASE"
+PGDATABASE=${PGDATABASE:=$PGDATABASE}
+test -n "$PGDATABASE" ||
+			die "PGDATABASE or PGDATABASE not defined"
+info "first PGDATABASE: $PGDATABASE"
 
-info "second PGHOST: $BLOBIO2_PGHOST"
-info "second PGPORT: $BLOBIO2_PGPORT"
-info "second PGUSER: $BLOBIO2_PGUSER"
-info "second PGDATABASE: $BLOBIO2_PGDATABASE"
+info "second PGHOST: $PG2HOST"
+info "second PGPORT: $PG2PORT"
+info "second PGUSER: $PG2USER"
+info "second PGDATABASE: $PG2DATABASE"
+
+info "fetching now from service 1 ..."
+NOW=$($PSQL -c 'SELECT now();')
+test $? = 0 || die "psql now failed: exit status=$?"
+info "now: $NOW"
+info "fetching service 1 blob udigs: $SERVICE1_UDIG"
+$PSQL --output=$SERVICE1_UDIG" <<END
+SELECT
+	blob
+  FROM
+  	
+END
