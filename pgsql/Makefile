@@ -22,7 +22,7 @@ install:
 		eat-wrap-missed						\
 		fs-eat							\
 		fs-xor-service						\
-		xor-service						\
+		minus-service						\
 		$(DIST_ROOT)/sbin
 
 db:
