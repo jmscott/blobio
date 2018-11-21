@@ -1,0 +1,110 @@
+#!/bin/bash
+#
+#  Synopsis:
+#	Show blobs not in $BLOBIO_PG and 
+#  Usage:
+#	xor-service							\
+#		--pghost condor.setspace.com				\
+#		--pgport 5432
+#		--pguser postgres
+#		--pgdatabase blobio
+#  Note:
+#	PGPASSWORD can not be passed on the command line.
+
+info()
+{
+	echo "$(date +'%Y/%m/%d %H:%M:%S'): $@"
+}
+
+die()
+{
+	info "ERROR: $@" >&2
+	exit 1
+}
+
+PG2arg()
+{
+	NAME=$1
+	VAL=$2
+	CMD="test -z \"\$BLOBIO2_PG$(echo $NAME | tr '[a-z]' '[A-Z]')\""
+	eval $CMD
+	STATUS=$?
+	test $STATUS = 0 || die "option --pg$NAME: given more than once"
+	echo "$VAL"
+}
+
+PG1arg()
+{
+	NAME=$1
+
+	CMD="test -z \"\$BLOBIO_PG$(echo $NAME | tr '[a-z]' '[A-Z]')\""
+	eval $CMD
+	STATUS=$?
+	test $STATUS = 0 || die "option --pg$NAME: given more than once"
+	echo "$VAL"
+}
+
+test $# = 8 || die "wrong number of arguments: got $#, expected 8"
+
+while [ "$1" ];  do
+	case "$1" in
+	--pghost)
+		shift
+		BLOBIO2_PGHOST=$(PG2arg host "$1")
+		test -n "$BLOBIO2_PGHOST" || exit 1
+		;;
+	--pgport)
+		shift
+		BLOBIO2_PGPORT=$(PG2arg port "$1")
+		case "$BLOBIO2_PGPORT" in
+		[0-9]*)
+			;;
+		'')
+			exit 1
+			;;
+		esac
+		;;
+	--pguser)
+		shift
+		BLOBIO2_PGUSER=$(PG2arg user "$1")
+		test -n "$BLOBIO2_PGUSER" || exit 1
+		;;
+	--pgdatabase)
+		shift
+		BLOBIO2_PGDATABASE=$(PG2arg database "$1")
+		test -n "$BLOBIO2_PGDATABASE" || exit 1
+		;;
+	--*)
+		die "unknown option: $1"
+		;;
+	*)
+		die "unknown command argument: $1"
+		;;
+	esac
+	shift
+done
+
+info 'hello, world'
+trap 'info good bye, cruel world' EXIT
+
+BLOBIO_PGHOST=${BLOBIO_PGHOST:=$PGHOST}
+test -n "$BLOBIO_PGHOST" || die "BLOBIO_PGHOST or PGHOST not defined"
+info "first PGHOST: $BLOBIO_PGHOST"
+
+BLOBIO_PGPORT=${BLOBIO_PGPORT:=$PGPORT}
+test -n "$BLOBIO_PGPORT" || die "BLOBIO_PGPORT or PGPORT not defined"
+info "first PGPORT: $BLOBIO_PGPORT"
+
+BLOBIO_PGUSER=${BLOBIO_PGUSER:=$PGUSER}
+test -n "$BLOBIO_PGUSER" || die "BLOBIO_PGUSER or PGUSER not defined"
+info "first PGUSER: $BLOBIO_PGUSER"
+
+BLOBIO_PGDATABASE=${BLOBIO_PGDATABASE:=$PGDATABASE}
+test -n "$BLOBIO_PGDATABASE" ||
+			die "BLOBIO_PGDATABASE or PGDATABASE not defined"
+info "first PGDATABASE: $BLOBIO_PGDATABASE"
+
+info "second PGHOST: $BLOBIO2_PGHOST"
+info "second PGPORT: $BLOBIO2_PGPORT"
+info "second PGUSER: $BLOBIO2_PGUSER"
+info "second PGDATABASE: $BLOBIO2_PGDATABASE"
