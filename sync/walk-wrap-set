@@ -28,6 +28,10 @@
 #	If a stop-wrap is specificed but does not exist in the block chain
 #	then an error ought to occur.
 #
+#	Sometimes the stop wrap set is same as start wrap set for 2 brr logs.
+#
+#		walk-wrap-set --stop-brr-log-count 2
+#
 $| = 1;
 
 my $date = `date`;
@@ -423,9 +427,9 @@ print <<END;
 END
 
 unless ($stop_wrap_set) {
-	$stop_wrap_set = $oldest_wrap_set unless $stop_wrap_set;
+	$stop_wrap_set = $oldest_wrap_set;
 	print <<END;
-#  Stop Wrap Set: $stop_wrap_set
+#  Stop Wrap Set (Oldest): $stop_wrap_set
 END
 }
 
