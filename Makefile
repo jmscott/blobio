@@ -18,13 +18,13 @@ all:
 	cd biod;	$(MAKE) $(MFLAGS) all
 	cd cli;		$(MAKE) $(MFLAGS) all
 	cd flowd;	$(MAKE) $(MFLAGS) all
-	cd www;		$(MAKE) $(MFLAGS) all
+	#cd www;		$(MAKE) $(MFLAGS) all
 
 clean:
 	cd biod;	$(MAKE) $(MFLAGS) clean
 	cd flowd;	$(MAKE) $(MFLAGS) clean
 	cd cli;		$(MAKE) $(MFLAGS) clean
-	cd www;		$(MAKE) $(MFLAGS) clean
+	#cd www;		$(MAKE) $(MFLAGS) clean
 
 distclean:
 	cd biod;	$(MAKE) $(MFLAGS) distclean
@@ -40,7 +40,7 @@ ifeq "$(DIST_ROOT)" "/usr/local"
 endif
 
 	cd flowd;	$(MAKE) $(MFLAGS) distclean
-	cd www;		$(MAKE) $(MFLAGS) distclean
+	#cd www;		$(MAKE) $(MFLAGS) distclean
 	rm -rf $(DIST_ROOT)/bin
 	rm -rf $(DIST_ROOT)/lib
 	rm -rf $(DIST_ROOT)/sbin
@@ -91,8 +91,8 @@ install: all
 		-m u=rwx,g=rx,o= -d $(DIST_ROOT)/sync/host
 	install -g $(DIST_GROUP) -o $(DIST_USER)			\
 		-d $(DIST_ROOT)/lib
-	install -g $(DIST_GROUP) -o $(DIST_USER)			\
-		-d $(DIST_ROOT)/www
+	#install -g $(DIST_GROUP) -o $(DIST_USER)			\
+		#-d $(DIST_ROOT)/www
 	install -g $(DIST_GROUP) -o $(DIST_USER) -m ugo=rx		\
 		pgsql/bio-merge-service					\
 		$(DIST_ROOT)/bin
@@ -118,7 +118,7 @@ install: all
 	cd cli;		$(MAKE) $(MFLAGS) install
 	cd pgsql;	$(MAKE) $(MFLAGS) install
 	cd flowd;	$(MAKE) $(MFLAGS) install
-	cd www;		$(MAKE) $(MFLAGS) install
+	#cd www;		$(MAKE) $(MFLAGS) install
 	cd sync;	$(MAKE) $(MFLAGS) install
 
 dev-links:
