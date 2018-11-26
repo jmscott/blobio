@@ -92,7 +92,7 @@ answer_wrap(char *reply_fifo_path)
 	snprintf(path, sizeof path, log_wrap_format, time, seq);
 	if (io_rename(log_path, path)) {
 		int e = errno;
-		char buf[MSG_SIZE];
+		char buf[MSG_SIZE*2];
 
 		snprintf(buf, sizeof buf, "rename(%s, %s) failed", log_path,
 								path);
