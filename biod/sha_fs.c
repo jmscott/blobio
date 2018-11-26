@@ -649,7 +649,7 @@ sha_fs_put_bytes(struct request *r)
 	char tmp_path[MAX_FILE_PATH_LEN];
 	unsigned char chunk[CHUNK_SIZE], *cp, *cp_end;
 	int status = 0;
-	char buf[MSG_SIZE];
+	char buf[MSG_SIZE*2];
 	struct sha_fs_request *s = (struct sha_fs_request *)r->open_data;
 
 	/*
@@ -673,7 +673,11 @@ sha_fs_put_bytes(struct request *r)
 	 *  Open the file ... need O_LARGEFILE support!!
 	 *  Need to catch EINTR!!!!
 	 */
-	s->blob_fd = io_open(tmp_path, O_CREAT|O_EXCL|O_WRONLY|O_APPEND, S_IRUSR);
+	s->blob_fd = io_open(
+			tmp_path,
+			O_CREAT|O_EXCL|O_WRONLY|O_APPEND,
+			S_IRUSR
+	);
 	if (s->blob_fd < 0) {
 		snprintf(buf, sizeof buf, "open(%s) failed: %s", tmp_path,
 							strerror(errno));
