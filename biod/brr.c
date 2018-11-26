@@ -1135,7 +1135,7 @@ wrap(struct request *r, struct digest_module *mp)
 		panic4(n, wrap_set_path, "close(wrap set) failed",
 							strerror(errno));
 	if (err) {
-		char buf[MSG_SIZE];
+		char buf[MSG_SIZE*2];
 
 		snprintf(buf, sizeof buf, "wrap set(%s:%s) failed",
 						mp->name, wrap_set_path);
