@@ -22,7 +22,7 @@ Environment=PGPORT=5432
 Environment=PGUSER=postgres
 Environment=PGPASSWORD=
 Environment=PGDATABASE=blobio
-Environment=PATH=/usr/local/pgsql/bin:bin:sbin:/usr/local/bin:/usr/bin:/bin
+Environment=PATH=/usr/local/pgsql/bin:/usr/local/blobio/sbin:/usr/local/blobio/bin:/usr/local/bin:/usr/bin:/bin
 StandardOutput=journal
 StandardError=journal
 
