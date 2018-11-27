@@ -72,8 +72,13 @@ while read BRR_LOG;  do
 		;;
 	esac
 done <WRAP_SET | fgrep 'ok	' | cut -f4 | sort -u >BLOB_SET
-
 STATUS=${PIPESTATUS[*]}
+
+test -e BLOB_SET || die "file does not exist: $(pwd)/BLOBIO_SET"
+
+#  no blobs exist
+test -s BLOB_SET || exit 0
+
 test "$STATUS" = '0 0 0 0' ||
 		die 3 "read wrap set | sort failed: exit status=$STATUS"
 
