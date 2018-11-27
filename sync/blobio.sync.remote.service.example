@@ -18,6 +18,10 @@ User=blobio
 WorkingDirectory=/usr/local/blobio/sync/host/remote.host.com
 
 Environment=BLOBIO_ROOT=/usr/local/blobio/sync/host/remote.host.com
+Environment=BLOBIO_SERVICE=bio4:localhost:1797
+Environment=BLOBIO_ALGORITHM=bc160
+Environment=TMPDIR=/usr/local/blobio/tmp
+
 Environment=PGHOST=/tmp
 Environment=PGPORT=5432
 Environment=PGUSER=postgres
