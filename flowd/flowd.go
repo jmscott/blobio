@@ -30,7 +30,7 @@ func main() {
 
 	if len(os.Args) != 3 {
 		croak("wrong number of arguments: expected 2, got %d",
-			len(os.Args))
+			len(os.Args) - 1)
 	}
 	action := os.Args[1]
 
