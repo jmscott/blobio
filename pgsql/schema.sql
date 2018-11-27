@@ -221,6 +221,10 @@ COMMENT ON TABLE brr_roll_ok
 
 /*
  *  Fetchable blobs with regard to the blobio network service.
+ *
+ *  Note:
+ *	I have seen service tuples when more recent entries
+ *	existed in brr_no_recent.
  */
 DROP VIEW IF EXISTS service CASCADE;
 CREATE VIEW service AS
