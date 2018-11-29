@@ -5,6 +5,9 @@
  *	export BLOBIO_ROOT=/usr/local/blobio
  *	$BLOBIO_ROOT/sbin/biod
  *  Note:
+ *	The stats daemon ought to summarize all sas at the sample level.
+ *	Currently only total connections is logged.
+ *
  *	Document command line options in Usage:
  *
  *	Should a "wrap" never return an empty udig?
