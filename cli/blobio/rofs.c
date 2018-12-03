@@ -34,6 +34,7 @@ extern int	output_fd;
 extern char	*input_path;
 extern int	input_fd;
 extern char	*null_device;
+extern char	*brr_path;
 
 //  Note: rename as fs_path
 static char	fs_path[PATH_MAX + 1];
@@ -97,6 +98,9 @@ rofs_open()
 	struct stat st;
 
 	_TRACE("request to open()");
+
+	if (brr_path)
+		return "option --brr-path not supported";
 
 	_TRACE2("blob root directory", end_point);
 

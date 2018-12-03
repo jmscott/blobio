@@ -43,6 +43,7 @@ extern char	*verb;
 extern char	algorithm[9];
 extern char	digest[129];
 extern char	end_point[129];
+extern char	*brr_path;
 extern char	*output_path;
 extern char	*null_device;
 extern int	output_fd;
@@ -275,6 +276,9 @@ bio4_open()
 	int port = 0;
 
 	_TRACE("request to open()");
+
+	if (brr_path)
+		return "option brr-path not support";
 
 	p = strchr(end_point, ':');
 	memcpy(host, end_point, p - end_point);

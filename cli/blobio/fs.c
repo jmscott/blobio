@@ -2,8 +2,9 @@
  *  Synopsis:
  *	A driver for a trusting posix file system blobio service.
  *  Note:
- *	/dev/null not support as --output-path.  why?
- *	
+ *	In a take with a brr path a race condition exists between when a blob is
+ *	deleted and and the stat is done for the blob_size of the brr.
+ *
  *  	Long (>= PATH_MAX) file paths are still problematic.
  *
  *	The input stream is not drained when the blob exists during a put/give.
@@ -33,11 +34,15 @@ extern char	*verb;
 extern char	algorithm[9];
 extern char	digest[129];
 extern char	end_point[129];
+extern char	chat_history[129];
+extern char	netflow[129];
+extern char	*brr_path;
 extern char	*output_path;
 extern int	output_fd;
 extern char	*input_path;
 extern int	input_fd;
 extern char	*null_device;
+extern unsigned long long	blob_size;
 
 static char	fs_path[PATH_MAX + 1];
 static char	tmp_path[PATH_MAX + 1];
@@ -83,6 +88,18 @@ fs_open()
 {
 	struct stat st;
 
+	if (brr_path) {
+		char *ep;
+
+		if (strlen(end_point) >= 125)
+			return "option --brr-path: " \
+				"the fs path must be < 125 chars";
+
+		//  brr syntax requires path be only graph chars
+		for (ep = end_point;  *ep;  ep++)
+			if (!isgraph(*ep))
+				return "non graph char in file path";
+	}
 	if (*verb == 'w')
 		return "wrap verb not supported";
 
@@ -170,9 +187,11 @@ fs_copy(char *in_path, char *out_path)
 	} else
 		out = output_fd;
 
-	while ((nr = uni_read(in, buf, sizeof buf)) > 0)
+	while ((nr = uni_read(in, buf, sizeof buf)) > 0) {
 		if (uni_write_buf(out, buf, nr) < 0)
 			break;
+		blob_size += nr;
+	}
 	e = errno;
 	if (in != -1)
 		uni_close(in);
@@ -181,6 +200,31 @@ fs_copy(char *in_path, char *out_path)
 	errno = e;
 	if (e != 0)
 		return strerror(e);
+	return (char *)0;
+}
+
+static char *
+set_brr(char *hist, char *fs_path) {
+
+	struct stat st;
+
+	if (!brr_path)
+		return (char *)0;
+	if (fs_path && fs_path[0]) {
+		if (stat(fs_path, &st)) {
+			if (errno == ENOENT)
+				return "set_brr: stat(): file gone";
+			return strerror(errno);
+		}
+		blob_size = st.st_size;
+	}
+
+	netflow[0] = 'f';
+	netflow[1] = 's';
+	netflow[2] = '~';
+	strcpy(&netflow[3], end_point);
+
+	strcpy(chat_history, hist);
 	return (char *)0;
 }
 
@@ -213,13 +257,13 @@ fs_get(int *ok_no)
 	if (output_path && output_path != null_device) {
 		if (uni_link(fs_path, output_path) == 0) {
 			*ok_no = 0;
-			return (char *)0;
+			return set_brr("ok", fs_path);
 		}
 
 		//  blob file does not exist
 
 		if (errno == ENOENT)
-			return (char *)0;
+			return set_brr("no", (char *)0);
 
 		//  linking not allowed, either cross link or permissions
 		if (errno != EXDEV && errno != EPERM)
@@ -227,11 +271,11 @@ fs_get(int *ok_no)
 	}
 	if ((err = fs_copy(fs_path, output_path))) {
 		if (errno == ENOENT)
-			return (char *)0;
+			return set_brr("no", (char *)0);
 		return err;
 	}
 	*ok_no = 0;
-	return (char *)0;
+	return set_brr("ok", fs_path);
 }
 
 /*
@@ -254,13 +298,12 @@ fs_eat(int *ok_no)
 	if (uni_access(fs_path, R_OK)) {
 		if (errno == ENOENT) {
 			*ok_no = 1;
-			return (char *)0;
+			return set_brr("no", (char *)0);
 		}
 		return strerror(errno);
 	}
 	*ok_no = 0;
-
-	return (char *)0;
+	return set_brr("ok", (char *)0);
 }
 
 static char *
@@ -298,7 +341,7 @@ fs_put(int *ok_no)
 		*ok_no = 0;
 
 		//  Note: what about draining the input not bound to a file?
-		return (char *)0;
+		return set_brr("ok,ok", fs_path);
 	}
 	if (errno != ENOENT)
 		return strerror(errno);
@@ -308,7 +351,7 @@ fs_put(int *ok_no)
 	if (input_path) {
 		if (uni_link(input_path, fs_path) == 0 || errno == EEXIST) {
 			*ok_no = 0;
-			return (char *)0;
+			return set_brr("ok,ok", fs_path);
 		}
 
 		if (errno != EXDEV)
@@ -346,9 +389,8 @@ fs_put(int *ok_no)
 			err = strerror(errno);
 			break;
 		}
-	if (nr < 0) {
+	if (nr < 0)
 		err = strerror(errno);
-	}
 
 	//  copy successfull so link temp and final blob.
 
@@ -362,7 +404,9 @@ fs_put(int *ok_no)
 
 	uni_close(tmp_fd);
 	uni_unlink(tmp_path);
-	return err;
+	if (err)
+		return err;
+	return set_brr("ok,ok", fs_path);
 }
 
 static char *
@@ -371,8 +415,11 @@ fs_take(int *ok_no)
 	char *err = (char *)0;
 
 	err = fs_get(ok_no);
-	if (err || *ok_no == 1)
+	if (err)
 		return err;
+	if (*ok_no)
+		return set_brr("no", (char *)0);
+	set_brr("ok,ok,ok", fs_path);
 	if (uni_unlink(fs_path) != 0 && errno != ENOENT)
 		return strerror(errno);
 	return (char *)0;
@@ -381,7 +428,10 @@ fs_take(int *ok_no)
 static char *
 fs_give(int *ok_no)
 {
-	return fs_put(ok_no);
+	char *err = fs_put(ok_no);
+	if (err)
+		return err;
+	return set_brr("ok,ok,ok", fs_path);
 }
 
 static char *

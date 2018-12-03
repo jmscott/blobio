@@ -60,6 +60,8 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <signal.h>
+#include <time.h>
+#include <stdio.h>
 
 #include "blobio.h"
 
@@ -70,6 +72,8 @@
 #define EXIT_BAD_SRV	17	//  unexpected error in blob service
 #define EXIT_BAD_UNI	18	//  unexpected error in unix system call
 
+#define BRR_SIZE		370		//  terminating null NOT counted
+
 static char	*progname = "blobio";
 
 extern int	tracing;
@@ -78,12 +82,19 @@ extern int	tracing;
  *  The global request.
  */
 char	*verb;
-char	algorithm[9] = {};
-char	digest[129] = {};
+char	algorithm[9] = {0};
+char	digest[129] = {0};
 char	*output_path = 0;
 char	*input_path = 0;
+char	*brr_path = 0;
 char	*null_device = "/dev/null";
-char	end_point[129] = {};
+char	end_point[129] = {0};
+char	chat_history[10] = {0};
+char	netflow[129] = {0};
+
+unsigned long long	blob_size;
+
+struct timespec	start_time;
 
 // standard in/out must remain open before calling leave()
 
@@ -101,6 +112,9 @@ static struct digest		*digest_module;
 static char		usage[] =
        "usage: blobio [help | get|put|give|take|eat|wrap|roll|empty] [options]\n"
 ;
+
+static char	*RFC3339Nano =
+"%04d-%02d-%02dT%02d:%02d:%02d.%09ld+00:00\t%s\t%s\t%s%s%s\t%s\t%llu\t%ld.%09ld\n";
 
 static void
 ecat(char *buf, int size, char *msg)
@@ -412,6 +426,7 @@ parse_argv(int argc, char **argv)
 		 *	--input-path <path/to/file>
 		 *	--output-path <path/to/file>
 		 *	--trace
+		 *	--help
 		 */
 		if (strcmp("udig", a) == 0) {
 			char *ud;
@@ -550,6 +565,16 @@ parse_argv(int argc, char **argv)
 				eservice(err, endp);
 			service = sp;
 			strcpy(end_point, endp);
+		} else if (strcmp("brr-path", a) == 0) {
+			if (brr_path)
+				emany("brr-path");
+
+			if (++i == argc)
+				eopt("brr-path", "requires path to brr log");
+			if (!*argv[i])
+				eopt("brr-path", "empty path to brr log");
+			brr_path = argv[i];
+			
 		} else if (strcmp("trace", a) == 0) {
 			if (tracing)
 				emany("trace");
@@ -659,6 +684,94 @@ xref_args()
 	}
 }
 
+static void
+brr_write()
+{
+	int fd;
+	struct tm *t;
+	char brr[BRR_SIZE + 1];
+	struct timespec	end_time;
+	long int sec, nsec;
+	size_t len;
+
+	fd = uni_open_mode(
+		brr_path,
+		O_WRONLY|O_CREAT|O_APPEND,
+		S_IRUSR|S_IWUSR|S_IRGRP
+	);
+	if (fd < 0)
+		die2(EXIT_BAD_UNI, "open(brr-path) failed: %s",strerror(errno));
+	/*
+	 *  Build the ascii version of the start time.
+	 */
+	t = gmtime(&start_time.tv_sec);
+	if (!t)
+		die2(EXIT_BAD_UNI, "gmtime() failed", strerror(errno));
+	/*
+	 *  Record start time.
+	 */
+	if (clock_gettime(CLOCK_REALTIME, &end_time) < 0)
+		die2(
+			EXIT_BAD_UNI,
+			"clock_gettime(end REALTIME) failed",
+			strerror(errno)
+		);
+	/*
+	 *  Calculate the elapsed time in seconds and
+	 *  nano seconds.  The trick of adding 1000000000
+	 *  is the same as "borrowing" a one in grade school
+	 *  subtraction.
+	 */
+	if (end_time.tv_nsec - start_time.tv_nsec < 0) {
+		sec = end_time.tv_sec - start_time.tv_sec - 1;
+		nsec = 1000000000 + end_time.tv_nsec - start_time.tv_nsec;
+	} else {
+		sec = end_time.tv_sec - start_time.tv_sec;
+		nsec = end_time.tv_nsec - start_time.tv_nsec;
+	}
+
+	/*
+	 *  Verify that seconds and nanoseconds are positive values.
+	 *  This test is added until I (jmscott) can determine why
+	 *  I peridocally see negative times on Linux hosted by VirtualBox
+	 *  under Mac OSX.
+	 */
+	if (sec < 0)
+		sec = 0;
+	if (nsec < 0)
+		nsec = 0;
+
+	/*
+	 *  Format the record buffer.
+	 */
+	snprintf(brr, BRR_SIZE + 1, RFC3339Nano,
+		t->tm_year + 1900,
+		t->tm_mon + 1,
+		t->tm_mday,
+		t->tm_hour,
+		t->tm_min,
+		t->tm_sec,
+		start_time.tv_nsec,
+		netflow,
+		verb,
+		algorithm[0] ? algorithm : "",
+		algorithm[0] && digest[0] ? ":" : "",
+		digest[0] ? digest : "",
+		chat_history,
+		blob_size,
+		sec, nsec
+	);
+
+	len = strlen(brr);
+	/*
+	 *  Write the entire blob request record in a single write().
+	 */
+	if (uni_write(fd, brr, len) < 0)
+		die2(EXIT_BAD_UNI, "write(brr-path) failed", strerror(errno));
+	if (uni_close(fd) < 0)
+		die2(EXIT_BAD_UNI, "close(brr-path) failed", strerror(errno));
+}
+
 int
 main(int argc, char **argv)
 {
@@ -666,6 +779,19 @@ main(int argc, char **argv)
 	int exit_status = -1, ok_no;
 
 	parse_argv(argc, argv);
+
+	//  record the start time for a brr record.
+	if (brr_path) {
+		/*
+		 *  Record start time.
+		 */
+		if (clock_gettime(CLOCK_REALTIME, &start_time) < 0)
+			die2(
+				EXIT_BAD_UNI,
+				"clock_gettime(start REALTIME) failed",
+				strerror(errno)
+			);
+	}
 
 #ifndef COMPILE_TRACE
 	tracing = 0;
@@ -840,6 +966,9 @@ main(int argc, char **argv)
 
 	if (output_fd > 1 && uni_close(output_fd))
 		die2(EXIT_BAD_UNI, "close(out) failed", strerror(errno));
+
+	if (brr_path)
+		brr_write();
 
 	leave(exit_status);
 
