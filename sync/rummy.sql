@@ -1,11 +1,13 @@
 /*
  *  Synopsis:
- *	Find udigs from stdin that are not in service table.
+ *	Find udigs from stdin that need more rumminating upon..
  *  Usage:
- *	sync-brr-chain						|
- *		grep '^[0-9a-z][0-9a-z]*'			|
- *		psql -f not-in-service.sql >not-in-service.udig
+ *	psql --file rummy.sql
+ *	wc -l chain-taken.udig 
+ *	wc -l chain-missing.udig
  *	wc -l chain-not-in-service.udig
+ *	wc -l chain-no-brr_blob_size.udig
+ *	wc -l chain.udig
  */
 \set ON_ERROR_STOP 1
 \timing 1
