@@ -10,6 +10,8 @@
  *	wc -l chain.udig
  *  Note:
  *	For blobs with no brr size only consider blobs in server.
+ *
+ *	Why named rummy.sql ... perhaps chain-rummy.sql?
  */
 \set ON_ERROR_STOP 1
 \timing 1
