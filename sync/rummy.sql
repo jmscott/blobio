@@ -8,6 +8,8 @@
  *	wc -l chain-not-in-service.udig
  *	wc -l chain-no-brr_blob_size.udig
  *	wc -l chain.udig
+ *  Note:
+ *	For blobs with no brr size only consider blobs in server.
  */
 \set ON_ERROR_STOP 1
 \timing 1
