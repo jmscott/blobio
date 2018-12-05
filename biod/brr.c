@@ -2,6 +2,9 @@
  *  Synopsis:
  *	Implement logger and "wrap and "roll" verbs for blob request records.
  *  Note:
+ *	Each wrapped set MUST contain only one wrap record.  More inspection
+ *	of the code that serializes the wrap must be done.
+ *
  *	Ought to automatically create the spool/wrap directory.
  *
  *	Investigate possible memory leak in blob_set_free() during wrap verb.
