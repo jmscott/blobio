@@ -3,7 +3,10 @@
  *	Implement logger and "wrap and "roll" verbs for blob request records.
  *  Note:
  *	Each wrapped set MUST contain only one wrap record.  More inspection
- *	of the code that serializes the wrap must be done.
+ *	of the code that serializes the wrap must be done.  In particular,
+ *	how do we know nothing every writes to the wrapped file after closing?
+ *	Would a copy of the wrapped file be more appropriate?  At the very least
+ *	the wrap ought to stat the file after wrapping.
  *
  *	Ought to automatically create the spool/wrap directory.
  *
