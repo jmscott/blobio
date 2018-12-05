@@ -25,6 +25,10 @@
 #
 #	walk-wrap-set --stop-brr-log-count 3
 #  Note:
+#	Each wrap set contains a single wrap request record, describing
+#	the previous wrap set.  The wrap record should not be assumed to be
+#	the first record in the wrap blob.
+#
 #	If a stop-wrap is specificed but does not exist in the block chain
 #	then an error ought to occur.
 #
