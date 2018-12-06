@@ -11,6 +11,7 @@ OBJS=			\
 	bc160.o		\
 	bio4.o		\
 	buf.o		\
+	cache4.o	\
 	digest.o 	\
 	fs.o		\
 	rofs.o		\
@@ -33,6 +34,7 @@ install: all
 		bio4.c							\
 		blobio.h						\
 		buf.c							\
+		cache4.c						\
 		digest.c 						\
 		fs.c							\
 		rofs.c							\
@@ -47,6 +49,9 @@ blobio: blobio.o $(OBJS)
 
 bio4.o: bio4.c blobio.h
 	$(CC) $(CFLAGS) -c bio4.c
+
+cache4.o: cache4.c blobio.h
+	$(CC) $(CFLAGS) -c cache4.c
 
 buf.o: buf.c
 	$(CC) $(CFLAGS) -c buf.c
