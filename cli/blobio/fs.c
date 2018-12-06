@@ -2,6 +2,8 @@
  *  Synopsis:
  *	A driver for a trusting posix file system blobio service.
  *  Note:
+ *	Only ascii is acccepted in the file system path!
+ *
  *	In a take with a brr path a race condition exists between when a blob is
  *	deleted and and the stat is done for the blob_size of the brr.
  *

@@ -1,6 +1,8 @@
 /*
  *  Synopsis:
  *	A read only, trusting blob service that optimizes by linking to files.
+ *  Note:
+ *	Only ascii is acccepted in the file system path!
  */
 #include <sys/types.h>
 #include <sys/stat.h>
