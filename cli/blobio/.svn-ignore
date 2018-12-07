@@ -3,6 +3,7 @@ bio4.o
 blobio
 blobio.o
 buf.o
+cache4.o
 digest.o
 fs.o
 rofs.o
