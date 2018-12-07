@@ -66,7 +66,12 @@ _panic(struct request *r, char *msg1)
 				msg1
 			);
 		else
-			log_strcpy3(msg3, sizeof msg3, r->verb,r->algorithm,msg1);
+			log_strcpy3(
+				msg3,
+				sizeof msg3,
+				r->verb,r->algorithm,
+				msg1
+			);
 		log_format(msg3, msg, sizeof msg);
 		panic(msg);
 	} else {
