@@ -6,7 +6,7 @@
 #	--start-wrap-set <udig>
 #	--stop-wrap-set <udig>
 #	--trace-blob <udig>
-#	--stop-brr-count
+#	--stop-brr-log-count
 #  Usage:
 #	#  See stats on entire chain of wrap-sets.
 #	#  the start wrap set is derived by requesting a wrap/roll
