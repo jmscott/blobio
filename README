@@ -175,6 +175,8 @@ Protocol Flow:
 	described above.
 
 Protocol Questions:
+	-  should netflow be renamed service flow?
+
 	-  should "put" wait for response ok/no response from server before
 	   sending the blob?
 
