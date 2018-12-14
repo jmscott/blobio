@@ -32,7 +32,8 @@ _ls()
 \\set ON_ERROR_STOP 1
 
 SELECT
-	s.blob AS " ",
+	s.blob AS "Blob",
+	c.system_identifier AS "PG System Id",
 	regexp_replace(age(now(), s.discover_time)::text, '\..*', '') || ' ago'
 		AS "Discovered",
 	regexp_replace(age(now(), s.recent_verify_time)::text, '\..*', '') || ' ago'
@@ -44,7 +45,8 @@ SELECT
 	s.recent_verify_time AS "Verified @"
   FROM
   	blobio.service s
-	  LEFT OUTER JOIN blobio.brr_blob_size bs ON (bs.blob = s.blob)
+	  LEFT OUTER JOIN blobio.brr_blob_size bs ON (bs.blob = s.blob),
+	pg_control_system() c
   WHERE
   	s.blob = '$1'
 ;
