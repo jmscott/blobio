@@ -8,4 +8,5 @@ lib
 profile
 sbin
 sync
+sync-peer-report
 tmp
