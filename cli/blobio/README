@@ -1,0 +1,25 @@
+Syntax of BlobIO Service URI
+	The syntax of the URI to describe a blobio service matches this
+	perl5 regex:
+
+		^[a-z][a-z0-9]{0,7}:[[:graph:]]{1,128}$
+
+	The "bio4" service is the trivial biod protocol described in ../README
+	over TCP4.  A bio4 service looks like:
+
+		bio4:<ip4>:<unsigned 16>[?tmo=120]
+		bio4:<hostname>:<unsigned 16>[?tmo=120]
+
+	where the "?tmo=sec" is optional.  The timeout is 20 seconds,
+	if unspecified.
+
+	The "fs" service is a directory path pointing to the root of blobs
+	stored in the file system.  For example,
+
+		--service fs:/usr/local/blobio
+		--udig sha:14018a1c515e37eb5a1eb89abdbb14075fbecb97
+
+	will search for a blob in
+		
+		B=/usr/local/blobio
+		$B/sha_fs/1/40/18a1/c515e37e/b5a1eb89abdbb140/75fbecb97
