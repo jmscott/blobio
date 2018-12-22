@@ -1,6 +1,6 @@
 /*
  *  Synopsis:
- *	A driver for a trusting posix file system blobio service.
+ *	A driver for a fast, trusting posix file system blobio service.
  *  Note:
  *	Only ascii is acccepted in the file system path!
  *
@@ -84,6 +84,8 @@ fs_end_point_syntax(char *root_dir)
 /*
  *  Verify that the root and data directories of the blob file system
  *  are at least searchable.
+ *
+ *  Posix declares process id (pid_t) to be 32 bit signed int.
  */
 static char *
 fs_open()
@@ -93,9 +95,12 @@ fs_open()
 	if (brr_path) {
 		char *ep;
 
-		if (strlen(end_point) >= 125)
+		/*
+		 *  In brr record need room for fs~<pid>:<path>.
+		 */
+		if (strlen(end_point) >= 128 - (3 + 10))
 			return "option --brr-path: " \
-				"the fs path must be < 125 chars";
+				"the fs path must be < 115 chars";
 
 		//  brr syntax requires path be only graph chars
 		for (ep = end_point;  *ep;  ep++)
@@ -221,11 +226,7 @@ set_brr(char *hist, char *fs_path) {
 		blob_size = st.st_size;
 	}
 
-	netflow[0] = 'f';
-	netflow[1] = 's';
-	netflow[2] = '~';
-	strcpy(&netflow[3], end_point);
-
+	snprintf(netflow, sizeof netflow, "fs~%d:%s", getpid(), end_point);
 	strcpy(chat_history, hist);
 	return (char *)0;
 }
