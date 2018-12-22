@@ -700,7 +700,7 @@ brr_write()
 		S_IRUSR|S_IWUSR|S_IRGRP
 	);
 	if (fd < 0)
-		die2(EXIT_BAD_UNI, "open(brr-path) failed: %s",strerror(errno));
+		die2(EXIT_BAD_UNI, "open(brr-path) failed", strerror(errno));
 	/*
 	 *  Build the ascii version of the start time.
 	 */
