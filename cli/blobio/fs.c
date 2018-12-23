@@ -226,7 +226,11 @@ set_brr(char *hist, char *fs_path) {
 		blob_size = st.st_size;
 	}
 
-	snprintf(netflow, sizeof netflow, "fs~%d:%s", getpid(), end_point);
+	snprintf(netflow, sizeof netflow, "fs~%d:", getpid());
+
+	//  disable incorrect warnings about size of netflow buff.
+	//  we checked the length in fs_open().
+	strcat(netflow, end_point);
 	strcpy(chat_history, hist);
 	return (char *)0;
 }
