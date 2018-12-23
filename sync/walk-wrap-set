@@ -1,7 +1,7 @@
 #!/usr/bin/env perl
 #
 #  Synopsis:
-#	Transform a wrap-set(s) into set of udigs in service.
+#	Transform a wrap-set(s) into set of udigs in service written to stdout.
 #  Options:
 #	--start-wrap-set <udig>
 #	--stop-wrap-set <udig>
@@ -25,12 +25,14 @@
 #
 #	walk-wrap-set --stop-brr-log-count 3
 #  Note:
-#	Each wrap set contains a single wrap request record, describing
-#	the previous wrap set.  The wrap record should not be assumed to be
-#	the first record in the wrap blob.
+#	Each wrap set contains at least one wrap request record, describing
+#	a previous wrap set.  The wrap record should not be assumed to be
+#	the first record in the wrap blob.  Also, the udig for a roll request
+#	may not even exist or be related to a recently seen wrap udig.
 #
 #	If a stop-wrap is specificed but does not exist in the block chain
-#	then an error ought to occur.
+#	then an error ought to occur, instead of walking to end of chain.
+#	Not sure.
 #
 #	Sometimes the stop wrap set is same as start wrap set for 2 brr logs.
 #
@@ -137,6 +139,7 @@ print <<END;
 #  Temp Work File: $tmp_file
 END
 
+#  $0 occured after $1, i.e, $0 is "younger" than $1
 sub udig_after
 {
 	die 'udig_after: empty tuples' unless $_[0] && $_[1];
@@ -148,18 +151,13 @@ sub udig_after
 
 #
 #  Verify the wrap set of udigs is valid by extracting udigs or croak.
-#
-#  Return:
-#	0	blob points to existing set of udigs
-#	1	blob does not exist
+#  Return a reference to %hash of udigs in wrap set.
 #
 sub frisk_wrap_set
 {
-	my ($wrap_set, $source_brr_log) = @_;
+	my ($wrap_set) = @_;
 
 	return $WRAP_SET{$wrap_set} if $WRAP_SET{$wrap_set};
-
-	udig_after $source_brr_log, $wrap_set if $source_brr_log;
 
 	my $UDIG = "--udig $wrap_set";
 
@@ -185,18 +183,15 @@ sub frisk_wrap_set
 	my $WRAP_SET;
 	open($WRAP_SET, "blobio get $UDIG $GET_SERVICE |") or
 				die("open(blobio frisk wrap set) failed: $!");
+
 	#  scan the udig set for correctness
 	while (<$WRAP_SET>) {
 		chomp;
-		die "blob is not udig set: $_[0]" unless
-				m/^[a-z][a-z0-9]{0,7}:[[:graph:]]{32,128}$/ &&
-				m/^[[:ascii:]]*$/
-		;
-		die "udig set has a duplicate: $wrap_set" if $ELEMENTS{$_};
+		die "blob is not udig set: $_" unless m/^${UDIG_RE}$/;
+		die "udig set has a duplicate: $_" if $ELEMENTS{$_};
 		$ELEMENTS{$_} = 1;
 
 		udig_after $wrap_set, $_;
-		udig_after $source_brr_log, $_ if $source_brr_log;
 	}
 	close($WRAP_SET) or die "close(frisk udig set) failed: $!";
 	$UDIG{$wrap_set} = 1;
@@ -328,10 +323,15 @@ my $wrap_set = $start_wrap_set;
 #  requests to build an "after" order relation on udigs.
 
 my $oldest_wrap_set;
-while ($wrap_set) {
+my @wrap_set;
+push @wrap_set, $wrap_set;
+
+while (@wrap_set > 0) {
+
+	$wrap_set = pop @wrap_set;
 
 	#  cheap sanity test
-	die "tail wrap set seen twice: $wrap_set" if $WRAP_SET{$wrap_set};
+	die "tail wrap set seen twice: $wrap_set" if %$WRAP_SET{$wrap_set} > 0;
 
 	my $ELEMENTS = frisk_wrap_set($wrap_set);
 
@@ -339,14 +339,15 @@ while ($wrap_set) {
 
 	if (%$ELEMENTS == 0) {
 		$oldest_wrap_set = $wrap_set;
+		@wrap_set = ();
 		last;
 	}
 
 	#  scan the brr logs for timestamped udigs
 
-	my $roll_set;
 	foreach my $brr_log (keys %${ELEMENTS}) {
-		next if $BRR_LOG{$brr_log};
+		
+		next if $BRR_LOG{$brr_log};		#  an error if exists?
 		$BRR_LOG{$brr_log} = 1;
 
 		udig_after $wrap_set, $brr_log;
@@ -391,22 +392,24 @@ while ($wrap_set) {
 #
 END
 
+			#  Note: what about fs:/ service?
 			++$NETFLOW_TCP4_SOURCE{"$1 answered $2"}
-				if $netflow =~/^tcp4~([^:]+):\d+;(.*)/;
+					if $netflow =~/^tcp4~([^:]+):\d+;(.*)/;
 
 			#  Looking for a wrap/roll blob
 			next if $chat_history =~ /no$/ ||
-			        ($verb ne 'wrap' && $verb ne 'roll')
+					($verb ne 'wrap' && $verb ne 'roll')
 			;
 
 			udig_after $udig, $brr_log;
 
-			next unless $verb eq 'roll' && $chat_history eq 'ok';
+			next unless ($verb eq 'roll' || $verb eq 'wrap') 
+					&& $chat_history eq 'ok';
 
-			die "roll defined more than once in udig set: $roll_set"
-				if $roll_set
-			;
-			$roll_set = $udig;
+			unless ($WRAP_SET{$udig}) {
+				push @wrap_set, $udig;
+				udig_after $udig, $wrap_set;
+			}
 		}
 		close($BRR_LOG) or die "close(blobio get brr log) failed: $!";
 		unlink($tmp_file) or die "unlink(tmp brr log) failed: $!";
@@ -414,16 +417,11 @@ END
 			$stop_brr_log_count > 0				&&
 			scalar(%BRR_LOG) >= $stop_brr_log_count
 		){
-			$roll_set = $wrap_set = undef;
+			undef @wrap_set;
 			last;
 		}
 	}
-	last if $roll_set eq '' || $roll_set eq $stop_wrap_set;
-
-	#  going backwards in time
-	udig_after $roll_set, $wrap_set;
 	$oldest_wrap_set = $wrap_set;
-	$wrap_set = $roll_set;
 }
 
 print <<END;
@@ -486,7 +484,7 @@ foreach my $brr_log (@BRR_LOG) {
 	my $rc = @BRR;
 
 	#
-	#  loop through indivual brr records in reverse time order.
+	#  loop through individual brr records in reverse time order.
 	#  the most recent record in row order (not start_time) determines
 	#  if the blob exists or not.
 	#
