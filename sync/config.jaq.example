@@ -1,0 +1,16 @@
+{
+	"databases": {
+		"boo": {
+			"PGHOST":	"/tmp",
+			"PGPORT":	5432,
+			"PGUSER":	"postgres",
+			"PGDATABASE":	"blobio"
+		},
+		"condor": {
+			"PGHOST":	"127.0.0.1",
+			"PGPORT":	15432,
+			"PGUSER":	"postgres",
+			"PGDATABASE":	"blobio"
+		}
+	}
+}
