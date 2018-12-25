@@ -100,7 +100,6 @@ install: all
 	install -g $(DIST_GROUP) -o $(DIST_USER) -m u=rx,go=	\
 		cron-reboot						\
 		dev-reboot						\
-		launchd-log						\
 		zap-proc						\
 		$(DIST_ROOT)/sbin
 
