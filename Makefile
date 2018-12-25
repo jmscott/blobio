@@ -18,7 +18,7 @@ all:
 	cd biod;	$(MAKE) $(MFLAGS) all
 	cd cli;		$(MAKE) $(MFLAGS) all
 	cd flowd;	$(MAKE) $(MFLAGS) all
-	#cd www;		$(MAKE) $(MFLAGS) all
+	cd sync;	$(MAKE) $(MFLAGS) all
 
 clean:
 	cd biod;	$(MAKE) $(MFLAGS) clean
