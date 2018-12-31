@@ -153,14 +153,16 @@ func (pg *PGDatabase) open(done chan *PGDatabase) {
 
 	var err error
 
-	url := "dbname=" + pg.PGDATABASE + " " +
+	pg.db, err = sql.Open(
+			"postgres",
+			"dbname=" + pg.PGDATABASE + " " +
 			"user=" + pg.PGUSER + " " +
 			"host=" + pg.PGHOST + " " +
 			"port=" + strconv.Itoa(int(pg.PGPORT)) + " " +
 			"sslmode=disable " +
 			"connect_timeout=20 " +
-			"password=" + pg.PGPASSWORD
-	pg.db, err = sql.Open("postgres", url)
+			"password=" + pg.PGPASSWORD,
+	)
 	if err != nil {
 		pg.die("sql.Open() failed: %s", err)
 	}
