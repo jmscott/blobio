@@ -1,9 +1,9 @@
 {
 	"databases": {
-		"boo": {
+		"cassie": {
 			"PGHOST":	"/tmp",
 			"PGPORT":	5432,
-			"PGUSER":	"postgres",
+			"PGUSER":	"jmscott",
 			"PGDATABASE":	"blobio"
 		},
 		"condor": {

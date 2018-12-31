@@ -94,8 +94,9 @@ func (conf *Config) open() {
 		go pg.open(done)
 	}
 
-	//  insure all databases are distinct
 	cnt := len(conf.Databases)
+
+	//  insure system ids for databases are distinct
 	sid := make(map[string]bool, cnt) 
 	for ;  cnt > 0;  cnt-- {
 
@@ -121,14 +122,17 @@ func (pg *PGDatabase) jaquard(done chan *PGDatabase) {
 SELECT
 	blob
   FROM
-  	service
-  WHERE
-	discover_time >= 
+  	blobio.service
+  ORDER BY
+  	discover_time DESC
+  LIMIT
+  	1
 `
-
-	err = pg.db.QueryRow(
-		`SELECT blob FROM servivre();`,
-	).Scan(&pg.system_identifier)
+	var blob string
+	err := pg.db.QueryRow(sql).Scan(&blob)
+	if err != nil {
+		pg.die("QueryRow(jaquard) failed: %s", err)
+	}
 	done <- pg
 }
 
@@ -149,19 +153,18 @@ func (pg *PGDatabase) open(done chan *PGDatabase) {
 
 	var err error
 
-	pg.db, err = sql.Open(
-			"postgres",
-			"dbname=" + pg.PGDATABASE + " " +
+	url := "dbname=" + pg.PGDATABASE + " " +
 			"user=" + pg.PGUSER + " " +
-			"password=" + pg.PGPASSWORD + " " +
 			"host=" + pg.PGHOST + " " +
 			"port=" + strconv.Itoa(int(pg.PGPORT)) + " " +
 			"sslmode=disable " +
-			"connect_timeout=20",
-	)
+			"connect_timeout=20 " +
+			"password=" + pg.PGPASSWORD
+	pg.db, err = sql.Open("postgres", url)
 	if err != nil {
 		pg.die("sql.Open() failed: %s", err)
 	}
+
 	err = pg.db.QueryRow(
 		`SELECT system_identifier FROM pg_control_system();`,
 	).Scan(&pg.system_identifier)
@@ -197,6 +200,7 @@ func main() {
 	if err != nil {
 		die("dec.Decode(config) failed: %s", err)
 	}
+	cf.Close()
 
 	conf.frisk()
 	conf.open()
