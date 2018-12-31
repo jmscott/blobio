@@ -38,6 +38,7 @@ type PGDatabase struct {
 
 	SystemIdentifier	string		`json:"system_identifier"`
 	TipUDIG			ServiceUDIG	`json:"tip_udig"`
+	Stats			sql.DBStats	`json:"stats"`
 }
 
 type Config struct {
@@ -130,6 +131,27 @@ func (conf *Config) open() {
 	}
 	if len(sid) != len(conf.Databases) {
 		die("count of distinct system identifiers != database count")
+	}
+}
+
+func (pg *PGDatabase) close(done chan bool) {
+
+	pg.Stats = pg.db.Stats()
+	err := pg.db.Close()
+	if err != nil {
+		pg.die("sql.Db.Close() failed: %s", err)
+	}
+	done <- true
+}
+
+func (conf *Config) close() {
+
+	done := make(chan bool)
+	for _, pg := range conf.Databases {
+		go pg.close(done)
+	}
+	for cnt := len(conf.Databases);  cnt > 0;  cnt-- {
+		<- done
 	}
 }
 
@@ -238,6 +260,7 @@ func main() {
 	conf.frisk()
 	conf.open()
 	conf.jaquard()
+	conf.close()
 	answer.Databases = conf.Databases
 
 	enc := json.NewEncoder(os.Stdout)
