@@ -1,29 +1,42 @@
 /*
  *  Synopsis:
- *	Calulate jaqaurd pairwise metric across a set of blobio service.
- *  Uaage:
+ *	Calculate jaquard pairwise metric across a set of blobio services.
+ *  Usage:
  *	jaquard <config-file>
  */
 
 package main
 
 import (
+	"database/sql"
+	"strconv"
 	"encoding/json"
 	"fmt"
 	"os"
+	"strings"
+	_ "github.com/lib/pq"
 )
 
 type PGDatabase struct {
-	tag		string
-	PGHOST		string
-	PGPORT		uint16
-	PGUSER		string
-	PGPASSWORD	string
-	PGDATABASE	string
+	tag			string
+	PGHOST			string
+	PGPORT			uint16
+	PGUSER			string
+	PGPASSWORD		string
+	PGDATABASE		string
+
+	db			*sql.DB
+
+	system_identifier	string
+	recent_uuid		string
 }
 
 type Config struct {
-	Databases	map[string]PGDatabase `json:"databases"`
+	Databases	map[string]*PGDatabase `json:"databases"`
+}
+
+type Results struct {
+	
 }
 
 const usage = "usage: jaquard <config-file-path>\n"
@@ -35,10 +48,19 @@ func die(format string, args ...interface{}) {
 	os.Exit(1)
 }
 
+func (pg *PGDatabase) die(format string, args ...interface{}) {
+
+	die("database(" + pg.tag + "): " + format, args...)
+}
+
 func (pg *PGDatabase) frisk() {
 
+	croak := func(format string, args ...interface{}) {
+		pg.die("frisk: " + format, args...)
+	}
+
 	empty := func(field string) {
-		die("frisk: database: " + pg.tag + ": empty or undefined: " + field)
+		croak("empty or undefined field: %s", field)
 	}
 	if pg.PGHOST == "" {
 		empty("PGHOST")
@@ -52,6 +74,9 @@ func (pg *PGDatabase) frisk() {
 	if pg.PGDATABASE == "" {
 		empty("PGDATABASE")
 	}
+	if strings.Index(pg.PGPASSWORD, " ") > -1 {
+		croak("PGPASSWORD contains space character")
+	}
 }
 
 func (conf *Config) frisk() {
@@ -60,6 +85,94 @@ func (conf *Config) frisk() {
 		pg.tag = tag
 		pg.frisk()
 	}
+}
+
+func (conf *Config) open() {
+
+	done := make(chan *PGDatabase)
+	for _, pg := range conf.Databases {
+		go pg.open(done)
+	}
+
+	//  insure all databases are distinct
+	cnt := len(conf.Databases)
+	sid := make(map[string]bool, cnt) 
+	for ;  cnt > 0;  cnt-- {
+
+		//  Note:  do we need a timeout?
+		pg := <- done
+		if sid[pg.system_identifier] {
+			pg.die(
+				"duplicate system identifier: %s",
+				pg.system_identifier,
+			)
+		}
+		sid[pg.system_identifier] = true
+	}
+	if len(sid) != len(conf.Databases) {
+		die("count of distinct system identifiers != database count")
+	}
+}
+
+func (pg *PGDatabase) jaquard(done chan *PGDatabase) {
+
+
+	sql := `
+SELECT
+	blob
+  FROM
+  	service
+  WHERE
+	discover_time >= 
+`
+
+	err = pg.db.QueryRow(
+		`SELECT blob FROM servivre();`,
+	).Scan(&pg.system_identifier)
+	done <- pg
+}
+
+func (conf *Config) jaquard() {
+
+	done := make(chan *PGDatabase)
+	for _, pg := range conf.Databases {
+		go pg.jaquard(done)
+	}
+
+	cnt := len(conf.Databases)
+	for ;  cnt > 0;  cnt-- {
+		<- done
+	}
+}
+
+func (pg *PGDatabase) open(done chan *PGDatabase) {
+
+	var err error
+
+	pg.db, err = sql.Open(
+			"postgres",
+			"dbname=" + pg.PGDATABASE + " " +
+			"user=" + pg.PGUSER + " " +
+			"password=" + pg.PGPASSWORD + " " +
+			"host=" + pg.PGHOST + " " +
+			"port=" + strconv.Itoa(int(pg.PGPORT)) + " " +
+			"sslmode=disable " +
+			"connect_timeout=20",
+	)
+	if err != nil {
+		pg.die("sql.Open() failed: %s", err)
+	}
+	err = pg.db.QueryRow(
+		`SELECT system_identifier FROM pg_control_system();`,
+	).Scan(&pg.system_identifier)
+	if err != nil {
+		pg.die("db.Query(system_identifier) failed: %s", err)
+	}
+	if len(pg.system_identifier) == 0 {
+		pg.die("empty system identifier")
+	}
+
+	done <- pg
 }
 
 func main() {
@@ -86,5 +199,7 @@ func main() {
 	}
 
 	conf.frisk()
+	conf.open()
+	conf.jaquard()
 	fmt.Printf("conf=%#v\n", conf)
 }

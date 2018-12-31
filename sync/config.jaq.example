@@ -11,6 +11,12 @@
 			"PGPORT":	15432,
 			"PGUSER":	"postgres",
 			"PGDATABASE":	"blobio"
+		},
+		"ess": {
+			"PGHOST":	"127.0.0.1",
+			"PGPORT":	25432,
+			"PGUSER":	"postgres",
+			"PGDATABASE":	"blobio"
 		}
 	}
 }
