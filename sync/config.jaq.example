@@ -3,7 +3,7 @@
 		"cassie": {
 			"PGHOST":	"/tmp",
 			"PGPORT":	5432,
-			"PGUSER":	"jmscott",
+			"PGUSER":	"postgres",
 			"PGDATABASE":	"blobio"
 		},
 		"condor": {
@@ -18,5 +18,8 @@
 			"PGUSER":	"postgres",
 			"PGDATABASE":	"blobio"
 		}
-	}
+	},
+	"escape_html":		false,
+	"indent_line_prefix":	"",
+	"indent_prefix":	"    "
 }

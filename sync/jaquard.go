@@ -3,19 +3,28 @@
  *	Calculate jaquard pairwise metric across a set of blobio services.
  *  Usage:
  *	jaquard <config-file>
+ *  Note:
+ *	Added UDig of config file in answer json.
  */
 
 package main
 
 import (
 	"database/sql"
-	"strconv"
 	"encoding/json"
 	"fmt"
 	"os"
+	"strconv"
 	"strings"
+	"time"
 	_ "github.com/lib/pq"
 )
+
+type ServiceUDIG struct {
+
+	Blob		string		`json:"blob"`
+	DiscoverTime	time.Time	`json:"discover_time"`
+}
 
 type PGDatabase struct {
 	tag			string
@@ -27,16 +36,25 @@ type PGDatabase struct {
 
 	db			*sql.DB
 
-	system_identifier	string
-	recent_uuid		string
+	SystemIdentifier	string		`json:"system_identifier"`
+	TipUDIG			ServiceUDIG	`json:"tip_udig"`
 }
 
 type Config struct {
-	Databases	map[string]*PGDatabase `json:"databases"`
+	Databases		map[string]*PGDatabase `json:"databases"`
+
+	EscapeHTML		bool	`json:"escape_html"`
+	IndentLinePrefix	string	`json:"indent_line_prefix"`
+	IndentPrefix		string	`json:"indent_prefix"`
 }
 
-type Results struct {
-	
+type Answer struct {
+
+	StartTime		time.Time	`json:"start_time"`
+	WallDuration		time.Duration	`json:"wall_duration"`
+	WallDurationString	string		`json:"wall_duration_string"`
+
+	Databases	map[string]*PGDatabase	`json:"databases"`
 }
 
 const usage = "usage: jaquard <config-file-path>\n"
@@ -102,13 +120,13 @@ func (conf *Config) open() {
 
 		//  Note:  do we need a timeout?
 		pg := <- done
-		if sid[pg.system_identifier] {
+		if sid[pg.SystemIdentifier] {
 			pg.die(
 				"duplicate system identifier: %s",
-				pg.system_identifier,
+				pg.SystemIdentifier,
 			)
 		}
-		sid[pg.system_identifier] = true
+		sid[pg.SystemIdentifier] = true
 	}
 	if len(sid) != len(conf.Databases) {
 		die("count of distinct system identifiers != database count")
@@ -120,7 +138,8 @@ func (pg *PGDatabase) jaquard(done chan *PGDatabase) {
 
 	sql := `
 SELECT
-	blob
+	blob,
+	discover_time
   FROM
   	blobio.service
   ORDER BY
@@ -128,8 +147,9 @@ SELECT
   LIMIT
   	1
 `
-	var blob string
-	err := pg.db.QueryRow(sql).Scan(&blob)
+	err := pg.db.
+		QueryRow(sql).
+		Scan(&pg.TipUDIG.Blob, &pg.TipUDIG.DiscoverTime)
 	if err != nil {
 		pg.die("QueryRow(jaquard) failed: %s", err)
 	}
@@ -169,11 +189,11 @@ func (pg *PGDatabase) open(done chan *PGDatabase) {
 
 	err = pg.db.QueryRow(
 		`SELECT system_identifier FROM pg_control_system();`,
-	).Scan(&pg.system_identifier)
+	).Scan(&pg.SystemIdentifier)
 	if err != nil {
 		pg.die("db.Query(system_identifier) failed: %s", err)
 	}
-	if len(pg.system_identifier) == 0 {
+	if len(pg.SystemIdentifier) == 0 {
 		pg.die("empty system identifier")
 	}
 
@@ -181,6 +201,10 @@ func (pg *PGDatabase) open(done chan *PGDatabase) {
 }
 
 func main() {
+
+	answer := &Answer{
+		StartTime:	time.Now(),
+	}
 
 	if (len(os.Args) - 1 != 1) {
 		die(
@@ -197,15 +221,33 @@ func main() {
 	dec := json.NewDecoder(cf)
 	dec.DisallowUnknownFields()
 
-	var conf Config
+	conf := Config{
+		EscapeHTML:		false,
+		IndentLinePrefix:	"",
+		IndentPrefix:		"\t",
+	}
 	err = dec.Decode(&conf)
 	if err != nil {
-		die("dec.Decode(config) failed: %s", err)
+		die("json.Decode(config) failed: %s", err)
 	}
-	cf.Close()
+	err = cf.Close()
+	if err != nil {
+		die("os.File.Close(config) failed: %s", err)
+	}
 
 	conf.frisk()
 	conf.open()
 	conf.jaquard()
-	fmt.Printf("conf=%#v\n", conf)
+	answer.Databases = conf.Databases
+
+	enc := json.NewEncoder(os.Stdout)
+	enc.SetEscapeHTML(conf.EscapeHTML)
+	enc.SetIndent(conf.IndentLinePrefix, conf.IndentPrefix)
+
+	answer.WallDuration = time.Since(answer.StartTime)
+	answer.WallDurationString = answer.WallDuration.String()
+	err = enc.Encode(&answer)
+	if err != nil {
+		die("json.Encode(answer) failed: %s", err)
+	}
 }
