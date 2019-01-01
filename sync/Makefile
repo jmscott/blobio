@@ -9,8 +9,8 @@ include ../local.mk
 export GOPATH := $(GODIST)/..
 
 SRCs=jaquard.go
+BINs=jaquard
 SBINs=									\
-	jaquard								\
 	make-sync-root							\
 	purge-sync-cache						\
 	reboot-sync							\
@@ -43,6 +43,8 @@ install: all
 	install -g $(DIST_GROUP) -o $(DIST_USER)			\
 		-m u=rwx,go= -d $(DIST_ROOT)/sbin
 	install -g $(DIST_GROUP) -o $(DIST_USER)			\
+		-m u=rwx,go=rx -d $(DIST_ROOT)/bin
+	install -g $(DIST_GROUP) -o $(DIST_USER)			\
 		-d $(DIST_ROOT)/lib
 	install -g $(DIST_GROUP) -o $(DIST_USER)			\
 		-m u=rwx,go= -d $(DIST_ROOT)/sync
@@ -51,6 +53,9 @@ install: all
 	install -g $(DIST_GROUP) -o $(DIST_USER) -m u=rx,go=		\
 		$(SBINs)						\
 		$(DIST_ROOT)/sbin
+	install -g $(DIST_GROUP) -o $(DIST_USER) -m ugo=rx		\
+		$(BINs)							\
+		$(DIST_ROOT)/bin
 	install -g $(DIST_GROUP) -o $(DIST_USER) -m ug=r,o=		\
 		$(LIBs)							\
 		$(DIST_ROOT)/lib
