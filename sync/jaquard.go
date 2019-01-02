@@ -11,6 +11,7 @@ package main
 
 import (
 	"database/sql"
+	"regexp"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -20,7 +21,7 @@ import (
 	_ "github.com/lib/pq"
 )
 
-type ServiceUDIG struct {
+type ServiceUDig struct {
 
 	Blob		string		`json:"blob"`
 	DiscoverTime	time.Time	`json:"discover_time"`
@@ -37,7 +38,7 @@ type PGDatabase struct {
 	db			*sql.DB
 
 	SystemIdentifier	string		`json:"system_identifier"`
-	TipUDig			ServiceUDIG	`json:"tip_udig"`
+	TipUDig			ServiceUDig	`json:"tip_udig"`
 	Stats			sql.DBStats	`json:"stats"`
 }
 
@@ -55,6 +56,7 @@ type TipQuery struct {
 type Config struct {
 	Databases		map[string]*PGDatabase `json:"databases"`
 
+	SourceUDig		string	`json:"source_udig"`
 	EscapeHTML		bool	`json:"escape_html"`
 	IndentLinePrefix	string	`json:"indent_line_prefix"`
 	IndentPrefix		string	`json:"indent_prefix"`
@@ -62,6 +64,7 @@ type Config struct {
 
 type Answer struct {
 
+	SourceUDig		string		`json:"source_udig"`
 	TipNotExistsCount	int		`json:"tip_not_exists_count"`
 	TipExistsCount		int		`json:"tip_exists_count"`
 	StartTime		time.Time	`json:"start_time"`
@@ -73,6 +76,16 @@ type Answer struct {
 }
 
 const usage = "usage: jaquard <config-file-path>\n"
+var udig_re_graph, udig_re_ascii *regexp.Regexp
+
+func init() {
+
+	const re_graph = `^[a-z][a-z0-9]{0,7}:[[:graph:]]{1,128}$`
+	const re_ascii = `^[a-z][a-z0-9]{0,7}:[[:ascii:]]{1,128}$`
+
+	udig_re_graph = regexp.MustCompile(re_graph)
+	udig_re_ascii = regexp.MustCompile(re_ascii)
+}
 
 func die(format string, args ...interface{}) {
 
@@ -117,6 +130,15 @@ func (conf *Config) frisk() {
 	for tag, pg := range conf.Databases {
 		pg.tag = tag
 		pg.frisk()
+	}
+	if conf.SourceUDig == "" {
+		return
+	}
+	if !udig_re_graph.Match([]byte(conf.SourceUDig)) {
+		die("source udig does not match graphical udig")
+	}
+	if !udig_re_ascii.Match([]byte(conf.SourceUDig)) {
+		die("source udig does not match ascii udig")
 	}
 }
 
@@ -329,6 +351,7 @@ func main() {
 		die("os.File.Close(config) failed: %s", err)
 	}
 
+	answer.SourceUDig = conf.SourceUDig
 	conf.frisk()
 	conf.open()
 	conf.select_tip()
