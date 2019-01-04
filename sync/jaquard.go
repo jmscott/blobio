@@ -56,7 +56,7 @@ type TipQuery struct {
 type Config struct {
 	Databases		map[string]*PGDatabase `json:"databases"`
 
-	SourceUDig		string	`json:"source_udig"`
+	SourceBlob		string	`json:"source_blob"`
 	EscapeHTML		bool	`json:"escape_html"`
 	IndentLinePrefix	string	`json:"indent_line_prefix"`
 	IndentPrefix		string	`json:"indent_prefix"`
@@ -64,7 +64,7 @@ type Config struct {
 
 type Answer struct {
 
-	SourceUDig		string		`json:"source_udig"`
+	SourceBlob		string		`json:"source_blob"`
 	TipNotExistsCount	int		`json:"tip_not_exists_count"`
 	TipExistsCount		int		`json:"tip_exists_count"`
 	StartTime		time.Time	`json:"start_time"`
@@ -131,13 +131,13 @@ func (conf *Config) frisk() {
 		pg.tag = tag
 		pg.frisk()
 	}
-	if conf.SourceUDig == "" {
+	if conf.SourceBlob == "" {
 		return
 	}
-	if !udig_re_graph.Match([]byte(conf.SourceUDig)) {
+	if !udig_re_graph.Match([]byte(conf.SourceBlob)) {
 		die("source udig does not match graphical udig")
 	}
-	if !udig_re_ascii.Match([]byte(conf.SourceUDig)) {
+	if !udig_re_ascii.Match([]byte(conf.SourceBlob)) {
 		die("source udig does not match ascii udig")
 	}
 }
@@ -351,7 +351,7 @@ func main() {
 		die("os.File.Close(config) failed: %s", err)
 	}
 
-	answer.SourceUDig = conf.SourceUDig
+	answer.SourceBlob = conf.SourceBlob
 	conf.frisk()
 	conf.open()
 	conf.select_tip()
