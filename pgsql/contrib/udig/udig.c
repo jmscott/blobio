@@ -2,7 +2,6 @@
  *  Synopsis:
  *	Implement PostgreSQL UDIG Data Types for SHA1.
  *  Note:
- *	udig algorithm is assumed to be 16 ascii chars.  spec says 8 chars.
  *	Can the operator functions be prevented from being called explicily?
  *	In other words, prevent the following query?
  *
@@ -123,7 +122,7 @@ Datum	udig_le_bc160(PG_FUNCTION_ARGS);
 Datum	udig_cmp_bc160(PG_FUNCTION_ARGS);
 
 static char empty_udig[] = "empty udig";
-static char big_algo[] = "algorithm > 16 characters: \"%s\"";
+static char big_algo[] = "algorithm > 8 characters: \"%s\"";
 static char no_aprint[] = "unprintable character in algorithm name: 0x%x";
 #define ALGO_HINT "did you mean sha or bc160"
 
@@ -499,8 +498,7 @@ udig_in(PG_FUNCTION_ARGS)
 	unsigned char *d;
 	Size size = 0;
 
-	static char no_algo[] =
-		"unknown algorithm in udig: \"%s\"";
+	static char no_algo[] = "unknown algorithm in udig: \"%s\"";
 	static char bad_dig[] =
 		"invalid input syntax for udig %s digest: \"%s\"";
 
@@ -527,7 +525,7 @@ udig_in(PG_FUNCTION_ARGS)
 			));
 
 		if (c == ':') {
-			*a = a8[8] = 0;	/* successfull parse */
+			*a = a8[8] = 0;		/* successfull parse */
 			break;
 		}
 		*a++ = c;
@@ -601,11 +599,13 @@ udig_out(PG_FUNCTION_ARGS)
 	udig = palloc(3 + 1 + 40 + 1);
 	switch (*d) {
 	case UDIG_SHA:
-		strcpy(udig, "sha");
+		udig[0] = 's';  udig[1] = 's';  udig[2] = 'h';  udig[3] = 0;
 		colon = 3;
 		break;
 	case UDIG_BC160:
-		strcpy(udig, "bc160");
+		udig[0] = 'b';  udig[1] = 'c'; 
+			udig[2] = '1';  udig[3] = '6';  udig[4] = '0';
+			udig[5] = 0;
 		colon = 5;
 		break;
 	default:
