@@ -45,7 +45,7 @@ Datum	udig_sha_ge(PG_FUNCTION_ARGS);
 Datum	udig_sha_lt(PG_FUNCTION_ARGS);
 Datum	udig_sha_le(PG_FUNCTION_ARGS);
 Datum	udig_sha_cmp(PG_FUNCTION_ARGS);
-Datum	udig_hash(PG_FUNCTION_ARGS);
+Datum	udig_sha_hash(PG_FUNCTION_ARGS);
 
 /*
  *  Core BitCoin RIPEMD160(SHA256)
