@@ -2,14 +2,14 @@
  *  Synopsis:
  *	Implement PostgreSQL UDIG Data Types for SHA1.
  *  Note:
+ *	Can the length be 1 byte instead of 4 bytes.  Set SET_VARSIZE_SHORT().
+ *	Also, the data offset needs to be calculated with VARDATA() in all
+ *	functions.
+ *
  *	Can the operator functions be prevented from being called explicily?
  *	In other words, prevent the following query?
  *
  *		select udig_eq(u1, u2);
- *
- *	Think about reserving high three order bits of algorithm byte value
- *	to indicate that the total number of bits in the digest is divied by
- *	2, 4, 8.
  */
 
 #include "postgres.h"
@@ -46,6 +46,7 @@ Datum	udig_sha_lt(PG_FUNCTION_ARGS);
 Datum	udig_sha_le(PG_FUNCTION_ARGS);
 Datum	udig_sha_cmp(PG_FUNCTION_ARGS);
 Datum	udig_sha_hash(PG_FUNCTION_ARGS);
+Datum	udig_sha_digest(PG_FUNCTION_ARGS);
 
 /*
  *  Core BitCoin RIPEMD160(SHA256)
@@ -58,6 +59,7 @@ Datum	udig_bc160_lt(PG_FUNCTION_ARGS);
 Datum	udig_bc160_le(PG_FUNCTION_ARGS);
 Datum	udig_bc160_cmp(PG_FUNCTION_ARGS);
 Datum	udig_bc160_hash(PG_FUNCTION_ARGS);
+Datum	udig_bc160_digest(PG_FUNCTION_ARGS);
 
 /*
  *  Cross type SHA -> UDIG
@@ -98,6 +100,7 @@ Datum	udig_cmp(PG_FUNCTION_ARGS);
 Datum	udig_algorithm(PG_FUNCTION_ARGS);
 Datum	udig_can_cast(PG_FUNCTION_ARGS);
 Datum	udig_hash(PG_FUNCTION_ARGS);
+Datum	udig_digest(PG_FUNCTION_ARGS);
 
 /*
  *  Cross Type UDIG,SHA
@@ -246,6 +249,23 @@ udig_sha_out(PG_FUNCTION_ARGS)
 	PG_RETURN_CSTRING(hex40);
 }
 
+PG_FUNCTION_INFO_V1(udig_sha_digest);
+
+Datum
+udig_sha_digest(PG_FUNCTION_ARGS)
+{
+	unsigned char *d20 = (unsigned char *)PG_GETARG_POINTER(0);
+	bytea *digest;
+	Size size;
+
+	size = VARHDRSZ + 20;
+
+	digest = (bytea *)palloc(size);
+	SET_VARSIZE(digest, size);
+	memcpy(VARDATA(digest), d20, 20); 
+	PG_RETURN_BYTEA_P(digest);
+}
+
 /*
  *  Convert binary, 20 byte bc160 digest into common, 40 character 
  *  text hex format.
@@ -261,6 +281,23 @@ udig_bc160_out(PG_FUNCTION_ARGS)
 	hex40 = (char *)palloc(41);
 	dig2hex40(d20, hex40);
 	PG_RETURN_CSTRING(hex40);
+}
+
+PG_FUNCTION_INFO_V1(udig_bc160_digest);
+
+Datum
+udig_bc160_digest(PG_FUNCTION_ARGS)
+{
+	unsigned char *d20 = (unsigned char *)PG_GETARG_POINTER(0);
+	bytea *digest;
+	Size size;
+
+	size = VARHDRSZ + 20;
+
+	digest = (bytea *)palloc(size);
+	SET_VARSIZE(digest, size);
+	memcpy(VARDATA(digest), d20, 20); 
+	PG_RETURN_BYTEA_P(digest);
 }
 
 /*
@@ -1259,6 +1296,22 @@ udig_hash(PG_FUNCTION_ARGS)
 	h = hash_any(a + 1, 20);
 
 	return UInt32GetDatum(h);	
+}
+
+PG_FUNCTION_INFO_V1(udig_digest);
+
+Datum
+udig_digest(PG_FUNCTION_ARGS)
+{
+	unsigned char *arg1 = (unsigned char *)PG_GETARG_POINTER(0);
+	bytea *digest;
+	Size size;
+
+	size = VARHDRSZ + 20;
+	digest = (bytea *)palloc(size);
+	SET_VARSIZE(digest, size);
+	memcpy(VARDATA(digest), UDIG_VARDATA(arg1) + 1, 20); 
+	PG_RETURN_BYTEA_P(digest);
 }
 
 PG_FUNCTION_INFO_V1(udig_sha_hash);
