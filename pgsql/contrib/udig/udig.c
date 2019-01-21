@@ -599,7 +599,7 @@ udig_out(PG_FUNCTION_ARGS)
 	udig = palloc(3 + 1 + 40 + 1);
 	switch (*d) {
 	case UDIG_SHA:
-		udig[0] = 's';  udig[1] = 's';  udig[2] = 'h';  udig[3] = 0;
+		udig[0] = 's';  udig[1] = 'h';  udig[2] = 'a';  udig[3] = 0;
 		colon = 3;
 		break;
 	case UDIG_BC160:
