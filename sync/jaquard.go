@@ -38,7 +38,7 @@ type PGDatabase struct {
 	db			*sql.DB
 
 	SystemIdentifier	string		`json:"system_identifier"`
-	TipUDig			ServiceUDig	`json:"tip_udig"`
+	Tip			ServiceUDig	`json:"tip"`
 	Stats			sql.DBStats	`json:"stats"`
 }
 
@@ -204,7 +204,7 @@ SELECT
 `
 	err := pg.db.
 		QueryRow(sql).
-		Scan(&pg.TipUDig.Blob, &pg.TipUDig.DiscoverTime)
+		Scan(&pg.Tip.Blob, &pg.Tip.DiscoverTime)
 	if err != nil {
 		pg.die("QueryRow(tip) failed: %s", err)
 	}
@@ -235,7 +235,7 @@ SELECT EXISTS (
 )`
 	err := tq.target.db.QueryRow(
 			sql,
-			tq.source.TipUDig.Blob,
+			tq.source.Tip.Blob,
 	).Scan(&tq.SourceInTarget)
 	if err != nil {
 		die("tip query(" +
