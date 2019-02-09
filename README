@@ -115,8 +115,8 @@ Description:
 		<= 370 bytes
 
 	not including a trailing new-line or terminating null character.
-	Being <= 370 bytes allows broadcast in an UDP packet.
-	The BRR record format is cast in stone.
+	Since the length is <= 370 bytes, a BR Record can be broadcast in an
+	UDP packet.  The BRR record format is cast in stone.
 
 Protocol Flow:
  	>get udig\n		# request for blob by udig
