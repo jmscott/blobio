@@ -86,8 +86,8 @@ Description:
 	All characters are ascii.  Most important is that each client request
 	is associated with a request for a single blob described by a udig.
 	Also, BRR records are always syntactally correct as described above.
-	For example, a request for a syntactically incorrect udig or an unknown
-	verb will not generate a BRR record.
+	In other words, a request for a syntactically incorrect udig or an
+	unknown verb will not generate a BRR record.
 
 	The minimum size of a brr record is 95 bytes.
 
