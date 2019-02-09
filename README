@@ -295,3 +295,6 @@ To Do:
 
 	- signal handling needs to be pushed to main listen loop or cleaned
  	  up with sigaction().
+Note:
+	This simple protocol is officially named bio4.  That needs to be
+	clarified in this document.
