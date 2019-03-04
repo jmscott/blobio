@@ -8,8 +8,8 @@ include ../local.mk
 
 export GOPATH := $(GODIST)/..
 
-SRCs=jaquard.go
-BINs=jaquard
+SRCs=jaccard.go
+BINs=jaccard
 SBINs=									\
 	make-sync-root							\
 	purge-sync-cache						\
@@ -24,7 +24,7 @@ LIBs=									\
 	blobio.sync.remote.service.example				\
 	com.blobio.ssh-tunnel.remote.plist.example			\
 	com.blobio.sync.plist.example					\
-	config.jaq.example						\
+	config.jac.example						\
 	lo0-alias-127.0.0.2.plist.example				\
 	not-in-service.sql						\
 	profile-sync.example						\
@@ -32,10 +32,10 @@ LIBs=									\
 	sync-remote.flow.example					\
 	syncness.sql							\
 
-all: jaquard
+all: jaccard
 
-jaquard: jaquard.go
-	$(GODIST)/bin/go build  jaquard.go
+jaccard: jaccard.go
+	$(GODIST)/bin/go build  jaccard.go
 
 install: all
 	install -g $(DIST_GROUP) -o $(DIST_USER)			\
@@ -62,12 +62,14 @@ install: all
 	install -g $(DIST_GROUP) -o $(DIST_USER) -m u=rwx,g=rx,o=	\
 		-d $(DIST_ROOT)/src/sync
 	install -g $(DIST_GROUP) -o $(DIST_USER) -m ug=r,o=		\
-		jaquard.go					\
+		jaccard.go					\
 		$(DIST_ROOT)/src/sync
 
 distclean:
 	cd $(DIST_ROOT)/sbin && rm -f $(SBINs)
 	cd $(DIST_ROOT)/lib && rm -f $(LIBs)
+clean:
+	rm -f jaccard
 
 dev-links:
 	test -e sbin || ln -s . sbin

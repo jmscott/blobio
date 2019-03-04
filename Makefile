@@ -22,9 +22,9 @@ all:
 
 clean:
 	cd biod;	$(MAKE) $(MFLAGS) clean
-	cd flowd;	$(MAKE) $(MFLAGS) clean
 	cd cli;		$(MAKE) $(MFLAGS) clean
-	#cd www;		$(MAKE) $(MFLAGS) clean
+	cd flowd;	$(MAKE) $(MFLAGS) clean
+	cd sync;	$(MAKE) $(MFLAGS) clean
 
 distclean:
 	cd biod;	$(MAKE) $(MFLAGS) distclean
