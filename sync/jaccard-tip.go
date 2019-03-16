@@ -75,7 +75,7 @@ type Answer struct {
 	TipQueries		[]TipQuery	`json:"tip_queries"`
 }
 
-const usage = "usage: jaccard <config-file-path>\n"
+const usage = "usage: jaccard-tip <config-file-path>\n"
 var udig_re_graph, udig_re_ascii *regexp.Regexp
 
 func init() {
