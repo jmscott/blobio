@@ -1,0 +1,26 @@
+{
+	"source_blob": "bc160:6b2db2774688f2b7580abd4bb4ba8257c85f3eb9",
+	"databases": {
+		"condor": {
+			"PGHOST":	"/tmp",
+			"PGPORT":	5432,
+			"PGUSER":	"postgres",
+			"PGDATABASE":	"blobio"
+		},
+		"tmonk": {
+			"PGHOST":	"127.0.0.1",
+			"PGPORT":	15432,
+			"PGUSER":	"postgres",
+			"PGDATABASE":	"blobio"
+		},
+		"ess": {
+			"PGHOST":	"127.0.0.1",
+			"PGPORT":	25432,
+			"PGUSER":	"postgres",
+			"PGDATABASE":	"blobio"
+		}
+	},
+	"escape_html":		false,
+	"indent_line_prefix":	"",
+	"indent_prefix":	"    "
+}

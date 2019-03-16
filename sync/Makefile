@@ -8,8 +8,8 @@ include ../local.mk
 
 export GOPATH := $(GODIST)/..
 
-SRCs=jaccard-tip.go
-BINs=jaccard-tip
+SRCs=jaccard.go jaccard-tip.go
+BINs=jaccard jaccard-tip
 SBINs=									\
 	make-sync-root							\
 	purge-sync-cache						\
@@ -21,6 +21,7 @@ SBINs=									\
 	walk-wrap-set							\
 
 LIBs=									\
+	config.jac.example						\
 	blobio.sync.remote.service.example				\
 	com.blobio.ssh-tunnel.remote.plist.example			\
 	com.blobio.sync.plist.example					\
@@ -32,10 +33,12 @@ LIBs=									\
 	sync-remote.flow.example					\
 	syncness.sql							\
 
-all: jaccard-tip
+all: jaccard jaccard-tip
 
 jaccard-tip: jaccard-tip.go
 	$(GODIST)/bin/go build  jaccard-tip.go
+jaccard: jaccard.go
+	$(GODIST)/bin/go build  jaccard.go
 
 install: all
 	install -g $(DIST_GROUP) -o $(DIST_USER)			\
