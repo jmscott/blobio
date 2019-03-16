@@ -65,7 +65,8 @@ install: all
 	install -g $(DIST_GROUP) -o $(DIST_USER) -m u=rwx,g=rx,o=	\
 		-d $(DIST_ROOT)/src/sync
 	install -g $(DIST_GROUP) -o $(DIST_USER) -m ug=r,o=		\
-		jaccard-tip.go					\
+		jaccard.go						\
+		jaccard-tip.go						\
 		$(DIST_ROOT)/src/sync
 
 distclean:

@@ -10,6 +10,7 @@
 package main
 
 import (
+	"bufio"
 	"database/sql"
 	"regexp"
 	"encoding/json"
@@ -33,6 +34,8 @@ type PGDatabase struct {
 
 	SystemIdentifier	string		`json:"system_identifier"`
 	Stats			sql.DBStats	`json:"stats"`
+
+	ServiceCount		int64		`json:"service_count"`
 }
 
 type Config struct {
@@ -48,7 +51,7 @@ type Answer struct {
 	StartTime		time.Time	`json:"start_time"`
 	WallDuration		time.Duration	`json:"wall_duration"`
 	WallDurationString	string		`json:"wall_duration_string"`
-	Databases	map[string]*PGDatabase	`json:"databases"`
+	Databases		map[string]*PGDatabase	`json:"databases"`
 }
 
 const usage = "usage: jaccard <config-file-path>\n"
@@ -169,6 +172,7 @@ func (pg *PGDatabase) open(done chan *PGDatabase) {
 
 	var err error
 
+	pg.ServiceCount = -1
 	pg.db, err = sql.Open(
 			"postgres",
 			"dbname=" + pg.PGDATABASE + " " +
@@ -185,8 +189,13 @@ func (pg *PGDatabase) open(done chan *PGDatabase) {
 
 	//  insure each database has unque system identifier
 	err = pg.db.QueryRow(
-		`SELECT system_identifier FROM pg_control_system();`,
-	).Scan(&pg.SystemIdentifier)
+		`
+SELECT
+	system_identifier
+  FROM
+  	pg_control_system()
+
+	`).Scan(&pg.SystemIdentifier)
 	if err != nil {
 		pg.die("db.Query(system_identifier) failed: %s", err)
 	}
@@ -194,6 +203,63 @@ func (pg *PGDatabase) open(done chan *PGDatabase) {
 		pg.die("empty system identifier")
 	}
 	done <- pg
+}
+
+func (pg *PGDatabase) select_service(done chan *PGDatabase) {
+
+	f, err := os.OpenFile(
+			"service-" + pg.SystemIdentifier + ".udig",
+			os.O_WRONLY | os.O_CREATE | os.O_TRUNC,
+			0755,
+	)
+	if err != nil {
+		pg.die("os.Open(select_service) failed: %s", err)
+	}
+	defer f.Close()
+	service := bufio.NewWriter(f)
+
+	//  insure each database has unque system identifier
+	rows, err := pg.db.Query(
+		`
+SELECT
+	blob
+  FROM
+  	blobio.service
+  ORDER BY
+  	blob ASC
+	`)
+	if err != nil {
+		pg.die("db.Query(service) failed: %s", err)
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var blob string
+
+		if err := rows.Scan(&blob); err != nil {
+			pg.die("rows.Scan(blob) failed: %s", err)
+		}
+		service.Write([]byte(blob))
+		service.Write([]byte("\n"))
+
+		pg.ServiceCount++
+	}
+	err = service.Flush()
+	if err != nil {
+		pg.die("Flush(service) failed: %s", err)
+	}
+	done <- pg
+}
+
+func (conf *Config) jaccard() {
+
+	done := make(chan *PGDatabase)
+	for _, pg := range conf.Databases {
+		go pg.select_service(done)
+	}
+	for cnt := len(conf.Databases);  cnt > 0;  cnt-- {
+		<- done
+	}
 }
 
 func main() {
@@ -233,6 +299,9 @@ func main() {
 
 	conf.frisk()
 	conf.open()
+
+	conf.jaccard()
+
 	conf.close()
 
 	answer.Databases = conf.Databases
