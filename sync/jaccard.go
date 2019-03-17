@@ -11,15 +11,18 @@ package main
 
 import (
 	"bufio"
+	"bytes"
 	"crypto/sha256"
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"os"
 	"regexp"
 	"strconv"
 	"strings"
 	"time"
+
 	_ "github.com/lib/pq"
 )
 
@@ -63,6 +66,8 @@ type Answer struct {
 	Databases		map[string]*PGDatabase	`json:"databases"`
 	AnswerService	map[string]*AnswerService `json:"answer_service"`
 
+	ConfigPath	string			`json:"config_path"`
+	ConfigBlob	string			`json:"config_blob"`
 	config		*Config
 }
 
@@ -299,12 +304,12 @@ func main() {
 		)
 	}
 
-	//  slurp up the json configuartion file
-	cf, err := os.Open(os.Args[1])
+	//  slurp up the json configuartion file into a string
+	cf_buf, err := ioutil.ReadFile(os.Args[1])
 	if err != nil {
-		die("os.Open(config) failed: %s", err)
+		die("ioutil.ReadFile(config) failed: %s", err)
 	}
-	dec := json.NewDecoder(cf)
+	dec := json.NewDecoder(bytes.NewReader(cf_buf))
 	dec.DisallowUnknownFields()
 
 	conf := Config{
@@ -316,19 +321,20 @@ func main() {
 	if err != nil {
 		die("json.Decode(config) failed: %s", err)
 	}
-	err = cf.Close()
-	if err != nil {
-		die("os.File.Close(config) failed: %s", err)
-	}
 
 	conf.frisk()
 
 	conf.open()
 
-	answer := &Answer{
+	answer := &Answer {
 		StartTime:	now,
 		Databases:	conf.Databases,
 		config:		&conf,
+		ConfigPath:	os.Args[1],
+		ConfigBlob:	fmt.Sprintf(
+					"sha256:%x",
+					sha256.Sum256(cf_buf),
+				),
 	}
 	answer.jaccard()
 	conf.close()
