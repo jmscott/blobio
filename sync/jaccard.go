@@ -1,21 +1,22 @@
 /*
  *  Synopsis:
- *	Calculate jaccard pairwise metric across a set of blobio services.
+ *	Calculate jaccard pairwise metric across a set of blobio databases.
  *  Usage:
  *	jaccard <config-file>
  *  Note:
- *	Added UDig of config file in answer json.
+ *	Need to add uDig of config file in answer json.
  */
 
 package main
 
 import (
 	"bufio"
+	"crypto/sha256"
 	"database/sql"
-	"regexp"
 	"encoding/json"
 	"fmt"
 	"os"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -34,8 +35,6 @@ type PGDatabase struct {
 
 	SystemIdentifier	string		`json:"system_identifier"`
 	Stats			sql.DBStats	`json:"stats"`
-
-	ServiceCount		int64		`json:"service_count"`
 }
 
 type Config struct {
@@ -47,11 +46,24 @@ type Config struct {
 	IndentPrefix		string	`json:"indent_prefix"`
 }
 
+type AnswerService struct {
+	DatabaseTag	string			`json:"database_tag"`
+	pg		*PGDatabase
+
+	BlobCount	uint64			`json:"blob_count"`
+	BlobSortSHA256	string			`json:"blob_sort_sha256"`
+
+	answer		*Answer
+}
+
 type Answer struct {
 	StartTime		time.Time	`json:"start_time"`
 	WallDuration		time.Duration	`json:"wall_duration"`
 	WallDurationString	string		`json:"wall_duration_string"`
 	Databases		map[string]*PGDatabase	`json:"databases"`
+	AnswerService	map[string]*AnswerService `json:"answer_service"`
+
+	config		*Config
 }
 
 const usage = "usage: jaccard <config-file-path>\n"
@@ -172,7 +184,6 @@ func (pg *PGDatabase) open(done chan *PGDatabase) {
 
 	var err error
 
-	pg.ServiceCount = -1
 	pg.db, err = sql.Open(
 			"postgres",
 			"dbname=" + pg.PGDATABASE + " " +
@@ -205,8 +216,9 @@ SELECT
 	done <- pg
 }
 
-func (pg *PGDatabase) select_service(done chan *PGDatabase) {
+func (as *AnswerService) select_service(done chan *PGDatabase) {
 
+	pg := as.pg
 	f, err := os.OpenFile(
 			"service-" + pg.SystemIdentifier + ".udig",
 			os.O_WRONLY | os.O_CREATE | os.O_TRUNC,
@@ -233,40 +245,52 @@ SELECT
 	}
 	defer rows.Close()
 
+	h256 := sha256.New()
 	for rows.Next() {
 		var blob string
 
 		if err := rows.Scan(&blob); err != nil {
 			pg.die("rows.Scan(blob) failed: %s", err)
 		}
-		service.Write([]byte(blob))
+		b := []byte(blob)
+		h256.Write(b)
+		service.Write(b)
 		service.Write([]byte("\n"))
-
-		pg.ServiceCount++
+		as.BlobCount++
 	}
 	err = service.Flush()
 	if err != nil {
 		pg.die("Flush(service) failed: %s", err)
 	}
+	as.BlobSortSHA256 = fmt.Sprintf("%x", h256.Sum(nil))
 	done <- pg
 }
 
-func (conf *Config) jaccard() {
+func (an *Answer) jaccard() {
 
 	done := make(chan *PGDatabase)
-	for _, pg := range conf.Databases {
-		go pg.select_service(done)
+
+	an.AnswerService = make(map[string]*AnswerService)
+
+	for _, pg := range an.config.Databases {
+
+		as := &AnswerService{
+			DatabaseTag:	pg.tag,
+			pg:		pg,
+
+			answer:		an,
+		}
+		an.AnswerService[pg.tag] = as
+		go as.select_service(done)
 	}
-	for cnt := len(conf.Databases);  cnt > 0;  cnt-- {
+	for cnt := len(an.AnswerService);  cnt > 0;  cnt-- {
 		<- done
 	}
 }
 
 func main() {
 
-	answer := &Answer{
-		StartTime:	time.Now(),
-	}
+	now := time.Now()
 
 	if (len(os.Args) - 1 != 1) {
 		die(
@@ -298,14 +322,18 @@ func main() {
 	}
 
 	conf.frisk()
+
 	conf.open()
 
-	conf.jaccard()
-
+	answer := &Answer{
+		StartTime:	now,
+		Databases:	conf.Databases,
+		config:		&conf,
+	}
+	answer.jaccard()
 	conf.close()
 
-	answer.Databases = conf.Databases
-
+	//  write out answer as json
 	enc := json.NewEncoder(os.Stdout)
 	enc.SetEscapeHTML(conf.EscapeHTML)
 	enc.SetIndent(conf.IndentLinePrefix, conf.IndentPrefix)
