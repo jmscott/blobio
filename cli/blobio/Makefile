@@ -32,6 +32,7 @@ install: all
 	install -g $(DIST_GROUP) -o $(DIST_USER) -m u=rx,go=		\
 		bc160.c							\
 		bio4.c							\
+		blobio.c						\
 		blobio.h						\
 		buf.c							\
 		cache4.c						\
