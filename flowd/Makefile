@@ -1,16 +1,22 @@
 #
 #  Synopsis:
 #  	Development make rules
-#  Note:
-#	Change call to goyacc to yacc
+#  Yacc:
+#	Compiled with yacc at
+#
+#		/usr/local/go/bin/go get -u golang.org/x/tools/cmd/goyacc
+#
+#	wish installs goyacc in $GOPATH/bin.
+#
+#	Note, missing yacc tokens for output genrated by modernc.org/goyacc.
 #
 include ../blobio.mk
 include ../local.mk
 
-export GOPATH := $(DIST_ROOT):$(GODIST)/..
 export PATH := $(GODIST)/bin:$(PATH)
 
 GOHOSTOS=$(shell $(GODIST)/bin/go env GOHOSTOS)
+GOYACC=$(shell $(GODIST)/bin/go env GOPATH)/bin/goyacc
 GOHOSTARCH=$(shell $(GODIST)/bin/go env GOHOSTARCH)
 GOPKG_OSARCH=$(GOHOSTOS)_$(GOHOSTARCH)
 
@@ -81,7 +87,7 @@ install: all
 		$(DIST_ROOT)/bin
 
 clean:
-	rm -f $(EXEC) parser.go y.output
+	rm -f $(EXEC) parser.go y.output y.go
 
 distclean:
 	rm -rf 								\
@@ -97,7 +103,7 @@ vet: $(GOSRC)
 	go vet $(GOSRC)
 
 parser.go: parser.y
-	goyacc -o parser.go parser.y || (rm -f parser.go; exit 1)
+	$(GOYACC) -o parser.go parser.y || (rm -f parser.go; exit 1)
 	go fmt parser.go
 
 flowd-execv: flowd-execv.c
