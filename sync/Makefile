@@ -6,8 +6,6 @@
 include ../blobio.mk
 include ../local.mk
 
-export GOPATH := $(GODIST)/..
-
 SRCs=jaccard.go jaccard-tip.go
 BINs=jaccard jaccard-tip
 SBINs=									\
