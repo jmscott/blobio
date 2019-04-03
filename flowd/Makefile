@@ -5,6 +5,7 @@
 #	Compiled with yacc at
 #
 #		/usr/local/go/bin/go get -u golang.org/x/tools/cmd/goyacc
+#		/usr/local/go/bin/go get -u github.com/lib/pq
 #
 #	wish installs goyacc in $GOPATH/bin.
 #
