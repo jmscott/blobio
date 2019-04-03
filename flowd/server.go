@@ -14,6 +14,7 @@ import (
 	"os/signal"
 	"runtime"
 	"sort"
+	"strconv"
 	"syscall"
 
 	_ "github.com/lib/pq"
@@ -92,6 +93,7 @@ var server_leaving bool
 func (conf *config) server(par *parse) {
 
 	start_time := Now()
+
 	//  start a rolled logger to flowd-Dow.log, rolled daily
 	info_log_ch := make(file_byte_chan)
 
@@ -101,7 +103,7 @@ func (conf *config) server(par *parse) {
 	roll_when_end := "yesterday"
 	boot_sample := flow_worker_sample{}
 
-	//  accullate per roll statistics on roll_sample channel.
+	//  accumulate per roll statistics on roll_sample channel.
 	//  burp those stats into end of closing log file and
 	//  start of new log file.
 
@@ -207,10 +209,29 @@ func (conf *config) server(par *parse) {
 	info := info_log_ch.info
 	WARN := info_log_ch.WARN
 
+	//  write process id in run/flowd.pid
+	pid_path := "run/flowd.pid"
+	{
+		f, err := os.OpenFile(
+				pid_path,
+				os.O_WRONLY | os.O_CREATE,
+				0755,
+		)
+		if err != nil {
+			croak("os.OpenFile(run/flowd.pid) failed: %s", err)
+		}
+		_, err = f.WriteString(
+				strconv.FormatInt(
+					int64(os.Getpid()), 10) + "\n")
+		if err != nil {
+			croak("os.WriteString(run/flowd.pid) failed: %s", err)
+		}
+	}
 	leave := func(status int) {
 
 		info("good bye, cruel world")
 		Sleep(Second)
+		os.Remove(pid_path)
 		os.Exit(status)
 	}
 

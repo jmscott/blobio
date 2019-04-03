@@ -16,7 +16,7 @@ var (
 	stderr = os.NewFile(uintptr(syscall.Stderr), "/dev/stderr")
 )
 
-//  temporary die() used only during argument parsing
+//  temporary die() used only during boot up
 func croak(format string, args ...interface{}) {
 
 	Fprintf(stderr, "flowd: ERROR: %s\n", Sprintf(format, args...))
