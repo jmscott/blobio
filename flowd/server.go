@@ -209,9 +209,16 @@ func (conf *config) server(par *parse) {
 	info := info_log_ch.info
 	WARN := info_log_ch.WARN
 
-	//  write process id in run/flowd.pid
+	//  create process id in run/flowd.pid
 	pid_path := "run/flowd.pid"
 	{
+		//  does the pid file exist?
+		if _, err := os.Stat(pid_path);  err == nil {
+			croak("is another flowd process running?")
+		} else if !os.IsNotExist(err) {
+			croak("os.Stat(run/flowd.pid) failed: %s", err)
+		}
+
 		f, err := os.OpenFile(
 				pid_path,
 				os.O_WRONLY | os.O_CREATE,
