@@ -12,6 +12,7 @@ package main
 import (
 	"bufio"
 	"bytes"
+	"crypto/sha1"
 	"crypto/sha256"
 	"database/sql"
 	"encoding/json"
@@ -332,8 +333,8 @@ func main() {
 		config:		&conf,
 		ConfigPath:	os.Args[1],
 		ConfigBlob:	fmt.Sprintf(
-					"sha256:%x",
-					sha256.Sum256(cf_buf),
+					"sha:%x",
+					sha1.Sum(cf_buf),
 				),
 	}
 	answer.jaccard()
