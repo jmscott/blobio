@@ -55,5 +55,5 @@ if [ ! -e $TMPDIR ];  then
 	mkdir -p $TMPDIR || exit 1
 fi
 
-#  ubuntu 4.4 needs USER defined
+#  Ubuntu 4.4 needs USER defined
 USER=${USER:=$LOGNAME}
