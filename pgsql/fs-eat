@@ -162,7 +162,6 @@ log 'finding new blobs in file system with comm ...'
 comm -2 -3 $FS $SERVICE2 >$EAT
 STATUS=$?
 test $STATUS = 0 || die "comm -2 -3 $FS $SERVICE2 failed: status=$STATUS"
-rm $SERVICE2 || die "rm $SERVICE2 failed"
 
 C=$(wc -l $EAT | awk '{print $1}')
 
