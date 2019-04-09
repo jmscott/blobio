@@ -26,23 +26,23 @@ tail biod
 #
 #  Uncomment to push blob request records to setspace
 #
-#command append_setspace_brr
-#{
-#	path = "sbin/append-brr";
-#	argv = (
-#		"../setspace/schema/setspace/spool/biod.brr"
-#	);
-#}
-#
-#call append_setspace_brr(
-#	biod.start_time,
-#	biod.netflow,
-#	biod.verb,
-#	biod.udig,
-#	biod.chat_history,
-#	biod.blob_size,
-#	biod.wall_duration
-#);
+command append_setspace_brr
+{
+	path = "sbin/append-brr";
+	argv = (
+		"../setspace/schema/setspace/spool/biod.brr"
+	);
+}
+
+call append_setspace_brr(
+	biod.start_time,
+	biod.netflow,
+	biod.verb,
+	biod.udig,
+	biod.chat_history,
+	biod.blob_size,
+	biod.wall_duration
+);
 
 command chat_ok
 {
