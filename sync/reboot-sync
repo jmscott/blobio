@@ -10,11 +10,12 @@
 #	#  From cron-reboot
 #	reboot-sync
 #
+PROG=$(basename $0)
 PKILL_USER=$(id -un)
 
 log()
 {
-	echo "$(date +'%Y/%m/%d %H:%M:%S'): $@"
+	echo "$(date +'%Y/%m/%d %H:%M:%S'): $PROG: $@"
 }
 
 die()
