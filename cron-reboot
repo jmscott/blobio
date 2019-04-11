@@ -4,12 +4,14 @@
 #  Usage:
 #	#  in crontab
 #	BLOBIO_ROOT=/usr/local/blobio
-#	@reboot $BLOBIO_ROOTsbin/cron-reboot 				\
-#		>>$BLOBIO_ROOT/log/cron-reboot.log 2>&1
+#	LOG=$BLOBIO_ROOT/log/cron-reboot.log
+#
+#	@reboot $BLOBIO_ROOTsbin/cron-reboot >>$LOG 2>&1
 #
 
 PROG=$(basename $0)
 USER=$(id -un)
+FLOWD_PAUSE=3
 
 log()
 {
@@ -45,11 +47,10 @@ log 'biod_ctl reboot ok'
 
 log 'starting flowd server in background ...'
 flowd server etc/blobio.flow &
-FLOWD_PID=$!
-log "flowd server process id is $FLOWD_PID"
-echo $FLOWD_PID >run/flowd.pid ||
-		die "echo $FLOWD_PID >run/flowd.pid failed: exit status=$?"
+log "pausing $FLOWD_PAUSE sec while flowd starts ..."
+sleep $FLOWD_PAUSE
+test -e run/flowd.pid || die "flowd failed to start in background"
+log "flowd pid: $(cat run/flowd.pid)"
 
 log 'reboot sync flowd processes'
 reboot-sync || die "reboot-sync failed: exit status=$?"
-exit 0
