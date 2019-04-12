@@ -568,6 +568,8 @@ parse_argv(int argc, char **argv)
 		} else if (strcmp("brr-path", a) == 0) {
 			if (brr_path)
 				emany("brr-path");
+			if (verb[0] == 'e' && verb[1] == 'm')
+				eopt("brr-path", "no brr path for empty verb");
 
 			if (++i == argc)
 				eopt("brr-path", "requires path to brr log");
@@ -663,12 +665,10 @@ xref_args()
 				enot("output-path");
 			if (input_path)
 				enot("input-path");
-			if (algorithm[0] && !digest[0])
-				enot("algorithm");
-			if (!digest[0])
-				no_opt("udig");
 			if (service)
 				enot("service");
+			if (!digest[0] && !algorithm[0])
+				no_opt("{udig,algorithm}");
 		}
 	} else if (*verb == 'w') {
 		if (!service)
@@ -914,6 +914,9 @@ main(int argc, char **argv)
 			exit_status = ok_no;
 		}
 	} else if (*verb == 'e') {
+		/*
+		 *  eat the blob
+		 */
 		if (verb[1] == 'a') {
 			if (service) {
 				if ((err = service->eat(&ok_no)))
@@ -937,8 +940,20 @@ main(int argc, char **argv)
 						strerror(errno));
 				exit_status = 0;
 			}
-		} else
+		/*
+		 *  is the udig the empty udig?
+		 */
+		} else if (digest[0])
 			exit_status = digest_module->empty() == 1 ? 0 : 1;
+		/*
+		 *  write the empty digest.
+		 */
+		else {
+			char *e = digest_module->empty_digest();
+			write(output_fd, (unsigned char *)e, strlen(e));
+			write(output_fd, "\n", 1);
+			exit_status = 0;
+		}
 	} else if (*verb == 'p') {
 		if ((err = service->put(&ok_no)))
 			die2(EXIT_BAD_SRV, "put() failed", err);

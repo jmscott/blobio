@@ -388,6 +388,12 @@ sha_fs_path(char *file_path, int size)
 	return (char *)0;
 }
 
+static char *
+sha_empty_digest()
+{
+	return empty;
+}
+
 struct digest	sha_digest =
 {
 	.algorithm	=	"sha",
@@ -405,6 +411,7 @@ struct digest	sha_digest =
 
 	.syntax		=	sha_syntax,
 	.empty		=	sha_empty,
+	.empty_digest	=	sha_empty_digest,
 
 	.fs_name	=	sha_fs_name,
 	.fs_mkdir	=	sha_fs_mkdir,

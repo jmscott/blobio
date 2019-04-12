@@ -102,6 +102,11 @@ struct digest
 	 */
 	int	(*empty)();
 
+	/*
+	 *  The digest of the empty blob.
+	 */
+	char	*(*empty_digest)();
+
 	int	(*close)();
 
 	/*

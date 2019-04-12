@@ -418,6 +418,12 @@ bc160_fs_path(char *file_path, int size)
 	return (char *)0;
 }
 
+static char *
+bc160_empty_digest()
+{
+	return empty;
+}
+
 struct digest	bc160_digest =
 {
 	.algorithm	=	"bc160",
@@ -435,6 +441,7 @@ struct digest	bc160_digest =
 
 	.syntax		=	bc160_syntax,
 	.empty		=	bc160_empty,
+	.empty_digest	=	bc160_empty_digest,
 
 	.fs_name	=	bc160_fs_name,
 	.fs_mkdir	=	bc160_fs_mkdir,
