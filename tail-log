@@ -1,0 +1,20 @@
+#
+#  Synopsis:
+#	Tail today's log files for biod, flowd and sync processes.
+#  Note:
+#	Not correctly handling when "today" become "tomorrow".
+#
+
+die()
+{
+	echo "ERROR: $@" >&2
+	exit 1
+}
+
+test $# = 0 || die "wrong number of arguments: got $#, expected 0"
+test -n "$BLOBIO_ROOT" || die 'env not defined: BLOBIO_ROOT'
+cd $BLOBIO_ROOT || die "cd blobio dir failed: $BLOBIO_ROOT: exit status=$?"
+
+tail -f 								\
+	$(find $(find log sync -type d -name log)			\
+		-type f -name "*-$(date +%a).log")
