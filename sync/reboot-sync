@@ -58,6 +58,4 @@ find $BLOBIO_ROOT/sync/host/ -mindepth 1 -maxdepth 1 -type d 		|
 	BLOBIO_ROOT=$SYNC_ROOT flowd server etc/sync-$HOST.flow &
 	FLOWD_PID=$!
 	log "flowd process id: $FLOWD_PID"
-	echo $FLOWD_PID >run/flowd.pid ||
-		die "echo $FLOWD_PID >run/flowd.pid failed: exit status=$?"
 done
