@@ -16,6 +16,14 @@
  *	--output-path <path/to/file>
  *	--help
  *  Note:
+ *	The following fails with exit 1 for service fs:/usr/local/blob
+ *	when blob actually exists but output dir does not!
+ *
+ *		blobio get						\
+ *			--udig <exists>					\
+ *			--output-path <path/to/non/dir>			\
+ *			--service fs:/usr/local/blobio
+ *
  *	Under OSX 10.9, an exit status 141 in various shells can indicate a
  *	SIGPIPE interupted the execution.  blobio does not exit 141.
  *	A SIGPIPE when reading from stdin probably out to be considered a
