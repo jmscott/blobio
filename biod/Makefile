@@ -42,6 +42,7 @@ CSRC=									\
 	sha_fs.c							\
 	signal.c							\
 	tmp.c
+
 SBINs=									\
 	append-brr							\
 	bio-udig2fs							\
@@ -50,7 +51,9 @@ SBINs=									\
 	create-rrd							\
 	fs2udig								\
 	graph-rrd							\
-	update-rrd
+	shallow-fs							\
+	update-rrd							\
+
 LIBs=									\
 	blobio.biod.service.example					\
 	blobio.flowd.service.example					\
