@@ -11,6 +11,9 @@
 #
 #	#  test server, but typically start from systemd or launchd
 #	flowd server etc/sync-remote.setspace.com &
+#  Note:
+#	Eating an old blob that exists does not trigger a check on the remote
+#	site.
 #
 
 boot
