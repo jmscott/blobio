@@ -1,16 +1,16 @@
 #ifdef BC160_FS_MODULE
 /*
  *  Synopsis:
- *	Module for bitcoin ripemd160(sha256) digested blobs in POSIX file system.
+ *	Module of bitcoin ripemd160(sha256) digested blobs in POSIX file system.
  *  Description:
  *	Implement the bitcoin 160 bit public hash algorithm.  In openssl
- *	the 20byte/40 char digest can be calculated in the shell using openssl
+ *	the 20byte/40char digest can be calculated in the shell using openssl
  *
  * 		openssl dgst -binary -sha256 |
  *				openssl dgst -ripemd160 -r | cut -c 1-40
  *
  *  Note:
- *  	The digest is logged during an error.  This is a security hole.
+ *  	Is logging the the digest during an error a security hole?
  *
  *	The tmp file path does not include the digest.  Not a serious problem
  *	since the odds of two different blobs having the same digest
@@ -364,8 +364,8 @@ _mkdir(struct request *r, char *path, int exists_ok)
 /*
  *  Assemble the blob path, optionally creating the directory entries.
  *
- *  Make the 5 subdirectories that comprise the path to a blob
- *  and the entire path to the blob file.
+ *  Possibly create the 2 subdirectories that comprise the path to a blob
+ *  and the string of the path to the blob file.
  */
 static void
 make_path(struct request *r, char *digest)
@@ -379,14 +379,11 @@ make_path(struct request *r, char *digest)
 	 *  length of it's parent component.  For example, given
 	 *  the digest
 	 *
-	 *	f880448798849da7a97a393631102a42e53d5af6
+	 *	57cd5957fbc764c5ee9862f76287d09d2170b9ef
 	 *
-	 *  we derive the path to the blob file
+	 *  we derive the path to the blob file as
 	 *
-	 *	f/88/0448/798849da/7a97a393631102a4/2e53d5af6
-	 *
-	 *  where the final component, '2e53d5af6' is the file containing
-	 *  the blob.
+	 *	57c/d59/57cd5957fbc764c5ee9862f76287d09d2170b9ef
 	 */
 	strcpy(s->blob_dir_path, boot_data.root_dir_path);
 	p = s->blob_dir_path + strlen(s->blob_dir_path);
@@ -398,50 +395,28 @@ make_path(struct request *r, char *digest)
 
 	 /*
 	  *  Directory 1:
-	  *	Single character /[0-9a-f]
+	  *	Three characters /[0-9a-f][0-9a-f][0-9a-f]
 	  */
 	*p++ = '/';
+	*p++ = *q++;
+	*p++ = *q++;
 	*p++ = *q++;
 
 	/*
 	 *  Directory 2:
-	 *	2 Character: /[0-9a-f][0-9a-f]
+	 *	3 Characters: /[0-9a-f][0-9a-f]
 	 */
 	*p++ = '/';
-	*p++ = *q++;	*p++ = *q++;
-
-	/*
-	 *  Directory 3:
-	 *	4 Characters: /[0-9a-f][0-9a-f][0-9a-f][0-9a-f]
-	 */
+	*p++ = *q++;
+	*p++ = *q++;
+	*p++ = *q++;
 	*p++ = '/';
-	*p++ = *q++;	*p++ = *q++;	*p++ = *q++;	*p++ = *q++;
-
-	/*
-	 *  Directory 4:
-	 *	8 Characters: /[0-9a-f]{8}
-	 */
-	*p++ = '/';
-	*p++ = *q++;	*p++ = *q++;	*p++ = *q++;	*p++ = *q++;
-	*p++ = *q++;	*p++ = *q++;	*p++ = *q++;	*p++ = *q++;
-
-	/*
-	 *  Directory 5:
-	 *	16 Characters: /[0-9a-f]{16}
-	 */
-	*p++ = '/';
-	*p++ = *q++;	*p++ = *q++;	*p++ = *q++;	*p++ = *q++;
-	*p++ = *q++;	*p++ = *q++;	*p++ = *q++;	*p++ = *q++;
-	*p++ = *q++;	*p++ = *q++;	*p++ = *q++;	*p++ = *q++;
-	*p++ = *q++;	*p++ = *q++;	*p++ = *q++;	*p++ = *q++;
-	*p = 0;
 
 	/*
 	 *  Build the path to the final resting place of the blob file.
 	 */
 	strcpy(s->blob_path, s->blob_dir_path);
-	strcat(s->blob_path, "/");
-	strcat(s->blob_path, digest + 31);
+	strcat(s->blob_path, digest);
 }
 
 static int
