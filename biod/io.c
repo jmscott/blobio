@@ -2,6 +2,9 @@
  *  Synopsis:
  *	Restartable interface to i/o unix system calls with errno honored.
  *  Note:
+ *	Add function to set blob file immutable. io_immutable(path).
+ *	on ext4 chattr() sets a file immutable.
+ *
  *	Can the timeout code in functions read_buf() and write_buf()
  *	be moved to io_read() and io_write().  Currently timeouts apply
  *	only to network level read/write, which seems incomplete.
