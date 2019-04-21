@@ -16,7 +16,7 @@
 #	bio-fs2udig <WRAP_SET
 #
 
-my $PROG = 'udig2fs';
+my $PROG = 'bio-udig2fs';
 
 sub udig2fs
 {
