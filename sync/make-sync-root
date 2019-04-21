@@ -50,10 +50,12 @@ cd $SYNC_ROOT || die "cd $SYNC_ROOT failed: exit status=$?"
 _mkdir log
 _mkdir run
 _mkdir etc
+_mkdir tmp
 
 _ln_root sbin
 _ln_root spool
 _ln_root bin
+_ln_root lib
 
 #  build a default flow file from the template file in
 #  $BLOBIO_ROOT/lib/sync.flow.example.
