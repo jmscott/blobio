@@ -2,7 +2,9 @@
 #  Synopsis:
 #	Example configuration for maintaining database defined in schema.sql
 #  Usage:
-#  	flowd server blobio.conf
+#  	flowd server blobio.flow
+#  See:
+#	For systemd service: $BLOBIO_ROOT/lib/blobio.flowd.service.example
 #
 
 boot
