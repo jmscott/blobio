@@ -51,7 +51,6 @@ SBINs=									\
 	create-rrd							\
 	fs2udig								\
 	graph-rrd							\
-	shallow-fs							\
 	update-rrd							\
 
 LIBs=									\
