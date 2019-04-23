@@ -4,6 +4,8 @@
 //	Number of distinct udigs needs to be tracked.  Sounds like a job for
 //	bloom filter.
 //
+//	Need write process environment when rolling log files.
+//
 
 package main
 
