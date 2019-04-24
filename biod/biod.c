@@ -1791,7 +1791,7 @@ main(int argc, char **argv, char **env)
 	 */
 	info("dumping process environment variables ...");
 	if (*env[0])
-		for (int i = 0;  env[i];  i++)
+		for (i = 0;  env[i];  i++)
 			info(env[i]);
 	else
 		info("no environment variables (ok)");

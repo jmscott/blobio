@@ -321,8 +321,9 @@ decode_hex(char *hex, unsigned char *bytes)
 {
 	char *h = hex;
 	unsigned char *b = bytes;
+	unsigned i;
 
-	for (unsigned i = 0;  *h;  i++) {
+	for (i = 0;  *h;  i++) {
 		char c = *h++;
 		unsigned char nib;
 
