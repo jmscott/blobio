@@ -5,6 +5,7 @@
 #ifndef BLOBIO_H
 #define BLOBIO_H
 
+#include <sys/types.h>
 #include <unistd.h>
 
 #define COMPILE_TRACE
