@@ -194,7 +194,7 @@ bc160_give_update(unsigned char *src, int src_size)
 static char *
 bc160_gave(char *reply)
 {
-	UNUSED_ARG(reply);
+	(void)reply;
 	return "0";
 }
 
@@ -224,7 +224,7 @@ bc160_syntax()
 
 /*
  *  Is the digest == to well-known empty digest
- *  da39a3ee5e6b4b0d3255bfef95601890afd80709 
+ *  b472a266d0bd89c13706a4132ccfb16f7c3b9fcb 
  */
 static int
 bc160_empty()
@@ -295,30 +295,18 @@ bc160_eat_input()
 static char *
 bc160_fs_name(char *name, int size)
 {
-	char *dp, *np;
-
-	if (size < 10)
-		return "file name size too small: size < 10 bytes";
-
-	dp = digest + 31;
-	np = name;
-
-	*np++ = *dp++;  *np++ = *dp++;  *np++ = *dp++;  *np++ = *dp++;
-	*np++ = *dp++;  *np++ = *dp++;  *np++ = *dp++;  *np++ = *dp++;
-	*np++ = *dp++;
-
-	*np = 0;
+	if (size < 41)
+		return "file name size too small: size < 41 bytes";
+	memcpy(name, digest, 40);
+	name[40] = 0;
 
 	return (char *)0;
 }
 
 static int
-_mkdir(char *path, int len)
+_mkdir(char *path)
 {
-	path[len] = 0;
-	if (mkdir(path, 0777) == 0 || errno == EEXIST)
-		return 0;
-	return -1;
+	return (uni_mkdir(path, 0777) == 0 || errno == EEXIST) ? 0 : -1;
 }
 
 /*
@@ -327,52 +315,25 @@ _mkdir(char *path, int len)
 static char *
 bc160_fs_mkdir(char *path, int size)
 {
-	char *dp, *dirp;
+	char *dp, *p;
 
-	if (size < 37)
-		return "fs_mkdir: size < 37 bytes";
+	if (size < 10)
+		return "fs_mkdir: size < 10 bytes";
 
 	dp = digest;
 
-	dirp = bufcat(path, size, "/");
+	p = bufcat(path, size, "/");
 
-	//  first level directory: one char
-
-	*dirp++ = *dp++;
-	if (_mkdir(path, dirp - path))
-		return strerror(errno);
-	*dirp++ = '/';
-
-	//  second level directory: two chars
-
-	*dirp++ = *dp++; *dirp++ = *dp++;
-	if (_mkdir(path, dirp - path))
-		return strerror(errno);
-	*dirp++ = '/';
-
-	//  third level directory: four chars
-
-	*dirp++ = *dp++; *dirp++ = *dp++; *dirp++ = *dp++; *dirp++ = *dp++;
-	if (_mkdir(path, dirp - path))
-		return strerror(errno);
-	*dirp++ = '/';
-
-	//  fourth level directory: eight chars
-
-	*dirp++ = *dp++; *dirp++ = *dp++; *dirp++ = *dp++; *dirp++ = *dp++;
-	*dirp++ = *dp++; *dirp++ = *dp++; *dirp++ = *dp++; *dirp++ = *dp++;
-	if (_mkdir(path, dirp - path))
-		return strerror(errno);
-	*dirp++ = '/';
-
-	//  fifth level directory: 16 chars
-	*dirp++ = *dp++; *dirp++ = *dp++; *dirp++ = *dp++; *dirp++ = *dp++;
-	*dirp++ = *dp++; *dirp++ = *dp++; *dirp++ = *dp++; *dirp++ = *dp++;
-	*dirp++ = *dp++; *dirp++ = *dp++; *dirp++ = *dp++; *dirp++ = *dp++;
-	*dirp++ = *dp++; *dirp++ = *dp++; *dirp++ = *dp++; *dirp++ = *dp++;
-	if (_mkdir(path, dirp - path))
+	*p++ = *dp++;    *p++ = *dp++;    *p++ = *dp++; 
+	*p = 0;
+	if (_mkdir(path))
 		return strerror(errno);
 
+	*p++ = '/';
+	*p++ = *dp++;    *p++ = *dp++;    *p++ = *dp++;  
+	*dp = 0;
+	if (_mkdir(path))
+		return strerror(errno);
 	return (char *)0;
 }
 
@@ -384,36 +345,26 @@ bc160_fs_path(char *file_path, int size)
 {
 	char *dp, *fp;
 
-	if (size < 47)
-		return "file path size too small: size < 47 bytes";
+	if (size < 49)
+		return "file path size too small: size < 49 bytes";
 
 	dp = digest;
 	fp = file_path;
 
-	*fp++ = '/';
+	*fp++ = '/';		//  first directory
+	*fp++ = *dp++;
+	*fp++ = *dp++;
 	*fp++ = *dp++;
 
-	*fp++ = '/';
-	*fp++ = *dp++; *fp++ = *dp++;
-
-	*fp++ = '/';
-	*fp++ = *dp++; *fp++ = *dp++; *fp++ = *dp++; *fp++ = *dp++;
-
-	*fp++ = '/';
-	*fp++ = *dp++; *fp++ = *dp++; *fp++ = *dp++; *fp++ = *dp++;
-	*fp++ = *dp++; *fp++ = *dp++; *fp++ = *dp++; *fp++ = *dp++;
-
-	*fp++ = '/';
-	*fp++ = *dp++; *fp++ = *dp++; *fp++ = *dp++; *fp++ = *dp++;
-	*fp++ = *dp++; *fp++ = *dp++; *fp++ = *dp++; *fp++ = *dp++;
-	*fp++ = *dp++; *fp++ = *dp++; *fp++ = *dp++; *fp++ = *dp++;
-	*fp++ = *dp++; *fp++ = *dp++; *fp++ = *dp++; *fp++ = *dp++;
-
-	*fp++ = '/';
-	*fp++ = *dp++; *fp++ = *dp++; *fp++ = *dp++; *fp++ = *dp++;
-	*fp++ = *dp++; *fp++ = *dp++; *fp++ = *dp++; *fp++ = *dp++;
+	*fp++ = '/';		//  second directory
 	*fp++ = *dp++;
-	*fp = 0;
+	*fp++ = *dp++;
+	*fp++ = *dp++;
+
+	dp = digest;		//  file name is 40 chars of sha digest
+	*fp++ = '/';
+	memcpy(fp, digest, 40);
+	fp[40] = 0;
 
 	return (char *)0;
 }

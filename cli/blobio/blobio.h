@@ -165,17 +165,15 @@ extern void	trace3(char *, char *, char *);
 extern void	trace4(char *, char *, char *, char *);
 extern void	hexdump(unsigned char *buf, int buf_size, char direction);
 
+extern int	uni_access(const char *path, int mode);
 extern int	uni_close(int fd);
-extern ssize_t	uni_write(int fd, const void *buf, size_t count);
-extern ssize_t	uni_read(int fd, void *buf, size_t count);
-extern int	uni_write_buf(int fd, const void *buf, size_t count);
+extern int	uni_link(const char *oldpath, const char *newpath);
+extern int	uni_mkdir(const char *path, mode_t mode);
 extern int	uni_open(const char *pathname, int flags);
 extern int	uni_open_mode(const char *pathname, int flags, int mode);
-extern int	uni_link(const char *oldpath, const char *newpath);
 extern int	uni_unlink(const char *path);
-extern int	uni_access(const char *path, int mode);
-
-//  suppress unused arg warning arcross both gcc and clang
-#define UNUSED_ARG(x)	(void)(x)
+extern int	uni_write_buf(int fd, const void *buf, size_t count);
+extern ssize_t	uni_read(int fd, void *buf, size_t count);
+extern ssize_t	uni_write(int fd, const void *buf, size_t count);
 
 #endif

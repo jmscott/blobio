@@ -4,8 +4,9 @@
  *  Note:
  *	Only ascii is acccepted in the file system path!
  *
- *	In a take with a brr path a race condition exists between when a blob is
- *	deleted and and the stat is done for the blob_size of the brr.
+ *	In a "take" with a brr path a race condition exists between when a
+ *	blob is deleted and and the stat() is done for the blob_size of the
+ *	brr.
  *
  *  	Long (>= PATH_MAX) file paths are still problematic.
  *
@@ -14,7 +15,7 @@
  *	A typo in the BLOBIO_SERVICE yields a "blob not found error", which
  *	is confusing.  Instead, the existence of the data directory ought to
  *	tested for a more clear error message.  An earlier version of fs did
- *	just this test.
+ *	this test.
  */
 #include <sys/types.h>
 #include <sys/stat.h>

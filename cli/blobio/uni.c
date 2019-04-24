@@ -3,6 +3,9 @@
  *	Wrapper around restartable posix/unixish routines, with errno untouched.
  */
 
+#include <sys/types.h>
+#include <sys/stat.h>
+
 #include <errno.h>
 #include <fcntl.h>
 #include <unistd.h>
@@ -66,6 +69,21 @@ uni_write_buf(int fd, const void *buf, size_t count)
 		if (nw == -1)
 			return -1;
 		nwrite += nw;
+	}
+	return 0;
+}
+
+/*
+ *  Make a directory path.
+ */
+int
+uni_mkdir(const char *path, mode_t mode)
+{
+again:
+	if (mkdir(path, mode)) {
+		if (errno == EINTR)
+			goto again;
+		return -1;
 	}
 	return 0;
 }
