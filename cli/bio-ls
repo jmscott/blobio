@@ -75,6 +75,11 @@ END
 
 case $# in
 0)
+	RECENT_BLOB=$(recent_udig)
+	if [ "$RECENT_BLOB" = '' ];  then
+		echo 'no new blobs in previous 24 hours'
+		exit 0;
+	fi
 	_ls $(recent_udig)
 	;;
 *)
