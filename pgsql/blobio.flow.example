@@ -26,17 +26,17 @@ tail biod
 }
 
 #
-#  Uncomment to push blob request records to setspace
+#  Uncomment to push blob request records to setcore
 #
-command append_setspace_brr
+command append_setcore_brr
 {
 	path = "sbin/append-brr";
 	argv = (
-		"../setspace/schema/setspace/spool/biod.brr"
+		"../setspace/schema/setcore/spool/biod.brr"
 	);
 }
 
-call append_setspace_brr(
+call append_setcore_brr(
 	biod.start_time,
 	biod.netflow,
 	biod.verb,
