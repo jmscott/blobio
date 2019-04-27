@@ -2,6 +2,15 @@
  *  Synopsis:
  *	Yacc grammar for 'flow' language.
  *  Note:
+ *	A boolean query attribute is not understood as an expression.
+ *	Would be nice to say
+ *
+ *		in_table.ok
+ *
+ *	instead of
+ *
+ *		in_table.ok == true
+ *
  *	Think about how to determine termination of a process.  Would a
  *	for a non null exit status be adequate?
  *
@@ -219,7 +228,6 @@ const (
 %token	COMMAND_REF
 %token	DATABASE
 %token	DATA_SOURCE_NAME
-%token  TRACE_BOOL
 %token	DRIVER_NAME
 %token	EQ MATCH
 %token	EQ_BOOL
