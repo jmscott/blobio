@@ -1,6 +1,8 @@
 //Synopsis:
 //	Server action for flowd.
 //  Note:
+//	Clear out the run/* on startup.  Also, think about a subdir run/flowd/
+//
 //	Number of distinct udigs needs to be tracked.  Sounds like a job for
 //	bloom filter.
 //
