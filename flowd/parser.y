@@ -2,6 +2,21 @@
  *  Synopsis:
  *	Yacc grammar for 'flow' language.
  *  Note:
+ *	Think about how to determine termination of a process.  Would a
+ *	for a non null exit status be adequate?
+ *
+ *		merge_pddocument.exit_status is not null
+ *
+ *	The current method is to test for all possible values
+ *
+ *		merge_pddocument.exit_status == 0
+ *		or
+ *		merge_pddocument.exit_status != 0
+ *
+ *	which is a bit of a hack.  Added a termination state burns a keyword.
+ *
+ *		merge_pddocument.done == true
+ *
  *	In command{}, the null keyword in argv=() list ought to be place
  *	holders for required arguments.  For example,
  *
