@@ -308,7 +308,7 @@ func (conf *config) server(par *parse) {
 		go osx_q.worker_flowd_execv()
 	}
 
-	info("opening brr tail %s (cap=%d) for %s biod.brr",
+	info("opening brr tail %s (cap=%d) for %s",
 		conf.tail.name, conf.brr_capacity, conf.tail.path)
 	tail := &tail{
 		name:            conf.tail.name,
