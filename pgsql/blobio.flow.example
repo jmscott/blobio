@@ -139,7 +139,7 @@ sql exec upsert_discover
 {
 	statement = `
 
-	INSERT INTO blobio.brr_discover as RECENT (
+	INSERT INTO blobio.brr_discover AS RECENT (
 		blob,
 		start_time
 	) VALUES (
@@ -201,7 +201,7 @@ sql exec upsert_ok_recent
 {
 	statement = `
 
-	INSERT INTO blobio.brr_ok_recent as OLDER (
+	INSERT INTO blobio.brr_ok_recent AS OLDER (
 		blob,
 		start_time,
 		wall_duration
@@ -230,7 +230,7 @@ sql query no_newer row
 	statement = `
 
 	SELECT
-	  --  is the brr more recent that tuple in table brr_no_recent?
+	  --  is the brr more recent than tuple in table brr_no_recent?
 	  (
 	    SELECT
 	  	$2::blobio.brr_timestamp > start_time
@@ -261,7 +261,7 @@ sql exec upsert_no_recent
 {
 	statement = `
 
-	INSERT INTO blobio.brr_no_recent as OLDER (
+	INSERT INTO blobio.brr_no_recent AS OLDER (
 		blob,
 		start_time,
 		wall_duration
@@ -392,7 +392,7 @@ sql exec upsert_take_ok_recent
 {
 	statement = `
 
-	INSERT INTO blobio.brr_take_ok_recent as OLDER (
+	INSERT INTO blobio.brr_take_ok_recent AS OLDER (
 		blob,
 		start_time,
 		wall_duration
