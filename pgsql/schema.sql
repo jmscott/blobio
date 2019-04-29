@@ -2,7 +2,7 @@
  *  Synopsis:
  *	PostgreSQL schema to track blobs available in a particular biod server.
  *  Note:
- *	Please add sql comments.
+ *	Why does column brr_no_recent.wall_duration exist?
  */
 \set ON_ERROR_STOP on
 
