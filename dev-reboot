@@ -43,7 +43,7 @@ leave()
 
 reset_etc()
 {
-	log 'resting configs in directory etc/'
+	log 'resetting configs in directory etc/'
 	while [ "$1" ];  do
 		F="$1"
 		shift

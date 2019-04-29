@@ -1444,6 +1444,8 @@ set_pid_file(char *path)
 	snprintf(buf, sizeof buf, "%d\n", getpid());
 	if (burp_text_file(buf, pid_path))
 		die3(n, "burp_text_file() failed", pid_path);
+	buf[strlen(buf) - 1] = 0;		//  zap new line
+	info3("pid file", pid_path, buf);
 	/*
 	 *  Chmod run/biod.pid u=r,go=
 	 */
@@ -1457,6 +1459,8 @@ daemonize()
 	pid_t pid;
 	char buf[MSG_SIZE];
 	static char n[] = "daemonize";
+
+	info("daemonizing");
 
 	/*
 	 *  Server always runs as user blobio.
