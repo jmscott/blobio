@@ -1,19 +1,7 @@
 #!/usr/bin/perl
 #
 #  Synopsis:
-#	Map udigs onto a tab delimited tuple <udig> <tab> <path-to-udig-file>
-#  Description:
-#	Read a stream of blob udigs from standard input and write for each
-#	udig a tab separated tuple like:
-#
-#		<udig> <tab> path-to-blob-file
-#
-#	The path to the blob file is relative to $BLOBIO_ROOT/data.
-#	Existence is not verified for the underlying blob file.
-#
-#  Usage:
-#	bio-fs2udig bc160:aa70473d7a1b524e4d64bf1b0e50ee84fba8d7be ...
-#	bio-fs2udig <WRAP_SET
+#	Map bc160 or sha udigs onto the path to the blob file.
 #
 
 my $PROG = 'bio-udig2fs';
@@ -31,15 +19,24 @@ sub udig2fs
 	die "unknown algorithm: $algo"
 				unless $algo eq 'sha' || $algo eq 'bc160';
 
-	my $fs = "${algo}_fs";
 	die "unexpected $algo digest: $digest"
 				unless $digest =~ /^[0-9a-f]{40}$/;
 
-	# sha path: 0/3c/c0cb/347e4f88/642e5470c76d0747/21f18c741
-
-	my $path = $digest;
-	$path =~ s/(.)(..)(....)(.{8})(.{16})(.{9})/$1\/$2\/$3\/$4\/$5\/$6/;
-	print $udig, "\t", $fs, '/', $path, "\n";
+	#
+	# map udig to 32bit path using hex characters.
+	#
+	#	sha:c59f2c4f35b56a4bdf2d2c9f4a9984f2049cf2d4
+	#	->
+	#	sha_fs/c59/f2c/c59f2c4f35b56a4bdf2d2c9f4a9984f2049cf2d4
+	print $udig,
+		"\t${algo}_fs/",
+		substr($digest, 0, 3),
+		'/',
+		substr($digest, 3, 3),
+		'/',
+		$digest,
+		"\n"
+	;
 }
 
 my $line_count = 0;
