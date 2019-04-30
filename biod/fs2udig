@@ -26,9 +26,7 @@ find_blob() {(
 
 	ALGORITHM=$(echo $FS | sed 's/_fs//')
 	cd $FS
-	find [0-9a-f][0-9a-f][0-9a-f] -type f				|
-		xargs basename						|
-		sed "s/^/$ALGORITHM:/"
+	find [0-9a-f][0-9a-f][0-9a-f] -type f | sed "s/......../$ALGORITHM:/"
 )}
 
 case "$BLOBIO_ROOT" in
