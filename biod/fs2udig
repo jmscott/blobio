@@ -1,3 +1,4 @@
+#!/bin/bash
 #
 #  Synopsis:
 #	Convert file system paths into udigs
@@ -16,6 +17,20 @@ die()
 	exit 1
 }
 
+#
+#  Find blob files in directories data/<algorithm>_fs/[0-9a-f]{3}.
+#
+find_blob() {(
+	FS=$1
+	test -d $FS || exit 0
+
+	ALGORITHM=$(echo $FS | sed 's/_fs//')
+	cd $FS
+	find [0-9a-f][0-9a-f][0-9a-f] -type f				|
+		xargs basename						|
+		sed "s/^/$ALGORITHM:/"
+)}
+
 case "$BLOBIO_ROOT" in
 '')
 	die 'environment variable BLOBIO_ROOT not defined'
@@ -26,15 +41,4 @@ case "$BLOBIO_ROOT" in
 	;;
 esac
 
-#
-#  Search for files in <algorithm>_fs/ not matching ^[^/]*/tmp/ or 
-#  sha file blobs with dots in the file path.
-#
-#  Note:
-#	Need to positively match file blobs instead of filtering.
-#
-find *_fs -follow -type f -print			|
-	grep -v '^[^/]*/tmp/'				|
-	egrep -v '(sha|bc160)_fs\/.*[.]'		|
-	sed 's/_fs\//:/'				|
-	sed 's/\///g'
+find_blob bc160_fs && find_blob sha_fs
