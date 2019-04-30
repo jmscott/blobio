@@ -191,7 +191,7 @@ Exit Status:\n\
   	1	request denied.  blob may not exist or is not empty\n\
 	2	missing or invalid command line argument\n\
 	16	unexpected bio4:// service error\n\
-	17	unexpected file:// system service error\n\
+	17	unexpected fs:// system service error\n\
 Examples:\n\
 	S=bio4:localhost:1797\n\
 	UD=sha:a0bc76c479b55b5af2e3c7c4a4d2ccf44e6c4e71\n\
