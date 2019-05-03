@@ -437,11 +437,10 @@ sha_fs_get_bytes(struct request *r)
 	 *  A corrupt blob is a bad, bad thang.
 	 */
 	if (memcmp(s->digest, digest, 20)) {
-		_error2(r, "PANIC: stored blob doesn't match digest",
-								r->digest);
+		_error2(r, "PANIC: fs blob fails udig digest", r->digest);
 		if (zap_blob(r))
 			_panic(r, "zap_blob(get_bytes) failed");
-		goto croak;
+		_panic2(r, "zapped corrupted blob file", s->blob_path);
 	}
 	goto cleanup;
 croak:
