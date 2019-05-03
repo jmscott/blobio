@@ -480,18 +480,12 @@ bc160_fs_get_bytes(struct request *r)
 	 *  If the calculated digest does NOT match the stored digest,
 	 *  then zap the blob from storage and get panicy.
 	 *  A corrupt blob is a bad, bad thang.
-	 *
-	 *  Note: unfortunately we've already deceived the client
-	 *        by sending "ok".  Probably need to improve for
-	 *	  the special case when the entire blob is read
-	 *        in first chunk.
 	 */
 	if (memcmp(s->digest, digest, 20)) {
 		_error2(r, "PANIC: stored blob doesn't match digest",
 								r->digest);
-		//  Note: sure zapping is correct action.
 		if (zap_blob(r))
-			_panic(r, "zap_blob() failed");
+			_panic(r, "zap_blob(get_bytes) failed");
 		goto croak;
 	}
 	goto cleanup;
