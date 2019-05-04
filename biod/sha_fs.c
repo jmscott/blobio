@@ -435,6 +435,10 @@ sha_fs_get_bytes(struct request *r)
 	 *  If the calculated digest does NOT match the stored digest,
 	 *  then zap the blob from storage and get panicy.
 	 *  A corrupt blob is a bad, bad thang.
+	 *
+	 *  Note:
+	 *	No record of the deleted blob will exist until the next failed
+	 *	get/take/eat request, which is problematic.
 	 */
 	if (memcmp(s->digest, digest, 20)) {
 		_error2(r, "PANIC: fs blob fails udig digest", r->digest);
