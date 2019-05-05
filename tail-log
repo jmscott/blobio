@@ -11,10 +11,22 @@ die()
 	exit 1
 }
 
-test $# = 0 || die "wrong number of arguments: got $#, expected 0"
+case $# in
+0)
+	START_DIRS=.
+	;;
+*)
+	for H in $@;  do
+		SYNC_DIR=sync/host/$H
+		test -d $SYNC || die "sync directory does not exist: $SYNC_DIR"
+		START_DIRS="$START_DIRS $SYNC_DIR"
+	done
+	;;
+esac
+
 test -n "$BLOBIO_ROOT" || die 'env not defined: BLOBIO_ROOT'
 cd $BLOBIO_ROOT || die "cd blobio dir failed: $BLOBIO_ROOT: exit status=$?"
 
-tail -f 								\
-	$(find $(find log sync -type d -name log)			\
-		-type f -name "*-$(date +%a).log")
+LOG_DIRS=$(find $START_DIRS -type d -name log)
+echo "log dirs: $LOG_DIRS"
+tail -F	$(find $LOG_DIRS -maxdepth 1 -name "*-$(date +%a).log")
