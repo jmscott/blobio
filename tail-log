@@ -11,6 +11,10 @@ die()
 	exit 1
 }
 
+
+test -n "$BLOBIO_ROOT" || die 'env not defined: BLOBIO_ROOT'
+cd $BLOBIO_ROOT || die "cd blobio dir failed: $BLOBIO_ROOT: exit status=$?"
+
 case $# in
 0)
 	START_DIRS=.
@@ -18,14 +22,12 @@ case $# in
 *)
 	for H in $@;  do
 		SYNC_DIR=sync/host/$H
-		test -d $SYNC || die "sync directory does not exist: $SYNC_DIR"
+		test -d $SYNC_DIR ||
+				die "sync directory does not exist: $SYNC_DIR"
 		START_DIRS="$START_DIRS $SYNC_DIR"
 	done
 	;;
 esac
-
-test -n "$BLOBIO_ROOT" || die 'env not defined: BLOBIO_ROOT'
-cd $BLOBIO_ROOT || die "cd blobio dir failed: $BLOBIO_ROOT: exit status=$?"
 
 LOG_DIRS=$(find $START_DIRS -type d -name log)
 echo "log dirs: $LOG_DIRS"
