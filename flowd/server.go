@@ -1,6 +1,8 @@
 //Synopsis:
 //	Server action for flowd.
 //  Note:
+//	race condition removing file run/flowd.pid during panic.
+//
 //	Clear out the run/* on startup.  Also, think about a subdir run/flowd/
 //
 //	Number of distinct udigs needs to be tracked.  Sounds like a job for
@@ -89,8 +91,6 @@ type flow_worker struct {
 
 	seq_chan <-chan uint64
 }
-
-var server_leaving bool
 
 //  Synchronusly boot up the flowd server.
 
@@ -240,9 +240,8 @@ func (conf *config) server(par *parse) {
 	}
 	leave := func(status int) {
 
-		info("good bye, cruel world")
-		Sleep(Second)
 		os.Remove(pid_path)
+		info("good bye, cruel world")
 		os.Exit(status)
 	}
 
@@ -255,9 +254,13 @@ func (conf *config) server(par *parse) {
 
 	go func() {
 		c := make(chan os.Signal)
-		signal.Notify(c, syscall.SIGTERM)
+		signal.Notify(
+			c,
+			syscall.SIGTERM,
+			syscall.SIGQUIT,
+			syscall.SIGINT,
+		)
 		s := <-c
-		server_leaving = true
 		info("caught signal: %s", s)
 		leave(1)
 	}()
