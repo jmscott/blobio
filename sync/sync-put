@@ -28,7 +28,7 @@ test -n "$BLOBIO_SERVICE" || die 255 'env variable not defined: BLOBIO_SERVICE'
 test $# = 2 || die 255 "wrong number of arguments: got $#, expected 2"
 SERVICE=$1
 UDIG=$2
-GET_SERVICE:=${BLOBIO_GET_SERVICE:=$BLOBIO_SERVICE}
+GET_SERVICE=${BLOBIO_GET_SERVICE:=$BLOBIO_SERVICE}
 
 #  pipe the blob to the remote server
 
