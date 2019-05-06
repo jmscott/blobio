@@ -94,7 +94,7 @@ command eat_local
 	argv = (
 		"eat",
 		"--service",
-		"bio4:localhost:1797",
+		"fs:/usr/local/blobio",
 		"--udig"
 	);
 	exit_status is OK when in {0, 1};
