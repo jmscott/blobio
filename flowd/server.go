@@ -237,6 +237,41 @@ func (conf *config) server(par *parse) {
 		if err != nil {
 			croak("os.WriteString(run/flowd.pid) failed: %s", err)
 		}
+
+		go func() {		//  touch the pid file every minute
+
+			for {
+				Sleep(Minute);
+				f, err := os.OpenFile(
+						pid_path,
+						os.O_RDWR,
+						0755,
+				)
+				if err != nil {
+					croak(
+						"os.OpenFile(pid) failed: %s",
+						err,
+					)
+				}
+				var buf [1]byte
+				_, err = f.Read(buf[:]);
+				if err != nil {
+					croak("Read(pid) failed: %s", err)
+				}
+				_, err = f.Seek(int64(0), 0);
+				if err != nil {
+					croak("Seek(pid, 0) failed: %s", err)
+				}
+				_, err = f.Write(buf[:])
+				if err != nil {
+					croak("Write(pid) failed: %s", err)
+				}
+				err = f.Close()
+				if err != nil {
+					croak("Close(pid) failed: %s", err)
+				}
+			}
+		}()
 	}
 	leave := func(status int) {
 
