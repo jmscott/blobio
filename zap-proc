@@ -41,8 +41,8 @@ STATUS=$?
 case "$STATUS" in
 0)
 	log "zapped $PROC_NAME process with pid #$PID"
-	log "sleeping 3 seconds while process #$PID exits ..."
-	sleep 3
+	log "sleeping 1 second while process #$PID exits ..."
+	sleep 1
 	;;
 1)
 	log "no process matches with pid #$PID"
