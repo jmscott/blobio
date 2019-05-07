@@ -375,28 +375,7 @@ func (flo *flow) project_brr(field brr_field) (out string_chan) {
 	return out
 }
 
-//  project the termination_code of an xdr record as an exit_status of
-//  of a process that exited "OK".  otherwise, project a null
-//
-//  Note:
-//	project_xdr_exit_status() is too complex.  need to move logic
-//	into either flow language
-//
-//		termination_class == "OK"
-//
-//	or the composition of several simpler operations
-//
-//	Need to contemplate when an ERR should yield a null value.
-//	Currently null is projected is the exit status is not in the "OK"
-//	set explicity defined in the statement:
-//
-//		exist_status is OK when in {
-//			..
-//		}
-//
-//	and not when the command actually fails to execute.  In other words,
-//	valid exit codes are effectively reclassified as null, which seems
-//	wrong and counter intuitive.
+//  project the exit status of in an xdr record
 
 func (flo *flow) project_xdr_exit_status(
 	in xdr_chan,
@@ -416,8 +395,7 @@ func (flo *flow) project_xdr_exit_status(
 			var is_null bool
 			var ui uint64
 
-			if xv.is_null || xv.xdr == nil ||
-				xv.xdr.termination_class != "OK" {
+			if xv.is_null || xv.xdr == nil {
 				is_null = true
 			} else {
 				ui = xv.xdr.termination_code
