@@ -1,6 +1,9 @@
 //Synopsis:
 //	Server action for flowd.
 //  Note:
+//	The pid file ought be created when the parent is root and stdin
+//	is not a tty.
+//	
 //	race condition removing file run/flowd.pid during panic.
 //
 //	Clear out the run/* on startup.  Also, think about a subdir run/flowd/
