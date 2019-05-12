@@ -29,6 +29,6 @@ case $# in
 	;;
 esac
 
-LOG_DIRS=$(find $START_DIRS -type d -name log)
+LOG_DIRS=$(find $START_DIRS -type d -name log -follow)
 echo "log dirs: $LOG_DIRS"
 tail -F	$(find $LOG_DIRS -maxdepth 1 -name "*-$(date +%a).log")
