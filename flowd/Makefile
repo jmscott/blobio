@@ -16,8 +16,10 @@ include ../local.mk
 
 export PATH := $(GODIST)/bin:$(PATH)
 
-GOHOSTOS=$(shell $(GODIST)/bin/go env GOHOSTOS)
 GOYACC=$(shell $(GODIST)/bin/go env GOPATH)/bin/goyacc
+
+#  Note: why?
+GOHOSTOS=$(shell $(GODIST)/bin/go env GOHOSTOS)
 GOHOSTARCH=$(shell $(GODIST)/bin/go env GOHOSTARCH)
 GOPKG_OSARCH=$(GOHOSTOS)_$(GOHOSTARCH)
 
