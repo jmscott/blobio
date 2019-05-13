@@ -44,7 +44,7 @@ type PGDatabase struct {
 type Config struct {
 	Databases		map[string]*PGDatabase `json:"databases"`
 
-	SourceBlob		string	`json:"source_blob"`
+	WitnessBlob		string	`json:"witness_blob"`
 	EscapeHTML		bool	`json:"escape_html"`
 	IndentLinePrefix	string	`json:"indent_line_prefix"`
 	IndentPrefix		string	`json:"indent_prefix"`
@@ -128,13 +128,13 @@ func (conf *Config) frisk() {
 		pg.tag = tag
 		pg.frisk()
 	}
-	if conf.SourceBlob == "" {
+	if conf.WitnessBlob == "" {
 		return
 	}
-	if !udig_re_graph.Match([]byte(conf.SourceBlob)) {
+	if !udig_re_graph.Match([]byte(conf.WitnessBlob)) {
 		die("source udig does not match graphical udig")
 	}
-	if !udig_re_ascii.Match([]byte(conf.SourceBlob)) {
+	if !udig_re_ascii.Match([]byte(conf.WitnessBlob)) {
 		die("source udig does not match ascii udig")
 	}
 }

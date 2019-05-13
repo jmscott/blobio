@@ -56,7 +56,7 @@ type TipQuery struct {
 type Config struct {
 	Databases		map[string]*PGDatabase `json:"databases"`
 
-	SourceBlob		string	`json:"source_blob"`
+	WitnessBlob		string	`json:"witness_blob"`
 	EscapeHTML		bool	`json:"escape_html"`
 	IndentLinePrefix	string	`json:"indent_line_prefix"`
 	IndentPrefix		string	`json:"indent_prefix"`
@@ -64,7 +64,7 @@ type Config struct {
 
 type Answer struct {
 
-	SourceBlob		string		`json:"source_blob"`
+	WitnessBlob		string		`json:"witness_blob"`
 	TipNotExistsCount	int		`json:"tip_not_exists_count"`
 	TipExistsCount		int		`json:"tip_exists_count"`
 	StartTime		time.Time	`json:"start_time"`
@@ -131,13 +131,13 @@ func (conf *Config) frisk() {
 		pg.tag = tag
 		pg.frisk()
 	}
-	if conf.SourceBlob == "" {
+	if conf.WitnessBlob == "" {
 		return
 	}
-	if !udig_re_graph.Match([]byte(conf.SourceBlob)) {
+	if !udig_re_graph.Match([]byte(conf.WitnessBlob)) {
 		die("source udig does not match graphical udig")
 	}
-	if !udig_re_ascii.Match([]byte(conf.SourceBlob)) {
+	if !udig_re_ascii.Match([]byte(conf.WitnessBlob)) {
 		die("source udig does not match ascii udig")
 	}
 }
@@ -351,7 +351,7 @@ func main() {
 		die("os.File.Close(config) failed: %s", err)
 	}
 
-	answer.SourceBlob = conf.SourceBlob
+	answer.WitnessBlob = conf.WitnessBlob
 	conf.frisk()
 	conf.open()
 	conf.select_tip()
