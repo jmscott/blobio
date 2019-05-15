@@ -5,6 +5,11 @@
  *	export BLOBIO_ROOT=/usr/local/blobio
  *	$BLOBIO_ROOT/sbin/biod
  *  Note:
+ *	A broken get request still generates a partial and incorrect brr
+ *	record.  For example, see get requests for (or any big blob)
+ *
+ *		bc160:22572c9bf76e5bd879d5ce800ba6889d50e62ff7
+ *
  *	The pid file ought be created when the parent is root and stdin
  *	is not a tty.
  *
