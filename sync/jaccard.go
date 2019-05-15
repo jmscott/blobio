@@ -1,9 +1,25 @@
 /*
  *  Synopsis:
- *	Calculate jaccard pairwise metric across a set of blobio databases.
+ *	Calculate jaccard metrics across all pairs of peer blob databases.
+ *  Description:
+ *	The jaccard metric measures the "sameness" of two sets:
+ *
+ *		A intersect B / A union B == 1
+ *
+ *	The symetric difference between the two sets is empty.
+ *
+ *	For the blob databases, we measure the existence of various blobs in
+ *	pairs of database that are peers of each other. The simplest measure
+ *	is to compare all blobs in one peer against  all the other peer
+ *	databases.  Another variation is to determine if the most recent N
+ *	blobs in a peer exist in the other peers; when N == 1 this is called
+ *	the "tip".
+ *
  *  Usage:
  *	jaccard <config-file>
  *  Note:
+ *	Temp service files not removed!
+ *
  *	Need to add uDig of config file in answer json.
  */
 
@@ -22,6 +38,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	_ "github.com/lib/pq"
@@ -48,6 +65,7 @@ type Config struct {
 	EscapeHTML		bool	`json:"escape_html"`
 	IndentLinePrefix	string	`json:"indent_line_prefix"`
 	IndentPrefix		string	`json:"indent_prefix"`
+	Debug			bool	`json:"debug"`
 }
 
 type AnswerService struct {
@@ -58,6 +76,9 @@ type AnswerService struct {
 	BlobSortSHA256	string			`json:"blob_sort_sha256"`
 
 	answer		*Answer
+
+	service_mutex	sync.Mutex
+	service		map[string]bool
 }
 
 type Answer struct {
@@ -67,6 +88,9 @@ type Answer struct {
 	Databases		map[string]*PGDatabase	`json:"databases"`
 	AnswerService	map[string]*AnswerService `json:"answer_service"`
 
+	Missing	[]string			`json:"missing"`
+	MissingCount	int			`json:"missing_count"`
+
 	ConfigPath	string			`json:"config_path"`
 	ConfigBlob	string			`json:"config_blob"`
 	config		*Config
@@ -74,6 +98,23 @@ type Answer struct {
 
 const usage = "usage: jaccard <config-file-path>\n"
 var udig_re_graph, udig_re_ascii *regexp.Regexp
+
+var debugging bool
+
+func debug(format string, args ...interface{}) {
+
+	if !debugging {
+		return
+	}
+
+	fmt.Fprintf(os.Stderr,
+		time.Now().Format("2006-01-02 15:04:05") +
+		": DEBUG: " +
+		format +
+		"\n",
+		args...,
+	)
+}
 
 func init() {
 
@@ -84,11 +125,16 @@ func init() {
 	udig_re_ascii = regexp.MustCompile(re_ascii)
 }
 
+func leave(exit_status int) {
+	debug("good bye, cruel world")
+	os.Exit(exit_status)
+}
+
 func die(format string, args ...interface{}) {
 
 	fmt.Fprintf(os.Stderr, "ERROR: " + format + "\n", args...);
 	os.Stderr.Write([]byte(usage))
-	os.Exit(1)
+	leave(1)
 }
 
 func (pg *PGDatabase) die(format string, args ...interface{}) {
@@ -105,6 +151,7 @@ func (pg *PGDatabase) frisk() {
 	empty := func(field string) {
 		croak("empty or undefined field: %s", field)
 	}
+
 	if pg.PGHOST == "" {
 		empty("PGHOST")
 	}
@@ -167,11 +214,13 @@ func (conf *Config) open() {
 
 func (pg *PGDatabase) close(done chan bool) {
 
+	debug("closing database: %s", pg.tag)
 	pg.Stats = pg.db.Stats()
 	err := pg.db.Close()
 	if err != nil {
 		pg.die("sql.Db.Close() failed: %s", err)
 	}
+	debug("closed database: %s", pg.tag)
 	done <- true
 }
 
@@ -190,6 +239,7 @@ func (pg *PGDatabase) open(done chan *PGDatabase) {
 
 	var err error
 
+	debug("opening database: %s", pg.tag)
 	pg.db, err = sql.Open(
 			"postgres",
 			"dbname=" + pg.PGDATABASE + " " +
@@ -203,7 +253,9 @@ func (pg *PGDatabase) open(done chan *PGDatabase) {
 	if err != nil {
 		pg.die("sql.Open() failed: %s", err)
 	}
+	debug("database opened: %s", pg.tag)
 
+	debug("fetching pg system id: %s", pg.tag)
 	//  insure each database has unque system identifier
 	err = pg.db.QueryRow(
 		`
@@ -219,12 +271,21 @@ SELECT
 	if len(pg.SystemIdentifier) == 0 {
 		pg.die("empty system identifier")
 	}
+	debug("pg system id: %s: %s", pg.tag, pg.SystemIdentifier)
 	done <- pg
 }
 
 func (as *AnswerService) select_service(done chan *PGDatabase) {
 
 	pg := as.pg
+
+	_debug := func(format string, args ...interface{}) {
+		if !debugging {
+			return
+		}
+		debug(pg.tag + ": select service: " + format, args...)
+	}
+	_debug("selecting all blobs in service table: %s", pg.tag)
 	f, err := os.OpenFile(
 			"service-" + pg.SystemIdentifier + ".udig",
 			os.O_WRONLY | os.O_CREATE | os.O_TRUNC,
@@ -236,7 +297,7 @@ func (as *AnswerService) select_service(done chan *PGDatabase) {
 	defer f.Close()
 	service := bufio.NewWriter(f)
 
-	//  insure each database has unque system identifier
+	//  insure each database has unique system identifier
 	rows, err := pg.db.Query(
 		`
 SELECT
@@ -263,6 +324,38 @@ SELECT
 		service.Write(b)
 		service.Write([]byte("\n"))
 		as.BlobCount++
+		if as.BlobCount % 100000 == 0 {
+			_debug("blob count: #%d", as.BlobCount)
+		}
+		
+		//  delete the blob seen by all other services
+		seen_count := 0
+		for _, a := range as.answer.AnswerService {
+			if a == as {
+				continue
+			}
+			a.service_mutex.Lock()
+			if a.service[blob] {
+				seen_count++
+			}
+			a.service_mutex.Unlock()
+		}
+
+		//  may not exist in some other service table so record
+		if seen_count < len(as.answer.Databases) - 1 {
+			as.service[blob] = true
+			continue
+		}
+
+		//  exists in all service tables, so delete all references
+		for _, a := range as.answer.AnswerService {
+			a.service_mutex.Lock()
+			delete(a.service, blob)
+			a.service_mutex.Unlock()
+		}
+	}
+	if as.BlobCount % 100000 != 0 {
+		_debug("blob: total #%d", as.BlobCount)
 	}
 	err = service.Flush()
 	if err != nil {
@@ -283,15 +376,33 @@ func (an *Answer) jaccard() {
 		as := &AnswerService{
 			DatabaseTag:	pg.tag,
 			pg:		pg,
+			service:	make(map[string]bool),
 
 			answer:		an,
 		}
 		an.AnswerService[pg.tag] = as
 		go as.select_service(done)
 	}
+
+	//  wait for all the service queries to finish
 	for cnt := len(an.AnswerService);  cnt > 0;  cnt-- {
 		<- done
 	}
+	debug("all service queries done")
+
+	//  merge the missing blobs into a single set
+	debug("build merge set of missing blobs")
+	missing := make(map[string]bool)
+	for _, a := range an.AnswerService {
+		for b, _ := range a.service {
+			if !missing[b] {
+				an.Missing = append(an.Missing, b)
+			}
+			missing[b] = true
+		}
+	}
+	an.MissingCount = len(an.Missing)
+	debug("missing blob: %d", an.MissingCount)
 }
 
 func main() {
@@ -322,6 +433,8 @@ func main() {
 	if err != nil {
 		die("json.Decode(config) failed: %s", err)
 	}
+	debugging = conf.Debug
+	debug("hello, world")
 
 	conf.frisk()
 
@@ -351,4 +464,5 @@ func main() {
 	if err != nil {
 		die("json.Encode(answer) failed: %s", err)
 	}
+	leave(0)
 }
