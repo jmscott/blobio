@@ -26,7 +26,6 @@
 package main
 
 import (
-	"bufio"
 	"bytes"
 	"crypto/sha1"
 	"crypto/sha256"
@@ -286,16 +285,6 @@ func (as *AnswerService) select_service(done chan *PGDatabase) {
 		debug(pg.tag + ": select service: " + format, args...)
 	}
 	_debug("selecting all blobs in service table: %s", pg.tag)
-	f, err := os.OpenFile(
-			"service-" + pg.SystemIdentifier + ".udig",
-			os.O_WRONLY | os.O_CREATE | os.O_TRUNC,
-			0755,
-	)
-	if err != nil {
-		pg.die("os.Open(select_service) failed: %s", err)
-	}
-	defer f.Close()
-	service := bufio.NewWriter(f)
 
 	//  insure each database has unique system identifier
 	rows, err := pg.db.Query(
@@ -321,8 +310,6 @@ SELECT
 		}
 		b := []byte(blob)
 		h256.Write(b)
-		service.Write(b)
-		service.Write([]byte("\n"))
 		as.BlobCount++
 		if as.BlobCount % 100000 == 0 {
 			_debug("blob count: #%d", as.BlobCount)
@@ -343,7 +330,9 @@ SELECT
 
 		//  may not exist in some other service table so record
 		if seen_count < len(as.answer.Databases) - 1 {
+			as.service_mutex.Lock()
 			as.service[blob] = true
+			as.service_mutex.Unlock()
 			continue
 		}
 
@@ -356,10 +345,6 @@ SELECT
 	}
 	if as.BlobCount % 100000 != 0 {
 		_debug("blob: total #%d", as.BlobCount)
-	}
-	err = service.Flush()
-	if err != nil {
-		pg.die("Flush(service) failed: %s", err)
 	}
 	as.BlobSortSHA256 = fmt.Sprintf("%x", h256.Sum(nil))
 	done <- pg
