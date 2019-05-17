@@ -2,7 +2,7 @@
 #  Synopsis:
 #	System unit definition for flowd daemon to sync to remote host
 #  Usage:
-#	# cp $BLOBIO_ROOT/lib/blobio.sync.remote.service.example 		\
+#	# cp $BLOBIO_ROOT/lib/blobio.sync.remote.service.example	\
 #		/etc/systemd/system/blobio.sync.remote.host.com.service
 #
 
