@@ -380,13 +380,18 @@ func (an *Answer) jaccard() {
 	missing := make(map[string]bool)
 	for _, a := range an.AnswerService {
 		for b, _ := range a.service {
-			if !missing[b] {
-				an.Missing = append(an.Missing, b)
+			if missing[b] {
+				continue
 			}
 			missing[b] = true
 		}
 	}
-	an.MissingCount = len(an.Missing)
+	an.Missing = make([]string, len(missing))
+	an.MissingCount = 0;
+	for b, _ := range missing {
+		an.Missing[an.MissingCount] = b;
+		an.MissingCount++
+	}
 	debug("missing blob: %d", an.MissingCount)
 }
 
