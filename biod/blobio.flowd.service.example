@@ -27,6 +27,7 @@ StandardOutput=journal
 StandardError=journal
 
 ExecStart=/usr/local/blobio/bin/flowd server etc/blobio.flow
+PIDFile=/usr/local/blobio/run/flowd.pid
 KillMode=control-group
 KillSignal=SIGTERM
 TimeoutSec=20

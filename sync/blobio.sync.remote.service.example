@@ -29,9 +29,10 @@ Environment=PGPASSWORD=
 Environment=PGDATABASE=blobio
 Environment=PATH=/usr/local/pgsql/bin:/usr/local/blobio/sbin:/usr/local/blobio/bin:/usr/local/bin:/usr/bin:/bin
 
-StandardOutput=journal
-StandardError=journal
+StandardOutput=file:/home/blobio/log/systemd-blobio.sync.remote.service.log
+StandardError=file:/home/blobio/log/systemd-blobio.sync.remote.service.log
 ExecStart=/usr/local/blobio/bin/flowd server etc/sync-remote.host.com.flow
+PIDFile=/usr/local/blobio/sync/host/remote/run/flowd.pid
 KillMode=control-group
 KillSignal=SIGTERM
 TimeoutSec=20
