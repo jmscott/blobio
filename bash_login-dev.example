@@ -45,5 +45,5 @@ HISTCONTROL=ignoreboth
 export PSQLRC=$BLOBIO_ROOT/etc/psqlrc
 
 #  bash4 escapes \$ENV variables instead of expanded, as bash3 did
-shopt -s direxpand
+#shopt -s direxpand
 shopt -s cdable_vars
