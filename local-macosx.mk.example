@@ -9,24 +9,18 @@
 #		DIST_ROOT	Where to install full blobio distribution;
 #				  e.g., /usr/local/blobio for production or
 #				  $HOME/opt/blobio for development.
-#
-#		DIST_USER	User Id of installed dist files.  Typically
-#				  'blobio' user in production and $USER
-#				  during development
-#
-#		DIST_GROUP	Group Id of installed dist files.  Typically
-#				  'staff' in both production and development.
+#		OPENSSL_INC	Where ssl include files live
+#		OPENSSL_LIB	Link line for openssl libraries
 #
 #		GODIST		Where is go distribution installed.
-#				  Redefining GOROOT is problematic, hence GODIST
+#					Redefining GOROOT is problematic,
+#					hence GODIST
 #		
 #  Usage:
 #	cp local-macosx.mk.example local.mk
 #	vi local.mk
 #	make install
 #  Note:
-#	Initialize DIST_USER=$(USER)
-#
 #	Xcode8 is broken on El Capitan (10.11).  In particular, a reference to
 #	clock_gettime() exists, so the complication succeeds, but no underlying
 #	library for clock_gettime() exists, so the run time link fails.
@@ -35,15 +29,12 @@
 
 #  where to install entire blobio distribution
 #  in dev environment set to $(HOME)/opt/blobio
-DIST_ROOT=/usr/local/blobio
-
-#  user/group for installed distribution dir/files
-DIST_USER=$(USER)
-DIST_GROUP=staff
+DIST_ROOT?=/usr/local/blobio
+#DIST_ROOT?=$(HOME)/opt/blobio
 
 #  openssl install by port package manager.
-OPENSSL_INC=-I/opt/local/include
-OPENSSL_LIB=-L/opt/local/lib -lssl -lcrypto
+OPENSSL_INC?=-I/opt/local/include
+OPENSSL_LIB?=-L/opt/local/lib -lssl -lcrypto
 
 #  where is go distribution installed
-GODIST=/usr/local/go
+GODIST?=/usr/local/go

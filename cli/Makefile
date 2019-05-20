@@ -3,8 +3,8 @@
 #	Install client scripts
 #
 
-include ../blobio.mk
 include ../local.mk
+include ../blobio.mk
 
 all:
 	cd blobio;	$(MAKE) $(MFLAGS) all

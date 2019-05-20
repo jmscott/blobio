@@ -2,8 +2,8 @@
 #  Synospsi:
 #	Ye old makefile
 #
-include ../blobio.mk
 include ../local.mk
+include ../blobio.mk
 
 SRC=$(DIST_ROOT)/src
 SBIN=$(DIST_ROOT)/sbin

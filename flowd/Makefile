@@ -11,16 +11,17 @@
 #
 #	Note, missing yacc tokens for output genrated by modernc.org/goyacc.
 #
-include ../blobio.mk
 include ../local.mk
+include ../blobio.mk
 
 export PATH := $(GODIST)/bin:$(PATH)
+GO=$(GODIST)/bin/go
 
-GOYACC=$(shell $(GODIST)/bin/go env GOPATH)/bin/goyacc
+GOYACC=$(shell $(GO) env GOPATH)/bin/goyacc
 
 #  Note: why?
-GOHOSTOS=$(shell $(GODIST)/bin/go env GOHOSTOS)
-GOHOSTARCH=$(shell $(GODIST)/bin/go env GOHOSTARCH)
+GOHOSTOS=$(shell $(GO) env GOHOSTOS)
+GOHOSTARCH=$(shell $(GO) env GOHOSTARCH)
 GOPKG_OSARCH=$(GOHOSTOS)_$(GOHOSTARCH)
 
 #
@@ -60,7 +61,7 @@ GOSRC=									\
 all: $(EXEC)
 
 flowd: $(GOSRC)
-	go build $(GCFLAGS) $(GO_BUILD_RACE) $(GOSRC)
+	$(GO) build $(GCFLAGS) $(GO_BUILD_RACE) $(GOSRC)
 
 install: all
 	install -g $(DIST_GROUP) -o $(DIST_USER) -m u=rwx,go=	\
@@ -101,13 +102,13 @@ distclean:
 
 
 fmt: $(GOSRC)
-	go fmt $(GOSRC)
+	$(GO) fmt $(GOSRC)
 vet: $(GOSRC)
-	go vet $(GOSRC)
+	$(GO) vet $(GOSRC)
 
 parser.go: parser.y
 	$(GOYACC) -o parser.go parser.y || (rm -f parser.go; exit 1)
-	go fmt parser.go
+	$(GO) fmt parser.go
 
 flowd-execv: flowd-execv.c
 	cc $(CFLAGS) -o flowd-execv flowd-execv.c
@@ -123,9 +124,9 @@ dev-links:
 env:
 	env
 goenv:
-	go env
+	$(GO) env
 t: t.go
-	go build t.go
+	$(GO) build t.go
 doc:
 	godoc flowd
 lint:

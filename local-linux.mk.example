@@ -10,38 +10,28 @@
 #				  e.g., /usr/local/blobio for production or
 #				  $HOME/opt/blobio for development.
 #
-#		DIST_USER	User Id of installed dist files.  Typically
-#				  'blobio' user in production and $USER
-#				  during development
-#
-#		DIST_GROUP	Group Id of installed dist files.  Typically
-#				  'blobio' in both production and $USER
-#				  for development.
+#		OPENSSL_INC	Where ssl include files live
+#		OPENSSL_LIB	Link line for openssl libraries
 #
 #		GODIST		Where is go distribution installed.
-#				  Redefining GOROOT is problematic, hence GODIST
+#				  Redefining GOROOT is problematic
+#					hence GODIST
 #		
 #  Usage:
 #	cp local-linux.mk.example local.mk
 #	vi local.mk
 #	make install
-#  Note:
-#	Initialize DIST_USER=$(USER)
 #
 
 #  DIST_ROOT points to where to install entire blobio distribution.
 #  For example for development set DIST_ROOT to $(HOME)/opt/blobio
 
-DIST_ROOT=/usr/local/blobio
+DIST_ROOT?=/usr/local/blobio
+#DIST_ROOT?=$(HOME)/opt/blobio
 
-#  user/group for installed distribution dir/files
+#  openssl 1+ installed by standard distro package
+OPENSSL_INC?=
+OPENSSL_LIB?=-lssl -lcrypto
 
-DIST_USER=$(USER)
-DIST_GROUP=$(USER)
-
-#  where is go distribution installed
-GODIST=/usr/local/go
-
-#  openssl 1+ installed in u
-OPENSSL_INC=
-OPENSSL_LIB=-lssl -lcrypto
+#  where is go distribution installed.
+GODIST?=/usr/local/go

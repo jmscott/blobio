@@ -1,4 +1,5 @@
 include ../local.mk
+include ../blobio.mk
 
 DIST_WWW=$(DIST_ROOT)/www
 

@@ -13,6 +13,7 @@
 #	make -j 4 clean all distclean install
 #
 include local.mk
+include blobio.mk
 
 all:
 	cd biod;	$(MAKE) $(MFLAGS) all

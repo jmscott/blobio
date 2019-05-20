@@ -3,8 +3,8 @@
 #	Ye'old Makefile for sync code used by various daemons.
 #
 
-include ../blobio.mk
 include ../local.mk
+include ../blobio.mk
 
 SRCs=jaccard.go jaccard-tip.go
 BINs=jaccard jaccard-tip

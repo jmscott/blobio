@@ -2,8 +2,8 @@
 #  Synopsis:
 #  	Ye old makefile
 #
-include ../blobio.mk
 include ../local.mk
+include ../blobio.mk
 
 install:
 	install -g $(DIST_GROUP) -o $(DIST_USER) -m ug=r,o=		\
