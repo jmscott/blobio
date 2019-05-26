@@ -1,6 +1,8 @@
 //Synopsis:
 //	Server action for flowd.
 //  Note:
+//	Need to blow away the pid file.
+//
 //	The pid file ought be created when the parent is root and stdin
 //	is not a tty.
 //	
@@ -217,6 +219,7 @@ func (conf *config) server(par *parse) {
 	info := info_log_ch.info
 	WARN := info_log_ch.WARN
 
+	had_stale_pid_file := false
 	//  write process id in run/flowd.pid
 	pid_path := "run/flowd.pid"
 	{
@@ -229,7 +232,7 @@ func (conf *config) server(par *parse) {
 			if time.Now().Unix() - st.ModTime().Unix() < 120 {
 				croak("is another flowd process running?")
 			}
-			WARN("removing stale pid file: %s", pid_path)
+			had_stale_pid_file = true
 			err = os.Remove(pid_path)
 			if err != nil {
 				croak("os.Remove() failed: %s", err)
@@ -317,6 +320,9 @@ func (conf *config) server(par *parse) {
 	}()
 
 	info("hello, world")
+	if had_stale_pid_file {
+		WARN("removed stale pid file: %s", pid_path)
+	}
 
 	info("go version: %s", runtime.Version())
 	info("number of cpus: %d", runtime.NumCPU())
