@@ -1,0 +1,155 @@
+#!/bin/bash
+#
+#  Synopsis:
+#	Generate a PNG overview graph of the traffic on a BIO4D server.
+#  Usage:
+#	graph-rrd <start-epoch> <end-epoch>
+#
+
+START_TIME=$1
+END_TIME=$2
+WIDTH=640
+HEIGHT=256
+TITLE='BlobIO Server (bio4d) Request Process Exit and Verb Rate'
+
+TIME_TITLE=$(cat <<END
+START\\: $(
+	perl -e "print scalar(localtime($START_TIME));" | sed 's/:/\\:/g'
+) -->  END\\: $(
+	perl -e "print scalar(localtime($END_TIME));" | sed 's/:/\\:/g'
+)
+END
+)
+
+exec rrdtool graph -							\
+	--start $START_TIME						\
+	--end $END_TIME							\
+	--imgformat PNG							\
+	--grid-dash 1:0							\
+	--color 'CANVAS#000000'						\
+	--border 0							\
+	--color 'ARROW#ffffff'						\
+	--color 'BACK#0b0b44'						\
+	--color 'FONT#ffffff'						\
+	--color 'FRAME#ffffff'						\
+	--height $HEIGHT						\
+	--slope-mode							\
+	--width $WIDTH							\
+	--title "$TITLE"						\
+	--vertical-label 'Max -Verb/Sec <-  -> Max Proc/Second' 	\
+									\
+	'COMMENT: \l'							\
+	"COMMENT:$TIME_TITLE\c"						\
+	'COMMENT: \l'							\
+	'COMMENT:                    '					\
+	'COMMENT:CURRENT          '					\
+	'COMMENT:AVERAGE          '					\
+	'COMMENT:MINIMUM          '					\
+	'COMMENT:MAXIMUM\l'						\
+	'COMMENT: \l'							\
+	'COMMENT:-----------------------------------\g'			\
+	'COMMENT:------  Exit Rates  ---------------\g'			\
+	'COMMENT:-------------------------------\l'			\
+									\
+	'DEF:success=log/bio4d.rrd:success:MAX'				\
+	'AREA:success#00ff00:Success Rate'				\
+	'GPRINT:success:LAST:% 9.1lf suc/sec'				\
+	'GPRINT:success:AVERAGE:% 9.1lf suc/sec'			\
+	'GPRINT:success:MIN:% 9.1lf suc/sec'				\
+	'GPRINT:success:MAX:% 9.1lf suc/sec\l'				\
+									\
+	'DEF:error=log/bio4d.rrd:error:MAX'				\
+	'AREA:error#ffff00:Error Rate  :STACK'				\
+	'GPRINT:error:LAST:% 9.1lf err/sec'				\
+	'GPRINT:error:AVERAGE:% 9.1lf err/sec'	   			\
+	'GPRINT:error:MIN:% 9.1lf err/sec'				\
+	'GPRINT:error:MAX:% 9.1lf err/sec\l'				\
+									\
+	'DEF:signal=log/bio4d.rrd:signal:MAX'				\
+	'AREA:signal#2B60DE:Signal Rate :STACK'				\
+	'GPRINT:signal:LAST:% 9.1lf sig/sec'				\
+	'GPRINT:signal:AVERAGE:% 9.1lf sig/sec'   			\
+	'GPRINT:signal:MIN:% 9.1lf sig/sec'				\
+	'GPRINT:signal:MAX:% 9.1lf sig/sec\l'				\
+									\
+	'DEF:fault=log/bio4d.rrd:fault:MAX'				\
+	'AREA:fault#ff0000:Fault Rate  :STACK'				\
+	'GPRINT:fault:LAST:% 9.1lf flt/sec'				\
+	'GPRINT:fault:AVERAGE:% 9.1lf flt/sec'	   			\
+	'GPRINT:fault:MIN:% 9.1lf flt/sec'				\
+	'GPRINT:fault:MAX:% 9.1lf flt/sec\l'				\
+									\
+	'DEF:timeout=log/bio4d.rrd:timeout:MAX'				\
+	'AREA:timeout#ffff:Timeout Rate:STACK'				\
+	'GPRINT:timeout:LAST:% 9.1lf tmo/sec'				\
+	'GPRINT:timeout:AVERAGE:% 9.1lf tmo/sec'   			\
+	'GPRINT:timeout:MIN:% 9.1lf tmo/sec'				\
+	'GPRINT:timeout:MAX:% 9.1lf tmo/sec\l'				\
+									\
+	'COMMENT: \l'							\
+	'COMMENT:-----------------------------------\g'			\
+	'COMMENT:------  Verb Rates  ---------------\g'			\
+	'COMMENT:-------------------------------\l'			\
+									\
+	'DEF:eat=log/bio4d.rrd:eat:MAX'					\
+	'CDEF:negeat=0,eat,-'						\
+	'AREA:negeat#ffffff:Eat Rate    '				\
+	'GPRINT:eat:LAST:% 9.1lf eat/sec'				\
+	'GPRINT:eat:AVERAGE:% 9.1lf eat/sec'   				\
+	'GPRINT:eat:MIN:% 9.1lf eat/sec'				\
+	'GPRINT:eat:MAX:% 9.1lf eat/sec\l'				\
+									\
+	'DEF:take=log/bio4d.rrd:take:MAX'				\
+	'CDEF:negtake=0,take,-'						\
+	'AREA:negtake#F6358A:Take Rate   :STACK'			\
+	'GPRINT:take:LAST:% 9.1lf tak/sec'				\
+	'GPRINT:take:AVERAGE:% 9.1lf tak/sec'   			\
+	'GPRINT:take:MIN:% 9.1lf tak/sec'				\
+	'GPRINT:take:MAX:% 9.1lf tak/sec\l'				\
+									\
+	'DEF:give=log/bio4d.rrd:give:MAX'				\
+	'CDEF:neggive=0,give,-'						\
+	'AREA:neggive#FFA500:Give Rate   :STACK'			\
+	'GPRINT:give:LAST:% 9.1lf giv/sec'				\
+	'GPRINT:give:AVERAGE:% 9.1lf giv/sec'   			\
+	'GPRINT:give:MIN:% 9.1lf giv/sec'				\
+	'GPRINT:give:MAX:% 9.1lf giv/sec\l'				\
+									\
+	'DEF:get=log/bio4d.rrd:get:MAX'					\
+	'CDEF:negget=0,get,-'						\
+	'AREA:negget#36F5A2:Get Rate    :STACK'				\
+	'GPRINT:get:LAST:% 9.1lf get/sec'				\
+	'GPRINT:get:AVERAGE:% 9.1lf get/sec' 	   			\
+	'GPRINT:get:MIN:% 9.1lf get/sec'				\
+	'GPRINT:get:MAX:% 9.1lf get/sec\l'				\
+									\
+	'DEF:put=log/bio4d.rrd:put:MAX'					\
+	'CDEF:negput=0,put,-'						\
+	'AREA:put#0059FF:Put Rate    :STACK'				\
+	'GPRINT:put:LAST:% 9.1lf put/sec'				\
+	'GPRINT:put:AVERAGE:% 9.1lf put/sec' 	  			\
+	'GPRINT:put:MIN:% 9.1lf put/sec'				\
+	'GPRINT:put:MAX:% 9.1lf put/sec\l'				\
+									\
+	'DEF:wrap=log/bio4d.rrd:wrap:MAX'				\
+	'CDEF:negwrap=0,wrap,-'						\
+	'AREA:negwrap#9E7BFF:Wrap Rate   :STACK'			\
+	'GPRINT:wrap:LAST:% 9.1lf wrp/sec'				\
+	'GPRINT:wrap:AVERAGE:% 9.1lf wrp/sec'   			\
+	'GPRINT:wrap:MIN:% 9.1lf wrp/sec'				\
+	'GPRINT:wrap:MAX:% 9.1lf wrp/sec\l'				\
+									\
+	'DEF:roll=log/bio4d.rrd:roll:MAX'				\
+	'CDEF:negroll=0,roll,-'						\
+	'AREA:negroll#DCFF7A:Roll Rate   :STACK'			\
+	'GPRINT:roll:LAST:% 9.1lf rol/sec'				\
+	'GPRINT:roll:AVERAGE:% 9.1lf rol/sec'   			\
+	'GPRINT:roll:MIN:% 9.1lf rol/sec'				\
+	'GPRINT:roll:MAX:% 9.1lf rol/sec\l'				\
+	'COMMENT: \l'							\
+	'COMMENT:                    '					\
+	'COMMENT:CURRENT          '					\
+	'COMMENT:AVERAGE          '					\
+	'COMMENT:MINIMUM          '					\
+	'COMMENT:MAXIMUM\l'						\
+	'COMMENT: \l'							\

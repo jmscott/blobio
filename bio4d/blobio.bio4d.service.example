@@ -1,0 +1,26 @@
+#
+#  Synopsis:
+#	System unit definition for blobio bio4d daemon
+#  Usage:
+#	# cp $BLOBIO_ROOT/lib/blobio.bio4d.service.example 		\
+#		/etc/systemd/system/blobio.bio4d.service
+#
+[Unit]
+Description=BlobIO bio4d Server
+After=network.target
+
+[Service]
+Type=simple
+User=blobio
+WorkingDirectory=/usr/local/blobio
+ExecStart=/usr/local/blobio/sbin/bio4d --ps-title-XXXXXXXXXXXXXXXXXX --port 1797 --in-foreground --root /usr/local/blobio
+KillMode=mixed
+KillSignal=SIGTERM
+TimeoutSec=20
+RestartSec=20
+Restart=always
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,31 @@
+#
+#  Synopsis
+#	BlobIO variables used by rc.d startup script and bio4d daemon
+#  See Also:
+#	blobio.rc.template
+#
+export BLOBIO_ROOT=${BLOBIO_ROOT:=/usr/local/blobio}
+
+#
+#  The script 'bio4d' consults $BLOBIO_SERVICE to change the port from the
+#  default port of 1797 to a different port. For example, a development server
+#  might listen on port 1796.
+#
+#  $BLOBIO_BIO4D_PORT is not used by any client software.
+#
+#  Note:
+#  	The bio4d script outght to derive the port from $BLOBIO_SERVICE.
+#  	Defining a second variable is stupid.
+#
+#export BLOBIO_BIO4D_PORT=179
+
+#
+#  To enable logging of bio4d stats then set BLOBIO_RRD_SAMPLE_DURATION > 0sec
+#
+#export BLOBIO_RRD_SAMPLE_DURATION=0
+
+#
+#  To change network timeout in seconds.
+#  Default is 20 seconds.
+#
+#export BLOBIO_NET_TIMEOUT=60

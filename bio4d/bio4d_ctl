@@ -1,0 +1,98 @@
+#!/bin/bash
+#
+#  Synopsis:
+#	Start/stop blobio daemon.
+#
+
+PROG=$(basename $0)
+PAUSE=3
+
+die()
+{
+	log "ERROR: $@" >&2
+	exit 1
+}
+
+log()
+{
+	if [ -z "$ACTION" ];  then
+		echo "$PROG: $@"
+	else
+		echo "$PROG: $ACTION: $@"
+	fi
+}
+
+WARN()
+{
+	log "WARN: $@"
+}
+
+ACTION="$1"
+case "$BLOBIO_ROOT" in
+'')
+	die 'not defined: BLOBIO_ROOT environment variable'
+	;;
+*)
+	test ! -d $BLOBIO_ROOT && die "not a directory: $BLOBIO_ROOT"
+	log "BLOBIO_ROOT=$BLOBIO_ROOT"
+	;;
+esac
+
+cd $BLOBIO_ROOT || die "cd $BLOBIO_ROOT failed"
+BIO4D=$BLOBIO_ROOT/sbin/bio4d
+test -r etc/profile && . etc/profile
+PORT=${BLOBIO_BIO4D_PORT:=1797}
+PID_PATH=$BLOBIO_ROOT/run/bio4d.pid
+NET_TIMEOUT=${BLOBIO_NET_TIMEOUT:=20}
+
+#  duration in seconds to write rrd samples to log/bio4d-rrd.log.
+#  0 disables.
+RRD_SAMPLE_DURATION=${BLOBIO_RRD_SAMPLE_DURATION:=0}
+
+case "$ACTION" in
+boot)
+	rm -f $PID_PATH || die "rm $PID_PATH failed"
+	;;
+start)
+	if [ -f $PID_PATH ];  then
+		log "is bio4d already running with pid #$(cat $PID_PATH)?" >&2
+		die "remove file: $PID_PATH"
+	fi
+	log 'starting biod4 process ...'
+	$BIO4D								\
+		--root $BLOBIO_ROOT					\
+		--port $PORT						\
+		--ps-title-XXXXXXXXXXXXXXXXXXXXXXX			\
+		--rrd-sample-duration $RRD_SAMPLE_DURATION		\
+		--net-timeout $NET_TIMEOUT
+	STATUS=$?
+	test $STATUS = 0 || die "bio4d failed to start: exit status=$STATUS"
+
+	log "pausing $PAUSE seconds while bio4d starts ..."
+	sleep $PAUSE
+	test -f $PID_PATH || die "no pid file $PID_PATH, so bio4d aborted"
+	log "started with pid #$(cat $PID_PATH)"
+	log 'tail of log file follows ...'
+	tail log/bio4d-$(date +'%a').log
+	;;
+stop)
+	zap-proc run/bio4d.pid
+	;;
+reboot)
+	zap-proc run/bio4d.pid
+	bio4d_ctl start
+	;;
+restart)
+	log 'restart'
+	$0 stop
+	$0 start
+	;;
+'')
+	die 'missing expected action: start|stop|restart|reboot'
+	;;
+*)
+	ACTION=
+	die "unknown action: expected start|stop|restart|reboot"
+	;;
+esac
+exit 0;

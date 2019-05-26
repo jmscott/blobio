@@ -1,0 +1,45 @@
+#!/bin/bash
+#
+#  Synopsis:
+#	MAC OS X 10.6 Start/Stop Script
+#  Description:
+#	B=/Library/StartupItems/BlobIO
+#	mkdir $B
+#	cp BlobIO.macosx $B/BlobIO
+#	chmod +x $B/BlobIO
+#	cp StartupParameters.plist.macosx $B/StartupParameters.plist
+#	reboot
+#  Note:
+#	Tested only on 10.6
+#
+. /etc/rc.common
+
+export BLOBIO_ROOT=/usr/local/blobio
+BIO4D_ARGS="--ps-title-XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
+ 
+# The start subroutine
+StartService()
+{
+	su blobio -c 							\
+		"cd $BLOBIO_ROOT; exec $BLOBIO_ROOT/sbin/bio4d $BIO4D_ARGS"
+}
+ 
+# The stop subroutine
+StopService()
+{
+	if [ -r $BLOBIO_ROOT/run/bio4d.pid ];  then
+		PID=$(cat $BLOBIO_ROOT/run/bio4d.pid)
+		kill -TERM $(cat $BLOBIO_ROOT/run/bio4d.pid)
+		sleep 10
+		kill -9 $PID 2>/dev/null
+	fi
+}
+ 
+# The restart subroutine
+RestartService()
+{
+	StopService
+	StartService
+}
+ 
+RunService "$1"

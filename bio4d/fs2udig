@@ -1,0 +1,42 @@
+#!/bin/bash
+#
+#  Synopsis:
+#	Convert file system paths into udigs
+#  Usage:
+#	fs2udig | bio-eat		#  touch every blob
+#  Note:
+#	Must have read access to $BLOBIO_ROOT/data.
+#	Starting directory must be match <algorithm>_fs
+#
+
+PROG=$(basename $0)
+
+die()
+{
+	echo "$PROG: $@" >&2
+	exit 1
+}
+
+#
+#  Find blob files in directories data/<algorithm>_fs/[0-9a-f]{3}.
+#
+find_blob() {(
+	FS=$1
+	test -d $FS || exit 0
+
+	ALGORITHM=$(echo $FS | sed 's/_fs//')
+	cd $FS
+	find [0-9a-f][0-9a-f][0-9a-f] -type f | sed "s/......../$ALGORITHM:/"
+)}
+
+case "$BLOBIO_ROOT" in
+'')
+	die 'environment variable BLOBIO_ROOT not defined'
+	;;
+*)
+	test -d $BLOBIO_ROOT || die "no data directory: $BLOBIO_ROOT/data"
+	cd $BLOBIO_ROOT/data || die "cd $BLOBIO_ROOT/data failed"
+	;;
+esac
+
+find_blob bc160_fs && find_blob sha_fs

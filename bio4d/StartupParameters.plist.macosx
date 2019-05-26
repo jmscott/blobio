@@ -1,0 +1,16 @@
+#
+#  Synopsis:
+#	Untested launchd service config
+#
+{
+  Description     = "BlobIO Service";
+  Provides        = ("BlobIO");
+  Requires        = ("Network");
+  Uses            = ("Network");
+  OrderPreference = "Late";
+  Messages =
+  {
+    start = "Starting BlobIO";
+    stop  = "Stopping BlobIO";
+  };
+}

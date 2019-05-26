@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>com.blobio.bio4d</string>
+
+  <key>KeepAlive</key>
+  <true/>
+
+  <key>ProcessType</key>
+  <string>Background</string>
+
+  <key>AbandonProcessGroup</key>
+  <false/>
+
+  <key>ProgramArguments</key>
+  <array>
+	<string>sbin/launchd-log</string>
+	<string>/usr/local/blobio/sbin/bio4d</string>
+	<!-- Note:
+		ps-title hack must first argument in order to change what
+		appears in the process table.
+	-->
+	<string>--ps-title-XXXXXXXXXXXXXXXXXXXXXXX</string>
+	<string>--in-foreground</string>
+	<string>--port</string>
+	<string>1797</string>
+	<string>--root</string>
+	<string>/usr/local/blobio</string>
+	<string>--rrd-sample-duration</string>
+	<string>60</string>
+  </array>
+
+  <key>RunAtLoad</key>
+  <true/>
+
+  <key>UserName</key>
+  <string>blobio</string>
+
+  <key>GroupName</key>
+  <string>staff</string>
+
+  <key>WorkingDirectory</key>
+  <string>/usr/local/blobio</string>
+
+  <key>StandardErrorPath</key>
+  <string>/Users/blobio/log/launchd-bio4d.log</string>
+
+  <key>StandardOutPath</key>
+  <string>/Users/blobio/log/launchd-bio4d.log</string>
+
+</dict>
+</plist>

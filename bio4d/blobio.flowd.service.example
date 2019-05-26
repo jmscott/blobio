@@ -1,0 +1,38 @@
+#
+#  Synopsis:
+#	System unit definition for blobio flowd daemon
+#  Usage:
+#	# cp $BLOBIO_ROOT/lib/blobio.flowd.service.example 		\
+#		/etc/systemd/system/blobio.flowd.service
+#
+[Unit]
+Description=BlobIO Flowd Server to sync PostgreSQL
+BindsTo=blobio.bio4d.service postgresql.service
+After=network.target blobio.bio4d.service postgresql.service
+
+[Service]
+Type=simple
+User=blobio
+
+WorkingDirectory=/usr/local/blobio
+
+Environment=BLOBIO_ROOT=/usr/local/blobio
+Environment=PGHOST=/tmp
+Environment=PGPORT=5432
+Environment=PGUSER=postgres
+Environment=PGPASSWORD=
+Environment=PGDATABASE=blobio
+Environment=PATH=/usr/local/pgsql/bin:/usr/local/blobio/sbin:/usr/local/blobio/bin:/usr/local/bin:/usr/bin:/bin
+StandardOutput=journal
+StandardError=journal
+
+ExecStart=/usr/local/blobio/bin/flowd server etc/blobio.flow
+PIDFile=/usr/local/blobio/run/flowd.pid
+KillMode=control-group
+KillSignal=SIGTERM
+TimeoutSec=20
+RestartSec=20
+Restart=always
+
+[Install]
+WantedBy=multi-user.target

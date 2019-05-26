@@ -1,0 +1,65 @@
+#!/usr/bin/perl
+#
+#  Synopsis:
+#	Map bc160 or sha udigs onto the path to the blob file.
+#
+
+my $PROG = 'bio-udig2fs';
+
+sub udig2fs
+{
+	my $udig = $_[0];
+
+	$udig =~ s/^\s+|\s+$//g;
+
+	die "unrecognized udig: $udig"
+		unless $udig =~ /^([a-z][a-z0-9]{0,7}):([[:graph:]]{32,128})$/;
+	my ($algo, $digest) = ($1, $2);
+
+	die "unknown algorithm: $algo"
+				unless $algo eq 'sha' || $algo eq 'bc160';
+
+	die "unexpected $algo digest: $digest"
+				unless $digest =~ /^[0-9a-f]{40}$/;
+
+	#
+	# map udig to 32bit path using hex characters.
+	#
+	#	sha:c59f2c4f35b56a4bdf2d2c9f4a9984f2049cf2d4
+	#	->
+	#	sha_fs/c59/f2c/c59f2c4f35b56a4bdf2d2c9f4a9984f2049cf2d4
+	print $udig,
+		"\t${algo}_fs/",
+		substr($digest, 0, 3),
+		'/',
+		substr($digest, 3, 3),
+		'/',
+		$digest,
+		"\n"
+	;
+}
+
+my $line_count = 0;
+
+$SIG{__DIE__} = sub
+{
+	my $lc;
+	my $msg = join(':', @_);
+
+	$lc = ": near line $line_count" if $line_count > 0;
+	printf STDERR "$PROG: ERROR$lc: $msg ";
+	exit 1;
+};
+
+#  udigs on the command line
+
+if (@ARGV > 0) {
+	udig2fs $_ for (@ARGV) ;
+	exit 0;
+}
+
+while (my $udig = <STDIN>) {
+	$line_count++;
+	chop $udig;
+	udig2fs $udig;
+}
