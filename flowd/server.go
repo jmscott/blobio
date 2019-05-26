@@ -25,6 +25,7 @@ import (
 	"sort"
 	"strconv"
 	"syscall"
+	"time"
 
 	_ "github.com/lib/pq"
 
@@ -216,12 +217,23 @@ func (conf *config) server(par *parse) {
 	info := info_log_ch.info
 	WARN := info_log_ch.WARN
 
-	//  create process id in run/flowd.pid
+	//  write process id in run/flowd.pid
 	pid_path := "run/flowd.pid"
 	{
 		//  does the pid file exist?
-		if _, err := os.Stat(pid_path);  err == nil {
-			croak("is another flowd process running?")
+		if st, err := os.Stat(pid_path);  err == nil {
+
+			// if the file has not been touched in > 120 seconds
+			//  then remove and move on.
+
+			if time.Now().Unix() - st.ModTime().Unix() < 120 {
+				croak("is another flowd process running?")
+			}
+			WARN("removing stale pid file: %s", pid_path)
+			err = os.Remove(pid_path)
+			if err != nil {
+				croak("os.Remove() failed: %s", err)
+			}
 		} else if !os.IsNotExist(err) {
 			croak("os.Stat(run/flowd.pid) failed: %s", err)
 		}
@@ -241,7 +253,8 @@ func (conf *config) server(par *parse) {
 			croak("os.WriteString(run/flowd.pid) failed: %s", err)
 		}
 
-		go func() {		//  touch the pid file every minute
+		//  touch the run/flowd.pid once per minute.
+		go func() {
 
 			for {
 				Sleep(Minute);
