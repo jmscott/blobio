@@ -7,7 +7,7 @@ BLOBIO_SERVICE=bio4:localhost:1797
 
 #
 #  What:
-#	Push biod rrd request sample into postgres database
+#	Push bio4d rrd request sample into postgres database
 #  When:
 #	once a minute
 #
@@ -83,7 +83,7 @@ BLOBIO_SERVICE=bio4:localhost:1797
 
 #
 #  What:
-#	Startup the biod and flow servers
+#	Startup the bio4d and flow servers
 #  When:
 #	On system reboot
 #  Note:

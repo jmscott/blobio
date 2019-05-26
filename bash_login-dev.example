@@ -16,7 +16,7 @@ unset $(env | grep '^BLOBIO_' | cut -d= -f1)
 #  point to home dev directory in opt/blobio and set listening port to 1796
 
 export BLOBIO_ROOT=$HOME/opt/blobio
-export BLOBIO_BIOD_PORT=1796
+export BLOBIO_BIO4D_PORT=1796
 
 PS1='blob@opt> '
 

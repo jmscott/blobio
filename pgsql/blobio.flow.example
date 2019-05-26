@@ -20,9 +20,9 @@ boot
 	heartbeat_duration = "10s";
 }
 
-tail biod
+tail bio4d
 {
-	path = "spool/biod.brr";
+	path = "spool/bio4d.brr";
 }
 
 #
@@ -32,18 +32,18 @@ command append_setcore_brr
 {
 	path = "sbin/append-brr";
 	argv = (
-		"../setspace/schema/setcore/spool/biod.brr"
+		"../setspace/schema/setcore/spool/bio4d.brr"
 	);
 }
 
 call append_setcore_brr(
-	biod.start_time,
-	biod.netflow,
-	biod.verb,
-	biod.udig,
-	biod.chat_history,
-	biod.blob_size,
-	biod.wall_duration
+	bio4d.start_time,
+	bio4d.netflow,
+	bio4d.verb,
+	bio4d.udig,
+	bio4d.chat_history,
+	bio4d.blob_size,
+	bio4d.wall_duration
 );
 
 command chat_ok
@@ -414,126 +414,126 @@ sql exec upsert_take_ok_recent
 
 call chat_ok()
   when
-	biod.chat_history == "ok"
+	bio4d.chat_history == "ok"
 	or
-	biod.chat_history == "ok,ok"
+	bio4d.chat_history == "ok,ok"
 	or
-	biod.chat_history == "ok,ok,ok"
+	bio4d.chat_history == "ok,ok,ok"
 ;
 
 call blob_on_network()
   when
 	(
-		biod.verb == "put"
+		bio4d.verb == "put"
 		or
-		biod.verb == "get"
+		bio4d.verb == "get"
 		or
-		biod.verb == "give"
+		bio4d.verb == "give"
 		or
-		biod.verb == "take"
+		bio4d.verb == "take"
 		or
-		biod.verb == "eat"
+		bio4d.verb == "eat"
 		or
-		biod.verb == "wrap"
+		bio4d.verb == "wrap"
 		or
-		biod.verb == "roll"
+		bio4d.verb == "roll"
 	)
 	and
 	chat_ok.exit_status == 0
 ;
 
-query blob_size_exists(biod.udig)
+query blob_size_exists(bio4d.udig)
   when
   	blob_on_network.exit_status == 0
 	and
 	(
-		biod.verb == "put"
+		bio4d.verb == "put"
 		or
-		biod.verb == "get"
+		bio4d.verb == "get"
 		or
-		biod.verb == "give"
+		bio4d.verb == "give"
 		or
-		biod.verb == "take"
+		bio4d.verb == "take"
 	)
 ;
 
-query merge_blob_size(biod.udig, biod.blob_size)
+query merge_blob_size(bio4d.udig, bio4d.blob_size)
   when
   	blob_size_exists.answer == false
 ;
 
-query discover_older(biod.udig, biod.start_time)
+query discover_older(bio4d.udig, bio4d.start_time)
   when
   	chat_ok.exit_status == 0
 ;
 
-query upsert_discover(biod.udig, biod.start_time)
+query upsert_discover(bio4d.udig, bio4d.start_time)
   when
   	discover_older.is_older == true
 	or
 	discover_older.row_exists == false
 ;
 
-query ok_newer(biod.udig, biod.start_time)
+query ok_newer(bio4d.udig, bio4d.start_time)
   when
-  	biod.chat_history == "ok,ok,ok"
+  	bio4d.chat_history == "ok,ok,ok"
 	or
-  	biod.chat_history == "ok,ok"
+  	bio4d.chat_history == "ok,ok"
 	or
-	biod.chat_history == "ok"
+	bio4d.chat_history == "ok"
 ;
 
-query upsert_ok_recent(biod.udig, biod.start_time, biod.wall_duration)
+query upsert_ok_recent(bio4d.udig, bio4d.start_time, bio4d.wall_duration)
   when
   	ok_newer.row_exists == false
 	or
 	ok_newer.is_newer == true
 ;
 
-query no_newer(biod.udig, biod.start_time)
+query no_newer(bio4d.udig, bio4d.start_time)
   when
-  	biod.chat_history == "no"
+  	bio4d.chat_history == "no"
 ;
 
-query upsert_no_recent(biod.udig, biod.start_time, biod.wall_duration)
+query upsert_no_recent(bio4d.udig, bio4d.start_time, bio4d.wall_duration)
   when
 	no_newer.row_exists == false
 	or
 	no_newer.is_newer == true
 ;
 
-query roll_ok_exists(biod.udig)
+query roll_ok_exists(bio4d.udig)
   when
-  	biod.verb == "roll"
+  	bio4d.verb == "roll"
 	and
-	biod.chat_history == "ok"
+	bio4d.chat_history == "ok"
 ;
 
-query merge_roll_ok(biod.udig, biod.start_time, biod.wall_duration)
+query merge_roll_ok(bio4d.udig, bio4d.start_time, bio4d.wall_duration)
   when
   	roll_ok_exists.answer == false
 ;
 
-query wrap_ok_exists(biod.udig)
+query wrap_ok_exists(bio4d.udig)
   when
-  	biod.verb == "wrap"
+  	bio4d.verb == "wrap"
 	and
-	biod.chat_history == "ok"
+	bio4d.chat_history == "ok"
 ;
 
-query merge_wrap_ok(biod.udig, biod.start_time, biod.wall_duration)
+query merge_wrap_ok(bio4d.udig, bio4d.start_time, bio4d.wall_duration)
   when
   	wrap_ok_exists.answer == false
 ;
 
-query take_ok_newer(biod.udig, biod.start_time)
+query take_ok_newer(bio4d.udig, bio4d.start_time)
   when
-  	biod.verb == "take"
+  	bio4d.verb == "take"
 	and
-	biod.chat_history == "ok,ok,ok"
+	bio4d.chat_history == "ok,ok,ok"
 ;
 
-query upsert_take_ok_recent(biod.udig, biod.start_time, biod.wall_duration)
+query upsert_take_ok_recent(bio4d.udig, bio4d.start_time, bio4d.wall_duration)
   when
   	take_ok_newer.row_exists == false
 	or

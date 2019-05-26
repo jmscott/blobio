@@ -29,8 +29,8 @@ boot
 	heartbeat_duration = "10s";
 }
 
-#  remote blobio biod server.
-#  typically ssh tunnel to remote biod server.
+#  remote blobio bio4d server.
+#  typically ssh tunnel to remote bio4d server.
 
 command eat_remote
 {
@@ -44,8 +44,8 @@ command eat_remote
 	exit_status is OK when in {0, 1};
 }
 
-#  put blob to remote blobio biod server.
-#  typically ssh tunnel to remote biod server.
+#  put blob to remote blobio bio4d server.
+#  typically ssh tunnel to remote bio4d server.
 
 command sync_put
 {
@@ -56,8 +56,8 @@ command sync_put
 	exit_status is OK when in {0, 1, 2};
 }
 
-#  sync wrapped blobs to remote blobio biod server.
-#  typically ssh tunnel to remote biod server.
+#  sync wrapped blobs to remote blobio bio4d server.
+#  typically ssh tunnel to remote bio4d server.
 
 command sync_wrap
 {
@@ -80,7 +80,7 @@ command brr_blob_taken
 
 tail brr
 {
-	path = "spool/biod.brr";
+	path = "spool/bio4d.brr";
 }
 
 #

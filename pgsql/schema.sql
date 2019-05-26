@@ -1,6 +1,6 @@
 /*
  *  Synopsis:
- *	PostgreSQL schema to track blobs available in a particular biod server.
+ *	PostgreSQL schema tracks blobs available in a particular bio4d server.
  *  Note:
  *	Why does column brr_no_recent.wall_duration exist?
  */
@@ -328,8 +328,8 @@ COMMENT ON VIEW quack
   	'blobs which have never been digested'
 ;
 
-DROP TABLE IF EXISTS biod_request_stat CASCADE;
-CREATE TABLE biod_request_stat
+DROP TABLE IF EXISTS bio4d_request_stat CASCADE;
+CREATE TABLE bio4d_request_stat
 (
 	sample_time	brr_timestamp
 				PRIMARY KEY,

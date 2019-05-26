@@ -1,11 +1,11 @@
 /*
  *  Synopsis:
- *	Load request stats into table blobio.biod_request_stat
+ *	Load request stats into table blobio.bio4d_request_stat
  */
 \set ON_ERROR_STOP on
 
-\echo create temp table load_biod_request_stat
-CREATE TEMP TABLE load_biod_request_stat AS
+\echo create temp table load_bio4d_request_stat
+CREATE TEMP TABLE load_bio4d_request_stat AS
   SELECT
   	0::bigint as "sample_epoch",
 
@@ -31,19 +31,19 @@ CREATE TEMP TABLE load_biod_request_stat AS
 	eat_no_count,
 	take_no_count
     FROM
-    	blobio.biod_request_stat
+    	blobio.bio4d_request_stat
     WHERE
     	0 = 1
 ;
 
 \echo load stats into temp load table from stdin
-\copy load_biod_request_stat from pstdin DELIMITER ':'
+\copy load_bio4d_request_stat from pstdin DELIMITER ':'
 
-\echo analyze table load_biod_request_stat
-ANALYZE load_biod_request_stat;
+\echo analyze table load_bio4d_request_stat
+ANALYZE load_bio4d_request_stat;
 
-\echo insert new stats into load_biod_request_stat
-INSERT INTO blobio.biod_request_stat(
+\echo insert new stats into load_bio4d_request_stat
+INSERT INTO blobio.bio4d_request_stat(
 	sample_time,
 
 	success_count,
@@ -92,13 +92,13 @@ INSERT INTO blobio.biod_request_stat(
 	eat_no_count,
 	take_no_count
   FROM
-  	load_biod_request_stat
+  	load_bio4d_request_stat
   ON CONFLICT
   	DO NOTHING
 ;
 
-\echo vacuum/analyze table biod_request_stat
-VACUUM ANALYZE blobio.biod_request_stat;
+\echo vacuum/analyze table bio4d_request_stat
+VACUUM ANALYZE blobio.bio4d_request_stat;
 
 \x on
 \echo summarize loaded samples (not all)
@@ -108,7 +108,7 @@ WITH sample_interval AS (
   	to_timestamp(max(sample_epoch)) as "max_time",
 	count(*) as "sample_count"
     FROM
-    	load_biod_request_stat
+    	load_bio4d_request_stat
 )
 SELECT
 	'' AS "LOADED",
@@ -143,7 +143,7 @@ SELECT
 	sum(eat_no_count) || '/' || avg(eat_no_count)::int AS "Eats no",
 	sum(take_no_count) || '/' || avg(take_no_count)::int AS "Takes no"
   FROM
-  	blobio.biod_request_stat brs,
+  	blobio.bio4d_request_stat brs,
 	sample_interval si
   WHERE
   	brs.sample_time BETWEEN si.min_time AND si.max_time

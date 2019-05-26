@@ -8,8 +8,8 @@
 
 [Unit]
 Description=BlobIO Flowd Server to Sync Remote Host
-BindsTo=blobio.biod.service postgresql.service
-After=network.target blobio.biod.service
+BindsTo=blobio.bio4d.service postgresql.service
+After=network.target blobio.bio4d.service
 
 [Service]
 Type=simple

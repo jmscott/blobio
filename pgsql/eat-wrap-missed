@@ -10,7 +10,7 @@
 #
 #  Description:
 #	In real time, the brrflow server syncs the blobs with the blobio
-#	database, by watching the traffic in spool/biod.brr.  In principle,
+#	database, by watching the traffic in spool/bio4d.brr.  In principle,
 #	any blob fetchable via 'blobio get' should exist in the view
 #	blobio.service and, vice-a-versa, for any blob not in view blob.service
 #	a 'blobio get' call should fail.

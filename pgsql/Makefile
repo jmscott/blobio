@@ -12,7 +12,7 @@ install:
 		contrib/udig/udig.sql.in				\
 		eat-unroll.sql						\
 		eat-wrap-missed.sql					\
-		merge-biod_request_stat.sql				\
+		merge-bio4d_request_stat.sql				\
 		schema.sql						\
 		$(DIST_ROOT)/lib
 

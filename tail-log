@@ -1,6 +1,6 @@
 #
 #  Synopsis:
-#	Tail today's log files for biod, flowd and sync processes.
+#	Tail today's log files for bio4d, flowd and sync processes.
 #  Note:
 #	Not correctly handling when "today" become "tomorrow".
 #

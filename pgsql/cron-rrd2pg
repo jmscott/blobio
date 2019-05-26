@@ -1,24 +1,24 @@
 #!/bin/bash
 #
 #  Synopsis:
-#	Push rrd samples into the table blobio.biod_request_stat
+#	Push rrd samples into the table blobio.bio4d_request_stat
 #  Note:
 #	Race condition exists between the time the log file is renamed
 #	and the insert into the database.  A slightly safer algorithm
 #	would be to sha the frozen log file before and after the put to the db.
 #
-#		FROZEN=biod-rrd-<timestamp>.log
-#		mv biod-rrd.log $FROZEN
+#		FROZEN=bio4d-rrd-<timestamp>.log
+#		mv bio4d-rrd.log $FROZEN
 #		sleep FLUSH_PAUSE
 #		SHA1=$(blobio eat $FROZEN)
-#		psql <biod-rrd-<timestamp>.log
+#		psql <bio4d-rrd-<timestamp>.log
 #		SHA2=$(blobio eat $FROZEN)
 #		test $SHA1 = $SHA2 || die
 #
 
-RRD=log/biod-rrd.log
+RRD=log/bio4d-rrd.log
 FLUSH_PAUSE=${BLOBIO_RRD_FLUSH_PAUSE:=5}
-MERGE_SQL=lib/merge-biod_request_stat.sql
+MERGE_SQL=lib/merge-bio4d_request_stat.sql
 PSQL='psql --no-psqlrc'
 
 log()

@@ -61,10 +61,10 @@ Description:
 	'ok' or 'no', where 'no' is always the last reply. See below for the
 	exact protocol.
 
-	On the blob server, named "biod", for each correct client request a
+	On the blob server, named "bio4d", for each correct client request a
 	single traffic record describing the request is written to the file
 
-		server:$BLOBIO_ROOT/spool/biod.brr
+		server:$BLOBIO_ROOT/spool/bio4d.brr
 
 	Those traffic records are named "Blob Request Records" and abbreviated
 	as BRR.  The BRR record format is modeled after the Call Detail Record
@@ -170,7 +170,7 @@ Protocol Flow:
 
 	As blobio evolves, I (jmscott) expect a client friendly, RESTful and
 	inherently more complex caching protocol to be built in front of the
-	blobio protocol described above.  In other words, a biod server never
+	blobio protocol described above.  In other words, a bio4d server never
 	talks to untrusted code, due to the denial of service susceptibility
 	described above.
 
@@ -244,12 +244,12 @@ To Do:
 	  BLOBIO_DIST?  Currently BLOBIO_ROOT means the actual install 
 	  directory and not the parent, which is the correct root.
 
-	- add option to biod to limit size of accepted blob
+	- add option to bio4d to limit size of accepted blob
 
 	- investigate linux splice() system call.
 
-	- think about separate biod processes sharing the same data/ file system
-	  but otherwise separate.  or, explore union file systems.
+	- think about separate bio4d processes sharing the same data/
+	  file system but otherwise separate.  or, explore union file systems.
 
 	- make the postgresql udig data type be an extension
 

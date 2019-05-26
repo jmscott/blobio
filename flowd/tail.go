@@ -4,7 +4,7 @@
 //	in the manner of the 'tail -f' unix command line tool.
 //  Note:
 //	Investigate rolling algorithm.  On linux I (jmscott) witnessed a
-//	a tail on a wrapped log file that never rolled to spool/biod.brr.
+//	a tail on a wrapped log file that never rolled to spool/bio4d.brr.
 //
 //	Investigate adding "ignore_empty" to either the tail or the command.
 //
@@ -132,7 +132,7 @@ func (t *tail) forever() (out chan string) {
 		//	unfortunatly a tolerable race condition exists: f2 may
 		//	roll away while f1 still draining.  while this probably
 		//	won't happen, the problem still exists.  might consider
-		//	a merkle tree type fix similar to how biod rolls brr
+		//	a merkle tree type fix similar to how bio4d rolls brr
 		//	logs
 
 		f2.close()

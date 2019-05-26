@@ -11,22 +11,22 @@
 export BLOBIO_ROOT=${BLOBIO_ROOT:=/usr/local/blobio}
 
 #
-#  The script 'biod_ctl' consults $BLOBIO_SERVICE to change the port from the
+#  The script 'bio4d_ctl' consults $BLOBIO_SERVICE to change the port from the
 #  default port of 1797 to a different port. For example, a development server
 #  might listen on port 1796.
 #
-#  $BLOBIO_BIOD_PORT is not used by any client software.
+#  $BLOBIO_BIO4D_PORT is not used by any client software.
 #
 #  Note:
-#  	The biod_ctl script ought to derive the port from $BLOBIO_SERVICE.
-#  	Defining a second variable is stupid.  BLOBIO_BIOD_PORT must die.
+#  	The bio4d_ctl script ought to derive the port from $BLOBIO_SERVICE.
+#  	Defining a second variable is stupid.  BLOBIO_BIO4D_PORT must die.
 #
 
-export BLOBIO_BIOD_PORT=${BLOBIO_BIOD_PORT:=1797}
+export BLOBIO_BIO4D_PORT=${BLOBIO_BIO4D_PORT:=1797}
 
-export BLOBIO_SERVICE=${BLOBIO_SERVICE:=bio4:localhost:$BLOBIO_BIOD_PORT}
+export BLOBIO_SERVICE=${BLOBIO_SERVICE:=bio4:localhost:$BLOBIO_BIO4D_PORT}
 
-#  write rrd stats to $BLOBIO_ROOT/log/biod-log.log every 60 seconds
+#  write rrd stats to $BLOBIO_ROOT/log/bio4d-rrd.log every 60 seconds
 #  set to 0 to disable
 
 export BLOBIO_RRD_SAMPLE_DURATION=60

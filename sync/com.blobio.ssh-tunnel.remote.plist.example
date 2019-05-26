@@ -2,7 +2,7 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <!--
   Synopsis:
-	Bidirectional ssh tunneling of biod on port 1797 on 127.0.0.[12] subnet.
+	Bidirectional ssh tunneling of bio4d on port 1797 on 127.0.0.[12]
   Usage:
   	$  sudo -i
 	#  cd /Library/LaunchDamons
@@ -68,7 +68,7 @@
 	<!--	*************  END SSH CONNECTION CONFIG  **************** -->
 
 
-	<!--	*****************  START BLOBIO BIOD CONFIG  ***************
+	<!--	*****************  START BLOBIO BIO4D CONFIG  ***************
 
 		Advertise blobio:1797 to remote and remote:1797 to local.
 		We use local ips in 127.0.0.1/24 to differentiate local

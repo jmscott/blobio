@@ -16,19 +16,19 @@ include local.mk
 include blobio.mk
 
 all:
-	cd biod;	$(MAKE) $(MFLAGS) all
+	cd bio4d;	$(MAKE) $(MFLAGS) all
 	cd cli;		$(MAKE) $(MFLAGS) all
 	cd flowd;	$(MAKE) $(MFLAGS) all
 	cd sync;	$(MAKE) $(MFLAGS) all
 
 clean:
-	cd biod;	$(MAKE) $(MFLAGS) clean
+	cd bio4d;	$(MAKE) $(MFLAGS) clean
 	cd cli;		$(MAKE) $(MFLAGS) clean
 	cd flowd;	$(MAKE) $(MFLAGS) clean
 	cd sync;	$(MAKE) $(MFLAGS) clean
 
 distclean:
-	cd biod;	$(MAKE) $(MFLAGS) distclean
+	cd bio4d;	$(MAKE) $(MFLAGS) distclean
 
 ifeq "$(DIST_ROOT)" "/usr"
 	@echo 'refuse to distclean /usr'
@@ -58,7 +58,7 @@ install: all
 	install -g $(DIST_GROUP) -o $(DIST_USER)			\
 		-d $(DIST_ROOT)/src/pgsql
 	install -g $(DIST_GROUP) -o $(DIST_USER)			\
-		-d $(DIST_ROOT)/src/biod
+		-d $(DIST_ROOT)/src/bio4d
 	install -g $(DIST_GROUP) -o $(DIST_USER)			\
 		-d $(DIST_ROOT)/src/blobio
 	install -g $(DIST_GROUP) -o $(DIST_USER)			\
@@ -115,7 +115,7 @@ install: all
 	install -g $(DIST_GROUP) -o $(DIST_USER) -m ug=r,o=		\
 		README							\
 		$(DIST_ROOT)/lib/README.blobio
-	cd biod;	$(MAKE) $(MFLAGS) install
+	cd bio4d;	$(MAKE) $(MFLAGS) install
 	cd cli;		$(MAKE) $(MFLAGS) install
 	cd pgsql;	$(MAKE) $(MFLAGS) install
 	cd flowd;	$(MAKE) $(MFLAGS) install

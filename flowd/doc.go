@@ -1,7 +1,7 @@
 // Flow blob request records into a directed acylic graph of processes.
 // 
 // The flowd server discovers immutable facts about blobs by tailing a
-// stream of blob request records - see blobio/biod/README - from a unix
+// stream of blob request records - see blobio/bio4d/README - from a unix
 // file. The tailed request record is then sent to a set of rules that
 // fire either unix processes or sql queries ordered in a directed acyclic
 // graph called a "flow".  The results/side-effects of the fired
@@ -23,7 +23,7 @@
 // 
 // The flow diagram of the software is as follows:
 // 
-// tail <- brr source (spool/biod.brr or fifo)
+// tail <- brr source (spool/bio4d.brr or fifo)
 //   parse brr record, skipping corrupted records
 //     -> brr flow work queue
 //       flow

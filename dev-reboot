@@ -4,10 +4,10 @@
 #	Reboot blobio servers (not cron) into cleanish development environment.
 #  Description:
 #	The script 'dev-reboot' establishes a clean development environment.
-#	for the biod and flowd	servers.  Cronjobs are NOT reset.
+#	for the bio4d and flowd	servers.  Cronjobs are NOT reset.
 #
 #	Before rebooting all blobio servers, the script dev-reboot kills
-#	biod and flowd processes owned by $USER, copies the example templates
+#	bio4d and flowd processes owned by $USER, copies the example templates
 #	for profile, blobio.flow and psqlrc files into the directory etc/, and
 #	the removes all files the directories in spool/, log/ and run/.
 #
@@ -63,8 +63,8 @@ reset_etc()
 log 'hello, world'
 trap leave EXIT
 
-log "killing processes owned by $USER: biod flowd"
-pkill -u $USER biod flowd
+log "killing processes owned by $USER: bio4d flowd"
+pkill -u $USER bio4d flowd
 
 log 'zap files in directories: run/ spool/ log/'
 (
