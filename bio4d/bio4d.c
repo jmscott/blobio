@@ -564,7 +564,7 @@ bio4d(char *verb, char *algorithm, char *digest,
 	int status;
 	struct digest_module *mp;
 	int (*verb_callback)(struct request *, struct digest_module *) = 0;
-	char ps_title[5 + 4 + 1];
+	char ps_title[6 + 4 + 1];
 
 	req.verb = verb;
 	req.step = 0;
@@ -1578,7 +1578,8 @@ fork_accept(struct request *rp)
 	 *  the connection and return to accept more requests.
 	 */
 	if (fork_request()) {
-		close(rp->client_fd);
+		if (io_close(rp->client_fd))
+			panic2("close(client fd) failed", strerror(errno));
 		rp->client_fd = -1;
 		return;
 	}

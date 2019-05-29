@@ -122,7 +122,7 @@ answer_wrap(char *reply_fifo_path)
 	if (fd < 0)
 		panic4(n, reply_fifo_path, "open(reply fifo) failed",
 						strerror(errno));
-	if (io_msg_write(fd, path, 32) < 0)
+	if (io_msg_write(fd, path, 33) < 0)
 		panic3(n, "write(reply fifo) failed", strerror(errno));
 	if (io_close(fd))
 		panic3(n, "close(reply fifo) failed", strerror(errno));
@@ -932,7 +932,7 @@ int
 wrap(struct request *r, struct digest_module *mp)
 {
 	char fifo_path[25];
-	char frozen_path[32];
+	char frozen_path[33];
 	struct io_message frozen;
 
 	/* spool/wrap/<udig>.brr */
