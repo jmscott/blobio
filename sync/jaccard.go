@@ -4,16 +4,23 @@
  *  Description:
  *	The jaccard metric measures the "sameness" of two sets:
  *
- *		A intersect B / A union B == 1
- *
- *	The symetric difference between the two sets is empty.
+ *		count(A intersect B) / count(A union B)
  *
  *	For the blob databases, we measure the existence of various blobs in
  *	pairs of database that are peers of each other. The simplest measure
  *	is to compare all blobs in one peer against  all the other peer
  *	databases.  Another variation is to determine if the most recent N
- *	blobs in a peer exist in the other peers; when N == 1 this is called
- *	the "tip".
+ *	blobs in a peer exist in the other peers;  when N == 1 we call the
+ *	blob the "tip".	 For, say, three peer databases, we calculate 
+ *
+ *		3 * 2 == 6
+ *
+ *	metrics of "sameness".
+ *
+ *	A list of missing blobs is summarized at the end of the report.
+ *	The missing blobs are not specific to pair of database pairs.
+ *
+ *	The output of jaccard is in json.
  *
  *  Usage:
  *	jaccard <config-file>
