@@ -69,6 +69,10 @@ fs_end_point_syntax(char *root_dir)
 			return "character in root directory path is not ascii";
 		if (c == '?')
 			return "? character not allowed in root directory path";
+		if (c == '~')
+			return "~ character not allowed in root directory path";
+		if (c == ':')
+			return ": character not allowed in root directory path";
 	}
 	/*
 	 *  root directory can't be too long.  Need room for
