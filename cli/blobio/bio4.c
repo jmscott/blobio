@@ -275,7 +275,7 @@ again3:
 }
 
 static char *
-bio4_open()
+bio4_open(char *end_point)
 {
 	int status;
 	char host[HOST_NAME_MAX + 1], *p;

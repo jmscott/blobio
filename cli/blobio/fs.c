@@ -36,7 +36,6 @@
 extern char	*verb;
 extern char	algorithm[9];
 extern char	digest[129];
-extern char	end_point[129];
 extern char	chat_history[129];
 extern char	netflow[129];
 extern char	*brr_path;
@@ -97,9 +96,9 @@ fs_open()
 {
 	struct stat st;
 
-	if (brr_path) {
-		char *ep;
+	char *end_point = fs_service.end_point;
 
+	if (brr_path) {
 		/*
 		 *  In brr record need room for fs~<pid>:<path>.
 		 */
@@ -108,7 +107,7 @@ fs_open()
 				"the fs path must be < 115 chars";
 
 		//  brr syntax requires path be only graph chars
-		for (ep = end_point;  *ep;  ep++)
+		for (char *ep = end_point;  *ep;  ep++)
 			if (!isgraph(*ep))
 				return "non graph char in file path";
 	}
@@ -235,7 +234,7 @@ set_brr(char *hist, char *fs_path) {
 
 	//  disable incorrect warnings about size of netflow buff.
 	//  we checked the length in fs_open().
-	strcat(netflow, end_point);
+	strcat(netflow, fs_service.end_point);
 	strcpy(chat_history, hist);
 	return (char *)0;
 }

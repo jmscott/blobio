@@ -1,10 +1,11 @@
 /*
  *  Synopsis:
- *	A driver for caching bio4 requests to posix fs service
+ *	A sematics aware driver for caching bio4 requests to posix fs service
  *  Usage:
  *	cache4:<host>:port:/path/to/fs/root
  *  Note:
- *	Would be nice to generalize as cache:slow service/fast service
+ *	We assume certain behaviour of the bio4_service.
+ *	Would be nice to generalize as cache:slow service/fast service.
  */
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -18,12 +19,9 @@
 
 #include "blobio.h"
 
+extern char *verb;
 extern struct service bio4_service;
 extern struct service fs_service;
-
-//  does the verb imply a possible write to the file system?
-
-#define IS_WRITE_VERB()	(*verb == 'p' || (*verb == 'g' && *verb == 'i'))
 
 struct service cache4_service;
 
@@ -33,37 +31,45 @@ struct service cache4_service;
  *
  *  Note:
  *	Eventually UTF8 will be allowed.
- *
- *	Unfortunatly, the space for host_port_path is written to by this
- *	routine.  Instead a copy should be made.
  */
 static char *
 cache4_end_point_syntax(char *host_port_path)
 {
-	char *colon_bio4 = strchr(host_port_path, ':');
-	if (!colon_bio4)
-		return "no colon in service"; 
+	char bio4[255 + 1];
+	int len = strlen(host_port_path);
 
-	char *colon_fs = strchr(colon_bio4 + 1, ':');
-	if (!colon_fs)
+	memcpy(bio4, host_port_path, len);
+	bio4[len] = 0;
+
+	//  find the fs service and replace first colon with null.
+	char *fs = strchr(bio4, ':');
+	if (!fs)
+		return "no colon in service"; 
+	fs = strchr(fs + 1, ':');
+	if (!fs)
 		return "no colon following bio4 service";
+	*fs++ = 0;
 
 	//  verify bio4 service.
-	*colon_fs = 0;
-	char *err = bio4_service.end_point_syntax(host_port_path);
+	char *err = bio4_service.end_point_syntax(bio4);
 	if (err)
 		return err;
-
-	return (char *)0;
+	return fs_service.end_point_syntax(fs);
 }
 
-/*
- *  Verify that the root and data directories of the blob file system
- *  are at least searchable.
- */
 static char *
 cache4_open()
 {
+	if (verb[0] != 'g' || verb[1] != 'e')
+		return "only get verb is supported";
+
+	strcpy(
+		fs_service.end_point,
+		strrchr(cache4_service.end_point, ':') + 1
+	);
+	char *err = fs_service.open();
+	if (err)
+		return err;
 	return (char *)0;
 }
 
@@ -76,19 +82,36 @@ cache4_open_output()
 static char *
 cache4_close()
 {
+	char *err = fs_service.close();
+	if (err)
+		return err;
 	return (char *)0;
 }
 
 /*
  *  Get a blob.
  *
- *  If output path exists then link the output path to the blob path.
- *  Copy the input to the output if the blobs are on different devices.
+ *  Note:
+ *	brr_path not supported!
  */
 static char *
 cache4_get(int *ok_no)
 {
 	(void)ok_no;
+
+	char *err = fs_service.get(ok_no);
+	if (err)
+		return err;
+	if (*ok_no == 0)
+		return (char *)0;	//  found blob in fs cache
+
+	//  fetch the file from bio4 service and write to the cache.
+	err = bio4_service.get(ok_no);
+	if (err)
+		return err;
+	if (*ok_no)
+		return (char *)0;	//  blob not found in bio4 service
+
 	return (char *)0;
 }
 

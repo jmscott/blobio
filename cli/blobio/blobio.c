@@ -96,7 +96,6 @@ char	*output_path = 0;
 char	*input_path = 0;
 char	*brr_path = 0;
 char	*null_device = "/dev/null";
-char	end_point[129] = {0};
 char	chat_history[10] = {0};
 char	netflow[129] = {0};
 
@@ -579,7 +578,7 @@ parse_argv(int argc, char **argv)
 			if (err)
 				eservice(err, endp);
 			service = sp;
-			strcpy(end_point, endp);
+			strcpy(service->end_point, endp);
 		} else if (strcmp("brr-path", a) == 0) {
 			if (brr_path)
 				emany("brr-path");
@@ -838,10 +837,8 @@ main(int argc, char **argv)
 			eopt2("output-path", strerror(errno), output_path);
 	}
 
-	if (service) {
+	if (service)
 		service->digest = digest_module;
-		TRACE2("end point", end_point);
-	}
 
 	//  initialize the digest module
 
@@ -854,7 +851,13 @@ main(int argc, char **argv)
 		char buf[PIPE_MAX];
 
 		*buf = 0;
-		buf3cat(buf, sizeof buf, "service open(", end_point,") failed");
+		buf3cat(
+			buf,
+			sizeof buf,
+			"service open(",
+				service->end_point,
+			") failed"
+		);
 		die2(EXIT_BAD_SRV, buf, err);
 	}
 
