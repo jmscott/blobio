@@ -1,6 +1,6 @@
 /*
  * Synopsis:
- *  	Reasonably memory safe and semantically simple string concatenators.
+ *  	Dead simple and string concatenators.
  *  Usage:
  *  	buf[0] = 0
  *  	bufcat(buf, sizeof buf, "hello, world");
