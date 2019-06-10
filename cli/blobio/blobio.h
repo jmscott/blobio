@@ -14,6 +14,8 @@
 #define PIPE_MAX		4096
 #endif
 
+#define MAX_SERVICE_LEN		(8 + 1 + 128)
+
 #ifdef COMPILE_TRACE
 
 #define TRACE(msg) if (tracing) trace(msg);
@@ -131,9 +133,11 @@ struct digest
 struct service
 {
 	char		*name;
-	char		*end_point;
 
 	char		*(*end_point_syntax)(char *end_point);
+
+	/*  Note:  why no close output? */
+
 	char		*(*open_output)();
 
 	char		*(*open)();
