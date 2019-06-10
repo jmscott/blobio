@@ -121,8 +121,15 @@ static char		usage[] =
        "usage: blobio [help | get|put|give|take|eat|wrap|roll|empty] [options]\n"
 ;
 
-static char	*RFC3339Nano =
-"%04d-%02d-%02dT%02d:%02d:%02d.%09ld+00:00\t%s\t%s\t%s%s%s\t%s\t%llu\t%ld.%09ld\n";
+static char	*brr_format =
+	"%04d-%02d-%02dT%02d:%02d:%02d.%09ld+00:00\t"	//  RFC3339Nano time
+	"%s\t"						//  netflow
+	"%s\t"						//  verb
+	"%s%s%s\t"					//  algorithm(:digest)?	
+	"%s\t"						//  chat history
+	"%llu\t"					//  byte count
+	"%ld.%09ld\n"					//  wall duration
+;
 
 static void
 ecat(char *buf, int size, char *msg)
@@ -752,7 +759,7 @@ brr_write()
 	/*
 	 *  Format the record buffer.
 	 */
-	snprintf(brr, BRR_SIZE + 1, RFC3339Nano,
+	snprintf(brr, BRR_SIZE + 1, brr_format,
 		t->tm_year + 1900,
 		t->tm_mon + 1,
 		t->tm_mday,
