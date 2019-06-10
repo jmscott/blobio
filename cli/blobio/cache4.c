@@ -1,6 +1,10 @@
 /*
  *  Synopsis:
  *	A driver for caching bio4 requests to posix fs service
+ *  Usage:
+ *	cache4:<host>:port:/path/to/fs/root
+ *  Note:
+ *	Would be nice to generalize as cache:slow service/fast service
  */
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -14,6 +18,9 @@
 
 #include "blobio.h"
 
+extern struct service bio4_service;
+extern struct service fs_service;
+
 //  does the verb imply a possible write to the file system?
 
 #define IS_WRITE_VERB()	(*verb == 'p' || (*verb == 'g' && *verb == 'i'))
@@ -26,11 +33,27 @@ struct service cache4_service;
  *
  *  Note:
  *	Eventually UTF8 will be allowed.
+ *
+ *	Unfortunatly, the space for host_port_path is written to by this
+ *	routine.  Instead a copy should be made.
  */
 static char *
 cache4_end_point_syntax(char *host_port_path)
 {
-	(void)host_port_path;
+	char *colon_bio4 = strchr(host_port_path, ':');
+	if (!colon_bio4)
+		return "no colon in service"; 
+
+	char *colon_fs = strchr(colon_bio4 + 1, ':');
+	if (!colon_fs)
+		return "no colon following bio4 service";
+
+	//  verify bio4 service.
+	*colon_fs = 0;
+	char *err = bio4_service.end_point_syntax(host_port_path);
+	if (err)
+		return err;
+
 	return (char *)0;
 }
 
