@@ -27,8 +27,8 @@
 #define _TRACE2(msg1,msg2)	if (tracing) _trace2(msg1,msg2)
 #define _TRACE3(msg1,msg2,msg3)	if (tracing) _trace3(msg1,msg2,msg3)
 #define _TRACE3(msg1,msg2,msg3)	if (tracing) _trace3(msg1,msg2,msg3)
-#define CTRACE(msg)		if (tracing) ctrace(msg)
-#define CTRACE2(msg1,msg2)	if (tracing) ctrace2(msg1,msg2)
+#define _CTRACE(msg)		if (tracing) ctrace(msg)
+#define _CTRACE2(msg1,msg2)	if (tracing) ctrace2(msg1,msg2)
 
 #else
 
@@ -51,8 +51,6 @@ extern char	*input_path;
 extern int	input_fd;
 
 static int server_fd = -1;
-static char host[256];
-static uint16_t port;
 static unsigned int timeout =	20;
 
 struct service bio4_service;
@@ -87,30 +85,58 @@ ctrace2(char *msg1, char *msg2)
 	_trace3("connect", msg1, msg2);
 }
 
+static char *
+get_timeout(char *frag, unsigned int *p_tmo)
+{
+	TRACE2("get_timeout", frag);
+	char buf[4], *bp;		//  0 to 255
+	char *fp = frag, c;
+	unsigned int tmo;
+
+	if (*fp++ != 't' || *fp++ != 'm' || *fp++ != 'o' || *fp++ != '=')
+		return "expected tmo= in query fragment";
+	if (!isdigit(*fp))
+		return "missing seconds after tmo= in query fragment";
+	bp = buf;
+	while ((c = *fp++)) {
+		if (!isdigit(c))
+			return "expected digit in tmo query fragment";
+		if (bp - buf > 3)
+			return "too many digits in timeout seconds";
+		*bp++ = c;
+	}
+	*bp = 0;
+	tmo = atoi(buf);
+	if (tmo > 255)
+		return "timeout > 255 seconds";
+	if (p_tmo)
+		*p_tmo = tmo;
+	return (char *)0;
+}
+
 /*
  *  Parse the host name/ip4, port and optional timeout from the end point.
  */
 static char *
-bio4_end_point_syntax(char *end_point)
+bio4_end_point_syntax(char *endp)
 {
 	char *ep, c;
 	char buf[6], *bp;
 
-	TRACE2("end point syntax", end_point);
+	TRACE2("end point syntax", endp);
 
 	/*
 	 *  Extract the ascii DNS host or ip4 address.
 	 */
-	bp = host;
-	ep = end_point;
+	ep = endp;
 	while ((c = *ep++) && c != ':') {
+		if (!isascii(c))
+			return "non ascii character in host";
 		if (!isalnum(c) && c != '.')
-			return "non alpha numeric or . char in host/ip4";
-		*bp++ = c;
+			return "non alpha numeric or . char in host";
 	}
 	if (c != ':')
 		return "no colon at after hostname or ip4";
-	*bp = 0;
 	if (*ep == '?')
 		return "no port number before query argument";
 	/*
@@ -130,34 +156,14 @@ bio4_end_point_syntax(char *end_point)
 		return "port number can not be 0";
 	if (p > 65535)
 		return "port number > 65535";
-	port = (uint16_t)p;
 	if (!c)
 		return (char *)0;
-
 	/*
 	 *  Is a timeout specified as a query fragment on the URI:
 	 *
 	 *	?tmo=[0-9]{1,3}
 	 */
-	if (c != '?')
-		return "expected ? char after port number";
-	if (*ep++ != 't' || *ep++ != 'm' || *ep++ != 'o' || *ep++ != '=')
-		return "expected tmo= in query fragment";
-	if (!isdigit(*ep))
-		return "missing seconds after tmo= in query fragment";
-	bp = buf;
-	while ((c = *ep++)) {
-		if (!isdigit(c))
-			return "expected digit in tmo query fragment";
-		if (bp - buf > 2)
-			return "too many digits in timeout seconds";
-		*bp++ = c;
-	}
-	*bp = 0;
-	timeout = atoi(buf);
-	if (timeout > 255)
-		return "timeout > 255 seconds";
-	return (char *)0;
+	return get_timeout(ep, (unsigned int *)0);
 }
 
 /*
@@ -185,7 +191,7 @@ _connect(char *host, int port, int *p_server_fd)
 	int trys;
 	int fd;
 
-	CTRACE2("request connect() to remote host", host);
+	_CTRACE2("request connect() to remote host", host);
 
 	/*
 	 *  Look up the host name, trying up to 5 times.
@@ -195,7 +201,7 @@ again1:
 	h = gethostbyname(host);
 	trys++;
 	if (!h) {
-		CTRACE2("gethostbyname() failed", host);
+		_CTRACE2("gethostbyname() failed", host);
 		/*
 		 *  Map the h_errno value set by gethostbyname() onto
 		 *  something reasonable.
@@ -225,7 +231,7 @@ again1:
 		return EINVAL;			/* wtf?? */
 	}
 
-	CTRACE("creating socket to remote ...");
+	_CTRACE("creating socket to remote ...");
 	/*
 	 *  Open and connect to the remote blobio server.
 	 */
@@ -234,13 +240,13 @@ again2:
 	if (fd < 0) {
 		int e = errno;
 
-		CTRACE2("socket() failed", strerror(e));
+		_CTRACE2("socket() failed", strerror(e));
 
 		if (e == EAGAIN || e == EINTR)
 			goto again2;
 		return e;
 	}
-	CTRACE("socket() created");
+	_CTRACE("socket() created");
 	memset(&s, 0, sizeof s);
 	s.sin_family = AF_INET;
 	memmove((void *)&s.sin_addr.s_addr, (void *)h->h_addr, h->h_length);
@@ -250,12 +256,12 @@ again2:
 	 *  Need to timeout connect() !!
 	 */
 again3:
-	CTRACE("connecting to socket ...");
+	_CTRACE("connecting to socket ...");
 
 	if (connect(fd, (const struct sockaddr *)&s, sizeof s) < 0) {
 		int e = errno;
 
-		CTRACE2("connect() failed", strerror(e));
+		_CTRACE2("connect() failed", strerror(e));
 
 		if (e == EINTR || e == EAGAIN)
 			goto again3;
@@ -264,7 +270,7 @@ again3:
 		return e;
 	}
 	*p_server_fd = fd;
-	CTRACE("_connect() done");
+	_CTRACE("done");
 	return 0;
 }
 
@@ -273,17 +279,31 @@ bio4_open()
 {
 	int status;
 	char host[HOST_NAME_MAX + 1], *p;
+	char pbuf[6];
 	int port = 0;
+	char *qmark;
 
 	_TRACE("request to open()");
 
 	if (brr_path)
 		return "option brr-path not support";
 
+	//  assume bio4_end_point_syntax() already called.
 	p = strchr(end_point, ':');
 	memcpy(host, end_point, p - end_point);
 	host[p - end_point] = 0;
-	port = atoi(p + 1);
+	p++;
+	_TRACE2("port fragment", p);
+	qmark = strchr(p, '?');
+	if (qmark) {
+		get_timeout(qmark + 1, &timeout);
+		memcpy(pbuf, p, qmark - p);
+		pbuf[p - qmark] = 0;
+	} else
+		strcpy(pbuf, p);
+
+		
+	port = atoi(pbuf);
 
 	/*
 	 *  Connect to service.
