@@ -14,7 +14,6 @@ OBJS=			\
 	cache4.o	\
 	digest.o 	\
 	fs.o		\
-	rofs.o		\
 	service.o	\
 	sha.o		\
 	trace.o		\
@@ -38,7 +37,6 @@ install: all
 		cache4.c						\
 		digest.c 						\
 		fs.c							\
-		rofs.c							\
 		service.c						\
 		sha.c							\
 		trace.c							\
@@ -60,8 +58,6 @@ blobio.o: blobio.c blobio.h
 	$(CC) -g $(CFLAGS) -c blobio.c
 digest.o: digest.c blobio.h
 	$(CC) $(CFLAGS) -c digest.c
-rofs.o: rofs.c blobio.h
-	$(CC) $(CFLAGS) -c rofs.c
 fs.o: fs.c blobio.h
 	$(CC) $(CFLAGS) -c fs.c
 sha.o: sha.c blobio.h
