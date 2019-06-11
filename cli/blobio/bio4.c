@@ -53,7 +53,7 @@ extern int	input_fd;
 static int server_fd = -1;
 static unsigned int timeout =	20;
 
-struct service bio4_service;
+extern struct service bio4_service;		//  initialized below
 
 static void
 _trace(char *msg)

@@ -4,6 +4,7 @@ blobio
 blobio.o
 buf.o
 cache4.o
+data
 digest.o
 fs.o
 rofs.o

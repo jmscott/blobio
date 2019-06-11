@@ -46,10 +46,10 @@ extern int	input_fd;
 extern char	*null_device;
 extern unsigned long long	blob_size;
 
-static char	fs_path[PATH_MAX + 1];
-static char	tmp_path[PATH_MAX + 1];
+static char	fs_path[PATH_MAX + 1] = {0};
+static char	tmp_path[PATH_MAX + 1] = {0};
 
-struct service fs_service;
+extern struct service fs_service;
 
 /*
  *  The end point is the root directory of the source blobio file system.
@@ -95,7 +95,6 @@ static char *
 fs_open()
 {
 	struct stat st;
-
 	char *end_point = fs_service.end_point;
 
 	if (brr_path) {
@@ -133,7 +132,7 @@ fs_open()
 	*fs_path = 0;
 	buf4cat(fs_path, sizeof fs_path, end_point, "/data/", algorithm, "_fs");
 
-	//  reverify permissons on data/ directory
+	//  verify permissons on data/ directory
 
 	if (uni_access(fs_path, X_OK)) {
 		if (errno == ENOENT)

@@ -63,6 +63,8 @@ cache4_open()
 	if (verb[0] != 'g' || verb[1] != 'e')
 		return "only get verb is supported";
 
+	fs_service.digest = cache4_service.digest;
+
 	strcpy(
 		fs_service.end_point,
 		strrchr(cache4_service.end_point, ':') + 1
@@ -97,9 +99,8 @@ cache4_close()
 static char *
 cache4_get(int *ok_no)
 {
-	(void)ok_no;
-
 	char *err = fs_service.get(ok_no);
+
 	if (err)
 		return err;
 	if (*ok_no == 0)
