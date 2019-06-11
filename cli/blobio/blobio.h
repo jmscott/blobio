@@ -137,10 +137,10 @@ struct service
 
 	/*  Note:  why no close output? */
 
-	char		*(*open_output)();
+	char		*(*open_output)(void);
 
-	char		*(*open)();
-	char		*(*close)();
+	char		*(*open)(void);
+	char		*(*close)(void);
 	char		*(*get)(int *ok_no);
 	char		*(*eat)(int *ok_no);
 	char		*(*put)(int *ok_no);

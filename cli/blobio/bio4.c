@@ -275,23 +275,23 @@ again3:
 }
 
 static char *
-bio4_open(char *end_point)
+bio4_open()
 {
 	int status;
 	char host[HOST_NAME_MAX + 1], *p;
 	char pbuf[6];
 	int port = 0;
 	char *qmark;
+	char *ep = bio4_service.end_point;
 
-	_TRACE("request to open()");
+	_TRACE2("request to open()", ep);
 
 	if (brr_path)
 		return "option brr-path not support";
 
-	//  assume bio4_end_point_syntax() already called.
-	p = strchr(end_point, ':');
-	memcpy(host, end_point, p - end_point);
-	host[p - end_point] = 0;
+	p = strchr(ep, ':');
+	memcpy(host, ep, p - ep);
+	host[p - ep] = 0;
 	p++;
 	_TRACE2("port fragment", p);
 	qmark = strchr(p, '?');
