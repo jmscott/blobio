@@ -42,6 +42,7 @@ import (
 	"io/ioutil"
 	"os"
 	"regexp"
+	"runtime"
 	"strconv"
 	"strings"
 	"sync"
@@ -99,6 +100,7 @@ type Answer struct {
 
 	ConfigPath	string			`json:"config_path"`
 	ConfigBlob	string			`json:"config_blob"`
+	GoMemStats	runtime.MemStats	`json:"runtime.MemStats"`
 	config		*Config
 }
 
@@ -457,6 +459,7 @@ func main() {
 
 	answer.WallDuration = time.Since(answer.StartTime)
 	answer.WallDurationString = answer.WallDuration.String()
+	runtime.ReadMemStats(&answer.GoMemStats)
 	err = enc.Encode(&answer)
 	if err != nil {
 		die("json.Encode(answer) failed: %s", err)

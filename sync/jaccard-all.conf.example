@@ -1,21 +1,21 @@
 {
 	"witness_blob": "bc160:6b2db2774688f2b7580abd4bb4ba8257c85f3eb9",
 	"databases": {
-		"condor": {
-			"PGHOST":	"/tmp",
-			"PGPORT":	5432,
+		"essback": {
+			"PGHOST":	"127.0.0.1",
+			"PGPORT":	15433,
 			"PGUSER":	"postgres",
 			"PGDATABASE":	"blobio"
 		},
-		"tmonk": {
+		"nag": {
 			"PGHOST":	"127.0.0.1",
-			"PGPORT":	15432,
+			"PGPORT":	15434,
 			"PGUSER":	"postgres",
 			"PGDATABASE":	"blobio"
 		},
-		"ess": {
+		"wework": {
 			"PGHOST":	"127.0.0.1",
-			"PGPORT":	25432,
+			"PGPORT":	15436,
 			"PGUSER":	"postgres",
 			"PGDATABASE":	"blobio"
 		}
