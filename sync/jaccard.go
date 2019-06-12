@@ -86,6 +86,9 @@ type AnswerService struct {
 
 	service_mutex	sync.Mutex
 	service		map[string]bool
+	QueryDuration	time.Duration		`json:"query_duration"`
+	QueryDurationString	time.Time	`json:"query_duration_string"`
+	query_start_time	time.Time
 }
 
 type Answer struct {
@@ -295,6 +298,7 @@ func (as *AnswerService) select_service(done chan *PGDatabase) {
 	}
 	_debug("selecting all blobs in service table: %s", pg.tag)
 
+	as.query_start_time = time.Now()
 	//  insure each database has unique system identifier
 	rows, err := pg.db.Query(
 		`
@@ -352,6 +356,7 @@ SELECT
 			a.service_mutex.Unlock()
 		}
 	}
+	as.QueryDuration = time.Since(as.query_start_time)
 	if as.BlobCount % 100000 != 0 {
 		_debug("blob: total #%d", as.BlobCount)
 	}
