@@ -5,6 +5,9 @@
 #  	flowd server blobio.flow
 #  See:
 #	For systemd service: $BLOBIO_ROOT/lib/blobio.flowd.service.example
+#  Note:
+#	The test for failed existence of brr_blob_size is not triggering
+#	update.  Currently only rummy does this.
 #
 
 boot
