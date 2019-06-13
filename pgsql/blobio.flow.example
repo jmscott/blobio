@@ -31,23 +31,23 @@ tail bio4d
 #
 #  Uncomment to push blob request records to setcore
 #
-command append_setcore_brr
-{
-	path = "sbin/append-brr";
-	argv = (
-		"../setspace/schema/setcore/spool/bio4d.brr"
-	);
-}
-
-call append_setcore_brr(
-	bio4d.start_time,
-	bio4d.netflow,
-	bio4d.verb,
-	bio4d.udig,
-	bio4d.chat_history,
-	bio4d.blob_size,
-	bio4d.wall_duration
-);
+#command append_setcore_brr
+#{
+#	path = "sbin/append-brr";
+#	argv = (
+#		"../setspace/schema/setcore/spool/bio4d.brr"
+#	);
+#}
+#
+#call append_setcore_brr(
+#	bio4d.start_time,
+#	bio4d.netflow,
+#	bio4d.verb,
+#	bio4d.udig,
+#	bio4d.chat_history,
+#	bio4d.blob_size,
+#	bio4d.wall_duration
+#);
 
 command chat_ok
 {
