@@ -5,6 +5,8 @@
  *	export BLOBIO_ROOT=/usr/local/blobio
  *	$BLOBIO_ROOT/sbin/bio4d
  *  Note:
+ *	The entire start/stop code in bio4d needs a full shakedown.
+ *
  *	A broken get request still generates a partial and incorrect brr
  *	record.  For example, see get requests for (or any big blob)
  *
