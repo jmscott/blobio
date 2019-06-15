@@ -87,7 +87,7 @@ type AnswerService struct {
 	service_mutex	sync.Mutex
 	service		map[string]bool
 	QueryDuration	time.Duration		`json:"query_duration"`
-	QueryDurationString	time.Time	`json:"query_duration_string"`
+	QueryDurationString	string		`json:"query_duration_string"`
 	query_start_time	time.Time
 }
 
@@ -357,6 +357,7 @@ SELECT
 		}
 	}
 	as.QueryDuration = time.Since(as.query_start_time)
+	as.QueryDurationString = as.QueryDuration.String()
 	if as.BlobCount % 100000 != 0 {
 		_debug("blob: total #%d", as.BlobCount)
 	}
