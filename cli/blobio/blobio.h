@@ -30,6 +30,8 @@
 
 #endif
 
+#define FS_DIR_SEPARATOR_CHAR	'/'
+
 struct digest
 {
 	char	*algorithm;

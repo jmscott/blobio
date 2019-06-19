@@ -94,18 +94,37 @@ cache4_close()
  *  Get a blob.
  *
  *  Note:
- *	brr_path not supported!
+ *	brr_path not supported!  code desparatly needs to be refactored.
  */
 static char *
 cache4_get(int *ok_no)
 {
+	TRACE("cache4_get: calling fs_service.get");
 	char *err = fs_service.get(ok_no);
 
 	if (err)
 		return err;
+	TRACE("cache4_get: fs_service.get ok");
 	if (*ok_no == 0)
 		return (char *)0;	//  found blob in fs cache
 
+	//  blob not in file cache so do the delayed open of bio4 service.
+
+	bio4_service.digest = cache4_service.digest;
+	char *right_colon = strrchr(cache4_service.end_point, ':');
+	int len = right_colon - cache4_service.end_point;
+	memcpy(bio4_service.end_point, cache4_service.end_point,  len);
+	bio4_service.end_point[len] = 0;
+	err = bio4_service.open();
+	if (err)
+		return err;
+
+	//  build the path to the blob to be cached in the file system.
+	char cache_path[PATH_MAX+1];
+	err = fs_service.digest->fs_path(cache_path, sizeof cache_path);
+	if (err)
+		return err;
+	
 	//  fetch the file from bio4 service and write to the cache.
 	err = bio4_service.get(ok_no);
 	if (err)

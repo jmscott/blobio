@@ -406,8 +406,6 @@ _write(int fd, unsigned char *buf, int buf_size)
 {
 	char *err = 0;
 
-	_TRACE("request to write()");
-
 	if (timeout > 0) {
 		if (signal(SIGALRM, catch_write_ALRM) == SIG_ERR)
 			return strerror(errno);
@@ -420,15 +418,6 @@ _write(int fd, unsigned char *buf, int buf_size)
 			err = strerror(errno);
 		alarm(0);
 	}
-
-#ifdef COMPILE_TRACE
-	_TRACE("write() ok, hex dump follows ...");
-	if (err) {
-		_TRACE2("ERROR", err);
-	} else if (tracing)
-		hexdump((unsigned char*)buf, buf_size, '<');
-	_TRACE("write() done");
-#endif
 	return err;
 }
 
@@ -559,8 +548,6 @@ _get(int *ok_no, int in_take)
 	int more;
 	int nread;
 
-	_TRACE("request to get()");
-
 	err = request(ok_no);
 	if (err)
 		return err;
@@ -626,11 +613,13 @@ bio4_open_output()
 	int fd;
 	int flag = O_WRONLY | O_CREAT;
 
+	_TRACE("bio4_open_output: entered");
+
 	if (output_path != null_device)
 		flag |= O_EXCL;		//  fail if file exists (and not null)
 
 	fd = uni_open_mode(output_path, flag, S_IRUSR | S_IRGRP);
-	if (fd == -1)
+	if (fd < -1)
 		return strerror(errno);
 	output_fd = fd;
 	return (char *)0;
