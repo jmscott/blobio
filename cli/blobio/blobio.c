@@ -113,7 +113,6 @@ int	output_fd = 1;
 
 extern struct digest		*digests[];
 extern struct service		*services[];
-extern int			errno;
 struct digest			*digest_module;
 
 static struct service		*service = 0;

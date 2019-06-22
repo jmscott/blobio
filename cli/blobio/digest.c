@@ -3,6 +3,7 @@
  *	Hash Digest Modules
  */
 #include <string.h>
+#include <errno.h>
 #include "blobio.h"
 
 extern struct digest	*digest_module;
