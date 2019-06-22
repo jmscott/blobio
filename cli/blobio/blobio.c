@@ -3,7 +3,7 @@
  *	Client to get/put/give/take/eat/wrap/roll blobs to a blobio service.
  *  Exit Status:
  *  	0	request succeed - ok
- *  	1	request denied. blob may not exist or is not empty -
+ *  	1	request denied.  blob may not exist or is not empty -
  *	2	missing or invalid command line argument
  *	16	unexpected hash digest error
  *	17	unexpected blobio service error
@@ -16,6 +16,9 @@
  *	--output-path <path/to/file>
  *	--help
  *  Note:
+ *	Timeout needs to be explicit status, so network flaps can be
+ *	diagnosed.
+ *
  *	The following fails with exit 1 for service fs:/usr/local/blob
  *	when blob actually exists but output dir does not!
  *
@@ -110,11 +113,10 @@ int	output_fd = 1;
 
 extern struct digest		*digests[];
 extern struct service		*services[];
-extern int			h_errno;
 extern int			errno;
+struct digest			*digest_module;
 
 static struct service		*service = 0;
-static struct digest		*digest_module;
 
 static char		usage[] =
        "usage: blobio [help | get|put|give|take|eat|wrap|roll|empty] [options]\n"

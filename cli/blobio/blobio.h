@@ -30,8 +30,6 @@
 
 #endif
 
-#define FS_DIR_SEPARATOR_CHAR	'/'
-
 struct digest
 {
 	char	*algorithm;
@@ -46,8 +44,9 @@ struct digest
 	/*
 	 *  get:
 	 *	Update the local digest with a portion of the blob read from a 
-	 *	service.  Returns 0 if the full blob has been seen, 1 if 
-	 *	more needs to be read, < 0 if an error occured.
+	 *	service.  Returns "0" if the full blob has been seen, "1" if 
+	 *	more needs to be read, otherwise an error string.  The returned
+	 *	error string must have length > 1.
 	 */
 	char	*(*get_update)(unsigned char *src, int src_size);
 
@@ -113,19 +112,25 @@ struct digest
 	int	(*close)();
 
 	/*
-	 *  Convert the ascii digest to name of a file
+	 *  Convert the ascii digest to name of a file and
+	 *  copy to the buffer that "name" points to.
+	 *  Typically the name is simply the digest value.
+	 *  No file is created in the file system.
 	 */
 	char	*(*fs_name)(char *name, int size);
 
 	/*
-	 *  Convert the ascii digest to a path to the file.
+	 *  Convert the ascii digest to the full a path to file
+	 *  stored locally and copy to the buffer that "path"
+	 *  points to.  No file is created in the file system.
 	 */
 	char	*(*fs_path)(char *path, int size);
 
 	/*
-	 *  Make a file system path from the ascii digest.
-	 *  Path points to the parent of the first directory
-	 *  build from the hash digest.
+	 *  Make a file system path from the ascii digest
+	 *  and build all directories in the path.  The full
+	 *  path is copied to the buffer that "path" points to.
+	 *  Effectively, "fs_mkdir" is equivalent to "mkdir -p".
 	 */
 	char	*(*fs_mkdir)(char *path, int size);
 };
@@ -181,5 +186,6 @@ extern int	uni_unlink(const char *path);
 extern int	uni_write_buf(int fd, const void *buf, size_t count);
 extern ssize_t	uni_read(int fd, void *buf, size_t count);
 extern ssize_t	uni_write(int fd, const void *buf, size_t count);
+extern int	uni_rename(const char *old, const char *new);
 
 #endif
