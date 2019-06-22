@@ -2,6 +2,8 @@
  *  Synopsis:
  *	A driver for a fast, trusting posix file system blobio service.
  *  Note:
+ *	Need to properly use separator char in tmp_path.
+ *
  *	Only ascii is acccepted in the file system path!
  *
  *	In a "take" with a brr path a race condition exists between when a
