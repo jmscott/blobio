@@ -1,6 +1,6 @@
 /*
  *  Synopsis:
- *	Wrapper around restartable posix/unixish routines, with errno untouched.
+ *	Interuptible posix/unixish routines, with errno untouched.
  */
 
 #include <sys/types.h>
@@ -9,6 +9,16 @@
 #include <errno.h>
 #include <fcntl.h>
 #include <unistd.h>
+
+/*
+ *  Note:
+ *	I (jms) refuse to pull in <stdio.h> for single declaration!
+ *	WTF are "feature test macros"?
+ *
+ *		http://man7.org/linux/man-pages/man7/feature_test_macros.7.html
+ */
+
+extern int rename(const char *oldpath, const char *newpath);
 
 /*
  *  Interruptable close() of a file descriptor.
@@ -169,6 +179,18 @@ again:
 	if (access(path, mode) == 0)
 		return 0;
 	if (errno == EINTR)
+		goto again;
+	return -1;
+}
+
+int
+uni_rename(const char *old, const char *new)
+{
+again:
+	errno = 0;
+	if (rename(old, new) == 0)
+		return 0;
+	if (errno == EINTR)		//  is rename interuptible?
 		goto again;
 	return -1;
 }
