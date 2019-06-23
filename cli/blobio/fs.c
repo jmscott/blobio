@@ -138,9 +138,9 @@ fs_open()
 
 	if (uni_access(fs_path, X_OK)) {
 		if (errno == ENOENT)
-			return "blob data directory does not exist";
+			return "directory does not exists: data/<algo>_fs";
 		if (errno == EPERM)
-			return "no permission to search blob data directory";
+			return "no permission for directory: data/<algo>_fs/";
 		return strerror(errno);
 	}
 			
@@ -149,7 +149,7 @@ fs_open()
 	if (stat(fs_path, &st))
 		return strerror(errno);
 	if (!S_ISDIR(st.st_mode))
-		return "blob data directory is not a directory";
+		return "not a directory: data/<algo>_fs";
 
 	//  if writing a blob then build path to temporary directory.
 

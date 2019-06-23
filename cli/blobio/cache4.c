@@ -19,12 +19,38 @@
 
 #include "blobio.h"
 
+#ifdef COMPILE_TRACE
+
+#define _TRACE(msg)		if (tracing) _trace(msg)
+#define _TRACE2(msg1,msg2)	if (tracing) _trace2(msg1,msg2)
+
+#else
+
+#define _TRACE(msg)
+#define _TRACE2(msg1,msg2)
+#define _TRACE3(msg1,msg2,msg3)
+#define _TRACE3(msg1,msg2,msg3)
+
+#endif
+
 extern char *verb;
 extern int output_fd;
 extern struct service bio4_service;
 extern struct service fs_service;
 
 struct service cache4_service;
+
+static void
+_trace(char *msg)
+{
+	trace2("cache4", msg);
+}
+
+static void
+_trace2(char *msg1, char *msg2)
+{
+	trace3("cache4", msg1, msg2);
+}
 
 /*
  *  The end point is the root directory of the source blobio file system.
@@ -123,14 +149,14 @@ cache4_get(int *ok_no)
 {
 	int len;
 
-	TRACE("cache4_get: calling fs_service.get");
+	_TRACE("get: calling fs_service.get");
 	char *err = fs_service.get(ok_no);
 	if (err)
 		return err;
 
-	TRACE("cache4_get: fs_service.get ok");
 	if (*ok_no == 0)
 		return (char *)0;	//  found blob in fs cache
+	_TRACE("get: fs_service.get == no");
 
 	//  blob not in file cache so do the delayed open of bio4 service.
 
@@ -139,23 +165,25 @@ cache4_get(int *ok_no)
 	len = right_colon - cache4_service.end_point;
 	memcpy(bio4_service.end_point, cache4_service.end_point,  len);
 	bio4_service.end_point[len] = 0;
-	err = bio4_service.open();
-	if (err)
+	if ((err = bio4_service.open()))
 		return err;
-
-	//  build the path to the temp blob
-	//
-	//  Note:
-	//	How to handle if another fetch is flight?
+	/*
+	 *  Build a path to the temp blob.
+	 *
+	 *  Note:
+	 *	How to handle if another fetch is flight?
+	 */
+	_TRACE("bio4.open() ok");
 
 	char tmp_path[PATH_MAX+1], tmp_name[PATH_MAX+1];
-	snprintf(tmp_name, sizeof tmp_name, "/cache4-%ul", getpid());
+	snprintf(tmp_name, sizeof tmp_name, "cache4-%ul", getpid());
 	tmp_path[0] = 0;
 	buf3cat(tmp_path, sizeof tmp_path,
 		right_colon + 1,
 		"/tmp/",
 		tmp_name
 	);
+	_TRACE2("tmp path", tmp_path);
 	int tmp_fd = uni_open_mode(tmp_path, O_WRONLY|O_CREAT,S_IRUSR|S_IRGRP);
 	if (tmp_fd < 0)
 		return strerror(errno);
@@ -184,22 +212,29 @@ cache4_get(int *ok_no)
 		"cache/data/%s_fs",
 		bio4_service.digest->algorithm
 	);
-	TRACE2("cache4_get: pre cache_path", cache_path);
-	len = strlen(cache_path);
+	_TRACE2("get: pre cache_path", cache_path);
+
+	/*
+	 *  Note:
+	 *	Need to automatically build cache/data/<algo>_fs.
+	 *	digest->fs_mkdir() only makes the hash portion of the
+	 *	path to the blob.
+	 */
 	status = fs_service.digest->fs_mkdir(
-			cache_path + len,
-			sizeof cache_path - len
+			cache_path,
+			sizeof cache_path
 	);
 	if (status) {
 		zap_temp(tmp_path, tmp_fd);
 		return status;
 	}
-	TRACE2("cache4_get: target cache_path", cache_path);
+	_TRACE2("get: target cache_path", cache_path);
 	if (uni_rename(tmp_path, cache_path)) {
+		int e = errno;
 		zap_temp(tmp_path, tmp_fd);
-		return strerror(errno);
+		return strerror(e);
 	}
-	TRACE("cache4_get: rename ok");
+	_TRACE("get: rename ok");
 	return (char *)0;
 }
 

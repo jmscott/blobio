@@ -22,11 +22,13 @@
 
 #ifdef COMPILE_TRACE
 
-#define _TRACE(msg)	if (tracing) _trace(msg)
+#define _TRACE(msg)		if (tracing) _trace(msg)
+#define _TRACE2(msg1,msg2)	if (tracing) _trace2(msg1,msg2)
 
 #else
 
 #define _TRACE(msg)
+#define _TRACE2(msg1,msg2)
 
 #endif
 
@@ -244,6 +246,12 @@ _trace(char *msg)
 	trace2("bc160", msg);
 }
 
+static void
+_trace2(char *msg1, char *msg2)
+{
+	trace3("bc160", msg1, msg2);
+}
+
 /*
  *  Digest data on input and update the global digest[129] array.
  *
@@ -318,7 +326,9 @@ bc160_fs_mkdir(char *path, int size)
 	char *dp, *p;
 
 	if (size < 10)
-		return "fs_mkdir: size < 10 bytes";
+		return "size < 10 bytes";
+
+	_TRACE2("fs_mkdir: path", path);
 
 	dp = digest;
 

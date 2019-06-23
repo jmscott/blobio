@@ -131,6 +131,11 @@ struct digest
 	 *  and build all directories in the path.  The full
 	 *  path is copied to the buffer that "path" points to.
 	 *  Effectively, "fs_mkdir" is equivalent to "mkdir -p".
+	 *
+	 *  Note:
+	 *	Why not rename "fs_mkdir()" to simply "mkdir()"?
+	 *
+	 *	Can fs_mkdir() be factored out of digest driver?
 	 */
 	char	*(*fs_mkdir)(char *path, int size);
 };
