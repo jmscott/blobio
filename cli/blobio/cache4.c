@@ -43,13 +43,19 @@ struct service cache4_service;
 static void
 _trace(char *msg)
 {
-	trace2("cache4", msg);
+	if (verb)
+		trace3("cache4", verb, msg);
+	else
+		trace2("cache4", msg);
 }
 
 static void
 _trace2(char *msg1, char *msg2)
 {
-	trace3("cache4", msg1, msg2);
+	if (verb)
+		trace4("cache4", verb, msg1, msg2);
+	else
+		trace3("cache4", msg1, msg2);
 }
 
 /*
@@ -149,14 +155,14 @@ cache4_get(int *ok_no)
 {
 	int len;
 
-	_TRACE("get: calling fs_service.get");
+	_TRACE("calling fs_service.get");
 	char *err = fs_service.get(ok_no);
 	if (err)
 		return err;
 
 	if (*ok_no == 0)
 		return (char *)0;	//  found blob in fs cache
-	_TRACE("get: fs_service.get == no");
+	_TRACE("fs_service.get == no");
 
 	//  blob not in file cache so do the delayed open of bio4 service.
 
@@ -212,7 +218,7 @@ cache4_get(int *ok_no)
 		"cache/data/%s_fs",
 		bio4_service.digest->algorithm
 	);
-	_TRACE2("get: pre cache_path", cache_path);
+	_TRACE2("pre cache_path", cache_path);
 
 	/*
 	 *  Note:
@@ -228,13 +234,17 @@ cache4_get(int *ok_no)
 		zap_temp(tmp_path, tmp_fd);
 		return status;
 	}
-	_TRACE2("get: target cache_path", cache_path);
+	_TRACE2("target dir cache_path", cache_path);
+	status = fs_service.digest->fs_path(cache_path, sizeof cache_path);
+	if (status)
+		return status;
+	_TRACE2("target file cache_path", cache_path);
 	if (uni_rename(tmp_path, cache_path)) {
 		int e = errno;
 		zap_temp(tmp_path, tmp_fd);
 		return strerror(e);
 	}
-	_TRACE("get: rename ok");
+	_TRACE("rename ok");
 	return (char *)0;
 }
 
