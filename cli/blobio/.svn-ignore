@@ -3,6 +3,7 @@ bio4.o
 blobio
 blobio.o
 buf.o
+cache
 cache4.o
 data
 digest.o
