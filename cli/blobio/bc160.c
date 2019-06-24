@@ -321,7 +321,7 @@ _mkdir(char *path)
 }
 
 /*
- *  Make the directory path to a file system blob.
+ *  Make the directory path to a file system blob, appending "/" at end.
  */
 static char *
 bc160_fs_mkdir(char *path, int size)
@@ -344,7 +344,7 @@ bc160_fs_mkdir(char *path, int size)
 
 	*p++ = '/';
 	*p++ = *dp++;    *p++ = *dp++;    *p++ = *dp++;  
-	*dp = 0;
+	*p = 0;
 	if (_mkdir(path))
 		return strerror(errno);
 	return (char *)0;
