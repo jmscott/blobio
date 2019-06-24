@@ -41,7 +41,7 @@
 
 extern char	*verb;
 extern char	algorithm[9];
-extern char	digest[129];
+extern char	ascii_digest[129];
 extern char	end_point[129];
 extern char	*brr_path;
 extern char	*output_path;
@@ -357,10 +357,10 @@ make_request(char *command)
 		p = algorithm;
 		while (*p)
 			*c++ = *p++;
-		if (digest[0]) {
+		if (ascii_digest[0]) {
 			*c++ = ':';
 
-			p = digest;
+			p = ascii_digest;
 			while (*p)
 				*c++ = *p++;
 		}

@@ -33,7 +33,7 @@
 #endif
 
 extern char	*verb;
-extern char	digest[];
+extern char	ascii_digest[];
 extern int	input_fd;
 
 static unsigned char	bin_digest[20];
@@ -67,8 +67,8 @@ bc160_init()
 		 *  The ascii, hex version has already been scanned for 
 		 *  syntactic correctness.
 		 */
-		if (digest[0]) {
-			d40 = digest;
+		if (ascii_digest[0]) {
+			d40 = ascii_digest;
 			d20 = bin_digest;
 
 			memset(d20, 0, 20);	/*  since nibs are or'ed in */
@@ -86,7 +86,7 @@ bc160_init()
 			}
 #ifdef COMPILE_TRACE
 			if (tracing) {
-				trace2(n, "hex dump of 20 byte digest:");
+				trace2(n, "hex dump of 20 byte bin digest:");
 				hexdump(d20, 20, '=');
 			}
 #endif
@@ -214,24 +214,25 @@ bc160_syntax()
 {
 	char *p, c;
 
-	p = digest;
+	p = ascii_digest;
 	while ((c = *p++)) {
-		if (p - digest > 40)
+		if (p - ascii_digest > 40)
 			return 0;
 		if (('0' > c||c > '9') && ('a' > c||c > 'f'))
 			return 0;
 	}
-	return p - digest == 41 ? (strcmp(digest, empty) == 0 ? 2 : 1) : 0;
+	return p - ascii_digest == 41 ?
+		(strcmp(ascii_digest, empty) == 0 ? 2 : 1) : 0;
 }
 
 /*
- *  Is the digest == to well-known empty digest
+ *  Is the ascii digest == to well-known empty digest
  *  b472a266d0bd89c13706a4132ccfb16f7c3b9fcb 
  */
 static int
 bc160_empty()
 {
-	return strcmp(empty, digest) == 0?  1 : 0;
+	return strcmp(empty, ascii_digest) == 0?  1 : 0;
 }
 
 static char nib2hex[] =
@@ -253,7 +254,7 @@ _trace2(char *msg1, char *msg2)
 }
 
 /*
- *  Digest data on input and update the global digest[129] array.
+ *  Digest data on input and update the global ascii_digest[129] array.
  *
  *  Returns:
  *	(char *)	input eaten success fully
@@ -282,7 +283,7 @@ bc160_eat_input()
 	if (!RIPEMD160_Final(bin_digest, &bc160_ctx.ripemd160))
 		return "RIPEMD160_Final(SHA256) failed";
 
-	p = digest;
+	p = ascii_digest;
 	q = bin_digest;
 	q_end = q + 20;
 
@@ -303,9 +304,11 @@ bc160_eat_input()
 static char *
 bc160_fs_name(char *name, int size)
 {
+
+TRACE2("WTF: bc160_fs_name: digest", ascii_digest); 
 	if (size < 41)
 		return "file name size too small: size < 41 bytes";
-	memcpy(name, digest, 40);
+	memcpy(name, ascii_digest, 40);
 	name[40] = 0;
 
 	return (char *)0;
@@ -330,7 +333,7 @@ bc160_fs_mkdir(char *path, int size)
 
 	_TRACE2("fs_mkdir: path", path);
 
-	dp = digest;
+	dp = ascii_digest;
 
 	p = bufcat(path, size, "/");
 
@@ -358,7 +361,7 @@ bc160_fs_path(char *file_path, int size)
 	if (size < 49)
 		return "file path size too small: size < 49 bytes";
 
-	dp = digest;
+	dp = ascii_digest;
 	fp = file_path;
 
 	*fp++ = '/';		//  first directory
@@ -371,9 +374,9 @@ bc160_fs_path(char *file_path, int size)
 	*fp++ = *dp++;
 	*fp++ = *dp++;
 
-	dp = digest;		//  file name is 40 chars of sha digest
+	dp = ascii_digest;	//  file name is 40 chars of sha digest
 	*fp++ = '/';
-	memcpy(fp, digest, 40);
+	memcpy(fp, ascii_digest, 40);
 	fp[40] = 0;
 
 	return (char *)0;

@@ -27,7 +27,7 @@
 #endif
 
 extern char	*verb;
-extern char	digest[];
+extern char	ascii_digest[];
 extern int	input_fd;
 
 static unsigned char	bin_digest[20];
@@ -52,8 +52,8 @@ sha_init()
 		 *  The ascii, hex version has already been scanned for 
 		 *  syntactic correctness.
 		 */
-		if (digest[0]) {
-			d40 = digest;
+		if (ascii_digest[0]) {
+			d40 = ascii_digest;
 			d20 = bin_digest;
 
 			memset(d20, 0, 20);	/*  since nibs are or'ed in */
@@ -71,7 +71,7 @@ sha_init()
 			}
 #ifdef COMPILE_TRACE
 			if (tracing) {
-				trace2(nm, "hex dump of 20 byte digest:");
+				trace2(nm, "hex dump of 20 byte bin digest:");
 				hexdump(d20, 20, '=');
 			}
 #endif
@@ -113,7 +113,7 @@ chew(unsigned char *chunk, int size)
 
 #ifdef COMPILE_TRACE
 	if (tracing) {
-		trace2(nm, "hex dump of 20 byte digest follows ...");
+		trace2(nm, "hex dump of 20 byte bin digest follows ...");
 		hexdump(tmp_digest, 20, '=');
 		trace2(nm, "chew() done");
 	}
@@ -189,24 +189,25 @@ sha_syntax()
 {
 	char *p, c;
 
-	p = digest;
+	p = ascii_digest;
 	while ((c = *p++)) {
-		if (p - digest > 40)
+		if (p - ascii_digest > 40)
 			return 0;
 		if (('0' > c||c > '9') && ('a' > c||c > 'f'))
 			return 0;
 	}
-	return p - digest == 41 ? (strcmp(digest, empty) == 0 ? 2 : 1) : 0;
+	return p - ascii_digest == 41 ?
+		(strcmp(ascii_digest, empty) == 0 ? 2 : 1) : 0;
 }
 
 /*
- *  Is the digest == to well-known empty digest
+ *  Is the ascii digest == to well-known empty digest
  *  da39a3ee5e6b4b0d3255bfef95601890afd80709 
  */
 static int
 sha_empty()
 {
-	return strcmp(empty, digest) == 0? 1 : 0;
+	return strcmp(empty, ascii_digest) == 0? 1 : 0;
 }
 
 static char nib2hex[] =
@@ -222,7 +223,7 @@ _trace(char *msg)
 }
 
 /*
- *  Digest data on input and update the global digest[129] array.
+ *  Digest data on input and update the global ascii_digest[129] array.
  *
  *  Note:
  *	Not a timed read(), since assumed to be local file.
@@ -244,7 +245,7 @@ sha_eat_input()
 	if (!SHA1_Final(bin_digest, &sha_ctx))
 		return "SHA1_Final() failed";
 
-	p = digest;
+	p = ascii_digest;
 	q = bin_digest;
 	q_end = q + 20;
 
@@ -267,7 +268,7 @@ sha_fs_name(char *name, int size)
 {
 	if (size < 41)
 		return "file name size too small: size < 41 bytes";
-	memcpy(name, digest, 40);
+	memcpy(name, ascii_digest, 40);
 	name[40] = 0;
 
 	return (char *)0;
@@ -291,7 +292,7 @@ sha_fs_mkdir(char *path, int size)
 	if (size < 10)
 		return "fs_mkdir: size < 10 bytes";
 
-	dp = digest;
+	dp = ascii_digest;
 
 	p = bufcat(path, size, "/");
 
@@ -324,7 +325,7 @@ sha_fs_path(char *file_path, int size)
 	if (size < 49)
 		return "file path size too small: size < 49 bytes";
 
-	dp = digest;
+	dp = ascii_digest;
 	fp = file_path;
 
 	*fp++ = '/';		//  first directory
@@ -337,9 +338,9 @@ sha_fs_path(char *file_path, int size)
 	*fp++ = *dp++;
 	*fp++ = *dp++;
 
-	dp = digest;		//  file name is 40 chars of sha digest
+	dp = ascii_digest;	//  file name is 40 chars of sha digest
 	*fp++ = '/';
-	memcpy(fp, digest, 40);
+	memcpy(fp, ascii_digest, 40);
 	fp[40] = 0;
 
 	return (char *)0;

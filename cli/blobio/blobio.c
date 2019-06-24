@@ -94,7 +94,7 @@ extern int	tracing;
  */
 char	*verb;
 char	algorithm[9] = {0};
-char	digest[129] = {0};
+char	ascii_digest[129] = {0};
 char	*output_path = 0;
 char	*input_path = 0;
 char	*brr_path = 0;
@@ -288,7 +288,7 @@ parse_udig(char *udig)
 		return "empty udig";
 
 	a = algorithm;
-	d = digest;
+	d = ascii_digest;
 
 	for (u = udig;  *u;  u++) {
 		char c = *u;
@@ -314,13 +314,13 @@ parse_udig(char *udig)
 			/*
 			 *  Scanning digest.
 			 */
-			if (d - digest > 128)
+			if (d - ascii_digest > 128)
 				return "digest > 128 chars";
 			*d++ = c;
 		}
 	}
 	*d = 0;
-	if (d - digest < 32)
+	if (d - ascii_digest < 32)
 		return "digest < 32 characters";
 	return (char *)0;
 }
@@ -448,7 +448,7 @@ parse_argv(int argc, char **argv)
 			int j;
 			struct digest *d;
 
-			if (digest[0])
+			if (ascii_digest[0])
 				emany("udig");
 
 			// both --udig and --algorithm can't be defined at once
@@ -475,14 +475,18 @@ parse_argv(int argc, char **argv)
 
 			//  verify the digest is syntactically well formed
 
-			if (digest[0] && d->syntax() == 0)
-				eopt2("udig", "bad digest syntax", digest);
+			if (ascii_digest[0] && d->syntax() == 0)
+				eopt2(
+					"udig",
+					"bad syntax for digest",
+					ascii_digest
+				);
 			digest_module = d;
 		} else if (strcmp("algorithm", a) == 0) {
 			int j;
 			char *n;
 
-			if (digest[0])
+			if (ascii_digest[0])
 				eopt("algorithm", "option --udig conflicts");
 			if (algorithm[0])
 				emany("algorithm");
@@ -636,7 +640,7 @@ xref_args()
 	if (*verb == 'g' || *verb == 'p' || *verb == 't' || *verb == 'r') {
 		if (!service)
 			no_opt("service");
-		if (!digest[0])
+		if (!ascii_digest[0])
 			no_opt("udig");
 		if (*verb == 'r') {
 			if (input_path)
@@ -667,11 +671,11 @@ xref_args()
 				if (output_path)
 					enot("output-path");
 				if (algorithm[0]) {
-					if (!digest[0])
+					if (!ascii_digest[0])
 						enot("algorithm");
 				} else
 					no_opt("udig");
-			} else if (digest[0])
+			} else if (ascii_digest[0])
 				no_opt("service");
 			else if (!algorithm[0])
 				no_opt("algorithm");
@@ -682,7 +686,7 @@ xref_args()
 				enot("input-path");
 			if (service)
 				enot("service");
-			if (!digest[0] && !algorithm[0])
+			if (!ascii_digest[0] && !algorithm[0])
 				no_opt("{udig,algorithm}");
 		}
 	} else if (*verb == 'w') {
@@ -692,7 +696,7 @@ xref_args()
 			enot("input-path");
 		if (output_path)
 			enot("output-path");
-		if (digest[0])
+		if (ascii_digest[0])
 			enot("udig");
 		if (algorithm[0])
 			enot("algorithm");
@@ -770,8 +774,8 @@ brr_write()
 		netflow,
 		verb,
 		algorithm[0] ? algorithm : "",
-		algorithm[0] && digest[0] ? ":" : "",
-		digest[0] ? digest : "",
+		algorithm[0] && ascii_digest[0] ? ":" : "",
+		ascii_digest[0] ? ascii_digest : "",
 		chat_history,
 		blob_size,
 		sec, nsec
@@ -952,20 +956,20 @@ main(int argc, char **argv)
 				//  write the ascii digest
 
 				buf[0] = 0;
-				buf2cat(buf, sizeof buf, digest, "\n");
+				buf2cat(buf, sizeof buf, ascii_digest, "\n");
 				if (uni_write_buf(output_fd, buf, strlen(buf)))
 					die2(EXIT_BAD_UNI,
-						"write(digest) failed",
+						"write(ascii_digest) failed",
 						strerror(errno));
 				exit_status = 0;
 			}
 		/*
 		 *  is the udig the empty udig?
 		 */
-		} else if (digest[0])
+		} else if (ascii_digest[0])
 			exit_status = digest_module->empty() == 1 ? 0 : 1;
 		/*
-		 *  write the empty digest.
+		 *  write the empty ascii digest.
 		 */
 		else {
 			char *e = digest_module->empty_digest();
