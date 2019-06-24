@@ -37,7 +37,6 @@
 
 extern char	*verb;
 extern char	algorithm[9];
-extern char	digest[129];
 extern char	chat_history[129];
 extern char	netflow[129];
 extern char	*brr_path;
