@@ -332,7 +332,6 @@ bc160_fs_mkdir(char *path, int size)
 		return "size < 10 bytes";
 
 	_TRACE2("fs_mkdir: path", path);
-
 	dp = ascii_digest;
 
 	p = bufcat(path, size, "/");
@@ -344,6 +343,7 @@ bc160_fs_mkdir(char *path, int size)
 
 	*p++ = '/';
 	*p++ = *dp++;    *p++ = *dp++;    *p++ = *dp++;  
+	*p++ = '/';
 	*p = 0;
 	if (_mkdir(path))
 		return strerror(errno);

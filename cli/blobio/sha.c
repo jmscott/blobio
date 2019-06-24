@@ -303,6 +303,7 @@ sha_fs_mkdir(char *path, int size)
 
 	*p++ = '/';
 	*p++ = *dp++;    *p++ = *dp++;    *p++ = *dp++;  
+	*p++ = '/';
 	*p = 0;
 	if (_mkdir(path))
 		return strerror(errno);
