@@ -263,12 +263,20 @@ cache4_get(int *ok_no)
 }
 
 /*
- *  Eat a blob file by verifying existence and readability.
+ *  Need to think about sematics of cached eat.
  */
 static char *
 cache4_eat(int *ok_no)
 {
-	(void)ok_no;
+	char *status = fs_service.eat(ok_no);
+	if (status)
+		return status;
+	if (*ok_no == 0)
+		return (char *)0;
+	if ((status = bio4_service.open()))
+		return status;
+	if ((status = bio4_service.eat(ok_no)))
+		return status;
 	return (char *)0;
 }
 
@@ -276,7 +284,7 @@ static char *
 cache4_put(int *ok_no)
 {
 	(void)ok_no;
-	return (char *)0;
+	return "\"put\" not supported";
 }
 
 static char *
