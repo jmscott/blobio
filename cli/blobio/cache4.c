@@ -182,7 +182,6 @@ cache4_get(int *ok_no)
 	 */
 	_TRACE("bio4.open() ok");
 
-_TRACE2("WTF: right_colon", right_colon + 1);
 	char tmp_path[PATH_MAX+1];
 	snprintf(tmp_path, sizeof tmp_path, "%s/tmp/cache4-%s-%ul",
 		right_colon + 1,
@@ -193,6 +192,7 @@ _TRACE2("WTF: right_colon", right_colon + 1);
 	int tmp_fd = uni_open_mode(tmp_path, O_WRONLY|O_CREAT,S_IRUSR|S_IRGRP);
 	if (tmp_fd < 0)
 		return strerror(errno);
+	int cli_output_fd = output_fd;
 	output_fd = tmp_fd;
 	char *status = bio4_service.get(ok_no);
 	if (status) {
@@ -203,9 +203,9 @@ _TRACE2("WTF: right_colon", right_colon + 1);
 		return zap_temp(tmp_path, tmp_fd);
 
 	/*
-	 *  blob exists, so move blob file from temp to cache area:
+	 *  blob exists, so move blob file from temp to cache tree:
 	 *
-	 *	cache/data/<algo>_fs/<path to blob>
+	 *	data/<algo>_fs/<path to blob>
 	 */
 	output_fd = -1;
 	if (uni_close(tmp_fd))
@@ -215,7 +215,7 @@ _TRACE2("WTF: right_colon", right_colon + 1);
 	char cache_path[PATH_MAX+1];
 	cache_path[0] = 0;
 	snprintf(cache_path, sizeof cache_path,
-		"%s/cache/data/%s_fs",
+		"%s/data/%s_fs",
 		right_colon + 1,
 		bio4_service.digest->algorithm
 	);
@@ -224,8 +224,8 @@ _TRACE2("WTF: right_colon", right_colon + 1);
 	/*
 	 *  Note:
 	 *	Unfortunatly, digest->fs_mkdir() only makes the hash portion
-	 *	of the path to the blob.  Need to aslo mkdir the dirs in
-	 *	cache/data/<algo>_fs.
+	 *	of the path to the blob.  Need to also mkdir the dirs in
+	 *	data/<algo>_fs.
 	 */
 	status = fs_service.digest->fs_mkdir(
 			cache_path,
@@ -249,6 +249,13 @@ _TRACE2("WTF: right_colon", right_colon + 1);
 		zap_temp(tmp_path, tmp_fd);
 		return strerror(e);
 	}
+	if((err = fs_service.open()))
+		return err;
+	_TRACE("calling fs_service.get again");
+	output_fd = cli_output_fd;
+	err = fs_service.get(ok_no);
+	if (err)
+		return err;
 	_TRACE("rename ok");
 	return (char *)0;
 }

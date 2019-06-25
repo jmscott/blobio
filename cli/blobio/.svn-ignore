@@ -11,6 +11,7 @@ fs.o
 rofs.o
 service.o
 sha.o
+tmp
 trace.o
 uni.o
 unistd.o

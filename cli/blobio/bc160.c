@@ -305,7 +305,6 @@ static char *
 bc160_fs_name(char *name, int size)
 {
 
-TRACE2("WTF: bc160_fs_name: digest", ascii_digest); 
 	if (size < 41)
 		return "file name size too small: size < 41 bytes";
 	memcpy(name, ascii_digest, 40);
