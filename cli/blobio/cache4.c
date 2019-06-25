@@ -149,7 +149,9 @@ zap_temp(char *path, int fd)
  *  Get a blob.
  *
  *  Note:
- *	brr_path not supported!  code desparatly needs to be refactored.
+ *	brr_path not supported!
+ *
+ *	This is code is a mess!
  */
 static char *
 cache4_get(int *ok_no)
