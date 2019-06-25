@@ -34,6 +34,7 @@
 #endif
 
 extern char *verb;
+extern char ascii_digest[];
 extern int output_fd;
 extern struct service bio4_service;
 extern struct service fs_service;
@@ -169,25 +170,24 @@ cache4_get(int *ok_no)
 	bio4_service.digest = cache4_service.digest;
 	char *right_colon = strrchr(cache4_service.end_point, ':');
 	len = right_colon - cache4_service.end_point;
-	memcpy(bio4_service.end_point, cache4_service.end_point,  len);
+	memcpy(bio4_service.end_point, cache4_service.end_point, len);
 	bio4_service.end_point[len] = 0;
 	if ((err = bio4_service.open()))
 		return err;
 	/*
-	 *  Build a path to the temp blob.
+	 *  Build a path to the temp blob in fs.end_point/tmp.
 	 *
 	 *  Note:
 	 *	How to handle if another fetch is flight?
 	 */
 	_TRACE("bio4.open() ok");
 
-	char tmp_path[PATH_MAX+1], tmp_name[PATH_MAX+1];
-	snprintf(tmp_name, sizeof tmp_name, "cache4-%ul", getpid());
-	tmp_path[0] = 0;
-	buf3cat(tmp_path, sizeof tmp_path,
+_TRACE2("WTF: right_colon", right_colon + 1);
+	char tmp_path[PATH_MAX+1];
+	snprintf(tmp_path, sizeof tmp_path, "%s/tmp/cache4-%s-%ul",
 		right_colon + 1,
-		"/tmp/",
-		tmp_name
+		ascii_digest,
+		getpid()
 	);
 	_TRACE2("tmp path", tmp_path);
 	int tmp_fd = uni_open_mode(tmp_path, O_WRONLY|O_CREAT,S_IRUSR|S_IRGRP);
@@ -215,30 +215,35 @@ cache4_get(int *ok_no)
 	char cache_path[PATH_MAX+1];
 	cache_path[0] = 0;
 	snprintf(cache_path, sizeof cache_path,
-		"cache/data/%s_fs",
+		"%s/cache/data/%s_fs",
+		right_colon + 1,
 		bio4_service.digest->algorithm
 	);
 	_TRACE2("pre cache_path", cache_path);
 
 	/*
 	 *  Note:
-	 *	Need to automatically build cache/data/<algo>_fs.
-	 *	digest->fs_mkdir() only makes the hash portion of the
-	 *	path to the blob.
+	 *	Unfortunatly, digest->fs_mkdir() only makes the hash portion
+	 *	of the path to the blob.  Need to aslo mkdir the dirs in
+	 *	cache/data/<algo>_fs.
 	 */
 	status = fs_service.digest->fs_mkdir(
 			cache_path,
-			sizeof cache_path
+			sizeof cache_path - strlen(cache_path)
 	);
 	if (status) {
 		zap_temp(tmp_path, tmp_fd);
 		return status;
 	}
-	_TRACE2("target dir cache_path", cache_path);
-	status = fs_service.digest->fs_path(cache_path, sizeof cache_path);
+	_TRACE2("target dir cache path", cache_path);
+	len = strlen(cache_path);
+	status = fs_service.digest->fs_name(
+			cache_path + len,
+			sizeof cache_path - strlen(cache_path)
+	);
 	if (status)
 		return status;
-	_TRACE2("target file cache_path", cache_path);
+	_TRACE2("target file cache path", cache_path);
 	if (uni_rename(tmp_path, cache_path)) {
 		int e = errno;
 		zap_temp(tmp_path, tmp_fd);
