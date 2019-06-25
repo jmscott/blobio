@@ -282,29 +282,28 @@ cache4_put(int *ok_no)
 static char *
 cache4_take(int *ok_no)
 {
-	(void)ok_no;
-	return (char *)0;
+	return fs_service.take(ok_no);
 }
 
 static char *
 cache4_give(int *ok_no)
 {
 	(void)ok_no;
-	return (char *)0;
+	return "\"give\" not supported";
 }
 
 static char *
 cache4_roll(int *ok_no)
 {
 	(void)ok_no;
-	return "\"roll\" not implemented (yet) in \"cache4\" service";
+	return "\"roll\" not supported";
 }
 
 static char *
 cache4_wrap(int *ok_no)
 {
 	(void)ok_no;
-	return "\"wrap\" not implemented (yet) in \"cache4\" service";
+	return "\"wrap\" not supported";
 }
 
 struct service cache4_service =
