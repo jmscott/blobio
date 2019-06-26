@@ -145,6 +145,17 @@ zap_temp(char *path, int fd)
 	return (char *)0;
 }
 
+static char *
+_bio4_open()
+{
+	bio4_service.digest = cache4_service.digest;
+	char *right_colon = strrchr(cache4_service.end_point, ':');
+	int len = right_colon - cache4_service.end_point;
+	memcpy(bio4_service.end_point, cache4_service.end_point, len);
+	bio4_service.end_point[len] = 0;
+	return bio4_service.open();
+}
+
 /*
  *  Get a blob.
  *
@@ -168,22 +179,9 @@ cache4_get(int *ok_no)
 	_TRACE("fs_service.get == no");
 
 	//  blob not in file cache so do the delayed open of bio4 service.
+	_bio4_open();
 
-	bio4_service.digest = cache4_service.digest;
 	char *right_colon = strrchr(cache4_service.end_point, ':');
-	len = right_colon - cache4_service.end_point;
-	memcpy(bio4_service.end_point, cache4_service.end_point, len);
-	bio4_service.end_point[len] = 0;
-	if ((err = bio4_service.open()))
-		return err;
-	/*
-	 *  Build a path to the temp blob in fs.end_point/tmp.
-	 *
-	 *  Note:
-	 *	How to handle if another fetch is flight?
-	 */
-	_TRACE("bio4.open() ok");
-
 	char tmp_path[PATH_MAX+1];
 	snprintf(tmp_path, sizeof tmp_path, "%s/tmp/cache4-%s-%ul",
 		right_colon + 1,
@@ -273,7 +271,7 @@ cache4_eat(int *ok_no)
 		return status;
 	if (*ok_no == 0)
 		return (char *)0;
-	if ((status = bio4_service.open()))
+	if ((status = _bio4_open()))
 		return status;
 	if ((status = bio4_service.eat(ok_no)))
 		return status;
@@ -290,6 +288,7 @@ cache4_put(int *ok_no)
 static char *
 cache4_take(int *ok_no)
 {
+	//  take only local cache and not remote bio4 server.
 	return fs_service.take(ok_no);
 }
 
