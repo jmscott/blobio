@@ -37,13 +37,14 @@
 
 #endif
 
-extern char *verb;
-extern char ascii_digest[];
-extern int output_fd;
-extern struct service bio4_service;
-extern struct service fs_service;
+extern char		*verb;
+extern char		ascii_digest[];
+extern int		output_fd;
+extern struct service	bio4_service;
+extern struct service	fs_service;
+extern char		*brr_path;
 
-struct service cache4_service;
+struct service		cache4_service;
 
 static void
 _trace(char *msg)
@@ -100,6 +101,8 @@ cache4_open()
 {
 	if (verb[0] != 'g' || verb[1] != 'e')
 		return "only get verb is supported";
+	if (brr_path)
+		return "option --brr-path not supported";
 
 	fs_service.digest = cache4_service.digest;
 
