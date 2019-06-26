@@ -4,8 +4,12 @@
  *  Usage:
  *	cache4:<host>:port:/path/to/fs/root
  *  Note:
+ *	Need to query TMPDIR for temporary copy of the blob.
+ *
+ *	Way to many globals and assumptions about behavior of fs/bio4 services.
+ *
  *	We assume certain behaviour of the bio4_service.
- *	Would be nice to generalize as cache:slow service/fast service.
+ *	Would be nice to generalize as cache:slow/fast service.
  */
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -157,29 +161,35 @@ _bio4_open()
 }
 
 /*
- *  Get a blob.
+ *  Get a blob from cache, filling empty cache from bio4 service.
  *
  *  Note:
  *	brr_path not supported!
  *
- *	This is code is a mess!
+ *	This is code is a mess!  Time to refactor all of blobio command
+ *	to be reentrant.
  */
 static char *
 cache4_get(int *ok_no)
 {
 	int len;
 
-	_TRACE("calling fs_service.get");
 	char *err = fs_service.get(ok_no);
-	if (err)
+	if (err || *ok_no == 0)
 		return err;
 
-	if (*ok_no == 0)
-		return (char *)0;	//  found blob in fs cache
-	_TRACE("fs_service.get == no");
-
+	_TRACE("blob not in fs, so query bio4");
 	//  blob not in file cache so do the delayed open of bio4 service.
-	_bio4_open();
+	if ((err = _bio4_open()))
+		return err;
+
+	/*
+	 *  Copy the bio4 blob into a temp blob in directory
+	 *  fs_service.end_point/tmp.
+	 *
+	 *  Note:
+	 *	Need to query environment for TMPDIR.
+	 */
 
 	char *right_colon = strrchr(cache4_service.end_point, ':');
 	char tmp_path[PATH_MAX+1];
@@ -188,22 +198,24 @@ cache4_get(int *ok_no)
 		ascii_digest,
 		getpid()
 	);
-	_TRACE2("tmp path", tmp_path);
+	_TRACE2("copy bio4 blob to tmp", tmp_path);
 	int tmp_fd = uni_open_mode(tmp_path, O_WRONLY|O_CREAT,S_IRUSR|S_IRGRP);
 	if (tmp_fd < 0)
 		return strerror(errno);
 	int cli_output_fd = output_fd;
 	output_fd = tmp_fd;
 	char *status = bio4_service.get(ok_no);
+	output_fd = cli_output_fd;
 	if (status) {
 		zap_temp(tmp_path, tmp_fd);
 		return status;
 	}
-	if (*ok_no == 1)					//  no blob
+	if (*ok_no == 1)
 		return zap_temp(tmp_path, tmp_fd);
 
 	/*
-	 *  blob exists, so move blob file from temp to cache tree:
+	 *  blob written to temp directory, so move blob file from temp to
+	 *  cache tree:
 	 *
 	 *	data/<algo>_fs/<path to blob>
 	 */
@@ -235,7 +247,6 @@ cache4_get(int *ok_no)
 		zap_temp(tmp_path, tmp_fd);
 		return status;
 	}
-	_TRACE2("target dir cache path", cache_path);
 	len = strlen(cache_path);
 	status = fs_service.digest->fs_name(
 			cache_path + len,
@@ -243,21 +254,17 @@ cache4_get(int *ok_no)
 	);
 	if (status)
 		return status;
-	_TRACE2("target file cache path", cache_path);
 	if (uni_rename(tmp_path, cache_path)) {
 		int e = errno;
 		zap_temp(tmp_path, tmp_fd);
-		return strerror(e);
+		if (e != EEXIST)
+			return strerror(e);
 	}
 	if((err = fs_service.open()))
 		return err;
 	_TRACE("calling fs_service.get again");
 	output_fd = cli_output_fd;
-	err = fs_service.get(ok_no);
-	if (err)
-		return err;
-	_TRACE("rename ok");
-	return (char *)0;
+	return fs_service.get(ok_no);
 }
 
 /*
