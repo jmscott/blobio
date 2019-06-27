@@ -4,6 +4,10 @@
  *  Usage:
  *	cache4:<host>:port:/path/to/fs/root
  *  Note:
+ *	--brr-path needs a netflow[] for cache4.  Currently the underlying
+ *	service for "fs" or "bio4" generates the netflow for the brr-path
+ *	construction.
+ *
  *	Need to query TMPDIR for temporary copy of the blob.
  *
  *	Way to many globals and assumptions about behavior of fs/bio4 services.
@@ -42,7 +46,6 @@ extern char		ascii_digest[];
 extern int		output_fd;
 extern struct service	bio4_service;
 extern struct service	fs_service;
-extern char		*brr_path;
 
 struct service		cache4_service;
 
@@ -101,8 +104,6 @@ cache4_open()
 {
 	if (verb[0] != 'g' || verb[1] != 'e')
 		return "only get verb is supported";
-	if (brr_path)
-		return "option --brr-path not supported";
 
 	fs_service.digest = cache4_service.digest;
 
@@ -167,8 +168,6 @@ _bio4_open()
  *  Get a blob from cache, filling empty cache from bio4 service.
  *
  *  Note:
- *	brr_path not supported!
- *
  *	This is code is a mess!  Time to refactor all of blobio command
  *	to be reentrant.
  */

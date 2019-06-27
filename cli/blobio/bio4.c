@@ -12,6 +12,8 @@
 #include <netdb.h>
 #include <signal.h>
 #include <fcntl.h>
+#include <arpa/inet.h>
+#include <stdio.h>
 
 #include "blobio.h"
 
@@ -40,6 +42,7 @@
 #endif
 
 extern char	*verb;
+extern char	netflow[129];
 extern char	algorithm[9];
 extern char	ascii_digest[129];
 extern char	end_point[129];
@@ -271,6 +274,13 @@ again3:
 	}
 	*p_server_fd = fd;
 	_CTRACE("done");
+
+	if (brr_path)
+		snprintf(netflow, sizeof netflow,
+			"x~bio4c:%s:%d",
+			inet_ntoa(s.sin_addr),
+			port
+		);
 	return 0;
 }
 
@@ -285,9 +295,6 @@ bio4_open()
 	char *ep = bio4_service.end_point;
 
 	_TRACE2("request to open()", ep);
-
-	if (brr_path)
-		return "option brr-path not support";
 
 	p = strchr(ep, ':');
 	memcpy(host, ep, p - ep);
