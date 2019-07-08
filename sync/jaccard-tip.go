@@ -51,6 +51,9 @@ type TipQuery struct {
 	target		*PGDatabase
 
 	SourceInTarget	bool	`json:"source_in_target"`
+
+	WallDuration		time.Duration	`json:"wall_duration"`
+	WallDurationString	string		`json:"wall_duration_string"`
 }
 
 type Config struct {
@@ -233,17 +236,19 @@ SELECT EXISTS (
     WHERE
     	blob = $1
 )`
+	start_time := time.Now()
 	err := tq.target.db.QueryRow(
 			sql,
 			tq.source.Tip.Blob,
 	).Scan(&tq.SourceInTarget)
+	tq.WallDuration = time.Since(start_time)
+	tq.WallDurationString = tq.WallDuration.String()
 	if err != nil {
 		die("tip query(" +
 			tq.SourceDB +
 			", " + tq.TargetDB + "): sql.QueryRow() failed: %s",
 			err,
 		)
-		die("WTF")
 	}
 	done <- tq.SourceInTarget
 }

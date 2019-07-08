@@ -1,20 +1,14 @@
 {
 	"databases": {
-		"cassie": {
-			"PGHOST":	"/tmp",
+		"nag": {
+			"PGHOST":	"127.0.0.1",
+			"PGPORT":	15434,
+			"PGUSER":	"postgres",
+			"PGDATABASE":	"blobio"
+		},
+		"wework": {
+			"PGHOST":	"127.0.0.1",
 			"PGPORT":	5432,
-			"PGUSER":	"postgres",
-			"PGDATABASE":	"blobio"
-		},
-		"condor": {
-			"PGHOST":	"127.0.0.1",
-			"PGPORT":	15432,
-			"PGUSER":	"postgres",
-			"PGDATABASE":	"blobio"
-		},
-		"ess": {
-			"PGHOST":	"127.0.0.1",
-			"PGPORT":	25432,
 			"PGUSER":	"postgres",
 			"PGDATABASE":	"blobio"
 		}
