@@ -1,68 +1,12 @@
 #
 #  Synopsis:
-#	Example crontab for BlobIO daemon account
+#	Example crontab for BlobIO Admin account
 #
 BLOBIO_ROOT=/usr/local/blobio
-BLOBIO_SERVICE=bio4:localhost:1797
 
-#
-#  What:
-#	Push bio4d rrd request sample into postgres database
-#  When:
-#	once a minute
-#
-* * * * * $BLOBIO_ROOT/sbin/cron-rrd2pg >>$BLOBIO_ROOT/log/cron-rrd2pg.log 2>&1
+59 23 * * * $BLOBIO_ROOT/sbin/cron-pg_dump-daily >>log/cron-pg_dump-daily.out 2>&1
 
-#
-#  What:
-#	Clear log file log/cron-rrd2pg.log
-#  When:
-#	15th day of every month at 11:06am
-#
-06 11 15 * * sleep 45; echo "$(date): cleared by cron" >$BLOBIO_ROOT/log/cron-rrd2pg.log 2>&1
-
-#
-#  What:
-#       Wrap and eat new blobs by unrolling logs
-#  When:
-#       4:15am, every day
-#
-15 4 * * * $BLOBIO_ROOT/sbin/cron-eat-unroll >>$BLOBIO_ROOT/log/cron-eat-unroll.log 2>&1
-
-#
-#  What:
-#       Clear log file $BLOBIO_ROOT/log/cron-eat-unroll.log
-#  When:
-#       15th day of every Apr,Nov
-#
-47 23 15 Apr,Nov * echo "$(date); cleared by cron" >$BLOBIO_ROOT/log/cron-eat-unroll.log 2>&1
-
-#
-#  What:
-#	Roll the brr log files
-#  When:
-#	4:48am every early morning, every fifth day
-#
-48 4 */5 * * (echo "$(date): cron: roll: hello world";  cd $BLOBIO_ROOT;  . etc/profile;  ROLL_UDIG=$(blobio wrap --service $BLOBIO_SERVICE);  echo "$(date): cron: roll: udig: $ROLL_UDIG";  blobio roll --service $BLOBIO_SERVICE --udig $ROLL_UDIG;  echo "$(date): cron: roll: good bye, cruel world") >>$BLOBIO_ROOT/log/wrap-roll.log 2>&1
-
-#
-#  What:
-#	Clear the log file log/wrap-roll.log
-#  When:
-#	Every Sunday at 7:44pm
-#
-44 19 * * Sun echo "$(date): cleared by cron" >$BLOBIO_ROOT/log/wrap-roll.log 2>&1
-
-#
-#  What:
-#	Clear flow, query and exec detail record logs files
-#  When:
-#	26 minutes after each hour
-#  Note:
-#	Need to write as a script to get around xargs problems on bsd with
-#	th option --no-run-if-empty.
-#
-26 * * * * (echo "$(date): hello, world";  find $BLOBIO_ROOT/log/ -mtime +1 -follow -type f -name '*-*.[fqx]dr' | xargs --no-run-if-empty rm -v;  echo "$(date): good bye, cruel world") >>$BLOBIO_ROOT/log/purge-dr.log 2>&1
+38 2 * * * echo "$(date): cleared by cron" >log/cron-pg_dump-daily.out
 
 #
 #  What:
@@ -71,22 +15,3 @@ BLOBIO_SERVICE=bio4:localhost:1797
 #	2:52am, every night
 #
 52 2 * * * crontab -l >$BLOBIO_ROOT/etc/crontab.conf
-
-#
-#  What:
-#	compare file system blobs to database blobio.service table
-#  When:
-#	1:13am, every day
-#
-13 1 * * * $BLOBIO_ROOT/sbin/fs-xor-service >>$HOME/support/fs-sync/fs-xor-service.log
-
-
-#
-#  What:
-#	Startup the bio4d and flow servers
-#  When:
-#	On system reboot
-#  Note:
-#	Log file cleared on reboot $BLOBIO_ROOT/log/cron-reboot.log
-#
-@reboot sleep 30 && $BLOBIO_ROOT/sbin/cron-reboot >$BLOBIO_ROOT/log/cron-reboot.log 2>&1

@@ -4,13 +4,14 @@
 #  Depends:
 #	local.mk, derived from local-<os>.mk.example
 #  Usage:
-#	mkdir -p $HOME/dev
-#	cd $HOME/dev
+#	GITHUB=$HOME/src/github.com/jmscott
+#	mkdir -p $GITHUB
+#	cd $GITHUB
 #	svn https://github.com/jmscott/blobio
 #	cd blobio/trunk
-#	cp local-<os>.mk.example local.mk
-#	<edit local.mk>
-#	make -j 4 clean all distclean install
+#	cp local-darwin.mk.example local.mk
+#	nano local.mk
+#	make clean all distclean install
 #
 include local.mk
 include blobio.mk
@@ -100,6 +101,7 @@ install: all
 
 	install -g $(DIST_GROUP) -o $(DIST_USER) -m u=rx,go=	\
 		cron-reboot						\
+		cron-pg_dump-daily					\
 		dev-reboot						\
 		tail-log						\
 		zap-proc						\

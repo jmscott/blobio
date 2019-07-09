@@ -1,0 +1,67 @@
+#!/bin/bash
+#
+#  Synoposis:
+#	Daily dump of blobio database, compressed as PGDATABASE-<Dow>.sql.bz2
+#  Usage:
+#	59 23 * * * sbin/cron-pg_dump-daily >>log/cron-pg_dump-daily.log 2>&1
+#
+
+PROG=$(basename $0)
+
+log()
+{
+	echo "$(date): $PROG: $@"
+}
+
+die()
+{
+	log "ERROR: $@" >&2
+	exit 1
+}
+
+test $# = 1 || die "wrong number of arguments: expected 1, got $#"
+log 'hello, world'
+trap 'log good bye, cruel world' EXIT
+test -n "$BLOBIO_ROOT" || die "env not defined: $BLOBIO_ROOT"
+log "BLOBIO_ROOT=$BLOBIO_ROOT"
+PROFILE=$BLOBIO_ROOT/etc/profile
+test -r $PROFILE || die "can not read profile: $PROFILE"
+. $PROFILE
+
+log "BLOBIO_PGHOST=$BLOBIO_PGHOST"
+log "BLOBIO_PGPORT=$BLOBIO_PGPORT"
+log "BLOBIO_PGUSER=$BLOBIO_PGUSER"
+log "BLOBIO_PGPASSWORD=$BLOBIO_PGPASSWORD"
+log "BLOBIO_PGDATABASE=$BLOBIO_PGDATABASE"
+
+PGHOST=${BLOBIO_PGHOST:=$PGHOST}
+PGPORT=${BLOBIO_PGPORT:=$PGPORT}
+PGUSER=${BLOBIO_PGUSER:=$PGUSER}
+PGPASSWORD=${BLOBIO_PGPASSWORD:=$PGPASSWORD}
+PGDATABASE=${BLOBIO_PGPASSWORD:=$PGDATABASE}
+
+log "PGHOST=$PGHOST"
+log "PGPORT=$PGPORT"
+log "PGUSER=$PGUSER"
+log "PGPASSWORD=$PGPASSWORD"
+log "PGDATABASE=$PGDATABASE"
+
+cd $HOME || die "cd $HOME failed: exit status=$?";
+
+psql -c '
+SELECT
+	current_database() AS "Blobio Database",
+	pg_size_pretty(pg_database_size(current_database()))
+		AS "Storage Size"
+;' || die "psql size failed: exit status=$?"
+
+mkdir -p backup || die "mkdir -p $(pwd)/backup failed: exit status=$?"
+
+BACKUP=backup/$PGDATABASE-$(date +%a).sql.bz2
+log "staring backup: $BACKUP"
+pg_dump --verbose | bzip2 --best >$BACKUP
+STATUS=${PIPESTATUS[*]}
+test "$STATUS" = '0 0' || die "pg_dump | bzip2 failed: exit status=$STATUS"
+du -sh backup/* | while read S;  do
+	log $S
+done
