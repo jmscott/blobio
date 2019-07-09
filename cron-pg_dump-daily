@@ -19,7 +19,7 @@ die()
 	exit 1
 }
 
-test $# = 1 || die "wrong number of arguments: expected 1, got $#"
+test $# = 0 || die "wrong number of arguments: expected 0, got $#"
 log 'hello, world'
 trap 'log good bye, cruel world' EXIT
 test -n "$BLOBIO_ROOT" || die "env not defined: $BLOBIO_ROOT"
