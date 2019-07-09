@@ -4,9 +4,22 @@
 #
 BLOBIO_ROOT=/usr/local/blobio
 
+#
+#  What:
+#	Daily full dump of blobio database.
+#  When:
+#	11:59pm, every day
+#
+
 59 23 * * * $BLOBIO_ROOT/sbin/cron-pg_dump-daily >>log/cron-pg_dump-daily.out 2>&1
 
-38 2 * * * echo "$(date): cleared by cron" >log/cron-pg_dump-daily.out
+#
+#  What:
+#	Clear log file log/cron-pg_dump-daily.out
+#  When:
+#	2:38am on 9th day of every month.
+#
+38 2 9 * * echo "$(date): cleared by cron" >log/cron-pg_dump-daily.out
 
 #
 #  What:
