@@ -109,6 +109,8 @@ install: all
 		bash_login-dev.example					\
 		crontab.example						\
 		hamlet.txt						\
+		local-darwin.mk.example					\
+		local-linux.mk.example					\
 		profile.example						\
 		psqlrc.example						\
 		$(DIST_ROOT)/lib
