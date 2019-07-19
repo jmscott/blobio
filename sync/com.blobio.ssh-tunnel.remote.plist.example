@@ -65,6 +65,7 @@
 	<string>/usr/bin/ssh</string>
 	<string>tunnel-remote</string>
 	<string>-N</string>
+	<string>-T</string>
 	<!--	*************  END SSH CONNECTION CONFIG  **************** -->
 
 
