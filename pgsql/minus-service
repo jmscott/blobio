@@ -1,7 +1,7 @@
 #!/bin/bash
 #
 #  Synopsis:
-#	Find blobs in service 1 not in service 2: service1 - service2
+#	Find blobs in service 1 (PG*) not in service 2 (--pg2*)
 #  Usage:
 #	minus-service							\
 #		--pg2host condor.setspace.com				\
@@ -9,6 +9,10 @@
 #		--pg2user postgres
 #		--pg2database blobio
 #  Note:
+#	Consider first polling the database for the number of elements
+#	in blobio.service to determine whether to push or pull the
+#	udigs most economically.
+#
 #	PGPASSWORD can not be passed on the command line.
 
 PROG=$(basename $0)
