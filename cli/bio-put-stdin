@@ -1,0 +1,35 @@
+#!/bin/bash
+#
+#  Synopsis:
+#	Convert standard input to a blob and write udig to stdout.
+#  Usage:
+#	UDIG=bio-put-stdin
+#
+
+PROG=$(basename $0)
+
+die()
+{
+	echo "ERROR: $PROG: $@" >&2
+	exit 1;
+}
+
+test -n $BLOBIO_ALGORITHM || die 'environment not defined: BLOBIO_ALGORITHM';
+ALGORITHM="--algorithm $BLOBIO_ALGORITHM"
+
+test -n $BLOBIO_SERVICE || die 'environment not defined: BLOBIO_SERVICE';
+SERVICE="--service $BLOBIO_SERVICE"
+
+TMP_BLOB=${TMPDIR:=/tmp}/$PROG.blob
+trap "rm -f $TMP_BLOB" EXIT
+
+#  slurp stdinput to temp file
+cat >$TMP_BLOB || die "cat >tmp_blob failed: exit status=$?"
+
+UDIG=$BLOBIO_ALGORITHM:$(
+	blobio eat --algorithm $BLOBIO_ALGORITHM --input-path $TMP_BLOB
+)
+test $? = 0 || die "blobio eat failed: exit status=$?"
+blobio put --service $BLOBIO_SERVICE --udig $UDIG --input-path $TMP_BLOB     ||
+	die "blobio put failed: exit status=$?"
+echo $UDIG

@@ -22,6 +22,7 @@ install: all
 		bio-more						\
 		bio-put							\
 		bio-put-file						\
+		bio-put-stdin						\
 		bio-take						\
 		bio-unroll						\
 		bio-wrap						\
