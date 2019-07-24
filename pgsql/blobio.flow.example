@@ -28,16 +28,17 @@ tail bio4d
 	path = "spool/bio4d.brr";
 }
 
+command append_setcore_brr
+{
+	path = "sbin/append-brr";
+	argv = (
+		"../setspace/schema/setcore/spool/bio4d.brr"
+	);
+}
+
+#
 #
 #  Uncomment to push blob request records to setcore
-#
-#command append_setcore_brr
-#{
-#	path = "sbin/append-brr";
-#	argv = (
-#		"../setspace/schema/setcore/spool/bio4d.brr"
-#	);
-#}
 #
 #call append_setcore_brr(
 #	bio4d.start_time,
