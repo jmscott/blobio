@@ -20,6 +20,9 @@ export BLOBIO_BIO4D_PORT=1796
 
 PS1='blob@opt> '
 
+#  for those terms with simple color schema just posterize the prompt
+#PS1='\e[44;1;37mblob@opt>\e[0m '
+
 cd $BLOBIO_ROOT || exit 1
 
 #  override the postgres variables

@@ -103,6 +103,7 @@ install: all
 		cron-reboot						\
 		cron-pg_dump-daily					\
 		dev-reboot						\
+		ls-service						\
 		tail-log						\
 		zap-proc						\
 		$(DIST_ROOT)/sbin
