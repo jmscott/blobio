@@ -43,7 +43,7 @@ test $# = 0 || die "wrong number cli arguments: got $#, expected 0"
 test -n "$BLOBIO_ROOT" || die "environment not defined: BLOBIO_ROOT"
 cd $BLOBIO_ROOT || die "cd $BLOBIO_FAILED: exit status=$?"
 
-_stale run/bio4d.pid biod4
+_stale run/bio4d.pid bio4d
 _stale run/flowd.pid flowd
 
 #  check sync flowd process
