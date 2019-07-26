@@ -12,12 +12,6 @@
  *
  *		bc160:22572c9bf76e5bd879d5ce800ba6889d50e62ff7
  *
- *	The pid file ought be created when the parent is root and stdin
- *	is not a tty.
- *
- *	The stats daemon ought to summarize all sas at the sample level.
- *	Currently only total connections is logged.
- *
  *	Document command line options in Usage:
  *
  *	Should a "wrap" never return an empty udig?
@@ -1461,10 +1455,10 @@ set_pid_file(char *path)
 	buf[strlen(buf) - 1] = 0;		//  zap new line
 	info3("pid file", pid_path, buf);
 	/*
-	 *  Chmod run/bio4d.pid u=r,go=
+	 *  Chmod run/bio4d.pid u=rw,go=
 	 */
-	if (io_chmod(pid_path, S_IRUSR))
-		panic4(n, "chmod(S_IRUSR) failed", strerror(errno), pid_path);
+	if (io_chmod(pid_path, S_IRUSR | S_IWUSR))
+		panic4(n, "chmod(pid) failed", strerror(errno), pid_path);
 }
 
 static void 

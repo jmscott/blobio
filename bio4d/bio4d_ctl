@@ -80,7 +80,7 @@ stop)
 	;;
 reboot)
 	zap-proc run/bio4d.pid
-	bio4d_ctl start
+	bio4d_ctl start || die "bio4d_ctl start failed: exit status=$?"
 	;;
 restart)
 	log 'restart'
