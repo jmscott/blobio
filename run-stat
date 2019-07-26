@@ -3,6 +3,9 @@
 #	What services are running based on age of files run/*.pid
 #  Usage:
 #	run-stat
+#  Note:
+#	Probing process existence with pgrep might be useful.
+#	Not clear if another script should do this.
 #
 STALE_AFTER=60
 
