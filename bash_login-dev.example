@@ -50,3 +50,11 @@ export PSQLRC=$BLOBIO_ROOT/etc/psqlrc
 #  bash4 escapes \$ENV variables instead of expanded, as bash3 did
 #shopt -s direxpand
 shopt -s cdable_vars
+
+echo
+(
+	echo "    Process	State"
+	echo "--------------	------"
+	run-stat | sort
+) | column -t -s '	'
+echo
