@@ -5,6 +5,7 @@
 
 PROG=$(basename $0)
 PROC_OWNER=$(id -nu)
+PROC_PAUSE=3
 
 log()
 {
@@ -26,8 +27,8 @@ if [ ! -e $PID_FILE ];  then
 	log "process $PROC_NAME probably not running"
 	log 'doing a "pkill bio4d" just in case'
 	if pkill -u $PROC_OWNER bio4d;  then
-		log "pkill found a matching process, so sleep one second"
-		sleep 1
+		log "pkill matches, so sleep $PROC_PAUSE second"
+		sleep $PROC_PAUSE
 	fi
 	exit 0
 fi
@@ -46,8 +47,8 @@ STATUS=$?
 case "$STATUS" in
 0)
 	log "zapped $PROC_NAME process with pid #$PID"
-	log "sleeping 1 second while process #$PID exits ..."
-	sleep 1
+	log "sleeping $PROC_PAUSE sec while process #$PID exits ..."
+	sleep $PROC_PAUSE
 	;;
 1)
 	log "no process matches with pid #$PID"
