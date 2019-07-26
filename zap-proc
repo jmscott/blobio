@@ -24,6 +24,11 @@ PROC_NAME=$(basename $(basename $PID_FILE) .pid)
 if [ ! -e $PID_FILE ];  then
 	log "no pid file (ok): $PID_FILE"
 	log "process $PROC_NAME probably not running"
+	log 'doing a "pkill bio4d" just in case'
+	if pkill -u $PROC_OWNER bio4d;  then
+		log "pkill found a matching process, so sleep one second"
+		sleep 1
+	fi
 	exit 0
 fi
 
