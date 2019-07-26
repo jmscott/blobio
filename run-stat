@@ -1,0 +1,50 @@
+#
+#  Synopsis:
+#	What services are running based on age of files run/*.pid
+#  Usage:
+#	run-stat
+#
+STALE_AFTER=20
+
+die()
+{
+	echo "$(basename $0): ERROR: $@" >&2
+	exit 1
+}
+
+_stale()
+{
+	RUN_PATH=$1
+	WHAT=$2
+	stale-mtime $STALE_AFTER RUN_PATH
+	STATUS=$?
+	case $STATUS in
+	0)
+		STATE=DEAD
+		;;
+	1)
+		STATE=ALIVE
+		;;
+	2)
+		STATE=DEAD
+		;;
+	*)
+		die "stale-mtime failed: exit status=$?"
+		;;
+	esac
+	echo "$WHAT	$STATE"
+}
+
+test $# = 0 || die "wrong number cli arguments: got $#, expected 0"
+
+test -n "$BLOBIO_ROOT" || die "envirnoment not defined: BLOBIO_ROOT"
+cd $BLOBIO_ROOT || die "cd $BLOBIO_FAILED: exit status=$?"
+
+_stale run/bio4d.pid biod4
+_stale run/flowd.pid flowd
+
+#  check sync flowd process
+find sync/host -name run -type d | while read RUN_DIR;  do
+	HOST=$(basename $(dirname $RUN_DIR))
+	_stale $RUN_DIR/flowd.pid  flowd-$(basename $(dirname $RUN_DIR))
+done

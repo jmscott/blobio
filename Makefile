@@ -100,10 +100,11 @@ install: all
 		$(DIST_ROOT)/bin
 
 	install -g $(DIST_GROUP) -o $(DIST_USER) -m u=rx,go=	\
-		cron-reboot						\
 		cron-pg_dump-daily					\
+		cron-reboot						\
 		dev-reboot						\
 		ls-service						\
+		run-stat						\
 		tail-log						\
 		zap-proc						\
 		$(DIST_ROOT)/sbin
