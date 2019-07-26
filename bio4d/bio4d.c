@@ -57,6 +57,7 @@
 #define BIO4D_PORT		1797
 
 #define MAX_VERB_SIZE		5
+#define DEFAULT_WRAP_DIGEST_ALGORITHM	"bc160"
 
 /*
  *  States of lexical parser for incoming client requests.
@@ -108,7 +109,6 @@ char	pid_path[] = "run/bio4d.pid";
 
 static char		*BLOBIO_ROOT = 0;
 
-#define DEFAULT_WRAP_DIGEST_ALGORITHM	"bc160"
 static char		wrap_digest_algorithm[MAX_ALGORITHM_SIZE+1];
 
 static int	net_timeout = -1;
