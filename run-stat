@@ -4,7 +4,7 @@
 #  Usage:
 #	run-stat
 #
-STALE_AFTER=20
+STALE_AFTER=60
 
 die()
 {
@@ -14,9 +14,9 @@ die()
 
 _stale()
 {
-	RUN_PATH=$1
+	PID_PATH=$1
 	WHAT=$2
-	stale-mtime $STALE_AFTER RUN_PATH
+	stale-mtime $STALE_AFTER $PID_PATH
 	STATUS=$?
 	case $STATUS in
 	0)
@@ -37,7 +37,7 @@ _stale()
 
 test $# = 0 || die "wrong number cli arguments: got $#, expected 0"
 
-test -n "$BLOBIO_ROOT" || die "envirnoment not defined: BLOBIO_ROOT"
+test -n "$BLOBIO_ROOT" || die "environment not defined: BLOBIO_ROOT"
 cd $BLOBIO_ROOT || die "cd $BLOBIO_FAILED: exit status=$?"
 
 _stale run/bio4d.pid biod4
