@@ -2,6 +2,8 @@
 #
 #  Synopsis:
 #	Start/stop blobio daemon.
+#  Usage:
+#	bio4d_ctl [stop|start|restart]
 #
 
 PROG=$(basename $0)
@@ -78,21 +80,16 @@ start)
 stop)
 	zap-proc run/bio4d.pid
 	;;
-reboot)
-	zap-proc run/bio4d.pid
-	bio4d_ctl start || die "bio4d_ctl start failed: exit status=$?"
-	;;
 restart)
 	log 'restart'
-	$0 stop
-	$0 start
+	bio4d_ctl stop && bio4d_ctl start
 	;;
 '')
-	die 'missing expected action: start|stop|restart|reboot'
+	die 'missing expected action: start|stop|restart'
 	;;
 *)
 	ACTION=
-	die "unknown action: expected start|stop|restart|reboot"
+	die "unknown action: expected start|stop|restart"
 	;;
 esac
 exit 0;

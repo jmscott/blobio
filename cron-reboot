@@ -1,3 +1,4 @@
+#!/bin/bash
 #
 #  Synopsis:
 #	Cron script to fully reboot all blob process @reboot cron schedule
@@ -40,10 +41,9 @@ cd $BLOBIO_ROOT || die "cd $BLOBIO_ROOT failed"
 
 zap-proc run/flowd.pid || die "zap-proc flowd failed: exit status=$?"
 
-log 'calling bio4d_ctl reboot ...'
-bio4d_ctl reboot
-test $? = 0 || die "bio4d_ctl reboot failed: exit status=$STATUS"
-log 'bio4d_ctl reboot ok'
+log 'calling bio4d_ctl restart ...'
+bio4d_ctl restart || die "bio4d_ctl restart failed: exit status=$?"
+log 'bio4d_ctl restart ok'
 
 log 'starting flowd server in background ...'
 flowd server etc/blobio.flow &

@@ -1,3 +1,4 @@
+#!/bin/bash
 #
 #  Synopsis:
 #	Chatty zapping of a background process using pkill -F <pid-file>
@@ -25,8 +26,11 @@ PROC_NAME=$(basename $(basename $PID_FILE) .pid)
 if [ ! -e $PID_FILE ];  then
 	log "no pid file (ok): $PID_FILE"
 	log "process $PROC_NAME probably not running"
-	log 'doing a "pkill bio4d" just in case'
-	if pkill -u $PROC_OWNER bio4d;  then
+	log 'not doing a pkill $PROC_NAME to fratricide of parent process'
+	exit 0
+
+	log "doing a 'pkill $PROC_NAME' just in case"
+	if pkill -u $PROC_OWNER $PROC_NAME;  then
 		log "pkill matches, so sleep $PROC_PAUSE second"
 		sleep $PROC_PAUSE
 	fi
