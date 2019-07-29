@@ -112,7 +112,6 @@ install: all
 		ls-service						\
 		run-stat						\
 		tail-log						\
-		zap-proc						\
 		$(DIST_ROOT)/sbin
 
 	install -g $(DIST_GROUP) -o $(DIST_USER) -m ug=r,o=		\

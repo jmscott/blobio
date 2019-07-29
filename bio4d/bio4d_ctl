@@ -1,9 +1,12 @@
 #!/bin/bash
 #
 #  Synopsis:
-#	Start/stop blobio daemon.
+#	Start/stop bio4d daemon.
 #  Usage:
 #	bio4d_ctl [stop|start|restart]
+#  Exit STatus:
+#	0	success
+#	1	fault
 #
 
 PROG=$(basename $0)
@@ -22,11 +25,6 @@ log()
 	else
 		echo "$PROG: $ACTION: $@"
 	fi
-}
-
-WARN()
-{
-	log "WARN: $@"
 }
 
 ACTION="$1"
@@ -78,7 +76,11 @@ start)
 	tail log/bio4d-$(date +'%a').log
 	;;
 stop)
-	zap-proc run/bio4d.pid
+	zap-proc run/bio4d.pid						\
+		bio4d-arborist						\
+		bio4d-brr-logger					\
+		bio4d-listen						\
+		bio4d-logger						\
 	;;
 restart)
 	log 'restart'
