@@ -81,6 +81,7 @@ stop)
 		bio4d-brr-logger					\
 		bio4d-listen						\
 		bio4d-logger						\
+		bio4d-request						\
 	;;
 restart)
 	log 'restart'
