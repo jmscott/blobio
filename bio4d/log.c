@@ -13,6 +13,11 @@
  *	The log file is rolled to $BLOBIO_ROOT/log/bio4d-Dow.log roughly at
  *	midnight in localtime zone.
  *  Note:
+ *	Damn, a race condition exists during process shutdown, giving the
+ *	panic:
+ *		write() failed: Broken pipe
+ *	Please fix.
+ *
  *	Think about replacing the logger process with the postgresql model for
  *	logging.  The postgresql model watches atomic writes to stderr from
  *	each child process.
@@ -204,7 +209,6 @@ logger(int process_fd)
 	io_msg_new(&process, process_fd);
 
 	/*
-	 *
 	 *  Loop reading from processes to log file.
 	 *  We depend upon atomic write/reads on pipes.
 	 */
@@ -229,7 +233,6 @@ listen:
 	);
 	if (status == -1)
 		panic3(n, "select(process) failed", strerror(errno));
-
 	/*
 	 *  Natural timeout of select() ... roll the logs, captain.
 	 */
