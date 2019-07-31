@@ -51,10 +51,4 @@ export PSQLRC=$BLOBIO_ROOT/etc/psqlrc
 #shopt -s direxpand
 shopt -s cdable_vars
 
-echo
-(
-	echo "    Process	State"
-	echo "--------------	------"
-	run-stat | sort
-) | column -t -s '	'
-echo
+echo;  run-stat-report;  echo

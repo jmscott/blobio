@@ -54,3 +54,5 @@ log "flowd pid: $(cat run/flowd.pid)"
 
 log 'reboot sync flowd processes'
 reboot-sync || die "reboot-sync failed: exit status=$?"
+
+run-stat-report

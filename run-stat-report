@@ -1,0 +1,11 @@
+#
+#  Synospsis:
+#	Report of running bio4d & flowd processes.
+#  Usage:
+#	run-stat-report
+#
+(
+	echo "   Process	Status"
+	echo "-------------	-----------"
+	run-stat | sort
+) | column -t -s '	'

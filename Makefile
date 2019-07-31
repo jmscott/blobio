@@ -111,6 +111,7 @@ install: all
 		dev-reboot						\
 		ls-service						\
 		run-stat						\
+		run-stat-report						\
 		tail-log						\
 		$(DIST_ROOT)/sbin
 
