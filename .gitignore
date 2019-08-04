@@ -1,11 +1,3 @@
 *.o
 *.swp
-bio4d/append-brr
-bio4d/bio4d
-cli/blobio/blobio
-flowd/flowd
-flowd/flowd-execv
-flowd/y.output
 local.mk
-sync/jaccard
-sync/jaccard-tip
