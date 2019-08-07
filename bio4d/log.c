@@ -259,7 +259,8 @@ listen:
 		/*
 		 *  Grumble if the parent process is no longer our orginal
 		 *  master.  Technically not an error since a sig9 could have
-		 *  killed our orginal parent.
+		 *  killed our orginal parent or an interactive process
+		 *  was disconnected from a terminal.
 		 */
 		parent_pid = getppid();
 		if (parent_pid != master_pid) {
