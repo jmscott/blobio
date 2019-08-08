@@ -1,6 +1,6 @@
 /*
  *  Synopsis:
- *	Implement PostgreSQL UDIG Data Types for SHA1.
+ *	Implement PostgreSQL UDIG Data Types for SHA1 and BitCoin Wallet 160.
  *  Note:
  *	Can the length be 1 byte instead of 4 bytes.  Set SET_VARSIZE_SHORT().
  *	Also, the data offset needs to be calculated with VARDATA() in all
