@@ -4,15 +4,15 @@ Description:
 	The UDig data type in PostgreSQL implements tagged crypto digests.
 	Currently, digests SHA1 and the BitCoin 160 bit wallet are supported.
 
-	FOr example, a sha digest is tagged as
+	For example, a sha1 digest is tagged as
 
 		sha:bb37250a701a6b8ed28cbc0868ece2e07919a711
 
-	and the bit coin digest is tagged as
+	and the bitcoin digest is tagged as
 
 		bc160:c61f7c22a6d42bb84a5f43dd2b44a366d7d79bc7
 
-	The bc160 is equal to the openssl digest
+	The bc160 can be generated with the following openssl pipeline
 	
 		openssl dgst -binary -sha256 | openssl dgst -ripemd160 -r
 
