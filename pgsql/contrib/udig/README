@@ -1,7 +1,25 @@
 Synopsis:
-	Install udig datatype to PostgreSQL
+	A UDig data type is a tagged crypto digest for sha and bitcoin wallet.
 Description:
+	The UDig data type in PostgreSQL implements tagged crypto digests.
+	Currently, digests SHA1 and the BitCoin 160 bit wallet are supported.
+
+	FOr example, a sha digest is tagged as
+
+		sha:bb37250a701a6b8ed28cbc0868ece2e07919a711
+
+	and the bit coin digest is tagged as
+
+		bc160:c61f7c22a6d42bb84a5f43dd2b44a366d7d79bc7
+
+	The bc160 is equal to the openssl digest
+	
+		openssl dgst -binary -sha256 | openssl dgst -ripemd160 -r
+
+Usage:
 	make USE_PGXS=1 install
 	psql <database> -f $PGHOME/share/contrib/udig.sql
 Note:
+	Can this data type be rewritten in SQL only?
+
 	Convert this to an extension, damn it!
