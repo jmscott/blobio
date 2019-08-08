@@ -1,6 +1,8 @@
 Synopsis:
 	A UDig data type is a tagged crypto digest for sha and bitcoin wallet.
 Description:
+	UDig means "Uniform Digest".
+
 	The UDig data type in PostgreSQL implements tagged crypto digests.
 	The udig value is suitable as a primary key for large, immutable
 	objects.  Currently, the digests SHA1 and the BitCoin 160 bit wallet
