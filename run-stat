@@ -23,13 +23,13 @@ _stale()
 	STATUS=$?
 	case $STATUS in
 	0)
-		STATE=DEAD
+		STATE=DOWN
 		;;
 	1)
-		STATE=ALIVE
+		STATE=UP
 		;;
 	2)
-		STATE=DEAD
+		STATE=DOWN
 		;;
 	*)
 		die "stale-mtime failed: exit status=$?"
