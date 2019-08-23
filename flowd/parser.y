@@ -2,6 +2,10 @@
  *  Synopsis:
  *	Yacc grammar for 'flow' language.
  *  Note:
+ *	An attribute of a result row with the same name as the sql
+ *	query is accepted.  however, the sql_query.sql_query is a parse
+ *	error.
+ *
  *	A boolean query attribute is not understood as an expression.
  *	Would be nice to say
  *
