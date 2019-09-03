@@ -38,9 +38,9 @@ Flow Detail Record:
 		ok_count	#  count of ok process exits <=2^63-1
 		fault_count	#  count of process faults <=2^63-1
 		wall_duration	#  wall clock duration seconds.nsec
-		sequence	#  service flow sequence, <= 2^63 - 1 
+		log_sequence	#  service flow sequence, <= 2^63 - 1 
 
-	The combination of "start_time" and "sequence" can safely be assumed to
+	The combination of "start_time" and "log_sequence" can safely be assumed to
 	be unique for records associated with this service.  Unfortunatly, in
 	theory, the uniqueness constraint could be violated by EXTREMELY rapid
 	process bouncing.
