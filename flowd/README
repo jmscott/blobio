@@ -53,7 +53,7 @@ Process Execution Detail Record:
 	of tab separated fields.  The layout of the fields are as follows:
 
 		start_time		#  YYYY-MM-DDThh:mm:ss.ns9[+-]ZZ:ZZ
-		flow_sequence		#  service flow sequence
+		log_sequence		#  sequence number for log file
 		command_name		#  command name in config file
 		termination_class	#  termination class: OK, ERR, SIG, NOPS
 		udig			#  blob udig
@@ -62,7 +62,7 @@ Process Execution Detail Record:
 		system_duration		#  os duration in seconds
 		user_duration		#  user/kids total duration in seconds
 
-	The combination of start_time, call_name and flow_sequence  can
+	The combination of start_time, call_name and log_sequence  can
 	safely assumed to be unique, although, in theory, uniqueness could be
 	compromised by EXTREMELY rapid process bouncing.  See comment for "fdr"
 	
@@ -77,7 +77,7 @@ Query Detail Record:
 	invocation of an sql database query 
 
 		start_time		#  YYYY-MM-DDThh:mm:ss.ns9[+-]ZZ:ZZ
-		flow_sequence		#  service flow sequence
+		log_sequence		#  sequence number in current log file
 		query_name		#  name of query, unique across flow
 		termination_class	#  termination class: OK, ERR
 		udig			#  blob udig
@@ -87,7 +87,7 @@ Query Detail Record:
 		query_duration		#  db query duration as seconds
 
 	As with the "xdr" records, uniqueness can be determined by start_time,
-	flow_sequence and query_name.
+	log_sequence and query_name.
 
 	Wall/Query durations are float64 seconds formated as %20.9f.
 
