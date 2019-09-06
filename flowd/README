@@ -34,7 +34,7 @@ Flow Detail Record:
 	of tab separated fields.  The layout of the fields are as follows:
 
 		start_time	#  RFC3339Nano: YYYY-MM-DDThh:mm:ss.ns9[+-]ZZ:ZZ
-		udig		#  udig of the blob
+		blob		#  udig of the blob
 		ok_count	#  count of ok process exits <=2^63-1
 		fault_count	#  count of process faults <=2^63-1
 		wall_duration	#  wall clock duration seconds.nsec
@@ -56,7 +56,7 @@ Process Execution Detail Record:
 		log_sequence		#  sequence number for log file
 		command_name		#  command name in config file
 		termination_class	#  termination class: OK, ERR, SIG, NOPS
-		udig			#  blob udig
+		blob			#  udig of blob being processed
 		termination_code	#  process/signal/query exit code value
 		wall_duration		#  wall clock duration in seconds
 		system_duration		#  os duration in seconds
@@ -80,7 +80,7 @@ Query Detail Record:
 		log_sequence		#  sequence number in current log file
 		query_name		#  name of query, unique across flow
 		termination_class	#  termination class: OK, ERR
-		udig			#  blob udig
+		blob			#  udig of blob
 		sqlstate		#  sql termination state
 		rows_affected		#  Rows fetched/merged/updated
 		wall_duration		#  wall clock duration as seconds
