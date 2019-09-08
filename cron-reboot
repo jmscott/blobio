@@ -13,6 +13,7 @@
 PROG=$(basename $0)
 USER=$(id -un)
 FLOWD_PAUSE=3
+PKILL_PAUSE=10
 
 log()
 {
@@ -38,6 +39,16 @@ log "BLOBIO_ROOT=$BLOBIO_ROOT"
 
 cd $BLOBIO_ROOT || die "cd $BLOBIO_ROOT failed"
 . etc/profile
+
+if [ $USER = blobio ];  then
+	log 'user is blobio, so process controled by launchd or systemd'
+	log 'doing pkill -u blobio flowd'
+	pkill -u blobio flowd
+	log "pausing $PKILL_PAUSE seconds ..."
+	sleep $PKILL_PAUSE
+	run-stat-report
+	exit
+fi
 
 zap-proc run/flowd.pid || die "zap-proc flowd failed: exit status=$?"
 
