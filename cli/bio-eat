@@ -7,7 +7,7 @@
 #	1	request to eat a blob failed, some blobs may not be digested
 #  Environment:
 #	BLOBIO_SERVICE
-#	BLOBIO_EAT_SERVICE
+#	BLOBIO_GET_SERVICE
 #  Usage:
 #	bio-eat <large.udig
 #	bio-eat sha:7884029948e18cb1f5d442a46b7721d0178ccc39 ...
@@ -26,7 +26,7 @@ die()
 }
 
 test -n "$BLOBIO_SERVICE" || die 'env variable not defined: BLOBIO_SERVICE'
-SERVICE=${BLOBIO_EAT_SERVICE:=$BLOBIO_SERVICE}
+SERVICE=${BLOBIO_GET_SERVICE:=$BLOBIO_SERVICE}
 
 bio_eat()
 {
