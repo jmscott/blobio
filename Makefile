@@ -105,7 +105,8 @@ install: all
 		pgsql/bio-merge-service					\
 		$(DIST_ROOT)/bin
 
-	install -g $(DIST_GROUP) -o $(DIST_USER) -m u=rx,go=	\
+	install -g $(DIST_GROUP) -o $(DIST_USER) -m u=rx,go=		\
+		brr-stat						\
 		cron-pg_dump-daily					\
 		cron-reboot						\
 		dev-reboot						\

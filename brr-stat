@@ -1,0 +1,21 @@
+#
+#  Synopsis:
+#	Summarize the active blob request records for local and sync servers.
+#  Note:
+#	Symbolic links are not handled correctly.
+#
+
+die()
+{
+	echo "ERROR: $@" >&2
+	exit 1
+}
+
+test $# = 0 || die 'wrong number of arguments'
+test -n "$BLOBIO_ROOT" || die 'environment not defined: BLOBIO_ROOT'
+cd $BLOBIO_ROOT || die "cd $BLOBIO_ROOT failed: exit status=$?"
+
+test -r spool || die "can not read directory: $(pwd)/spool: exit status=$?"
+BRR=spool/bio4d.brr
+test -r $BRR || die "can not read brr log: $(pwd)/$BRR"
+exec wc -l $BRR
