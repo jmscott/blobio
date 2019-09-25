@@ -16,6 +16,9 @@
  *	--output-path <path/to/file>
  *	--help
  *  Note:
+ *	File service fs:/usr/local/blob need to implement system call
+ *	sendfile() on linux.
+ *
  *	Timeout needs to be explicit status, so network flaps can be
  *	diagnosed.
  *
