@@ -1,1 +1,1 @@
-make USE_PGXS=1 && clean && make USE_PGXS=1 && make US_PGXS=1 install
+make USE_PGXS=1 clean && make USE_PGXS=1 install
