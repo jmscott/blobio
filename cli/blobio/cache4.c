@@ -68,11 +68,13 @@ _trace2(char *msg1, char *msg2)
 }
 
 /*
- *  The end point is the root directory of the source blobio file system.
- *  No non-ascii or '?' characters are allowed in root file path.
+ *  The end point is a concatenation of the bio4 service and file system
+ *  service.
  *
- *  Note:
- *	Eventually UTF8 will be allowed.
+ *	host:port:/path/to/blobio/root
+ *
+ *  Split out the bio4 and fs service and let the underlying class parse
+ *  those services.
  */
 static char *
 cache4_end_point_syntax(char *host_port_path)
@@ -83,7 +85,7 @@ cache4_end_point_syntax(char *host_port_path)
 	memcpy(bio4, host_port_path, len);
 	bio4[len] = 0;
 
-	//  find the fs service and replace first colon with null.
+	//  find the fs service and replace right hand colon with null.
 	char *fs = strchr(bio4, ':');
 	if (!fs)
 		return "no colon in service"; 
