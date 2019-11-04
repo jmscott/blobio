@@ -2,6 +2,8 @@
 #  Synopsis:
 #	Tail today's log files for bio4d, flowd and sync processes.
 #  Note:
+#	Inactive logs in sync/host/*/log are tailed.
+#
 #	Not correctly handling when "today" become "tomorrow".
 #
 
