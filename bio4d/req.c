@@ -54,7 +54,7 @@ req_read(struct request *r, void *buf, size_t buf_size)
 
 	if (nread == -1) {
 		snprintf(ebuf, sizeof ebuf, "req read(%s) failed",
-							r->netflow_tiny);
+							r->transport_tiny);
 		if (r->verb) {
 			if (r->step)
 				error5(n, r->verb, r->step, ebuf, strerror(e));
@@ -70,7 +70,7 @@ req_read(struct request *r, void *buf, size_t buf_size)
 
 	//  timeout reading from client
 
-	snprintf(ebuf, sizeof ebuf, "read(%s) timed out", r->netflow_tiny); 
+	snprintf(ebuf, sizeof ebuf, "read(%s) timed out", r->transport_tiny); 
 	if (r->verb) {
 		if (r->step)
 			error4(n, r->verb, r->step, ebuf);
@@ -123,7 +123,8 @@ req_write(struct request *r, void *buf, size_t buf_size)
 	//  network error during read()
 
 	if (status == -1) {
-		snprintf(ebuf, sizeof ebuf, "write(%s) failed",r->netflow_tiny);
+		snprintf(ebuf, sizeof ebuf, "write(%s) failed",
+							r->transport_tiny);
 		if (r->verb) {
 			if (r->step)
 				error5(n, r->verb, r->step, ebuf, strerror(e));
@@ -138,7 +139,7 @@ req_write(struct request *r, void *buf, size_t buf_size)
 
 	//  timeout during read()
 
-	snprintf(ebuf, sizeof ebuf, "write(%s) timed out", r->netflow_tiny);
+	snprintf(ebuf, sizeof ebuf, "write(%s) timed out", r->transport_tiny);
 	if (r->verb) {
 		if (r->step)
 			error4(n, r->verb, r->step, ebuf);
@@ -232,7 +233,7 @@ write_no(struct request *r)
 static char *
 reply_error(struct request *r, char *msg)
 {
-	error3("read_reply", r->netflow_tiny, msg);
+	error3("read_reply", r->transport_tiny, msg);
 	if (r->step)
 		error5("read_reply", r->verb, r->step, r->algorithm, msg);
 	else

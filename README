@@ -76,7 +76,7 @@ Description:
 	i.e, the typical unixy ascii record:
 
 		start_time		#  YYYY-MM-DDThh:mm:ss.ns[+-]HH:MM
-		netflow			#  [a-z][a-z0-9]{0,7}~[[:graph:]]{1,128}
+		transport		#  [a-z][a-z0-9]{0,7}~[[:graph:]]{1,128}
 		verb			#  get/put/take/give/eat/wrap/roll
 		algorithm:digest	#  udig of the blob in request
 		chat_history		#  ok/no handshake between server&client
@@ -92,7 +92,7 @@ Description:
 	The minimum size of a brr record is 95 bytes.
 
 		(10+1+8+1+9+1+5) + 1	==  start_time
-		(1 + 1 + 1) + 1		>=  netflow
+		(1 + 1 + 1) + 1		>=  transport
 		(2) + 1			>=  verb
 		(1 + 1 + 32) + 1	>=  udig
 		(2) + 1			>=  chat history 
@@ -105,7 +105,7 @@ Description:
 	The maximum size of a blob request record is 370 bytes.
 	
 		(10+1+8+1+9+1+5) + 1 +	=   start request time
-		(8+1+128) + 1 +		>=  netflow
+		(8+1+128) + 1 +		>=  transport
 		(8) + 1 +		>=  verb
 		(8+1+128) + 1 +		>=  algorithm:digest
 		(8) + 1 + 		>=  chat history: max=ok,ok,ok
@@ -175,8 +175,6 @@ Protocol Flow:
 	described above.
 
 Protocol Questions:
-	-  should netflow be renamed service flow?
-
 	-  should "put" wait for response ok/no response from server before
 	   sending the blob?
 

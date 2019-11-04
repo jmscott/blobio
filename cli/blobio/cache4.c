@@ -4,8 +4,8 @@
  *  Usage:
  *	cache4:<host>:port:/path/to/fs/root
  *  Note:
- *	--brr-path needs a netflow[] for cache4.  Currently the underlying
- *	service for "fs" or "bio4" generates the netflow for the brr-path
+ *	--brr-path needs a transport[] for cache4.  Currently the underlying
+ *	service for "fs" or "bio4" generates the transport for the brr-path
  *	construction.
  *
  *	Need to query TMPDIR for temporary copy of the blob.

@@ -130,7 +130,8 @@ command sync_zap
 #  Note:
 #	Including the "eat" verb means we could get into loops with the 
 #	remote server when it probes with an "eat".  Unfortunatly, the brr
-#	tuple only has the ipaddress in the netflow field, which is problematic.
+#	tuple only has the ipaddress in the transport field, which is
+#	problematic.
 #
 
 call brr_blob_existed()

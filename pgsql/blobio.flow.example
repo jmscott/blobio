@@ -42,7 +42,7 @@ command append_setcore_brr
 #
 #call append_setcore_brr(
 #	bio4d.start_time,
-#	bio4d.netflow,
+#	bio4d.transport,
 #	bio4d.verb,
 #	bio4d.udig,
 #	bio4d.chat_history,

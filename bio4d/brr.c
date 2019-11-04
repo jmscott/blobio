@@ -37,8 +37,8 @@ static char	*RFC3339Nano =
 /*
  *  Maximum size of a brr record.  
  *
- *  Need enough space for 128 char max digest and 128 char netflow field
- *  (e.g., ip4 tunneled through netflowed ip6, source/dest).
+ *  Need enough space for 128 char max digest and 128 char transport field
+ *  (e.g., ip4 tunneled through transported ip6, source/dest).
  *
  *  Breakdown of the field sizes are:
  *
@@ -422,7 +422,7 @@ brr_write(struct request *r)
 		t->tm_min,
 		t->tm_sec,
 		r->start_time.tv_nsec,
-		r->netflow,
+		r->transport,
 		r->verb,
 		r->algorithm && r->algorithm[0] ? r->algorithm : "",
 		r->algorithm && r->algorithm[0] &&

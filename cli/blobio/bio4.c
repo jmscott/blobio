@@ -42,7 +42,7 @@
 #endif
 
 extern char	*verb;
-extern char	netflow[129];
+extern char	transport[129];
 extern char	algorithm[9];
 extern char	ascii_digest[129];
 extern char	end_point[129];
@@ -276,7 +276,7 @@ again3:
 	_CTRACE("done");
 
 	if (brr_path)
-		snprintf(netflow, sizeof netflow,
+		snprintf(transport, sizeof transport,
 			"x~bio4c:%s:%d",
 			inet_ntoa(s.sin_addr),
 			port

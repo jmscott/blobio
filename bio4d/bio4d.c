@@ -316,8 +316,8 @@ die_NO(char *msg)
 
 	if (req.client_fd > -1)
 		if (write(req.client_fd, NO, sizeof NO - 1) < 0)
-			error2(req.netflow, "write(no) failed");
-	die2(req.netflow, msg);
+			error2(req.transport, "write(no) failed");
+	die2(req.transport, msg);
 }
 
 static void
@@ -465,7 +465,11 @@ take(struct request *rp, struct digest_module *mp)
 			snprintf(wrap_udig, sizeof wrap_udig, "%s:%s",
 						rp->algorithm, rp->digest);
 
-			error3("take", rp->netflow,"blob in unrolled wrap set");
+			error3(
+				"take",
+				rp->transport,
+				"blob in unrolled wrap set"
+			);
 			error3("take", "forbidden until a next roll", wrap_udig);
 			return write_no(rp);
 		}
@@ -1601,9 +1605,9 @@ fork_accept(struct request *rp)
 	 *  Build a description of a network connection for blob request
 	 *  record and error messages.
 	 */
-	strcpy(rp->netflow_tiny,
+	strcpy(rp->transport_tiny,
 		net_32addr2text(ntohl(rp->remote_address.sin_addr.s_addr)));
-	snprintf(rp->netflow, sizeof rp->netflow - 1,
+	snprintf(rp->transport, sizeof rp->transport - 1,
 		"tcp4~%s:%u;%s:%u",
 		net_32addr2text(ntohl(rp->remote_address.sin_addr.s_addr)),
 		(unsigned int)ntohs(rp->remote_address.sin_port),

@@ -5,7 +5,7 @@
  *  	append-brr							\
  *		/path/to/file
  *  		start_request_time					\
- *		netflow							\
+ *		transport						\
  *		verb							\
  *		algorithm:digest					\
  *		chat_history						\
@@ -289,9 +289,9 @@ is_start_time(char *arg, char **brr)
 }
 
 static void
-is_netflow(char *arg, char **brr)
+is_transport(char *arg, char **brr)
 {
-	char *nm = "netflow";
+	char *nm = "transport";
 	char c, *a;
 
 	arg2brr(nm, arg, 3, 8+1+128, brr);
@@ -398,7 +398,7 @@ main(int argc, char **argv)
 	b = brr;
 
 	is_start_time(argv[2], &b);
-	is_netflow(argv[3], &b);
+	is_transport(argv[3], &b);
 
 	//  verb
 

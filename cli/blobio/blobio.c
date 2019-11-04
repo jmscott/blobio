@@ -103,7 +103,7 @@ char	*input_path = 0;
 char	*brr_path = 0;
 char	*null_device = "/dev/null";
 char	chat_history[10] = {0};
-char	netflow[129] = {0};
+char	transport[129] = {0};
 
 unsigned long long	blob_size;
 
@@ -126,7 +126,7 @@ static char		usage[] =
 
 static char	*brr_format =
 	"%04d-%02d-%02dT%02d:%02d:%02d.%09ld+00:00\t"	//  RFC3339Nano time
-	"%s\t"						//  netflow
+	"%s\t"						//  transport
 	"%s\t"						//  verb
 	"%s%s%s\t"					//  algorithm(:digest)?	
 	"%s\t"						//  chat history
@@ -774,7 +774,7 @@ brr_write()
 		t->tm_min,
 		t->tm_sec,
 		start_time.tv_nsec,
-		netflow,
+		transport,
 		verb,
 		algorithm[0] ? algorithm : "",
 		algorithm[0] && ascii_digest[0] ? ":" : "",

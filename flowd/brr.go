@@ -5,7 +5,7 @@ The format of a single request record is a new-line terminated list of
 tab separated fields, i.e, the typical unixy ascii record:
 
 	start_time		#  YYYY-MM-DDThh:mm:ss.ns[+-]HH:MM
-	netflow			#  [a-z][a-z0-9]{0,7}~[[:graph:]]{1,128}
+	transport		#  [a-z][a-z0-9]{0,7}~[[:graph:]]{1,128}
 	verb			#  get/put/take/give/eat/wrap/roll
 	algorithm:digest	#  udig of the blob in request
 	chat_history		#  ok/no handshake between server&client
@@ -31,7 +31,7 @@ type brr_field uint8
 //  field offset for blob request records (brr)
 const (
 	brr_START_TIME = iota
-	brr_NETFLOW
+	brr_TRANSPORT
 	brr_VERB
 	brr_UDIG
 	brr_CHAT_HISTORY
@@ -44,8 +44,8 @@ func (bf brr_field) String() string {
 	switch bf {
 	case brr_START_TIME:
 		return "start_time"
-	case brr_NETFLOW:
-		return "netflow"
+	case brr_TRANSPORT:
+		return "transport"
 	case brr_VERB:
 		return "verb"
 	case brr_UDIG:
@@ -63,14 +63,14 @@ func (bf brr_field) String() string {
 
 type brr [7]string
 
-var netflow_re *regexp.Regexp
+var transport_re *regexp.Regexp
 
 func init() {
 	var err error
 
 	// regular expressions used by brr for the network flow connections
 
-	netflow_re, err = regexp.Compile(
+	transport_re, err = regexp.Compile(
 		"^[a-z][a-z0-9]{0,7}~[[:graph:]]{1,128}$",
 	)
 
@@ -104,7 +104,7 @@ func (*brr) parse(s string) (*brr, error) {
 		return nil, errors.New("unparsable start time: " + err.Error())
 	}
 
-	if !netflow_re.MatchString(b[1]) {
+	if !transport_re.MatchString(b[1]) {
 		return nil, errors.New("unrecognized network flow: " + b[1])
 	}
 

@@ -186,7 +186,7 @@ while read U;  do
 	#
 	#  Note:
 	#	Do a "get" instead of "eat" to help remote sync which is too
-	#	stupid to understand (for now) grok local netflow.
+	#	stupid to understand (for now) grok local transport.
 	#
 	blobio get --udig $U --service $BLOBIO_SERVICE --output-path /dev/null
 	STATUS=$?
@@ -214,7 +214,7 @@ while read U;  do
 	#
 	#  Note:
 	#	Do a "get" instead of "eat" to help remote sync which is too
-	#	stupid to understand (for now) grok local netflow.
+	#	stupid to understand (for now) grok local transport.
 	#
 	blobio get --udig $U --service $BLOBIO_SERVICE --output-path /dev/null
 	STATUS=$?

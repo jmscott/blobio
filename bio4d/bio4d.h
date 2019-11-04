@@ -83,8 +83,8 @@ struct request
 	/*
 	 *  Network flow.  For example, tcp4/remoteip:port;bindip:port
 	 */
-	char			netflow[129];
-	char			netflow_tiny[129];
+	char			transport[129];
+	char			transport_tiny[129];
 
 	/*
 	 *  Track the ok/no chat session between client and bio4d.

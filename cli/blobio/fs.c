@@ -38,7 +38,7 @@
 extern char	*verb;
 extern char	algorithm[9];
 extern char	chat_history[129];
-extern char	netflow[129];
+extern char	transport[129];
 extern char	*brr_path;
 extern char	*output_path;
 extern int	output_fd;
@@ -230,11 +230,11 @@ set_brr(char *hist, char *fs_path) {
 		blob_size = st.st_size;
 	}
 
-	snprintf(netflow, sizeof netflow, "fs~%d:", getpid());
+	snprintf(transport, sizeof transport, "fs~%d:", getpid());
 
-	//  disable incorrect warnings about size of netflow buff.
+	//  disable incorrect warnings about size of transport buff.
 	//  we checked the length in fs_open().
-	strcat(netflow, fs_service.end_point);
+	strcat(transport, fs_service.end_point);
 	strcpy(chat_history, hist);
 	return (char *)0;
 }

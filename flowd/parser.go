@@ -188,7 +188,7 @@ const NEQ_BOOL = 57383
 const NEQ_STRING = 57384
 const NO_MATCH_STRING = 57385
 const NEQ_UINT64 = 57386
-const NETFLOW = 57387
+const TRANSPORT = 57387
 const OS_EXEC_CAPACITY = 57388
 const OS_EXEC_WORKER_COUNT = 57389
 const PARSE_ERROR = 57390
@@ -279,7 +279,7 @@ var yyToknames = [...]string{
 	"NEQ_STRING",
 	"NO_MATCH_STRING",
 	"NEQ_UINT64",
-	"NETFLOW",
+	"TRANSPORT",
 	"OS_EXEC_CAPACITY",
 	"OS_EXEC_WORKER_COUNT",
 	"PARSE_ERROR",
@@ -367,7 +367,7 @@ var keyword = map[string]int{
 	"max_idle_conns":       MAX_IDLE_CONNS,
 	"max_open_conns":       MAX_OPEN_CONNS,
 	"memstats_duration":    MEMSTAT_DURATION,
-	"netflow":              NETFLOW,
+	"transport":            TRANSPORT,
 	"OK":                   yy_OK,
 	"or":                   yy_OR,
 	"os_exec_capacity":     OS_EXEC_CAPACITY,
@@ -2410,7 +2410,7 @@ yydefault:
 		yyDollar = yyS[yypt-1 : yypt+1]
 //line parser.y:992
 		{
-			yyVAL.brr_field = brr_field(brr_NETFLOW)
+			yyVAL.brr_field = brr_field(brr_TRANSPORT)
 		}
 	case 39:
 		yyDollar = yyS[yypt-1 : yypt+1]

@@ -65,7 +65,7 @@ my (
 	%NO_VERB_COUNT,
 	%UDIG_AFTER,
 	%NO_EXIST,
-	%NETFLOW_TCP4_SOURCE,
+	%TRANSPORT_TCP4_SOURCE,
 );
 
 #  match a udig
@@ -90,7 +90,7 @@ my $BRR_RE = qr{
 		[+-]\d\d:\d\d			#  time zone offset
 	)
 						\t
-	#  netflow name~parameter
+	#  transport name~parameter
 	([a-z][a-z0-9]{0,7}~[[:graph:]]{1,128})
 						\t
 	#  request verb
@@ -377,7 +377,7 @@ while (@wrap_set > 0) {
 			die "row $rc is not brr in log: $brr_log"
 							unless m/^${BRR_RE}$/;
 			my $start_time = $1;
-			my $netflow = $2;
+			my $transport = $2;
 			my $verb = $3;
 			my $udig = $4;
 			my $chat_history = $5;
@@ -393,8 +393,9 @@ while (@wrap_set > 0) {
 END
 
 			#  Note: what about fs:/ service?
-			++$NETFLOW_TCP4_SOURCE{"$1 answered $2"}
-					if $netflow =~/^tcp4~([^:]+):\d+;(.*)/;
+			++$TRANSPORT_TCP4_SOURCE{"$1 answered $2"}
+				if $transport =~/^tcp4~([^:]+):\d+;(.*)/
+			;
 
 			#  Looking for a wrap/roll blob
 			next if $chat_history =~ /no$/ ||
@@ -506,7 +507,7 @@ foreach my $brr_log (@BRR_LOG) {
 	foreach (reverse @BRR) {
 		die "row $rc is not brr in log: $brr_log" unless m/^${BRR_RE}$/;
 		my $start_time = $1;
-		my $netflow = $2;
+		my $transport = $2;
 		my $verb = $3;
 		my $udig = $4;
 		my $chat_history = $5;
@@ -526,8 +527,9 @@ foreach my $brr_log (@BRR_LOG) {
 			or
 		  	$start_time le $MIN_BRR_LOG_START_TIME
 		;
-		++$NETFLOW_TCP4_SOURCE{"$1 answered $2"}
-					if $netflow =~/^tcp4~([^:]+):\d+;(.*)/;
+		++$TRANSPORT_TCP4_SOURCE{"$1 answered $2"}
+					if $transport =~/^tcp4~([^:]+):\d+;(.*)/
+		;
 
 		if ($chat_history =~ /no$/) {
 			$NO_VERB_COUNT{$verb}++;
@@ -651,10 +653,10 @@ print <<END;
 #  No BRR Log Count: $no_brr_log_set_count blobs
 #  Taken Count: $taken_count blobs
 #
-#  Netflow TCP4 Source:
+#  Transport TCP4 Source:
 END
-print <<END for sort keys %NETFLOW_TCP4_SOURCE;
-#	$_ $NETFLOW_TCP4_SOURCE{$_} requests
+print <<END for sort keys %TRANSPORT_TCP4_SOURCE;
+#	$_ $TRANSPORT_TCP4_SOURCE{$_} requests
 END
 
 print <<END;

@@ -253,7 +253,7 @@ const (
 %token	NEQ_BOOL
 %token	NEQ_STRING NO_MATCH_STRING
 %token	NEQ_UINT64
-%token	NETFLOW
+%token	TRANSPORT
 %token	OS_EXEC_CAPACITY
 %token	OS_EXEC_WORKER_COUNT
 %token	PARSE_ERROR
@@ -988,9 +988,9 @@ brr_field:
 	  	$$ = brr_field(brr_VERB)
 	  }
 	|
-	  NETFLOW
+	  TRANSPORT
 	  {
-	  	$$ = brr_field(brr_NETFLOW)
+	  	$$ = brr_field(brr_TRANSPORT)
 	  }
 	|
 	  BLOB_SIZE
@@ -2085,7 +2085,7 @@ var keyword = map[string]int{
 	"max_idle_conns":	MAX_IDLE_CONNS,
 	"max_open_conns":	MAX_OPEN_CONNS,
 	"memstats_duration":	MEMSTAT_DURATION,
-	"netflow":		NETFLOW,
+	"transport":		TRANSPORT,
 	"OK":			yy_OK,
 	"or":			yy_OR,
 	"os_exec_capacity":	OS_EXEC_CAPACITY,
