@@ -48,7 +48,8 @@ export PGDATABASE=${PGDATABASE:=blobio}
 #  golang libpq gripes about PGSYSCONFDIR
 unset PGSYSCONFDIR
 
-PATH=$BLOBIO_ROOT/bin:$BLOBIO_ROOT/sbin:$PGHOME/bin:$PATH
+export JMSCOTT_ROOT=${JMSCOTT_ROOT:=/usr/local/jmscott}
+PATH=$BLOBIO_ROOT/bin:$BLOBIO_ROOT/sbin:$PGHOME/bin:$PATH:$JMSCOTT_ROOT/bin
 
 export TMPDIR=$BLOBIO_ROOT/tmp
 if [ ! -e $TMPDIR ];  then
