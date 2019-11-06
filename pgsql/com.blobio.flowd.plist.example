@@ -60,7 +60,7 @@
 
   <key>ProgramArguments</key>
   <array>
-	<string>sbin/launchd-log</string>
+	<string>/usr/local/jmscott/sbin/launchd-log</string>
 	<string>bin/flowd</string>
 	<!-- Note:
 		ps-title hack must first argument in order to change what
