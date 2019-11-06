@@ -3,7 +3,7 @@
 <plist version="1.0">
 <dict>
   <key>Label</key>
-  <string>com.blobio.bio4d</string>
+  <string>blobio.bio4d</string>
 
   <key>KeepAlive</key>
   <true/>

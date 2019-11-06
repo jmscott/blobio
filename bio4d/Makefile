@@ -54,11 +54,11 @@ SBINs=									\
 	update-rrd							\
 
 LIBs=									\
+	blobio-sys5.rc.template						\
+	blobio.bio4d.plist.example					\
 	blobio.bio4d.service.example					\
 	blobio.flowd.service.example					\
 	blobio.rc.template						\
-	blobio-sys5.rc.template						\
-	com.blobio.bio4d.plist.example
 
 #  Linux requires linking to realtime timer library
 

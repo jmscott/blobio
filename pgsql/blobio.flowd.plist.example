@@ -3,7 +3,7 @@
 <plist version="1.0">
 <dict>
   <key>Label</key>
-  <string>com.blobio.flowd</string>
+  <string>blobio.flowd</string>
 
   <key>KeepAlive</key>
   <dict>
