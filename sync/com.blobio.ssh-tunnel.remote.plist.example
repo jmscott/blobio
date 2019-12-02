@@ -13,14 +13,14 @@
 	#
   	#  sed "/<plist/,$s/remote.blobio.com/$FQ_HOST/g" $EXAMPLE	|
 	#	sed "<plist/,$s/remote/$HOST/g				>
-	#		com.blobio.ssh-tunnel-$HOST.plist
-	#  lanuchctl load com.blobio.ssh-tunnel-$HOST.plist
-	#  launchctl status com.blobio.ssh-tunnel.$HOST
+	#		blobio.sync.flowd.$HOST.plist
+	#  launchctl load blobio.sync.flowd.$HOST.plist
+	#  launchctl status blobio.sync.flowd.
 -->
 <plist version="1.0">
 <dict>
   <key>Label</key>
-  <string>com.blobio.ssh-tunnel.remote</string>
+  <string>blobio.sync.flowd.remote</string>
 
   <key>KeepAlive</key>
   <true/>
