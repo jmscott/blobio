@@ -5,10 +5,12 @@
 #  Usage:
 #	run-stat-report
 #  Note:
+#	Rename this script to run-pid-report?
+#
 #	For DOWN server ought to log down time instead of "unknown".
 (
 	echo "Process	Status	Up Duration"
-	echo "-------------	------	-----------"
+	echo '-------------	------	-----------'
 	run-stat							|
 		sort --key=2 --key=1 --field-separator=$'\t'		|
 		awk -F'\t' -v NOW=$(date +'%s') '{
@@ -42,4 +44,4 @@
 
 			print $1, FS, $2, FS, UP, units;
 		}'
-) | column -t -s '	'
+) | column -s '	' -t | sed 's/ *	//'
