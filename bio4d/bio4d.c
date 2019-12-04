@@ -1442,8 +1442,6 @@ set_pid_log(char *path)
 	static char n[] = "set_pid_log";
 	char buf[MSG_SIZE];
 
-	info2("creating pid log", path);
-
 	switch (io_path_exists(path)) {
 	case -1:
 		panic4(n, "io_path_exists() failed", strerror(errno), path);
@@ -1478,7 +1476,6 @@ set_pid_log(char *path)
 	if (burp_text_file(buf, pid_path))
 		die3(n, "burp_text_file() failed", pid_path);
 	buf[strlen(buf) - 1] = 0;		//  zap new line
-	info3("created pid log", pid_path, buf);
 	/*
 	 *  Chmod run/bio4d.pid u=rw,go=
 	 */
