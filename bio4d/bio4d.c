@@ -1437,10 +1437,12 @@ try_listen:
 }
 
 static void
-set_pid_file(char *path)
+set_pid_log(char *path)
 {
-	static char n[] = "set_pid_file";
+	static char n[] = "set_pid_log";
 	char buf[MSG_SIZE];
+
+	info2("creating pid log", path);
 
 	switch (io_path_exists(path)) {
 	case -1:
@@ -1456,7 +1458,7 @@ set_pid_file(char *path)
 			die3(n, "slurp_text_file() failed", pid_path);
 		if (sscanf(buf, "%d", &pid) != 1)
 			die3(n, "can't read process id in file", pid_path);
-		error3(n, "pid file already exists", pid_path);
+		error3(n, "pid log already exists", pid_path);
 		snprintf(
 			buf,
 			sizeof buf,
@@ -1476,7 +1478,7 @@ set_pid_file(char *path)
 	if (burp_text_file(buf, pid_path))
 		die3(n, "burp_text_file() failed", pid_path);
 	buf[strlen(buf) - 1] = 0;		//  zap new line
-	info3("pid file", pid_path, buf);
+	info3("created pid log", pid_path, buf);
 	/*
 	 *  Chmod run/bio4d.pid u=rw,go=
 	 */
@@ -1543,7 +1545,6 @@ daemonize()
 	pid = setsid();
 	if (pid < 0)
 		die3(n, "setsid() failed", strerror(errno));
-	set_pid_file(pid_path);
 
 	/*
 	 *  Shutdown stdin/stdout.
@@ -1802,6 +1803,7 @@ main(int argc, char **argv, char **env)
 
 	if (!in_foreground)
 		daemonize();
+	set_pid_log(pid_path);
 
 	master_pid = logged_pid = getpid();
 
