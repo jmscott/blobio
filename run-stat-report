@@ -5,6 +5,8 @@
 #  Usage:
 #	run-stat-report
 #  Note:
+#	Sort is ignoring the second key on linux.  The pain never ends.
+#
 #	Rename this script to run-pid-report?
 #
 #	For DOWN server ought to log down time instead of "unknown".
