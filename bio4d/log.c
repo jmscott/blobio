@@ -35,7 +35,7 @@ extern pid_t		master_pid;
 extern pid_t		logger_pid;
 extern pid_t		request_pid;
 extern unsigned char	request_exit_status;
-extern time_t		last_log_heartbeat;
+extern time_t		recent_log_heartbeat;
 extern u2		rrd_sample_duration;
 extern time_t		start_time;	
 extern char		pid_path[];
@@ -484,8 +484,8 @@ log_format(char *msg, char *buf, int buf_size)
 	 *
 	 *  On the local timezone.
 	 */
-	time(&last_log_heartbeat);
-	t = localtime(&last_log_heartbeat);
+	time(&recent_log_heartbeat);
+	t = localtime(&recent_log_heartbeat);
 
 	snprintf(buf, buf_size, "%04d/%02d/%02d %02d:%02d:%02d: #%u: ",
 			t->tm_year + 1900,

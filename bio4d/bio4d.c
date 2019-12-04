@@ -87,7 +87,8 @@ extern pid_t	arborist_pid;
  *  Return exit status of request child process.
  *  State bits are ORed in as request proceeds.
  */
-time_t last_log_heartbeat		= 0;
+time_t recent_log_heartbeat		= 0;
+time_t recent_pid_heartbeat		= 0;
 time_t rrd_sample_prev			= 0;
 
 void		**module_boot_data = 0;
@@ -1128,7 +1129,7 @@ heartbeat()
 	time_t now;
 
 	time(&now);
-	if (now - last_log_heartbeat < HEARTBEAT)
+	if (now - recent_log_heartbeat < HEARTBEAT)
 		return;
 
 	snprintf(buf, sizeof buf, "heartbeat: %u sec", HEARTBEAT);
