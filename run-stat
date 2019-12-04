@@ -50,6 +50,7 @@ _stale_pid bio4d run/bio4d.pid
 _stale_pid flowd run/flowd.pid
 
 #  check sync flowd process
+
 find sync/host -name run -type d | while read RUN_DIR;  do
 	HOST=$(basename $(dirname $RUN_DIR))
 	_stale_pid flowd/$HOST $RUN_DIR/flowd.pid 

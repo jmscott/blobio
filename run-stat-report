@@ -1,11 +1,45 @@
+#!/bin/bash
 #
 #  Synospsis:
 #	Report of running bio4d & flowd processes.
 #  Usage:
 #	run-stat-report
-#
+#  Note:
+#	For DOWN server ought to log down time instead of "unknown".
 (
-	echo "Process	Status	Start Time"
-	echo "-------------	------	----------"
-	run-stat | sort
+	echo "Process	Status	Up Duration"
+	echo "-------------	------	-----------"
+	run-stat							|
+		sort --key=2 --key=1 --field-separator=$'\t'		|
+		awk -F'\t' -v NOW=$(date +'%s') '{
+			ELAPSED=NOW - $3;
+			UP="unknown";
+			units = "";
+			if ($3 ~ "^[0-9][0-9]*$") {
+
+				#  > 3 days
+				if (ELAPSED > 259200) {
+					UP = ELAPSED / 86400;
+					units="days";
+
+				#  > 3 hours
+
+				} else if (ELAPSED > 10800) {
+					UP = ELAPSED / 3600;
+					units="hours";
+
+				#  > 3 minutes
+
+				} else if (ELAPSED > 180) {
+					UP = ELAPSED / 60;
+					units = "minutes"
+				} else {
+					UP = ELAPSED
+					units = "seconds";
+				}
+				UP = sprintf("%.0f", UP);
+			}
+
+			print $1, FS, $2, FS, UP, units;
+		}'
 ) | column -t -s '	'
