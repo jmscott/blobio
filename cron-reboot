@@ -12,8 +12,8 @@
 
 PROG=$(basename $0)
 USER=$(id -un)
-FLOWD_PAUSE=3
-PKILL_PAUSE=10
+FLOWD_PAUSE=4
+PKILL_PAUSE=4
 
 log()
 {
@@ -44,6 +44,7 @@ if [ $USER = blobio ];  then
 	log 'user is blobio, so process controled by launchd or systemd'
 	log 'doing pkill -u blobio flowd'
 	pkill -u blobio flowd
+	pkill -u blobio bio4d
 	log "pausing $PKILL_PAUSE seconds ..."
 	sleep $PKILL_PAUSE
 	run-stat-report
