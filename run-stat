@@ -29,7 +29,14 @@ _stale()
 		;;
 	1)
 		STATE=UP
-		UPTIME=$(head -2 $PID_PATH | tail -1) 
+		case $WHAT in
+		bio4d)
+			UPTIME=$(head -2 run/bio4d.pid | tail -1) 
+			;;
+		*)
+			UPTIME=$(head -2 $PID_PATH | tail -1) 
+			;;
+		esac
 		;;
 	2)
 		STATE=DOWN

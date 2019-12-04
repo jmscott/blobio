@@ -18,21 +18,14 @@ var boot_time time.Time
 const stale_duration = 120		//  120 seconds
 const pid_update_pause = time.Minute
 const pid_path = "run/flowd.pid"
-const perms = 0740;
 
-func put_pid_log(do_create bool) {
+func write_pid_log() {
 
-	flag := os.O_WRONLY
-	if (do_create) {
-		flag |= os.O_CREATE
-	}
 	msg := []byte(
 		strconv.FormatInt(int64(os.Getpid()), 10) + "\n" +
-		strconv.FormatInt(
-			int64(time.Now().Sub(boot_time).Seconds()),
-			10,
-		) + "\n")
-	f, err := os.OpenFile(pid_path, flag, perms)
+		strconv.FormatInt(int64(boot_time.Unix()), 10)+ "\n",
+	)
+	f, err := os.OpenFile(pid_path, os.O_WRONLY | os.O_CREATE, 0740)
 	if err != nil {
 		croak("os.OpenFile(pid log) failed: %s", err)
 	}
@@ -54,7 +47,10 @@ func update_pid_log() {
 
 	for {
 		time.Sleep(pid_update_pause);
-		put_pid_log(false)
+		now := time.Now()
+		if err := os.Chtimes(pid_path, now, now);  err != nil {
+			croak("os.Chtimes(pid log) failed: %s", err)
+		}
 	}
 }
 
@@ -79,7 +75,7 @@ func boot_pid_log() (is_stale bool) {
 	} else if !os.IsNotExist(err) {
 		croak("os.Stat(pid log) failed: %s", err)
 	}
-	put_pid_log(true)
+	write_pid_log()
 	go update_pid_log()
 	return
 }

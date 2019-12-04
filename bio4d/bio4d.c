@@ -1455,7 +1455,7 @@ set_pid_file(char *path)
 	}
 	snprintf(buf, sizeof buf, "%lld\n%lld\n",
 		(long long)getpid(),
-		(long long)(time((time_t *)0) - start_time)
+		(long long)start_time
 	);
 	if (burp_text_file(buf, pid_path))
 		die3(n, "burp_text_file() failed", pid_path);
