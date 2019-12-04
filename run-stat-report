@@ -22,22 +22,22 @@
 				#  > 3 days
 				if (ELAPSED > 259200) {
 					UP = ELAPSED / 86400;
-					units="days";
+					units="d";
 
 				#  > 3 hours
 
 				} else if (ELAPSED > 10800) {
 					UP = ELAPSED / 3600;
-					units="hours";
+					units="hr";
 
 				#  > 3 minutes
 
 				} else if (ELAPSED > 180) {
 					UP = ELAPSED / 60;
-					units = "minutes"
+					units = "min"
 				} else {
 					UP = ELAPSED
-					units = "seconds";
+					units = "sec";
 				}
 				UP = sprintf("%.0f", UP);
 			}
