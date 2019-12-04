@@ -1,11 +1,6 @@
 //Synopsis:
 //	Server action for flowd.
 //  Note:
-//	Need to blow away the pid file.
-//
-//	The pid file ought be created when the parent is root and stdin
-//	is not a tty.
-//	
 //	race condition removing file run/flowd.pid during panic.
 //
 //	Clear out the run/* on startup.  Also, think about a subdir run/flowd/
@@ -25,9 +20,7 @@ import (
 	"os/signal"
 	"runtime"
 	"sort"
-	"strconv"
 	"syscall"
-	"time"
 
 	_ "github.com/lib/pq"
 
@@ -219,79 +212,8 @@ func (conf *config) server(par *parse) {
 	info := info_log_ch.info
 	WARN := info_log_ch.WARN
 
-	had_stale_pid_file := false
-	//  write process id in run/flowd.pid
-	pid_path := "run/flowd.pid"
-	{
-		//  does the pid file exist?
-		if st, err := os.Stat(pid_path);  err == nil {
+	had_stale_pid_file := boot_pid_log()
 
-			// if the file has not been touched in > 120 seconds
-			//  then remove and move on.
-
-			if time.Now().Unix() - st.ModTime().Unix() < 120 {
-				croak("is another flowd process running?")
-			}
-			had_stale_pid_file = true
-			err = os.Remove(pid_path)
-			if err != nil {
-				croak("os.Remove() failed: %s", err)
-			}
-		} else if !os.IsNotExist(err) {
-			croak("os.Stat(run/flowd.pid) failed: %s", err)
-		}
-
-		f, err := os.OpenFile(
-				pid_path,
-				os.O_WRONLY | os.O_CREATE,
-				0755,
-		)
-		if err != nil {
-			croak("os.OpenFile(run/flowd.pid) failed: %s", err)
-		}
-		_, err = f.WriteString(
-				strconv.FormatInt(
-					int64(os.Getpid()), 10) + "\n")
-		if err != nil {
-			croak("os.WriteString(run/flowd.pid) failed: %s", err)
-		}
-
-		//  touch the run/flowd.pid once per minute.
-		go func() {
-
-			for {
-				Sleep(Minute);
-				f, err := os.OpenFile(
-						pid_path,
-						os.O_RDWR,
-						0755,
-				)
-				if err != nil {
-					croak(
-						"os.OpenFile(pid) failed: %s",
-						err,
-					)
-				}
-				var buf [1]byte
-				_, err = f.Read(buf[:]);
-				if err != nil {
-					croak("Read(pid) failed: %s", err)
-				}
-				_, err = f.Seek(int64(0), 0);
-				if err != nil {
-					croak("Seek(pid, 0) failed: %s", err)
-				}
-				_, err = f.Write(buf[:])
-				if err != nil {
-					croak("Write(pid) failed: %s", err)
-				}
-				err = f.Close()
-				if err != nil {
-					croak("Close(pid) failed: %s", err)
-				}
-			}
-		}()
-	}
 	leave := func(status int) {
 
 		os.Remove(pid_path)

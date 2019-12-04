@@ -8,8 +8,9 @@
 #		/usr/local/go/bin/go get -v -u github.com/lib/pq
 #
 #	wish installs goyacc in $GOPATH/bin.
-#
-#	Note, missing yacc tokens for output genrated by modernc.org/goyacc.
+#  Note:
+#	Consider always compiling in pprof.
+#	Apparently the execution overhead of pprof is not much.
 #
 include ../local.mk
 include ../blobio.mk
@@ -41,6 +42,7 @@ GOSRC=									\
 	flow.go								\
 	log.go								\
 	parser.go							\
+	pid-log.go							\
 	qdr.go								\
 	server.go							\
 	sql.go								\
@@ -109,6 +111,7 @@ vet: $(GOSRC)
 parser.go: parser.y
 	$(GOYACC) -o parser.go parser.y || (rm -f parser.go; exit 1)
 	$(GO) fmt parser.go
+	rm -f y.output
 
 flowd-execv: flowd-execv.c
 	cc $(CFLAGS) -o flowd-execv flowd-execv.c

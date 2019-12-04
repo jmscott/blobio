@@ -19,6 +19,8 @@ _stale()
 {
 	PID_PATH=$1
 	WHAT=$2
+	UPTIME=UNKNOWN
+
 	stale-mtime $STALE_AFTER $PID_PATH
 	STATUS=$?
 	case $STATUS in
@@ -27,6 +29,7 @@ _stale()
 		;;
 	1)
 		STATE=UP
+		UPTIME=$(head -2 $PID_PATH | tail -1) 
 		;;
 	2)
 		STATE=DOWN
@@ -35,7 +38,7 @@ _stale()
 		die "stale-mtime failed: exit status=$?"
 		;;
 	esac
-	echo "$WHAT	$STATE"
+	echo "$WHAT	$STATE	$UPTIME"
 }
 
 test $# = 0 || die "wrong number cli arguments: got $#, expected 0"

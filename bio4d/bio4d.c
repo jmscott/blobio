@@ -1453,7 +1453,10 @@ set_pid_file(char *path)
 	default:
 		panic3(n, "io_path_exists() returned unexpected value", path);
 	}
-	snprintf(buf, sizeof buf, "%d\n", getpid());
+	snprintf(buf, sizeof buf, "%lld\n%lld\n",
+		(long long)getpid(),
+		(long long)(time((time_t *)0) - start_time)
+	);
 	if (burp_text_file(buf, pid_path))
 		die3(n, "burp_text_file() failed", pid_path);
 	buf[strlen(buf) - 1] = 0;		//  zap new line
@@ -1628,6 +1631,8 @@ main(int argc, char **argv, char **env)
 	unsigned short port;
 	int i;
 
+	time(&start_time);
+
 	strcpy(wrap_digest_algorithm, DEFAULT_WRAP_DIGEST_ALGORITHM);
 	/*
 	 *  Parse verb line arguments.
@@ -1762,8 +1767,6 @@ main(int argc, char **argv, char **env)
 
 	if (net_timeout == -1)
 		net_timeout = NET_TIMEOUT;
-
-	time(&start_time);
 
 	if (port == 0)
 		port = BIO4D_PORT;
