@@ -15,10 +15,10 @@ die()
 	exit 1
 }
 
-_stale()
+_stale_pid()
 {
-	PID_PATH=$1
-	WHAT=$2
+	WHAT=$1
+	PID_PATH=$2
 	UPTIME=UNKNOWN
 
 	stale-mtime $STALE_AFTER $PID_PATH
@@ -29,14 +29,7 @@ _stale()
 		;;
 	1)
 		STATE=UP
-		case $WHAT in
-		bio4d)
-			UPTIME=$(head -2 run/bio4d.pid | tail -1) 
-			;;
-		*)
-			UPTIME=$(head -2 $PID_PATH | tail -1) 
-			;;
-		esac
+		UPTIME=$(head -2 $PID_PATH | tail -1)
 		;;
 	2)
 		STATE=DOWN
@@ -53,11 +46,11 @@ test $# = 0 || die "wrong number cli arguments: got $#, expected 0"
 test -n "$BLOBIO_ROOT" || die "environment not defined: BLOBIO_ROOT"
 cd $BLOBIO_ROOT || die "cd $BLOBIO_FAILED: exit status=$?"
 
-_stale log/bio4d-$(date +'%a').log bio4d
-_stale run/flowd.pid flowd
+_stale_pid bio4d run/bio4d.pid
+_stale_pid flowd run/flowd.pid
 
 #  check sync flowd process
 find sync/host -name run -type d | while read RUN_DIR;  do
 	HOST=$(basename $(dirname $RUN_DIR))
-	_stale $RUN_DIR/flowd.pid  flowd-$(basename $(dirname $RUN_DIR))
+	_stale_pid flowd/$HOST $RUN_DIR/flowd.pid 
 done

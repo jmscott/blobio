@@ -5,7 +5,7 @@
 #	run-stat-report
 #
 (
-	echo "Process	Status	Start"
+	echo "Process	Status	Start Time"
 	echo "-------------	------	----------"
 	run-stat | sort
 ) | column -t -s '	'

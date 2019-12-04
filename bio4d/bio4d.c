@@ -5,6 +5,8 @@
  *	export BLOBIO_ROOT=/usr/local/blobio
  *	$BLOBIO_ROOT/sbin/bio4d
  *  Note:
+ *	Is reap_request() needed to be called after each socket accept()?
+ *
  *	The entire start/stop code in bio4d needs a full shakedown.
  *
  *	A broken get request still generates a partial and incorrect brr
@@ -70,7 +72,9 @@
 	state = STATE_HALT;						\
 }
 	
-#define HEARTBEAT		10	/* 10 seconds */
+#define LOG_HEARTBEAT		10	/* update log at least 10 seconds */
+#define PID_HEARTBEAT		60	/* update times of run/bio4d.pid */
+
 /*
  *  Note:
  *	Should ACCEPT_TIMEOUT default to same as READ?WRITE?
@@ -1129,10 +1133,21 @@ heartbeat()
 	time_t now;
 
 	time(&now);
-	if (now - recent_log_heartbeat < HEARTBEAT)
+
+	if (now - recent_pid_heartbeat >= PID_HEARTBEAT) {
+		struct timeval times[2];
+
+		times[0].tv_sec = times[1].tv_sec = now;
+		times[0].tv_usec = times[1].tv_usec = 0;
+		if (io_utimes(pid_path, times) < 0)
+			panic2("io_utime(pid log) failed", strerror(errno));
+		recent_pid_heartbeat = now;
+	}
+
+	if (now - recent_log_heartbeat < LOG_HEARTBEAT)
 		return;
 
-	snprintf(buf, sizeof buf, "heartbeat: %u sec", HEARTBEAT);
+	snprintf(buf, sizeof buf, "heartbeat: %u sec", LOG_HEARTBEAT);
 	info(buf);
 
 	/*
@@ -1175,7 +1190,7 @@ heartbeat()
 	info(buf);
 
 	connect_diff = connect_count - prev_connect_count;
-	connect_rate = (float)connect_diff / (float)HEARTBEAT;
+	connect_rate = (float)connect_diff / (float)LOG_HEARTBEAT;
 	snprintf(buf, sizeof buf, "sample: %.0f connect/sec, connect=%llu",
 				connect_rate, connect_diff);
 	info(buf);
@@ -1665,7 +1680,7 @@ main(int argc, char **argv, char **env)
 			if (strcmp("", hb) == 0)
 				die2(o, "empty seconds");
 			if (strcmp("heartbeat", argv[i]) == 0)
-				rrd_sample_duration = HEARTBEAT;
+				rrd_sample_duration = LOG_HEARTBEAT;
 			else if (isdigit(hb[0])) {
 				unsigned j, sec;
 
@@ -1749,11 +1764,11 @@ main(int argc, char **argv, char **env)
 			die2("unknown argument", argv[i]);
 	}
 
-	if (rrd_sample_duration > 0 && rrd_sample_duration < HEARTBEAT) {
+	if (rrd_sample_duration > 0 && rrd_sample_duration < LOG_HEARTBEAT) {
 		char ebuf[512];
 
 		sprintf(ebuf, "rrd sample duration < heartbeat: %d < %d sec",
-				rrd_sample_duration, HEARTBEAT);
+				rrd_sample_duration, LOG_HEARTBEAT);
 		die(ebuf);
 	}
 
@@ -1873,7 +1888,8 @@ main(int argc, char **argv, char **env)
 						ACCEPT_TIMEOUT);
 	info(buf);
 
-	snprintf(buf, sizeof buf, "heartbeat: %u sec", HEARTBEAT);
+	snprintf(buf, sizeof buf, "log heartbeat: %u sec", LOG_HEARTBEAT);
+	snprintf(buf, sizeof buf, "pid heartbeat: %u sec", PID_HEARTBEAT);
 	info(buf);
 
 	if (rrd_sample_duration > 0) {
@@ -1921,6 +1937,8 @@ accept_request:
 		panic("net_accept() returned impossible value");
 		/*NOTREACHED*/
 	}
-	catch_CHLD(SIGCHLD);		//  reap kids, put rrd stats, heartbeat
+	heartbeat();
+	rrd_sample();
+	reap_request();
 	goto accept_request;
 }

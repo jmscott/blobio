@@ -6,7 +6,7 @@
  *	and one untagged INFO level to a reliable, rolled file.  The levels 
  *	are interpreted as follows:
  *
- *		PANIC:	system error, server is probably going to die
+ *		PANIC:	system error, server is will die
  *		ERROR:	client ERROR
  *		 WARN:	unusual event that does not need immediate attention
  *
@@ -36,6 +36,7 @@ extern pid_t		logger_pid;
 extern pid_t		request_pid;
 extern unsigned char	request_exit_status;
 extern time_t		recent_log_heartbeat;
+extern time_t		recent_pid_heartbeat;
 extern u2		rrd_sample_duration;
 extern time_t		start_time;	
 extern char		pid_path[];
@@ -159,8 +160,11 @@ server_elapsed()
 }
 
 
+/*
+ *  Roll the log to new log/bio4d-<Dow>.log
+ */
 static void
-check_log_age()
+roll_log_Dow()
 {
 	struct tm *now;
 	time_t now_t;
@@ -168,27 +172,36 @@ check_log_age()
 	time(&now_t);
 	now = localtime(&now_t);
 
-	if (now->tm_wday != log_dow) {
-		char rsd[MSG_SIZE], ppid[MSG_SIZE];
+	if (now->tm_wday == log_dow)
+		return;
 
-		snprintf(ppid, sizeof ppid,
-				"master/parent process id: #%u", getppid());
+	char rrd_msg[MSG_SIZE], ppid[MSG_SIZE];
 
-		snprintf(rsd, sizeof rsd,
-				"rrd sample duration: %u", rrd_sample_duration);
-		info(rsd);
-		info2("elapsed running time", server_elapsed());
-		info(ppid); 
-		info2("closing log file", log_path);
+	snprintf(
+		ppid,
+		sizeof ppid,
+		"master/parent process id: #%u",
+		getppid()
+	);
 
-		open_log_path(1);
-		log_fd = log_path_fd;
+	snprintf(
+		rrd_msg,
+		sizeof rrd_msg,
+		"rrd sample duration: %u",
+		rrd_sample_duration
+	);
+	info(rrd_msg);
+	info2("elapsed running time", server_elapsed());
+	info(ppid); 
+	info2("closing log file", log_path);
 
-		info2("opened new log file", log_path);
-		info2("elapsed running time", server_elapsed());
-		info(rsd);
-		info(ppid);
-	}
+	open_log_path(1);
+	log_fd = log_path_fd;
+
+	info2("opened new log file", log_path);
+	info2("elapsed running time", server_elapsed());
+	info(rrd_msg);
+	info(ppid);
 }
 
 /*
@@ -217,7 +230,7 @@ listen:
 	 *  Check log age every 100 requests or on every timeout.
 	 */
 	if ((log_check_count++ % 100) == 0)
-		check_log_age();
+		roll_log_Dow();
 
 	FD_ZERO(&log_fd_set);
 	FD_SET(process_fd, &log_fd_set);
@@ -237,7 +250,7 @@ listen:
 	 *  Natural timeout of select() ... roll the logs, captain.
 	 */
 	if (status == 0) {
-		check_log_age();
+		roll_log_Dow();
 		if (getppid() != master_pid)
 			leave(1);
 		goto listen;

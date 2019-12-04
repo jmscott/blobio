@@ -313,6 +313,7 @@ int		io_closedir(DIR *dirp);
 int		io_mkdir(const char *pathname, mode_t mode);
 int		io_stat(const char *pathname, struct stat *st);
 int		io_lstat(const char *pathname, struct stat *st);
+int		io_utimes(const char *pathname, const struct timeval times[2]);
 
 int		net_accept(
 			int listen_fd, struct sockaddr *addr,

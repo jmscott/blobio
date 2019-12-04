@@ -26,6 +26,7 @@
 #include <ctype.h>
 #include <signal.h>
 #include <fcntl.h>
+#include <utime.h>
 #include <unistd.h>
 #include "bio4d.h"
 
@@ -436,6 +437,9 @@ again:
 /*
  *  Read the entire contents of a text file into memory and
  *  null terminate the buf.  Return 0 on success, otherwise error.
+ *
+ *  Note:
+ *	Move to text.c!
  */
 int
 slurp_text_file(char *path, char *buf, size_t buf_size)
@@ -483,6 +487,9 @@ slurp_text_file(char *path, char *buf, size_t buf_size)
 
 /*
  *  Replace the contents of a file with a text string.
+ *
+ *  Note:
+ *	Why is burp_text_file() in io.c?
  */
 int
 burp_text_file(char *buf, char *path)
@@ -508,4 +515,15 @@ burp_text_file(char *buf, char *path)
 		status = -1;
 	}
 	return status;
+}
+
+int
+io_utimes(const char *pathname, const struct timeval times[2])
+{
+again:
+	if (utimes(pathname, times) == 0)
+		return 0;
+	if (errno == EINTR)
+		goto again;
+	return -1;
 }
