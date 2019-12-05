@@ -18,33 +18,33 @@
 		sort --key=2 --key=1 --field-separator=$'\t'		|
 		awk -F'\t' -v NOW=$(date +'%s') '{
 			ELAPSED=NOW - $3;
-			UP="unknown";
+			DURATION="unknown";
 			units = "";
 			if ($3 ~ "^[0-9][0-9]*$") {
 
 				#  > 3 days
 				if (ELAPSED > 259200) {
-					UP = ELAPSED / 86400;
+					DURATION = ELAPSED / 86400;
 					units="day";
 
 				#  > 3 hours
 
 				} else if (ELAPSED > 10800) {
-					UP = ELAPSED / 3600;
+					DURATION = ELAPSED / 3600;
 					units="hr";
 
 				#  > 3 minutes
 
 				} else if (ELAPSED > 180) {
-					UP = ELAPSED / 60;
+					DURATION = ELAPSED / 60;
 					units = "min"
 				} else {
-					UP = ELAPSED
+					DURATION = ELAPSED
 					units = "sec";
 				}
-				UP = sprintf("%.0f", UP);
+				DURATION = sprintf("%.0f", DURATION);
 			}
 
-			print $1, FS, $2, FS, UP, units;
+			print $1, FS, $2, FS, DURATION, units;
 		}'
 ) | column -s '	' -t | sed 's/ *	//'
