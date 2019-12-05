@@ -1,6 +1,6 @@
 #
 #  Synopsis:
-#	Summarize data $BLOBIO_ROOT/run and $BLOBIO_ROOT/sync/host/*/run
+#	Summarize process stats and duration by examining *.pid files.
 #  Usage:
 #	run-stat
 #  Note:
@@ -19,17 +19,18 @@ _stale_pid()
 {
 	WHAT=$1
 	PID_PATH=$2
-	UPTIME=UNKNOWN
+	SINCE=UNKNOWN
 
 	stale-mtime $STALE_AFTER $PID_PATH
 	STATUS=$?
 	case $STATUS in
 	0)
+		SINCE=$(perl -e "print((stat('$PID_PATH'))[9]);")
 		STATE=ZOMBIE
 		;;
 	1)
 		STATE=UP
-		UPTIME=$(head -2 $PID_PATH | tail -1)
+		SINCE=$(head -2 $PID_PATH | tail -1)
 		;;
 	2)
 		STATE=DOWN
@@ -38,7 +39,7 @@ _stale_pid()
 		die "stale-mtime failed: exit status=$?"
 		;;
 	esac
-	echo "$WHAT	$STATE	$UPTIME"
+	echo "$WHAT	$STATE	$SINCE"
 }
 
 test $# = 0 || die "wrong number cli arguments: got $#, expected 0"
