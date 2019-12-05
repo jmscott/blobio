@@ -1,6 +1,6 @@
 #
 #  Synopsis:
-#	What services are running based on age of files run/*.pid
+#	Summarize data $BLOBIO_ROOT/run and $BLOBIO_ROOT/sync/host/*/run
 #  Usage:
 #	run-stat
 #  Note:
@@ -25,7 +25,7 @@ _stale_pid()
 	STATUS=$?
 	case $STATUS in
 	0)
-		STATE=DOWN
+		STATE=ZOMBIE
 		;;
 	1)
 		STATE=UP
