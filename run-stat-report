@@ -9,8 +9,6 @@
 #
 #	Rename this script to run-pid-report?
 #
-#	For DOWN server ought to log down time instead of "unknown".
-#
 (
 	echo "Process	Status	Duration"
 	echo '-------------	------	-----------'
