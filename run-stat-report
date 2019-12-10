@@ -11,7 +11,7 @@
 #
 (
 	echo "Process	Status	Duration"
-	echo '-------------	-------	-----------'
+	echo '-------------	------	-----------'
 	run-stat							|
 		sort --key=2 --key=1 --field-separator=$'\t'		|
 		awk -F'\t' -v NOW=$(date +'%s') '{
