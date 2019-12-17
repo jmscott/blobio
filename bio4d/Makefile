@@ -51,6 +51,7 @@ SBINs=									\
 	create-rrd							\
 	fs2udig								\
 	graph-rrd							\
+	launchd-bio4d							\
 	update-rrd							\
 
 LIBs=									\

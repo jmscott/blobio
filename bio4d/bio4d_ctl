@@ -4,7 +4,7 @@
 #	Start/stop bio4d daemon.
 #  Usage:
 #	bio4d_ctl [stop|start|restart]
-#  Exit STatus:
+#  Exit Status:
 #	0	success
 #	1	fault
 #
@@ -25,6 +25,18 @@ log()
 	else
 		echo "$PROG: $ACTION: $@"
 	fi
+}
+
+zap_bio4d()
+{
+	log 'insure bio4d-* processes not running' 
+	zap-proc run/bio4d.pid						\
+		bio4d-arborist						\
+		bio4d-brr-logger					\
+		bio4d-listen						\
+		bio4d-logger						\
+		bio4d-request						||
+	  die "zap-proc failed: exit status=$?"
 }
 
 ACTION="$1"
@@ -54,10 +66,7 @@ boot)
 	rm -f $PID_PATH || die "rm $PID_PATH failed"
 	;;
 start)
-	if [ -f $PID_PATH ];  then
-		log "is bio4d already running with pid #$(cat $PID_PATH)?" >&2
-		die "remove file: $PID_PATH"
-	fi
+	zap_bio4d || exit
 	log 'starting biod4 process ...'
 	$BIO4D								\
 		--root $BLOBIO_ROOT					\
@@ -76,12 +85,7 @@ start)
 	tail log/bio4d-$(date +'%a').log
 	;;
 stop)
-	zap-proc run/bio4d.pid						\
-		bio4d-arborist						\
-		bio4d-brr-logger					\
-		bio4d-listen						\
-		bio4d-logger						\
-		bio4d-request						\
+	zap_bio4d || exit
 	;;
 restart)
 	log 'restart'

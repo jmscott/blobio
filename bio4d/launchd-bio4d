@@ -1,0 +1,69 @@
+#!/bin/bash
+#
+#  Synopsis:
+#	Wrapper script for foreground execution of bio4d process
+#  Exit Status:
+#	0	ok
+#	1	error
+#  Usage:
+#	In  /Library/LaunchDaemons/blobio.bio4d.plist
+#
+#	<key>ProgramArguments</key>
+#	<array>
+#	  <string>/usr/local/jmscott/sbin/launchd-log</string>
+#	  <string>/usr/local/blobio/sbin/launchd-bio4d</string>
+#	</array>
+#  See:
+#	$BLOBIO_ROOT/lib/blobio.bio4d.plist.example
+#
+PROG=$(basename $0)
+log()
+{
+	echo "$(date +'%Y/%m/%d: %H:%M:%S'): $PROG: $@"
+}
+
+die()
+{
+	log "ERROR: $@" >&2
+	exit 1
+}
+
+leave()
+{
+	log good bye, cruel world
+	exit
+}
+
+catch_SIG()
+{
+	log caught signal
+	exit 1 
+}
+
+log hello, world
+trap leave EXIT
+trap catch_SIG SIGQUIT SIGTERM
+
+BLOBIO_ROOT=$(pwd)
+log "BLOBIO_ROOT=$BLOBIO_ROOT"
+
+log 'insure bio4d-* processes not running' 
+zap-proc run/bio4d.pid							\
+	bio4d-arborist							\
+	bio4d-brr-logger						\
+	bio4d-listen							\
+	bio4d-logger							\
+	bio4d-request						||
+  die "zap-proc failed: exit status=$?"
+
+log 'starting sbin/bio4d'
+sbin/bio4d								\
+	--ps-title-XXXXXXXXXXXXXXXXXXXXXXX				\
+	--in-foreground							\
+	--port								\
+	1797								\
+	--root								\
+	$BLOBIO_ROOT							\
+	--rrd-sample-duration						\
+	60								||
+  die "sbin/bio4d failed: exit status=$?"

@@ -13,23 +13,10 @@
 
   <key>AbandonProcessGroup</key>
   <false/>
-
   <key>ProgramArguments</key>
   <array>
 	<string>/usr/local/jmscott/sbin/launchd-log</string>
-	<string>/usr/local/blobio/sbin/bio4d</string>
-	<!-- Note:
-		ps-title hack must first argument in order to change what
-		appears in the process table.
-	-->
-	<string>--ps-title-XXXXXXXXXXXXXXXXXXXXXXX</string>
-	<string>--in-foreground</string>
-	<string>--port</string>
-	<string>1797</string>
-	<string>--root</string>
-	<string>/usr/local/blobio</string>
-	<string>--rrd-sample-duration</string>
-	<string>60</string>
+	<string>/usr/local/blobio/sbin/launchd-bio4d</string>
   </array>
 
   <key>RunAtLoad</key>
@@ -40,6 +27,8 @@
 
   <key>GroupName</key>
   <string>staff</string>
+
+  <!--  env var BLOBIO_ROOT is set to $(pwd) by script launchd-bio4d -->
 
   <key>WorkingDirectory</key>
   <string>/usr/local/blobio</string>
