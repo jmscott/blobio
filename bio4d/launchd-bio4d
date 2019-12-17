@@ -46,7 +46,7 @@ log hello, world
 trap leave EXIT
 trap catch_SIG SIGQUIT SIGTERM
 
-BLOBIO_ROOT:=${BLOBIO:=$(pwd)}
+BLOBIO_ROOT=${BLOBIO_ROOT:=$(pwd)}
 log "BLOBIO_ROOT=$BLOBIO_ROOT"
 
 JMSCOTT_ROOT=${JMSCOTT_ROOT:=/usr/local/jmscott}
