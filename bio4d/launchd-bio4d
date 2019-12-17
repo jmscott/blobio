@@ -15,6 +15,8 @@
 #	</array>
 #  See:
 #	$BLOBIO_ROOT/lib/blobio.bio4d.plist.example
+#  Note:
+#	Environment not set from $BLOBIO_ROOT/etc/profile.
 #
 PROG=$(basename $0)
 log()
@@ -44,8 +46,16 @@ log hello, world
 trap leave EXIT
 trap catch_SIG SIGQUIT SIGTERM
 
-BLOBIO_ROOT=$(pwd)
+BLOBIO_ROOT:=${BLOBIO:=$(pwd)}
 log "BLOBIO_ROOT=$BLOBIO_ROOT"
+
+JMSCOTT_ROOT=${JMSCOTT_ROOT:=/usr/local/jmscott}
+log "JMSCOTT_ROOT=$JMSCOTT_ROOT"
+test -e $JMSCOTT_ROOT || die "dir does not exist: $JMSCOTT_ROOT"
+test -d $JMSCOTT_ROOT || die "not a directory: $JMSCOTT_ROOT"
+
+PATH=$JMSCOTT_ROOT/bin:$PATH
+log "PATH=$PATH"
 
 log 'insure bio4d-* processes not running' 
 zap-proc run/bio4d.pid							\
