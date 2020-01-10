@@ -19,8 +19,8 @@ KillSignal=SIGTERM
 TimeoutSec=20
 RestartSec=20
 Restart=always
-StandardOutput=journal
-StandardError=journal
+StandardOutput=file:/home/blobio/log/systemd-blobio.bio4d.log
+StandardError=file:/home/blobio/log/systemd-blobio.bio4d.log
 
 [Install]
 WantedBy=multi-user.target
