@@ -2,8 +2,8 @@
  *  Synopsis:
  *	A reference blobio server that speaks the blob.io protocol
  *  Usage:
- *	export BLOBIO_ROOT=/usr/local/blobio
- *	$BLOBIO_ROOT/sbin/bio4d
+ *	cd /usr/local/blobio
+ *	sbin/bio4d
  *  Note:
  *	Is reap_request() needed to be called after each socket accept()?
  *
