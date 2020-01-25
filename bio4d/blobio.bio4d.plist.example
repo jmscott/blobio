@@ -2,42 +2,48 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-  <key>Label</key>
-  <string>blobio.bio4d</string>
+ <key>Label</key>
+ <string>blobio.bio4d</string>
 
-  <key>KeepAlive</key>
-  <true/>
+ <key>EnvironmentVariables</key>
+ <dict>
+  <key>PATH</key>
+  <string>/usr/local/jmscott/sbin</string>
+ </dict>
 
-  <key>ProcessType</key>
-  <string>Background</string>
+ <key>KeepAlive</key>
+ <true/>
 
-  <key>AbandonProcessGroup</key>
-  <false/>
-  <key>ProgramArguments</key>
-  <array>
-	<string>/usr/local/jmscott/sbin/launchd-log</string>
-	<string>/usr/local/blobio/sbin/launchd-bio4d</string>
-  </array>
+ <key>ProcessType</key>
+ <string>Background</string>
 
-  <key>RunAtLoad</key>
-  <true/>
+ <key>AbandonProcessGroup</key>
+ <false/>
+ <key>ProgramArguments</key>
+ <array>
+  <string>/usr/local/jmscott/sbin/launchd-log</string>
+  <string>/usr/local/blobio/sbin/launchd-bio4d</string>
+ </array>
 
-  <key>UserName</key>
-  <string>blobio</string>
+ <key>RunAtLoad</key>
+ <true/>
 
-  <key>GroupName</key>
-  <string>staff</string>
+ <key>UserName</key>
+ <string>blobio</string>
 
-  <!--  env var BLOBIO_ROOT is set to $(pwd) by script launchd-bio4d -->
+ <key>GroupName</key>
+ <string>staff</string>
 
-  <key>WorkingDirectory</key>
-  <string>/usr/local/blobio</string>
+ <!--  env var BLOBIO_ROOT is set to $(pwd) by script launchd-bio4d -->
 
-  <key>StandardErrorPath</key>
-  <string>/Users/blobio/log/launchd-bio4d.log</string>
+ <key>WorkingDirectory</key>
+ <string>/usr/local/blobio</string>
 
-  <key>StandardOutPath</key>
-  <string>/Users/blobio/log/launchd-bio4d.log</string>
+ <key>StandardErrorPath</key>
+ <string>/Users/blobio/log/launchd-bio4d.log</string>
+
+ <key>StandardOutPath</key>
+ <string>/Users/blobio/log/launchd-bio4d.log</string>
 
 </dict>
 </plist>
