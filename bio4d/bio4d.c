@@ -5,6 +5,9 @@
  *	cd /usr/local/blobio
  *	sbin/bio4d
  *  Note:
+ *	Need to remove reference to rrd (round robin database) in name of
+ *	stats samples log.  Instead, should be "log/bio4d-stat.log".
+ *
  *	Is reap_request() needed to be called after each socket accept()?
  *
  *	The entire start/stop code in bio4d needs a full shakedown.
@@ -1199,9 +1202,7 @@ heartbeat()
 }
 
 /*
- *  Write out a round robin database sample to log/bio4d-rrd-sample.log
- *  A cron job is expected to merge the samples into log/bio-stat.rrd
- *  and roll the file log/bio4d-rrd-sample.log.
+ *  Write out a round robin database sample to log/bio4d-rrd.log.
  *
  *  Each line sample is suitable as an argument to cron driven rrdupdate.
  *  The sample looks like:
