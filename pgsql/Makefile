@@ -18,7 +18,7 @@ install:
 
 	install -g $(DIST_GROUP) -o $(DIST_USER) -m u=rx,go=		\
 		cron-eat-unroll						\
-		cron-rrd2pg						\
+		cron-bio4d-stat2pg					\
 		eat-wrap-missed						\
 		fs-eat							\
 		fs-xor-service						\

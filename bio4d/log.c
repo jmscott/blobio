@@ -37,7 +37,7 @@ extern pid_t		request_pid;
 extern unsigned char	request_exit_status;
 extern time_t		recent_log_heartbeat;
 extern time_t		recent_pid_heartbeat;
-extern u2		rrd_sample_duration;
+extern u2		stat_sample_duration;
 extern time_t		start_time;	
 extern char		pid_path[];
 
@@ -175,7 +175,7 @@ roll_log_Dow()
 	if (now->tm_wday == log_dow)
 		return;
 
-	char rrd_msg[MSG_SIZE], ppid[MSG_SIZE];
+	char stat_msg[MSG_SIZE], ppid[MSG_SIZE];
 
 	snprintf(
 		ppid,
@@ -185,12 +185,12 @@ roll_log_Dow()
 	);
 
 	snprintf(
-		rrd_msg,
-		sizeof rrd_msg,
-		"rrd sample duration: %u",
-		rrd_sample_duration
+		stat_msg,
+		sizeof stat_msg,
+		"stat sample duration: %u",
+		stat_sample_duration
 	);
-	info(rrd_msg);
+	info(stat_msg);
 	info2("elapsed running time", server_elapsed());
 	info(ppid); 
 	info2("closing log file", log_path);
@@ -200,7 +200,7 @@ roll_log_Dow()
 
 	info2("opened new log file", log_path);
 	info2("elapsed running time", server_elapsed());
-	info(rrd_msg);
+	info(stat_msg);
 	info(ppid);
 }
 

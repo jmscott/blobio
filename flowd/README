@@ -152,7 +152,7 @@ Note:
 
 	- think about a channel that traces i/o, possibly using reflection.
 
-	- What about a daily summary of the rrd stats, written as the
+	- What about a daily summary of the stats, written as the
 	  last line and the first line of every rolled log file.
 
 	  distinct udigs ought to be tracked in stats in log file.

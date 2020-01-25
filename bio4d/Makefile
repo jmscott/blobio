@@ -91,9 +91,6 @@ install: all
 		$(SBINs)						\
 		$(DIST_ROOT)/sbin
 
-	install -g $(DIST_GROUP) -o $(DIST_USER) -m u=rx,go=rx,o=	\
-		$(CSRC) $(DIST_ROOT)/src
-
 	install -g $(DIST_GROUP) -o $(DIST_USER) -m u=rx,g=rx,o=	\
 		$(CSRC) $(DIST_ROOT)/src/bio4d
 

@@ -328,8 +328,8 @@ COMMENT ON VIEW quack
   	'blobs which have never been digested'
 ;
 
-DROP TABLE IF EXISTS bio4d_request_stat CASCADE;
-CREATE TABLE bio4d_request_stat
+DROP TABLE IF EXISTS bio4d_stat CASCADE;
+CREATE TABLE bio4d_stat
 (
 	sample_time	brr_timestamp
 				PRIMARY KEY,

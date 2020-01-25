@@ -9,6 +9,19 @@
  <dict>
   <key>PATH</key>
   <string>/usr/local/jmscott/sbin</string>
+
+  <key>BLOBIO_ROOT</key>
+  <string>/usr/local/blobio</string>
+
+  <key>BLOBIO_BIO4D_PORT</key>
+  <string>1797</string>
+
+  <!-- 
+    Write round robin stats every 60 seconds to $BLOBIO_ROOT/log/bio4d-stat.log.
+    0 disables logging of stat samples.
+  -->
+  <key>BLOBIO_BIO4D_STAT_SAMPLE_DURATION</key>
+  <string>60</string>
  </dict>
 
  <key>KeepAlive</key>

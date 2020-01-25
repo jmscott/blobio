@@ -1,7 +1,7 @@
 #!/bin/bash
 #
 #  Synopsis:
-#	Wrapper script for foreground execution of bio4d process
+#	Wrapper script for foreground execution of bio4d process from launchd
 #  Exit Status:
 #	0	ok
 #	1	error
@@ -16,9 +16,13 @@
 #  See:
 #	$BLOBIO_ROOT/lib/blobio.bio4d.plist.example
 #  Note:
-#	Environment not set from $BLOBIO_ROOT/etc/profile.
+#	The full environment is expected to be set in blobio.bio4d.plist
+#	and specifically not set in $BLOBIO_ROOT/etc/profile.
 #
 PROG=$(basename $0)
+BLOBIO_BIO4D_PORT=${BLOBIO_BIO4D_PORT:=1797}
+BLOBIO_BIO4D_STAT_SAMPLE_DURATION=${BLOBIO_BIO4D_STAT_SAMPLE_DURATION:=60}
+
 log()
 {
 	echo "$(date +'%Y/%m/%d: %H:%M:%S'): $PROG: $@"
@@ -38,7 +42,7 @@ leave()
 
 catch_SIG()
 {
-	log caught signal
+	log 'caught signal'
 	exit 1 
 }
 
@@ -46,16 +50,13 @@ log hello, world
 trap leave EXIT
 trap catch_SIG SIGQUIT SIGTERM
 
-BLOBIO_ROOT=${BLOBIO_ROOT:=$(pwd)}
+test -n "$BLOBIO_ROOT" || die 'env not defined: BLOBIO_ROOT'
+
 log "BLOBIO_ROOT=$BLOBIO_ROOT"
-
-JMSCOTT_ROOT=${JMSCOTT_ROOT:=/usr/local/jmscott}
-log "JMSCOTT_ROOT=$JMSCOTT_ROOT"
-test -e $JMSCOTT_ROOT || die "dir does not exist: $JMSCOTT_ROOT"
-test -d $JMSCOTT_ROOT || die "not a directory: $JMSCOTT_ROOT"
-
-PATH=$JMSCOTT_ROOT/bin:$PATH
 log "PATH=$PATH"
+log "bio4d port: $BLOBIO_BIO4D_PORT"
+log "stat sample duration: $BLOBIO_BIO4D_STAT_SAMPLE_DURATION sec"
+log "current directory: $(pwd)"
 
 log 'insure bio4d-* processes not running' 
 zap-proc run/bio4d.pid							\
@@ -71,9 +72,9 @@ sbin/bio4d								\
 	--ps-title-XXXXXXXXXXXXXXXXXXXXXXX				\
 	--in-foreground							\
 	--port								\
-	1797								\
+	$BLOBIO_BIO4D_PORT						\
 	--root								\
 	$BLOBIO_ROOT							\
-	--rrd-sample-duration						\
+	--stat-sample-duration						\
 	60								||
   die "sbin/bio4d failed: exit status=$?"

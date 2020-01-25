@@ -26,10 +26,10 @@ export BLOBIO_BIO4D_PORT=${BLOBIO_BIO4D_PORT:=1797}
 
 export BLOBIO_SERVICE=${BLOBIO_SERVICE:=bio4:localhost:$BLOBIO_BIO4D_PORT}
 
-#  write rrd stats to $BLOBIO_ROOT/log/bio4d-rrd.log every 60 seconds
+#  write stat samples to $BLOBIO_ROOT/log/bio4d-stat.log every 60 seconds
 #  set to 0 to disable
 
-export BLOBIO_RRD_SAMPLE_DURATION=60
+export BLOBIO_STAT_SAMPLE_DURATION=60
 
 #
 #  The default digest algorithm to use when new blobs must be generated.

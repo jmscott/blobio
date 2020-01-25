@@ -57,9 +57,9 @@ PORT=${BLOBIO_BIO4D_PORT:=1797}
 PID_PATH=$BLOBIO_ROOT/run/bio4d.pid
 NET_TIMEOUT=${BLOBIO_NET_TIMEOUT:=20}
 
-#  duration in seconds to write rrd samples to log/bio4d-rrd.log.
+#  duration in seconds to write stat samples to log/bio4d-stat.log.
 #  0 disables.
-RRD_SAMPLE_DURATION=${BLOBIO_RRD_SAMPLE_DURATION:=0}
+STAT_SAMPLE_DURATION=${BLOBIO_STAT_SAMPLE_DURATION:=0}
 
 case "$ACTION" in
 boot)
@@ -72,7 +72,7 @@ start)
 		--root $BLOBIO_ROOT					\
 		--port $PORT						\
 		--ps-title-XXXXXXXXXXXXXXXXXXXXXXX			\
-		--rrd-sample-duration $RRD_SAMPLE_DURATION		\
+		--stat-sample-duration $STAT_SAMPLE_DURATION		\
 		--net-timeout $NET_TIMEOUT
 	STATUS=$?
 	test $STATUS = 0 || die "bio4d failed to start: exit status=$STATUS"

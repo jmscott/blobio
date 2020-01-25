@@ -1,15 +1,15 @@
 #!/bin/sh
 #
 #  Synopsis:
-#	Merge the bio4d samples in log/bio4d-rrd.log into log/bio4d.rrd
+#	Merge the bio4d samples in log/bio4d-stat.log into log/bio4d.rrd
 #  Usage:
 #	* * * * * update-rrd >>log/update-rrd.log 2>&1
 #
 
 PROG=$(basename $0)
 RRD=log/bio4d.rrd
-LOG=log/bio4d-rrd.log
-TMP_LOG=log/bio4d-rrd-$(date +'%s').log
+LOG=log/bio4d-stat.log
+TMP_LOG=log/bio4d-stat-$(date +'%s').log
 
 die()
 {
@@ -28,10 +28,10 @@ test "$BLOBIO_ROOT" || die 'env variable not defined: BLOBIO_ROOT'
 cd $BLOBIO_ROOT || die "cd $BLOBIO failed"
 
 #
-#  Freeze the rrd server sample set.
+#  Freeze the stats sample set.
 #
 #  A minor race condition exists, since writes can stil occur to
-#  log/bio4d-rrd.log.
+#  log/bio4d-stat.log.
 #
 mv $LOG $TMP_LOG || die "mv $LOG $TMP_LOG failed"
 

@@ -5,9 +5,6 @@
  *	cd /usr/local/blobio
  *	sbin/bio4d
  *  Note:
- *	Need to remove reference to rrd (round robin database) in name of
- *	stats samples log.  Instead, should be "log/bio4d-stat.log".
- *
  *	Is reap_request() needed to be called after each socket accept()?
  *
  *	The entire start/stop code in bio4d needs a full shakedown.
@@ -96,7 +93,7 @@ extern pid_t	arborist_pid;
  */
 time_t recent_log_heartbeat		= 0;
 time_t recent_pid_heartbeat		= 0;
-time_t rrd_sample_prev			= 0;
+time_t stat_sample_prev			= 0;
 
 void		**module_boot_data = 0;
 pid_t		request_pid = 0;
@@ -105,7 +102,7 @@ pid_t		logger_pid = 0;
 int		leaving = 0;
 unsigned char	request_exit_status = 0;
 time_t		start_time;	
-u2		rrd_sample_duration = 0;
+u2		stat_sample_duration = 0;
 
 char	pid_path[] = "run/bio4d.pid";
 
@@ -173,7 +170,7 @@ static u8	chat_no3_count =0;	//  ok,ok,no
 static u8	eat_no_count =	0;	//  no occured on eat
 static u8	take_no_count =	0;	//  single no on take
 
-static char	rrd_log[] = "log/bio4d-rrd.log";
+static char	stat_log[] = "log/bio4d-stat.log";
 
 static unsigned char	in_foreground = 0;
 
@@ -1202,9 +1199,11 @@ heartbeat()
 }
 
 /*
- *  Write out a round robin database sample to log/bio4d-rrd.log.
+ *  Write out a round robin database sample to log/bio4d-stat.log.
  *
- *  Each line sample is suitable as an argument to cron driven rrdupdate.
+ *  Each line sample is suitable as an argument to cron driven round
+ *  robin database tool tool rrdupdate.
+ *
  *  The sample looks like:
  *
  *	time epoch:
@@ -1236,13 +1235,13 @@ heartbeat()
  *		take_no_count
  */
 static void
-rrd_sample()
+stat_sample()
 {
 	int fd;
 	char buf[512];		/* <= PIPE_MAX */
 	time_t now;
 
-	if (rrd_sample_duration == 0)
+	if (stat_sample_duration == 0)
 		return;
 	/*
 	 *  Request summaries
@@ -1275,7 +1274,7 @@ rrd_sample()
 	static u8	take_no_count_prev =	0;
 
 	time(&now);
-	if (now - rrd_sample_prev < rrd_sample_duration)
+	if (now - stat_sample_prev < stat_sample_duration)
 		return;
 
 	static char format[] =
@@ -1287,9 +1286,9 @@ rrd_sample()
 		"\n"
 	;
 
-	fd = io_open_append(rrd_log, 0);
+	fd = io_open_append(stat_log, 0);
 	if (fd < 0)
-		panic3(rrd_log, "open(rrd log) failed", strerror(errno));
+		panic3(stat_log, "open(stat log) failed", strerror(errno));
 	snprintf(buf, sizeof buf, format,
 		now,
 
@@ -1315,12 +1314,12 @@ rrd_sample()
 		take_no_count - take_no_count_prev
 	);
 	if (io_write(fd, buf, strlen(buf)) < 0)
-		panic3(rrd_log, "write(rrd log) failed", strerror(errno));
+		panic3(stat_log, "write(stat log) failed", strerror(errno));
 	if (io_close(fd))
-		panic3(rrd_log, "close(rrd log) failed", strerror(errno));
+		panic3(stat_log, "close(stat log) failed", strerror(errno));
 
 	//  reset the samples
-	rrd_sample_prev = now;
+	stat_sample_prev = now;
 	success_count_prev = success_count;
 	error_count_prev = error_count;
 	timeout_count_prev = timeout_count;
@@ -1352,7 +1351,7 @@ catch_CHLD(int sig)
 
 	reap_request();
 	heartbeat();
-	rrd_sample();
+	stat_sample();
 }
 
 static void
@@ -1669,8 +1668,8 @@ main(int argc, char **argv, char **env)
 			if (p > 65536)
 				die2("port > 65536", argv[i]);
 			port = p;
-		} else if (strcmp("--rrd-sample-duration", argv[i]) == 0) {
-			static char o[] = "option --rrd-sample-duration";
+		} else if (strcmp("--stat-sample-duration", argv[i]) == 0) {
+			static char o[] = "option --stat-sample-duration";
 			char *hb;
 
 			if (++i >= argc)
@@ -1679,7 +1678,7 @@ main(int argc, char **argv, char **env)
 			if (strcmp("", hb) == 0)
 				die2(o, "empty seconds");
 			if (strcmp("heartbeat", argv[i]) == 0)
-				rrd_sample_duration = LOG_HEARTBEAT;
+				stat_sample_duration = LOG_HEARTBEAT;
 			else if (isdigit(hb[0])) {
 				unsigned j, sec;
 
@@ -1692,7 +1691,7 @@ main(int argc, char **argv, char **env)
 				}
 				if (sscanf(hb, "%u", &sec) != 1)
 					die3(o, "sscanf(seconds) failed", hb);
-				rrd_sample_duration = (u2)sec;
+				stat_sample_duration = (u2)sec;
 			} else
 				die3(o, "unexpected seconds or heartbeat", hb);
 		} else if (strcmp("--wrap-algorithm", argv[i]) == 0) {
@@ -1763,20 +1762,20 @@ main(int argc, char **argv, char **env)
 			die2("unknown argument", argv[i]);
 	}
 
-	if (rrd_sample_duration > 0 && rrd_sample_duration < LOG_HEARTBEAT) {
+	if (stat_sample_duration > 0 && stat_sample_duration < LOG_HEARTBEAT) {
 		char ebuf[512];
 
-		sprintf(ebuf, "rrd sample duration < heartbeat: %d < %d sec",
-				rrd_sample_duration, LOG_HEARTBEAT);
+		sprintf(ebuf, "stat sample duration < heartbeat: %d < %d sec",
+				stat_sample_duration, LOG_HEARTBEAT);
 		die(ebuf);
 	}
 
-	if (rrd_sample_duration > 0 && rrd_sample_duration < ACCEPT_TIMEOUT) {
+	if (stat_sample_duration > 0 && stat_sample_duration < ACCEPT_TIMEOUT) {
 		char ebuf[512];
 		static char r2small[] =
-		    "rrd sample duration < socket accept duration: %d < %d sec";
+		    "stat sample duration < socket accept duration: %d < %dsec";
 
-		sprintf(ebuf, r2small, rrd_sample_duration, ACCEPT_TIMEOUT);
+		sprintf(ebuf, r2small, stat_sample_duration, ACCEPT_TIMEOUT);
 		die(ebuf);
 	}
 
@@ -1892,13 +1891,13 @@ main(int argc, char **argv, char **env)
 	snprintf(buf, sizeof buf, "pid heartbeat: %u sec", PID_HEARTBEAT);
 	info(buf);
 
-	if (rrd_sample_duration > 0) {
-		snprintf(buf, sizeof buf, "rrd sample duration: %u sec",
-							rrd_sample_duration);
+	if (stat_sample_duration > 0) {
+		snprintf(buf, sizeof buf, "stat sample duration: %u sec",
+							stat_sample_duration);
 		info(buf);
-		info2("rrd log", rrd_log);
+		info2("stat log", stat_log);
 	} else
-		warn("rrd sampling disabled");
+		warn("stat sampling disabled");
 
 	if (net_timeout > 0) {
 		snprintf(buf, sizeof buf, "net timeout: %ds sec", net_timeout);
@@ -1938,7 +1937,7 @@ accept_request:
 		/*NOTREACHED*/
 	}
 	heartbeat();
-	rrd_sample();
+	stat_sample();
 	reap_request();
 	goto accept_request;
 }
