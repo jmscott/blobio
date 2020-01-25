@@ -8,7 +8,7 @@
  <key>EnvironmentVariables</key>
  <dict>
   <key>PATH</key>
-  <string>/usr/local/jmscott/sbin</string>
+  <string>/usr/local/jmscott/bin:/usr/bin:/bin</string>
 
   <key>BLOBIO_ROOT</key>
   <string>/usr/local/blobio</string>
