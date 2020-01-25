@@ -1900,7 +1900,7 @@ main(int argc, char **argv, char **env)
 		warn("stat sampling disabled");
 
 	if (net_timeout > 0) {
-		snprintf(buf, sizeof buf, "net timeout: %ds sec", net_timeout);
+		snprintf(buf, sizeof buf, "net timeout: %d sec", net_timeout);
 
 		info(buf);
 	} else
