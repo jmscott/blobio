@@ -31,8 +31,6 @@
  */
 #define CHUNK_SIZE		(4 * 1024)
 
-extern char			*getenv();
-
 static char	bc160_fs_root[]	= "data/bc160_fs";
 static char	empty[]	= "b472a266d0bd89c13706a4132ccfb16f7c3b9fcb";
 
