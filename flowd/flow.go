@@ -227,16 +227,14 @@ type argv_value struct {
 type argv_chan chan *argv_value
 
 //  xdr_value represents a process execution description record.
-//  the field output_256 may be null if no output occured during the processes
+//  the field output_4096 may be null if no output occured during the processes
 //  execution.  err is error related to a failed execution of the process
 type xdr_value struct {
 	//  Note: a pointer to xdr?
 	*xdr
 	is_null bool
 
-	//  Note: change from 256 truncated to 255?
-
-	output_256 []byte
+	output_4096 []byte
 	err        error
 
 	*flow
@@ -1309,11 +1307,11 @@ func (flo *flow) log_xdr_error(
 				log_ch.ERROR("%s: %s", who(xv.xdr), xv.err)
 			}
 
-			if xv.output_256 != nil {
+			if xv.output_4096 != nil {
 				log_ch.ERROR("%s: process output ...",
 					who(xv.xdr),
 				)
-				log_ch <- xv.output_256
+				log_ch <- xv.output_4096
 			}
 			out <- xv
 		}

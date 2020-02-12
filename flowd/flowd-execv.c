@@ -29,6 +29,9 @@
  *  	0	exit ok
  *  	1	exit error (written to standard error)
  *  Note:
+ *	The stderr of process is assumed to be <= MAX_MSG
+ *	written in single write by the child.  this is not reasonable.
+ *
  *	On ERROR, flowd-exec does not return user/system times.
  *
  *	Should the process be killed upon receiving a STOP signal?
@@ -46,12 +49,10 @@
 
 #include <stdlib.h>		//  zap me when done debugging
 
-#ifndef MAX_PIPE
-#define MAX_PIPE	512
-#endif
+#define MAX_MSG	4096		//  must be atomic as write!
 
-#define MAX_X_ARG	256
-#define MAX_X_ARGC	64
+#define MAX_X_ARG	256	//  max byte length of a single string argv[]
+#define MAX_X_ARGC	64	//  max elements in argv[]
 
 static int	x_argc;
 
@@ -131,7 +132,7 @@ die3(char *msg1, char *msg2, char *msg3)
 }
 
 /*
- *  read() up to 'nbytes' from standard input, croaking upon error
+ *  Interuptible, single read() of up to MAX_MSG bytes.
  */
 static int
 _read(int fd, char *buf)
@@ -139,7 +140,7 @@ _read(int fd, char *buf)
 	ssize_t nb;
 
 again:
-	nb = read(fd, buf, MAX_PIPE);
+	nb = read(fd, buf, MAX_MSG);
 	if (nb >= 0) {
 		buf[nb] = 0;
 		return nb;
@@ -147,7 +148,9 @@ again:
 	if (errno == EINTR)		//  try read()
 		goto again;
 
-	die2("read(0) failed", strerror(errno));
+	if (fd == 0)
+		die2("read(argv) failed", strerror(errno));
+	die2("read(child) failed", strerror(errno));
 
 	/*NOTREACHED*/
 	return -1;
@@ -206,45 +209,12 @@ again:
 	}
 }
 
-//  drain child output and copy first line of output into buf.
-//  Note: need to drain more than one line of output!
-
-static int
-drain(int child_fd, char *child_out) {
-
-	int nb;
-	int seen_line = 0;
-	char *p, *q;
-	char buf[MAX_PIPE + 1];
-
-	p = child_out;
-	while ((nb = _read(child_fd, buf)) > 0) {
-		char c;
-
-		if (seen_line)
-			continue;
-		buf[nb] = 0;
-		q = buf;
-		while ((p - child_out) < MAX_PIPE && (c = *q++)) {
-			*p++ = c;
-			if (c == '\n') {
-				seen_line = 1;
-				break;
-			}
-		}
-	}
-	*p = 0;
-	if (p - child_out == MAX_PIPE)
-		p[-1] = '\n';
-	return p - child_out;
-}
-
 static void
 fork_wait() {
 
 	pid_t pid;
 	int status;
-	char reply[MAX_PIPE + 1], buf[MAX_PIPE + 1];
+	char reply[MAX_MSG + 1], child_out[MAX_MSG + 1];
 	struct rusage ru;
 	char *xclass = 0;
 	int xstatus = 0;
@@ -268,17 +238,19 @@ fork_wait() {
 		die3("execv() failed", strerror(errno), x_argv[0]);
 	}
 
-	//  in parent
+	//  in parent, so wait for output from the child,
+	//  and reply with an execution description record,
+	//  followed by the child's output.
 
 	_close(merge[1]);
-	olen = drain(merge[0], buf);
+	olen = _read(merge[0], child_out);
 	_close(merge[0]);
 
 	//  reap the dead
 
 	_wait4(pid, &status, &ru);
 
-	//  Note: what about core dumps
+	//  Note: what about core dumps?
 
 	if (WIFEXITED(status)) {
 		xclass = "EXIT";
@@ -289,28 +261,33 @@ fork_wait() {
 	} else if (WIFSTOPPED(status)) {
 		xclass = "STOP";
 		xstatus = WSTOPSIG(status);
-	} else
-		die("wait() exited with impossible value");
+	} else {
+		char buf[22];
 
-	snprintf(reply, sizeof reply, "%s%s\t%d\t%ld.%06ld\t%ld.%06ld\n",
+		snprintf(buf, sizeof buf, "0x%x", status);
+		die2("wait(request) impossible status", buf);
+	}
+
+	//  write the execution description record
+	snprintf(reply, sizeof reply, "%s\t%d\t%ld.%06ld\t%ld.%06ld\t%ld\n",
 			xclass,
-			olen > 0 ? "+" : "",
 			xstatus,
 			ru.ru_utime.tv_sec,
 			(long)ru.ru_utime.tv_usec,
 			ru.ru_stime.tv_sec,
-			(long)ru.ru_stime.tv_usec
+			(long)ru.ru_stime.tv_usec,
+			olen
 	);
 	_write(reply, strlen(reply));
 	if (olen > 0)
-		_write(buf, olen);
+		_write(child_out, olen);
 }
 
 int
 main(int argc, char **argv)
 {
 	char *arg, c = 0;
-	char buf[MAX_PIPE + 1];
+	char buf[MAX_MSG + 1];
 	int i;
 
 	if (argc != 1)

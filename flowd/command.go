@@ -13,7 +13,6 @@ import (
 	"os/exec"
 	"strconv"
 	"strings"
-	"syscall"
 
 	. "fmt"
 	. "time"
@@ -52,7 +51,9 @@ type command struct {
 
 type os_exec_reply struct {
 	started         bool
-	output_256      []byte //  process output
+
+	//  process output via a single read().  must be atomic.
+	output_4096     []byte
 	exit_status     uint8
 	signal          uint8
 	err             error
@@ -74,75 +75,8 @@ type os_exec_request struct {
 
 type os_exec_chan chan os_exec_request
 
-//  answer requests to exec a command with a particular
-func (in os_exec_chan) worker() {
 
-	for req := range in {
-
-		//  the first argument must be the command path
-		gcmd := &exec.Cmd{
-			Path: req.command.full_path,
-			Args: req.argv,
-		}
-
-		reply := os_exec_reply{}
-
-		//  capture first 256 bytes of output of process
-		//
-		//  Note:
-		//	Runaway output will hose flowd!!!
-		//
-		//	Need to verify output is proper utf8.
-		//	Think about adding an 'is_utf8' flag to xdr_value
-
-		reply.output_256, reply.err = gcmd.CombinedOutput()
-
-		//  Catch panicy startup errors.  Filter out CombinedOutput's
-		//  return of an error when either the process exit status > 0
-		//  or a signal interupted the process
-		//
-		//  Note:
-		//	This filtering of the output string is goofy.
-		//	For example, the 'signal ' pattern appears to have
-		//	changed to 'signal: ', breaking code.
-		//
-		//	Eventually need to not depend on CombinedOutput()
-
-		if reply.err != nil &&
-			!strings.HasPrefix(reply.err.Error(), "exit status") &&
-			!strings.HasPrefix(reply.err.Error(), "signal") {
-
-			req.reply <- reply
-			continue
-		}
-		reply.err = nil
-
-		//  Fetch the process exit/signal state&codes and
-		//  system/user duration
-
-		ps := gcmd.ProcessState
-		if ps == nil {
-			reply.err = errors.New("os.exec.ProcessState is nil")
-			req.reply <- reply
-			continue
-		}
-		reply.started = true
-
-		reply.system_duration = ps.SystemTime()
-		reply.user_duration = ps.UserTime()
-
-		sys := ps.Sys()
-		ws := uint16(sys.(syscall.WaitStatus))
-		if sys.(syscall.WaitStatus).Signaled() {
-			reply.signal = uint8(ws)
-		} else {
-			reply.exit_status = uint8(ws >> 8)
-		}
-		req.reply <- reply
-	}
-}
-
-//  answer requests to exec a command with a particular
+//  answer requests to exec a particular command
 func (in os_exec_chan) worker_flowd_execv() {
 
 	//  start a flowd-execv process
@@ -188,7 +122,10 @@ func (in os_exec_chan) worker_flowd_execv() {
 			panic(err)
 		}
 		if len(out) > 0 {
-			panic(Sprintf("unexpected exit of flowd-execv: %s", out))
+			panic(Sprintf(
+				"unexpected exit of flowd-execv: %s",
+				out,
+			))
 		}
 
 		//  no output on stderr indicates a clean close due to
@@ -217,14 +154,23 @@ func (in os_exec_chan) worker_flowd_execv() {
 		rep := strings.Split(reps, "\t")
 		reply := os_exec_reply{}
 
+		//  process did not start.
 		if rep[0] == "ERROR" {
 			//  Note:  reply ought to see more than one line of
 			//         error output.
-			reply.err = errors.New(rep[1])
+			reply.err = errors.New(strings.Join(rep[1:], "\t"))
 			req.reply <- reply
 			continue
 		}
 
+		/*
+		 *  The execution description record looks like
+		 *
+		 *	\t\tCLASS\tSTATUS\tUSER_TIME\tSYS_TIME\tOUTPUT_LEN\n
+		 *
+		 *  followed by exactly OUTPUT_LEN raw bytes written by
+		 *  the program on either standard out or standard error.
+		 */
 		reply.user_duration, err = ParseDuration(rep[2] + "s")
 		if err != nil {
 			panic(err)
@@ -234,14 +180,14 @@ func (in os_exec_chan) worker_flowd_execv() {
 		if err != nil {
 			panic(err)
 		}
-		if strings.Contains(rep[0], "+") {
+		if rep[1] != "0" {
 			reps, err = cmd_out.ReadString('\n')
 			if err != nil {
 				panic(err)
 			}
-			reply.output_256 = []byte(reps)
-			if len(reply.output_256) > 255 {
-				reply.output_256 = reply.output_256[:256]
+			reply.output_4096 = []byte(reps)
+			if len(reply.output_4096) > 4096 {
+				reply.output_4096 = reply.output_4096[:4096]
 			}
 		}
 
@@ -304,13 +250,13 @@ func (cmd *command) call(argv []string, osx_q os_exec_chan) (xv *xdr_value) {
 
 	reply := <-req.reply
 
-	//  capture first 256 bytes of any process output
-	len := len(reply.output_256)
+	//  capture first 4096 bytes of any process output
+	len := len(reply.output_4096)
 	if len > 0 {
-		if len > 256 {
-			xv.output_256 = reply.output_256[:256]
+		if len > 4096 {
+			xv.output_4096 = reply.output_4096[:4096]
 		} else {
-			xv.output_256 = reply.output_256
+			xv.output_4096 = reply.output_4096
 		}
 	}
 
