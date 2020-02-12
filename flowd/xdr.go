@@ -1,5 +1,9 @@
 //Synopsis:
 //	Process Executation Detail Record
+//Note:
+//	Think about adding byte count for std{in,out,err} to xdr records.
+//	Not sure what such byte counts would mean for a long running
+//	process.
 
 package main
 
