@@ -49,7 +49,7 @@
 
 #include <stdlib.h>		//  zap me when done debugging
 
-#define MAX_MSG	4096		//  must be atomic as write!
+#define MAX_MSG	4095		//  must be atomic as write!
 
 #define MAX_X_ARG	256	//  max byte length of a single string argv[]
 #define MAX_X_ARGC	64	//  max elements in argv[]

@@ -229,14 +229,14 @@ type argv_value struct {
 type argv_chan chan *argv_value
 
 //  xdr_value represents a process execution description record.
-//  the field output_4096 may be null if no output occured during the processes
+//  the field output_4095 may be null if no output occured during the processes
 //  execution.  err is error related to a failed execution of the process
 type xdr_value struct {
 	//  Note: a pointer to xdr?
 	*xdr
 	is_null bool
 
-	output_4096 []byte
+	output_4095 []byte
 
 	*flow
 }
@@ -1307,26 +1307,30 @@ func (flo *flow) log_xdr_error(
 
 			//  burp out process output to log file
 
-			if xv.output_4096 != nil {
+			if xv.output_4095 != nil {
+wtf("xv=%#v", xv)
 				who := who(xv.xdr)
 
 				//  the output is framed with BEGIN: and END:
 				//  for easy searching in log file
 
-				BEGIN := ([]byte("\nBEGIN: " + who + "\n"))[:]
-				END := ([]byte("\nEND: " + who + "\n"))[:]
-				colon := []byte(": ")[:]
-				nl := []byte("\n")[:]
+				BEGIN := ([]byte(
+						"\nBEGIN OUTPUT: " +
+						who +
+						"\n",
+				))[:]
+				END := ([]byte(
+						"\nEND OUTPUT: " + 
+						who +
+						"\n",
+				))[:]
 
 				msg := append([]byte(nil), BEGIN...)
-				msg = append(msg, colon...)
-				msg = append(msg, who...)
-				msg = append(msg, nl...)
 
 				encoding := "utf8"
 
-				if utf8.Valid(xv.output_4096) {
-					msg = append(msg, xv.output_4096[:]...)
+				if utf8.Valid(xv.output_4095) {
+					msg = append(msg, xv.output_4095[:]...)
 				} else {
 					encoding = "hexdump"
 
@@ -1334,7 +1338,7 @@ func (flo *flow) log_xdr_error(
 					//  replace with human readable
 					//  hexdumper!
 
-					src := xv.output_4096
+					src := xv.output_4095
 					if (len(src) < 32) {
 						src = src[:32]
 					}
@@ -1346,7 +1350,7 @@ func (flo *flow) log_xdr_error(
 					"%s: output: %s: %d bytes",
 					who,
 					encoding,
-					len(xv.output_4096),
+					len(xv.output_4095),
 				)
 				log_ch <- append(msg, END...)
 			}

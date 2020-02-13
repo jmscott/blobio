@@ -53,7 +53,7 @@ type os_exec_reply struct {
 	//  process output via a single read().
 	//  must be atomic.
 
-	output_4096     []byte
+	output_4095     []byte
 	exit_status     uint8
 	signal          uint8
 	system_duration Duration
@@ -185,17 +185,17 @@ func (in os_exec_chan) worker_flowd_execv() {
 			if err != nil {
 				panic(err)
 			}
-			reply.output_4096 = make([]byte, 4096)
-			nr, err := cmd_out.Read(reply.output_4096[:])
-			if err != nil {
-				panic(err)
-			}
-			if nr != int(nb) {
-				panic(errors.New(Sprintf(
-					"flowd-exec: read incorrect: %d!=%d",
-					nb,
-					nr,
-				)))
+			reply.output_4095 = make([]byte, nb)
+
+			nr := 0
+			for nr < int(nb) {
+				r, err := cmd_out.Read(
+						reply.output_4095[nr:nb],
+				)
+				if err != nil {
+					panic(err)
+				}
+				nr += r
 			}
 		}
 
@@ -257,8 +257,8 @@ func (cmd *command) call(argv []string, osx_q os_exec_chan) (xv *xdr_value) {
 
 	reply := <-req.reply
 
-	//  capture first 4096 bytes of any process output
-	xv.output_4096 = reply.output_4096
+	//  capture first 4095 bytes of any process output
+	xv.output_4095 = reply.output_4095
 
 	//  record system and user duration as time consumed
 	xdr.system_duration = reply.system_duration
