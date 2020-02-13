@@ -2622,7 +2622,7 @@ yydefault:
 			//  count the arguments and determine if we need to cast
 			//  certain arguments to STRING
 			//
-			//  Note: need to refactor with code in query() prodcution
+			//  Note: need to refactor with code in query() production
 
 			argc := uint64(0)
 			has_uint64 := false
