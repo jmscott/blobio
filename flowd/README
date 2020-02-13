@@ -33,17 +33,17 @@ Flow Detail Record:
 	The format of an "fdr" is the typical unixy new-line separated row
 	of tab separated fields.  The layout of the fields are as follows:
 
-		start_time	#  RFC3339Nano: YYYY-MM-DDThh:mm:ss.ns9[+-]ZZ:ZZ
+		start_time	#  RFC3339Nano:YYYY-MM-DDThh:mm:ss.ns9[+-]ZZ:ZZ
 		blob		#  udig of the blob
 		ok_count	#  count of ok process exits <=2^63-1
 		fault_count	#  count of process faults <=2^63-1
 		wall_duration	#  wall clock duration seconds.nsec
 		log_sequence	#  service flow sequence, <= 2^63 - 1 
 
-	The combination of "start_time" and "log_sequence" can safely be assumed to
-	be unique for records associated with this service.  Unfortunatly, in
-	theory, the uniqueness constraint could be violated by EXTREMELY rapid
-	process bouncing.
+	The combination of "start_time" and "log_sequence" can safely be
+	assumed to be unique for records associated with this service.
+	Pedantly speaking, the uniqueness constraint could be violated by
+	EXTREMELY rapid process bouncing.
 
 Process Execution Detail Record:
 	A process execution detail record, abbreviated as "xdr", summarizes
@@ -55,21 +55,19 @@ Process Execution Detail Record:
 		start_time		#  YYYY-MM-DDThh:mm:ss.ns9[+-]ZZ:ZZ
 		log_sequence		#  sequence number for log file
 		command_name		#  command name in config file
-		termination_class	#  termination class: OK, ERR, SIG, NOPS
+		termination_class	#  termination class: OK, ERR, SIG
 		blob			#  udig of blob being processed
 		termination_code	#  process/signal/query exit code value
 		wall_duration		#  wall clock duration in seconds
 		system_duration		#  os duration in seconds
 		user_duration		#  user/kids total duration in seconds
 
-	The combination of start_time, call_name and log_sequence  can
-	safely assumed to be unique, although, in theory, uniqueness could be
-	compromised by EXTREMELY rapid process bouncing.  See comment for "fdr"
+	The combination of start_time and log_sequence  can safely assumed to
+	be unique within the log stream, although, in theory, uniqueness
+	could be compromised by EXTREMELY rapid process bouncing.  See
+	comment for "fdr"
 	
-	The NOPS termination class indicates a failure to determine the process
-	status.  Typically a NOPS means the process never started.
-
-	Wall/System/Users duration is float64 seconds formated as %20.9f.
+	Wall/System/Users duration is float64 seconds formated as %.9f.
 
 Query Detail Record:
 

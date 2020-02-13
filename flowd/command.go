@@ -50,13 +50,12 @@ type command struct {
 }
 
 type os_exec_reply struct {
-	started         bool
+	//  process output via a single read().
+	//  must be atomic.
 
-	//  process output via a single read().  must be atomic.
 	output_4096     []byte
 	exit_status     uint8
 	signal          uint8
-	err             error
 	system_duration Duration
 	user_duration   Duration
 }
@@ -154,19 +153,17 @@ func (in os_exec_chan) worker_flowd_execv() {
 		rep := strings.Split(reps, "\t")
 		reply := os_exec_reply{}
 
-		//  process did not start.
 		if rep[0] == "ERROR" {
-			//  Note:  reply ought to see more than one line of
-			//         error output.
-			reply.err = errors.New(strings.Join(rep[1:], "\t"))
-			req.reply <- reply
-			continue
+			panic(errors.New(Sprintf(
+				"flowd-exec failed: %s",
+				reps,
+			)))
 		}
 
 		/*
 		 *  The execution description record looks like
 		 *
-		 *	\t\tCLASS\tSTATUS\tUSER_TIME\tSYS_TIME\tOUTPUT_LEN\n
+		 *	CLASS\tSTATUS\tUSER_TIME\tSYS_TIME\tOUTPUT_LEN\n
 		 *
 		 *  followed by exactly OUTPUT_LEN raw bytes written by
 		 *  the program on either standard out or standard error.
@@ -180,27 +177,37 @@ func (in os_exec_chan) worker_flowd_execv() {
 		if err != nil {
 			panic(err)
 		}
-		if rep[1] != "0" {
-			reps, err = cmd_out.ReadString('\n')
+
+		//  any output from execed process?
+		if rep[4] != "0" {
+			
+			nb, err := strconv.ParseUint(rep[4], 10, 12)
 			if err != nil {
 				panic(err)
 			}
-			reply.output_4096 = []byte(reps)
-			if len(reply.output_4096) > 4096 {
-				reply.output_4096 = reply.output_4096[:4096]
+			reply.output_4096 = make([]byte, 4096)
+			nr, err := cmd_out.Read(reply.output_4096[:])
+			if err != nil {
+				panic(err)
+			}
+			if nr != int(nb) {
+				panic(errors.New(Sprintf(
+					"flowd-exec: read incorrect: %d!=%d",
+					nb,
+					nr,
+				)))
 			}
 		}
 
-		reply.started = true
-
-		tc, err := strconv.ParseUint(rep[1], 10, 8)
+		//  parse the exit status
+		es, err := strconv.ParseUint(rep[1], 10, 8)
 		if err != nil {
 			panic(err)
 		}
-		if strings.HasPrefix(rep[0], "EXIT") {
-			reply.exit_status = uint8(tc)
+		if rep[0] == "EXIT" {
+			reply.exit_status = uint8(es)
 		} else {
-			reply.signal = uint8(tc)
+			reply.signal = uint8(es)	// SIGSTOP?
 		}
 		req.reply <- reply
 	}
@@ -251,33 +258,11 @@ func (cmd *command) call(argv []string, osx_q os_exec_chan) (xv *xdr_value) {
 	reply := <-req.reply
 
 	//  capture first 4096 bytes of any process output
-	len := len(reply.output_4096)
-	if len > 0 {
-		if len > 4096 {
-			xv.output_4096 = reply.output_4096[:4096]
-		} else {
-			xv.output_4096 = reply.output_4096
-		}
-	}
+	xv.output_4096 = reply.output_4096
 
 	//  record system and user duration as time consumed
 	xdr.system_duration = reply.system_duration
 	xdr.user_duration = reply.user_duration
-
-	//  error occured on process startup error occured
-	if reply.err != nil {
-
-		//  Note:
-		//	Seems like NOPS will always be the code
-
-		if reply.started {
-			xdr.termination_class = "ERR"
-		} else {
-			xdr.termination_class = "NOPS"
-		}
-		xv.err = reply.err
-		return
-	}
 
 	//  process was interrupted with a signal
 
@@ -287,7 +272,8 @@ func (cmd *command) call(argv []string, osx_q os_exec_chan) (xv *xdr_value) {
 		return
 	}
 
-	//  process ran and exited.  classify the exit code as OK or ERR
+	//  process ran and exited normally.
+	//  classify the exit code as OK or ERR
 
 	xdr.termination_code = uint64(reply.exit_status)
 

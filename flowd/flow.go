@@ -13,6 +13,8 @@ import (
 	"regexp"
 	"strconv"
 	"sync"
+	"unicode/utf8"
+	"encoding/hex"
 
 	. "fmt"
 	. "time"
@@ -235,7 +237,6 @@ type xdr_value struct {
 	is_null bool
 
 	output_4096 []byte
-	err        error
 
 	*flow
 }
@@ -1303,15 +1304,51 @@ func (flo *flow) log_xdr_error(
 					xv.xdr = nil
 				}
 			}
-			if xv.err != nil {
-				log_ch.ERROR("%s: %s", who(xv.xdr), xv.err)
-			}
+
+			//  burp out process output to log file
 
 			if xv.output_4096 != nil {
-				log_ch.ERROR("%s: process output ...",
-					who(xv.xdr),
+				who := who(xv.xdr)
+
+				//  the output is framed with BEGIN: and END:
+				//  for easy searching in log file
+
+				BEGIN := ([]byte("\nBEGIN: " + who + "\n"))[:]
+				END := ([]byte("\nEND: " + who + "\n"))[:]
+				colon := []byte(": ")[:]
+				nl := []byte("\n")[:]
+
+				msg := append([]byte(nil), BEGIN...)
+				msg = append(msg, colon...)
+				msg = append(msg, who...)
+				msg = append(msg, nl...)
+
+				encoding := "utf8"
+
+				if utf8.Valid(xv.output_4096) {
+					msg = append(msg, xv.output_4096[:]...)
+				} else {
+					encoding = "hexdump"
+
+					//  encode the first 32 bytes.
+					//  replace with human readable
+					//  hexdumper!
+
+					src := xv.output_4096
+					if (len(src) < 32) {
+						src = src[:32]
+					}
+					dst := make([]byte, hex.EncodedLen(32))
+					hex.Encode(dst, src)
+					msg = append(msg, dst[:]...)
+				}
+				log_ch.ERROR(
+					"%s: output: %s: %d bytes",
+					who,
+					encoding,
+					len(xv.output_4096),
 				)
-				log_ch <- xv.output_4096
+				log_ch <- append(msg, END...)
 			}
 			out <- xv
 		}
