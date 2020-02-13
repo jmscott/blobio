@@ -1,6 +1,8 @@
 //Synopsis:
 //	Logging for info/WARN/ERROR
 
+/*  why not use https://github.com/jmscott/work/tree/master/logroll  */
+
 package main
 
 import (
