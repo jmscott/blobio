@@ -13,19 +13,6 @@ import (
 	. "time"
 )
 
-const (
-	//  field offsets into exec detail record (xdr)
-	xDR_START_TIME = iota
-	xDR_FLOW_SEQUENCE
-	xDR_CALL_NAME
-	xDR_TERMINATION_CLASS
-	xDR_UDIG
-	xDR_TERMINATION_CODE
-	xDR_WALL_DURATION
-	xDR_SYSTEM_DURATION
-	xDR_USER_DURATION
-)
-
 type xdr struct {
 	start_time        Time
 	flow_sequence     uint64
