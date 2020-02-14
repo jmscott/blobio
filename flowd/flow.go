@@ -1307,8 +1307,9 @@ func (flo *flow) log_xdr_error(
 
 			//  burp out process output to log file
 
-			if xv.output_4095 != nil {
-wtf("xv=%#v", xv)
+			//  Note: why is xv.xdr ever nil!!!
+
+			if xv.xdr != nil && xv.output_4095 != nil {
 				who := who(xv.xdr)
 
 				//  the output is framed with BEGIN: and END:
@@ -1339,7 +1340,7 @@ wtf("xv=%#v", xv)
 					//  hexdumper!
 
 					src := xv.output_4095
-					if (len(src) < 32) {
+					if (len(src) > 32) {
 						src = src[:32]
 					}
 					dst := make([]byte, hex.EncodedLen(32))
