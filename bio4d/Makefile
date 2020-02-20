@@ -45,7 +45,6 @@ CSRC=									\
 
 SBINs=									\
 	append-brr							\
-	bio-udig2fs							\
 	bio4d								\
 	bio4d_ctl							\
 	create-rrd							\
