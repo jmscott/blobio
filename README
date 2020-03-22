@@ -226,6 +226,9 @@ Billing Model Questions:
 	  start_time.
 
 To Do:
+	- follow project for atomic write in linux
+		https://lwn.net/Articles/789600/
+
 	- casting text to udig_sha fails when prefixed by sha:
 
 		--  OK
