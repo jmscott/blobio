@@ -67,10 +67,6 @@ flowd: $(GOSRC)
 
 install: all
 	install -g $(DIST_GROUP) -o $(DIST_USER) -m u=rwx,go=	\
-		-d $(DIST_ROOT)/http/go/src/flowd
-	install -g $(DIST_GROUP) -o $(DIST_USER) -m u=rwx,go=	\
-		-d $(DIST_ROOT)/http/go/lib
-	install -g $(DIST_GROUP) -o $(DIST_USER) -m u=rwx,g=rx,o=	\
 		-d $(DIST_ROOT)/src/flowd
 	install -g $(DIST_GROUP) -o $(DIST_USER) -m ug=r,o=		\
 		parser.y						\
@@ -79,10 +75,6 @@ install: all
 	install -g $(DIST_GROUP) -o $(DIST_USER) -m ug=r,o=		\
 		flowd-execv.c						\
 		$(DIST_ROOT)/src
-	install -g $(DIST_GROUP) -o $(DIST_USER) -m ug=r,o=		\
-		parser.y						\
-		$(GOSRC)						\
-		$(DIST_ROOT)/http/go/src/flowd
 	install -g $(DIST_GROUP) -o $(DIST_USER) -m ugo=rx		\
 		fdr2pg							\
 		fdr2psql						\
