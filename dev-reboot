@@ -64,7 +64,8 @@ log 'hello, world'
 trap leave EXIT
 
 log "killing processes owned by $USER: bio4d flowd"
-pkill -u $USER bio4d flowd
+zap-proc  run/flowd.pid
+zap-proc  run/bio4d.pid
 
 log 'zap files in directories: run/ spool/ log/'
 (
