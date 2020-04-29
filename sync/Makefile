@@ -20,8 +20,7 @@ SBINs=									\
 
 LIBs=									\
 	blobio.sync.remote.service.example				\
-	com.blobio.ssh-tunnel.remote.plist.example			\
-	com.blobio.sync.plist.example					\
+	blobio.sync.plist.example					\
 	jaccard-all.conf.example					\
 	jaccard-tip.conf.example					\
 	lo0-alias-127.0.0.2.plist.example				\
