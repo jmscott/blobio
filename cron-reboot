@@ -42,11 +42,8 @@ cd $BLOBIO_ROOT || die "cd $BLOBIO_ROOT failed"
 
 if [ $USER = blobio ];  then
 	log 'user is blobio, so process controled by launchd or systemd'
-	log 'doing pkill -u blobio flowd'
-	pkill -u blobio flowd
-	pkill -u blobio bio4d
-	log "pausing $PKILL_PAUSE seconds ..."
-	sleep $PKILL_PAUSE
+	zap-proc run/flowd.pid
+	zap-proc run/bio4d.pid
 	run-stat-report
 	exit
 fi
