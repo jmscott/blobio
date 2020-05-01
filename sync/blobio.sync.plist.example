@@ -35,7 +35,7 @@
 
   <key>ProgramArguments</key>
   <array>
-	<string>sbin/launchd-log</string>
+	<string>/usr/local/jmscott/sbin/launchd-log</string>
 	<string>bin/flowd</string>
 	<string>server</string>
 	<string>etc/sync-remote.flow</string>
