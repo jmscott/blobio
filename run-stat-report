@@ -4,7 +4,12 @@
 #	Report of running bio4d & flowd processes.
 #  Usage:
 #	run-stat-report
+#  See:
+#	sbin/run-stat
+#	https://github.com/jmscott/work
 #  Note:
+#	Calculate durations using program jmscott/work/duration-human!
+#
 #	Sort is ignoring the second key on linux.  The pain never ends.
 #
 #	Rename this script to run-pid-report?
