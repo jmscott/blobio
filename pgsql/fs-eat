@@ -78,8 +78,7 @@ case "$BLOBIO_ROOT" in
 	;;
 *)
 	cd $BLOBIO_ROOT || die "cd $BLOBIO_ROOT failed"
-	test -f etc/profile || die "expected file $BLOBIO_ROOT/etc/profile"
-	. etc/profile
+	test -r etc/profile && . /etc/profile
 	log "BLOBIO_ROOT=$BLOBIO_ROOT"
 
 	BLOBIO_SERVICE=${BLOBIO_SERVICE:=bio4:localhost:1797}
@@ -125,10 +124,10 @@ log 'fetchings udigs from blobio.service'
 psql --no-align  --tuples-only <<END
 \\timing
 \\o $SERVICE
-select
+SELECT
 	blob
-  from
-  	service
+  FROM
+  	blobio.service
 ;
 END
 STATUS=$?
