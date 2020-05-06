@@ -10,6 +10,8 @@
 #  	1	error
 #
 
+START_TIME=$(date +'%s')
+
 PROG=$(basename $0)
 WORK_DIR=${TMPDIR:=/tmp}
 
@@ -30,6 +32,11 @@ die()
 	log "ERROR: $@" >&2
 	log "usage: $PROG [--help]"
 	exit 1
+}
+
+WARN()
+{
+	log "WARN: $@"
 }
 
 help()
@@ -61,7 +68,7 @@ leave()
 		log "ERROR: $MSG: exit status=$?"
 		STATUS=1
 	fi
-	log 'good bye, cruel world'
+	log "$(duration-human $START_TIME): good bye, cruel world"
 
 	exit $STATUS
 }
@@ -72,29 +79,28 @@ log hello, world
 trap leave EXIT
 test $# -ne 0 && die 'wrong number of arguments'
 
-case "$BLOBIO_ROOT" in
-'')
-	die 'BLOBIO_ROOT environment variable not defined'
-	;;
-*)
-	cd $BLOBIO_ROOT || die "cd $BLOBIO_ROOT failed"
+test -n "$BLOBIO_ROOT" || die 'BLOBIO_ROOT environment variable not defined'
+cd $BLOBIO_ROOT || die "cd $BLOBIO_ROOT failed"
 
-	#  test for etc/profile is conditional, in case $BLBOIO_ROOT
-	#  is, say, a backup file system.
+#  test for etc/profile is conditional, in case $BLOBIO_ROOT
+#  is located in, say, a backup file system.
 
-	test -r etc/profile && . /etc/profile
-	log "BLOBIO_ROOT=$BLOBIO_ROOT"
+if [ -r etc/profile ];  then
+	. /etc/profile
+else
+	WARN: 'etc/profile not found (ok)'
+fi
+log "BLOBIO_ROOT=$BLOBIO_ROOT"
+log "PATH=$PATH"
 
-	BLOBIO_SERVICE=${BLOBIO_SERVICE:=bio4:localhost:1797}
-	log "BLOBIO_SERVICE=$BLOBIO_SERVICE"
+BLOBIO_SERVICE=${BLOBIO_SERVICE:=bio4:localhost:1797}
+log "BLOBIO_SERVICE=$BLOBIO_SERVICE"
 
-	log "PGHOST=$PGHOST"
-	log "PGPORT=$PGPORT"
-	log "PGUSER=$PGUSER"
-	log "PGDATABASE=$PGDATABASE"
-	log "LOCALE=$LOCALE"
-	;;
-esac
+log "PGHOST=$PGHOST"
+log "PGPORT=$PGPORT"
+log "PGUSER=$PGUSER"
+log "PGDATABASE=$PGDATABASE"
+log "LOCALE=$LOCALE"
 
 #
 #  Fetch the set of udigs from local file system.
@@ -107,7 +113,7 @@ case $STATUS in
 	C=$(wc -l $FS | awk '{print $1}')
 	case "$C" in
 	0)
-		log 'WARN: no blobs in file system'
+		WARN 'no blobs in file system'
 		exit 0
 		;;
 	[1-9]*)
@@ -148,7 +154,7 @@ rm $SERVICE || die "rm $SERVICE failed"
 C=$(wc -l $SERVICE2 | awk '{print $1}')
 case "$C" in
 0)
-	log "WARN: no blob in blobio.service table"
+	WARN 'no blob in blobio.service table'
 	;;
 [1-9]*)
 	log "$C blobs in service table"
@@ -223,7 +229,7 @@ while read U;  do
 	STATUS=$?
 	case $STATUS in
 	0)
-		log "WARN: blob in fs: $U"
+		WARN: "blob in fs: $U"
 		;;
 	1)
 		log "?$U"
