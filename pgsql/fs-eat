@@ -78,6 +78,10 @@ case "$BLOBIO_ROOT" in
 	;;
 *)
 	cd $BLOBIO_ROOT || die "cd $BLOBIO_ROOT failed"
+
+	#  test for etc/profile is conditional, in case $BLBOIO_ROOT
+	#  is, say, a backup file system.
+
 	test -r etc/profile && . /etc/profile
 	log "BLOBIO_ROOT=$BLOBIO_ROOT"
 
