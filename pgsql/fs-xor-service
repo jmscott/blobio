@@ -4,16 +4,24 @@
 #	Report on symmetric difference between the file system and service view.
 #  Usage:
 #	fs-xor-service >fs-xor-service.log 2>&1 &
-#	32 4 * * Sun sbin/fs-xor-service >>support/fs-xor-service/fsc.out 2>&1
+#	32 4 * * Sun sbin/fs-xor-service >>support/fs-xor-service/fxs.out 2>&1
 #  Note:
-#	Would be nice to query service table and file system for timestamps,
-#	so blobs created during the scan could be quickly identified.
+#	- The scan of file system kind of assumes either sha or bc160 digests.
+#	  In particular, to constuct the udig from the file path, we strip off
+#	  the two directories by zapping the first eight chars in the file path:
 #
-#	Be wary of the LC_COLLATE environment variable.  Setting value to 'C'
-#	forces sorting case sensitive ascii, I (jmscott) think.
+#		sha_fs/797/d4b/797d4b6ca43b699fd27f1b55fca62b50e72db0f5
+#
+#	- Would be nice display timestamps blobs, to quickly identify
+#	  blobs that arrived during scan.
+#
+#	- Be wary of the LC_COLLATE environment variable.  Setting value to 'C'
+#	  forces sorting case sensitive ascii, I (jmscott) think.
 #
 
+START_TIME=$(date +%s)
 PROG=$(basename $0)
+
 #
 #  Force sort command to honor case.
 #
@@ -21,7 +29,7 @@ export LC_COLLATE=C
 
 log()
 {
-	echo "$(date +'%Y/%m/%d %H:%M:%S'): #$$: $@"
+	echo "$(date +'%Y/%m/%d %H:%M:%S'): $@"
 }
 
 die()
@@ -32,7 +40,7 @@ die()
 
 leave()
 {
-	log 'good bye, cruel world'
+	log "$(duration-human $START_TIME): good bye, cruel world"
 }
 
 log hello, world
@@ -42,13 +50,19 @@ test -n "$BLOBIO_ROOT" || die 'BLOBIO_ROOT environment variable not defined'
 
 cd $BLOBIO_ROOT || die "cd $BLOBIO_ROOT failed"
 log "BLOBIO_ROOT=$BLOBIO_ROOT"
-test -f etc/profile || die "expected file $BLOBIO_ROOT/etc/profile"
-. etc/profile
+
+if [ -r etc/profile ];  then
+	. etc/profile
+else
+	log "WARN: etc/profile does not exist (ok)"
+fi
 
 log "PGHOST=$PGHOST"
 log "PGPORT=$PGPORT"
 log "PGUSER=$PGUSER"
 log "PGDATABASE=$PGDATABASE"
+
+log "PATH=$PATH"
 
 log "starting scan of $(pwd)/data/ ..."
 log "file system only in column <, service only in column >"
@@ -57,20 +71,22 @@ comm -3 <(
 	find *_fs -follow -type f -print				|
 		fgrep -v '/tmp/'					|
 		fgrep -v '.DS_Store'					|
-		sed 's/\.\///'					|
-		sed 's/_fs\//:/' | sed 's/\///g'		|
+		sed 's/\.\///'						|
+		sed 's/_fs\//:/'					|
+		sed 's/:......../:/g'					|
+		tee x0							|
 		sort
 	#
 	#  Need to check error condition!!!
 	#
 ) <(
-	psql --no-align --tuples-only --command '
-select
+	psql --no-psqlrc --quiet --no-align --tuples-only --command '
+SELECT
 	blob::text
-  from
+  FROM
   	blobio.service
-  order by
-  	1 asc
+  ORDER BY
+  	1 ASC
 ') |
 	sed 's/^\t/> /' 		|
 	sed 's/^\([^>]\)/< \1/'		|
