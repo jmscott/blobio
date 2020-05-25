@@ -83,6 +83,9 @@ install: all
 		xdr2pg							\
 		xdr2psql						\
 		$(DIST_ROOT)/bin
+	install -g $(DIST_GROUP) -o $(DIST_USER) -m u=rx,go=		\
+		launchd-flowd						\
+		$(DIST_ROOT)/sbin
 
 clean:
 	rm -f $(EXEC) parser.go y.output y.go
@@ -92,7 +95,8 @@ distclean:
 		$(DIST_ROOT)/src/flowd	 				\
 		$(DIST_ROOT)/src/flowd-execv.c 				\
 		$(DIST_ROOT)/bin/flowd					\
-		$(DIST_ROOT)/bin/flowd-execv
+		$(DIST_ROOT)/bin/flowd-execv				\
+		$(DIST_ROOT)/sbin/launchd-flowd
 
 
 fmt: $(GOSRC)

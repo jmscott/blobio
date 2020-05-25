@@ -1,0 +1,41 @@
+#
+#  Synopsis:
+#	Start flowd process from MAC OS launchd, consulting run/flowd.pid
+#  Usage:
+#	sbin/launchd-flowd etc/blobio.flow
+#
+#	BLOBIO_ROOT=/usr/local/blobio/syunc/host/wework
+#	cd $BLOBIO_ROOT
+#	sbin/launchd-flowd etc/wework.flow
+#
+
+PROG=$(basename $0)
+
+log()
+{
+	echo "$(date +'%Y/%m/%d %H:%M:%S'): $PROG: $@"
+}
+
+die()
+{
+	log "ERROR: $@" >&2
+	exit 1
+}
+
+test $# = 1 || die "wrong number of command arguments: got $#, expected 1"
+FLOW_CONF=$1
+
+log 'hello, world'
+trap 'log good bye, cruel world' EXIT
+
+log "BLOBIO_ROOT=$BLOBIO_ROOT"
+log "PATH=$PATH"
+log "flow conf: $FLOW_CONF"
+
+mkdir -p run || die "mkdir run/ failed: exit status=$?"
+mkdir -p spool || die "mkdir spool/ failed: exit status=$?"
+touch spool/bio4d.brr || die "touch bio4d.brr failed: exit status=$?"
+
+zap-proc run/flowd.pid || die "zap-proc flowd failed: exit status=$?"
+log 'booting flowd ...'
+bin/flowd server $FLOW_CONF || die "flowd failed: exit status=$?"
