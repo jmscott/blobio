@@ -3,8 +3,12 @@
 <plist version="1.0">
 <dict>
   <key>Label</key>
-  <string>com.blobio.sync.remote</string>
+  <string>blobio.sync.remote.flowd</string>
 
+  <!--
+  	Note: PathState to /tmp/.s.PGSQL.5432 seems to fail,
+	      so just brute force keep alive.
+  -->
   <key>KeepAlive</key>
   <true/>
 
@@ -20,7 +24,7 @@
   <key>EnvironmentVariables</key>
   <dict>
   	<key>PATH</key>
-	<string>/usr/local/blobio/sbin:/usr/local/blobio/bin:/usr/local/pgsql/bin:/usr/local/bin:/usr/bin:/bin</string>
+	<string>sbin:bin:/usr/local/pgsql/bin:/usr/local/jmscott/bin:/usr/bin:/bin</string>
 
 	<key>BLOBIO_ROOT</key>
 	<string>/usr/local/blobio/sync/host/remote</string>
@@ -36,8 +40,7 @@
   <key>ProgramArguments</key>
   <array>
 	<string>/usr/local/jmscott/sbin/launchd-log</string>
-	<string>bin/flowd</string>
-	<string>server</string>
+	<string>sbin/launchd-flowd</string>
 	<string>etc/sync-remote.flow</string>
   </array>
 
@@ -54,10 +57,10 @@
   <string>/usr/local/blobio/sync/host/remote</string>
 
   <key>StandardErrorPath</key>
-  <string>/Users/blobio/log/launchd-sync-remote.log</string>
+  <string>/Users/blobio/log/launchd-sync-remote-flowd.log</string>
 
   <key>StandardOutPath</key>
-  <string>/Users/blobio/log/launchd-sync-remote.log</string>
+  <string>/Users/blobio/log/launchd-sync-remote-flowd.log</string>
 
 </dict>
 </plist>
