@@ -4,6 +4,10 @@
 #  Usage:
 #	# cp $BLOBIO_ROOT/lib/blobio.sync.remote.service.example	\
 #		/etc/systemd/system/blobio.sync.remote.host.com.service
+#  Note:
+#	Need to rename this file as
+#
+#		blobio.sync.remote.flowd.service.example
 #
 
 [Unit]
