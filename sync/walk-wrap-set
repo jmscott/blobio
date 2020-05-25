@@ -331,7 +331,7 @@ while (@wrap_set > 0) {
 	$wrap_set = pop @wrap_set;
 
 	#  cheap sanity test
-	die "tail wrap set seen twice: $wrap_set" if %$WRAP_SET{$wrap_set} > 0;
+	die "tail wrap set seen twice: $wrap_set" if $WRAP_SET{$wrap_set} > 0;
 
 	my $ELEMENTS = frisk_wrap_set($wrap_set);
 
