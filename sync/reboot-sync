@@ -24,10 +24,12 @@ die()
 	exit 1
 }
 
+test $# = 0 || die "wrong number of command arguments: got $#, expected 0"
+
 log 'hello, world'
 trap 'log good bye, cruel world' EXIT
 
-log "BLOBIO_ROOT: $BLOBIO_ROOT"
+log "BLOBIO_ROOT=$BLOBIO_ROOT"
 
 cd $BLOBIO_ROOT || die "cd $BLOBIO_ROOT failed: exit status=$?"
 
