@@ -6,18 +6,7 @@
   <string>blobio.flowd</string>
 
   <key>KeepAlive</key>
-  <dict>
-	<!--  Wait for PostgreSQL to start.
-
-	      Note: I (jmscott) could never get OtherJobEnabled to unload
-	            flowd when postgresql unloaded.  Not sure why.
-	-->
-  	<key>PathState</key>
-	<dict>
-	  <key>/tmp/.s.PGSQL.5432</key>
-	  <true/>
-	</dict>
-  </dict>
+  <true/>
 
   <key>RunAtLoad</key>
   <true/>
@@ -31,7 +20,7 @@
   <key>EnvironmentVariables</key>
   <dict>
   	<key>PATH</key>
-	<string>/usr/local/blobio/sbin:/usr/local/blobio/bin:/usr/local/pgsql/bin:/usr/local/bin:/usr/bin:/bin</string>
+	<string>sbin:bin:/usr/local/jmscott/bin:/usr/local/pgsql/bin:/usr/bin:/bin</string>
 
 	<key>BLOBIO_ROOT</key>
 	<string>/usr/local/blobio</string>
@@ -61,12 +50,7 @@
   <key>ProgramArguments</key>
   <array>
 	<string>/usr/local/jmscott/sbin/launchd-log</string>
-	<string>bin/flowd</string>
-	<!-- Note:
-		ps-title hack must first argument in order to change what
-		appears in the process table.
-	-->
-	<string>server</string>
+	<string>sbin/launchd-flowd</string>
 	<string>etc/blobio.flow</string>
   </array>
 
