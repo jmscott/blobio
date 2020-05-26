@@ -66,8 +66,10 @@ flowd: $(GOSRC)
 	$(GO) build $(GCFLAGS) $(GO_BUILD_RACE) $(GOSRC)
 
 install: all
-	install -g $(DIST_GROUP) -o $(DIST_USER) -m u=rwx,go=	\
+	install -g $(DIST_GROUP) -o $(DIST_USER) -m u=rwx,go=		\
 		-d $(DIST_ROOT)/src/flowd
+	install -g $(DIST_GROUP) -o $(DIST_USER)			\
+		-d $(DIST_ROOT)/lib
 	install -g $(DIST_GROUP) -o $(DIST_USER) -m ug=r,o=		\
 		parser.y						\
 		$(GOSRC)						\
@@ -86,6 +88,9 @@ install: all
 	install -g $(DIST_GROUP) -o $(DIST_USER) -m u=rx,go=		\
 		launchd-flowd						\
 		$(DIST_ROOT)/sbin
+	install -g $(DIST_GROUP) -o $(DIST_USER) -m ugo=r		\
+		blobio.flowd.plist.example				\
+		$(DIST_ROOT)/lib
 
 clean:
 	rm -f $(EXEC) parser.go y.output y.go
@@ -124,8 +129,6 @@ env:
 	env
 goenv:
 	$(GO) env
-t: t.go
-	$(GO) build t.go
 doc:
 	godoc flowd
 lint:
