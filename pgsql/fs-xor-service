@@ -40,7 +40,9 @@ die()
 
 leave()
 {
-	log "$(duration-human $START_TIME): good bye, cruel world"
+	sleep 13
+	DURATION=$(expr $(date +%s) - $START_TIME)
+	log "$(duration-english $DURATION): good bye, cruel world"
 }
 
 log hello, world

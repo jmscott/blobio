@@ -68,7 +68,8 @@ leave()
 		log "ERROR: $MSG: exit status=$?"
 		STATUS=1
 	fi
-	log "$(duration-human $START_TIME): good bye, cruel world"
+	DURATION=$(expr $(date +%s) - $START_TIME)
+	log "$(duration-english $DURATION): good bye, cruel world"
 
 	exit $STATUS
 }
