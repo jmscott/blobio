@@ -15,12 +15,20 @@
 #	Since etc/profile is rewritten to the default in lib/profile.example,
 #	the script MUST start in the same directory as the directory
 #	determined by BLOBIO_ROOT in lib/profile.example.
+#
+#	To prevent overwriting a file in etc/ with the lib/ version,
+#	just create a file with a .keep suffix.  For example, to keep
+#	etc/profile, do
+#
+#		ln etc/profile etc/profile.keep
 #	
 #  Usage:
 #	cd $HOME/opt/blobio
 #	. bash_login
 #	dev-reboot >dev-reboot.out 2>&1 &
 #  Note:
+#	What about flowd servers in $BLOBIO_ROOT/sync/host?
+#
 #	Simulating cron jobs is tricky.  Investigate integrating with anacron.
 #
 
@@ -49,10 +57,18 @@ reset_etc()
 		F="$1"
 		shift
 
+		KF=etc/$F.keep
+		if [ -e $KF ];  then
+			log "keep file exists, so skipping reset: $KF"
+			continue
+		fi
+
 		EF=etc/$F
 		BF=etc/$F.bak
-		log "copy $EF -> $BF"
-		cp $EF $BF			|| die "cp $BF failed"
+		if [ -e $EF ];  then
+			log "copy $EF -> $BF"
+			cp $EF $BF			|| die "cp $BF failed"
+		fi
 
 		LF=lib/$F.example
 		test -r $LF			|| die "can not read file: $LF"
@@ -65,6 +81,11 @@ reset_etc()
 
 log 'hello, world'
 trap leave EXIT
+
+log "BLOBIO_ROOT=$BLOBIO_ROOT"
+test -n "$BLOBIO_ROOT" || die "env not defined: BLOBIO_ROOT"
+cd $BLOBIO_ROOT || die "cd $BLOBIO_ROOT failed: exit status=$?"
+. etc/profile
 
 #  shorten spool/bio4d.brr by doing a wrap
 if [ -e run/bio4d.pid ];  then
@@ -97,11 +118,11 @@ zap-proc run/bio4d.pid
 log 'zap files in directories: run/ log/'
 (
 	echo bloody-bsd-xargs-missing-no-run-if-empty
-	find run log -type f -follow				|
+	find run log -type f -follow					|
 		#  don't zap log/dev-reboot.lo
 		fgrep -v log/dev-reboot.log
 
 ) | xargs rm -vf
 
-reset_etc profile psqlrc blobio.flow || exit 1
+reset_etc bash_login-dev profile psqlrc blobio.flow || exit 1
 cron-reboot
