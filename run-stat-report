@@ -29,21 +29,16 @@ die()
 	run-stat							|
 		sort --key=2 --key=1 --field-separator=$'\t'		|
 		while read PID STATUS START_EPOCH;  do
-			DURATION_SEC=$(expr $NOW - $START_EPOCH)
-			case "$DURATION_SEC" in
+			case "$START_EPOCH" in
 			[0-9]*)
+				DURATION=$(duration-english $(
+					expr $NOW - $START_EPOCH
+				))
 				;;
-			-*)
-				DURATION_SEC=0
-				;;
-			'')
-				die 'empty process duration'
-				;;
-			*)
-				die "unexpected process duration: $DURATION_SEC"
+			UNKNOWN)
+				DURATION=UNKNOWN
 				;;
 			esac
-			DURATION=$(duration-english $DURATION_SEC)
 			echo "$PID	$STATUS	$DURATION"
 		done
 		
