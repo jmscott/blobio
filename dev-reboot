@@ -3,13 +3,14 @@
 #  Synopsis:
 #	Reboot blobio servers (not cron) into cleanish development environment.
 #  Description:
-#	The script 'dev-reboot' establishes a clean development environment.
-#	for the bio4d and flowd	servers.  Cronjobs are NOT reset.
+#	The script 'dev-reboot' establishes a cleanish development environment
+#	for the bio4d and flowd	servers.  Various *.brr and *.[fqx]dr files
+#	are purged and wrapped.  No data is removed. Cronjobs are NOT reset.
 #
 #	Before rebooting all blobio servers, the script dev-reboot kills
 #	bio4d and flowd processes owned by $USER, copies the example templates
 #	for profile, blobio.flow and psqlrc files into the directory etc/, and
-#	the removes all files the directories in spool/, log/ and run/.
+#	the removes all files the directories in log/ and run/.
 #
 #	Since etc/profile is rewritten to the default in lib/profile.example,
 #	the script MUST start in the same directory as the directory
@@ -43,18 +44,20 @@ leave()
 
 reset_etc()
 {
-	log 'resetting configs in directory etc/'
+	log 'resetting conf files in directory etc/'
 	while [ "$1" ];  do
 		F="$1"
 		shift
 
+		EF=etc/$F
+		BF=etc/$F.bak
+		log "copy $EF -> $BF"
+		cp $EF $BF			|| die "cp $BF failed"
+
 		LF=lib/$F.example
 		test -r $LF			|| die "can not read file: $LF"
 
-		EF=etc/$F
-
 		log "copy $LF -> $EF"
-		rm -f $EF			|| die "rm -f $EF failed"
 		cp $LF $EF			|| die "cp $LF $EF failed"
 		chmod +w $EF			|| die "chmod $EF failed"
 	done
@@ -63,14 +66,38 @@ reset_etc()
 log 'hello, world'
 trap leave EXIT
 
-log "killing processes owned by $USER: bio4d flowd"
-zap-proc  run/flowd.pid
-zap-proc  run/bio4d.pid
+#  shorten spool/bio4d.brr by doing a wrap
+if [ -e run/bio4d.pid ];  then
+	log "doing wrap since bio4d process may to be running"
+	PID=$(head -1 run/bio4d.pid)
+	log "pgrep biod4d: pid=#$PID"
+	pgrep -u $USER -F run/bio4d.pid >/dev/null	#  no option -q for gnu!
+	STATUS=$?
+	case $STATUS in
+	0)
+		log "bio4d $PID running, so doing wrap"
+		blobio wrap --service $BLOBIO_SERVICE			||
+			die "blobio wrap failed: exit status=$?"
+		;;
+	1)
+		log "no bio4d process, so no wrap: #$PID"
+		;;
+	*)
+		die "pgrep biod4d failed: exit status=$STATUS"
+		;;
+	esac
+fi
 
-log 'zap files in directories: run/ spool/ log/'
+log 'zapping flowd ...'
+zap-proc run/flowd.pid
+
+log 'zapping bio4d ...'
+zap-proc run/bio4d.pid
+
+log 'zap files in directories: run/ log/'
 (
 	echo bloody-bsd-xargs-missing-no-run-if-empty
-	find run spool log -type f -follow				|
+	find run log -type f -follow				|
 		#  don't zap log/dev-reboot.lo
 		fgrep -v log/dev-reboot.log
 
