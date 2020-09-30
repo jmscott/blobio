@@ -64,7 +64,7 @@ reset_etc()
 		fi
 
 		EF=etc/$F
-		BF=etc/$F.bak
+		BF=tmp/$F.bak
 		if [ -e $EF ];  then
 			log "copy $EF -> $BF"
 			cp $EF $BF			|| die "cp $BF failed"
