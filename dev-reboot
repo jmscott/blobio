@@ -113,7 +113,7 @@ log 'zapping flowd ...'
 zap-proc run/flowd.pid
 
 log 'zapping bio4d ...'
-zap-proc run/bio4d.pid
+zap-proc run/bio4d.pid bio4d-listen
 
 log 'zap files in directories: run/ log/'
 (
