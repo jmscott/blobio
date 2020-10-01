@@ -89,7 +89,7 @@ stop)
 	;;
 restart)
 	log 'restart'
-	bio4d_ctl stop && bio4d_ctl start
+	(bio4d_ctl stop && bio4d_ctl start) || die 'stop/start failed, bye'
 	;;
 '')
 	die 'missing expected action: start|stop|restart'
