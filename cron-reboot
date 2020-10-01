@@ -43,7 +43,7 @@ cd $BLOBIO_ROOT || die "cd $BLOBIO_ROOT failed"
 if [ $USER = blobio ];  then
 	log 'user is blobio, so process controled by launchd or systemd'
 	zap-proc run/flowd.pid
-	zap-proc run/bio4d.pid
+	zap-proc run/bio4d.pid biod4d-listen
 	run-stat-report
 	exit
 fi
