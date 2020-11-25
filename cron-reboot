@@ -8,6 +8,9 @@
 #	LOG=$BLOBIO_ROOT/log/cron-reboot.log
 #
 #	@reboot $BLOBIO_ROOTsbin/cron-reboot >>$LOG 2>&1
+#  Note:
+#	inexact zapping of flowd process by zap-proc when the file
+#	run/flowd.pid is missing.
 #
 
 PROG=$(basename $0)
