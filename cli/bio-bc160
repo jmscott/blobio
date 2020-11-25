@@ -21,7 +21,7 @@ case $# in
 	for F in $@;  do
 		openssl dgst -binary -sha256 "$F"			|
 			openssl dgst -ripemd160 -r			|
-			sed "s# \*stdin\$#  $F#"
+			sed "s# \*stdin\$#	$F#"
 		test "${PIPESTATUS[*]}" = '0 0 0' || exit 1
 	done
 esac
