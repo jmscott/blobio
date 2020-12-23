@@ -9,6 +9,7 @@
 #	rummy 72
 #
 
+START_EPOCH=$(date +%s)
 WORK_DIR=${TMPDIR:=/tmp}/$(basename $0)-$$.d
 
 log()
@@ -20,9 +21,11 @@ leave()
 {
 	if [ -d $WORK_DIR ];  then
 		cd ..
+		log "remove work dir: $WORK_DIR"
 		rm -rf $WORK_DIR
 	fi
-	log 'good bye, cruel world'
+	ELAPSED=$(duration-english $(expr $(time +%s) - $START_EPOCH))
+	log "good bye, cruel world: elapsed $ELAPSED"
 }
 
 die()
