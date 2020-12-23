@@ -2,6 +2,8 @@
  *  Synopsis:
  *	Low level, network stream i/o with explicit timeouts.
  *  Note:
+ *	Clarify what timeout == 0 means?
+ *
  *	Consider a 'net' data structure.
  *
  *	Explict, global timeouts are used instead of setsockopt(SO_RCVTIMEO).
@@ -236,7 +238,7 @@ again:
 	if (sigaction(SIGALRM, &a, (struct sigaction *)0))
 		panic3(n, "sigaction(ALRM) failed", strerror(errno));
 	/*
-	 *  Set the timer
+	 *  Enable the timer
 	 */
 	if (setitimer(ITIMER_REAL, &t, (struct itimerval *)0))
 		panic3(n, "write_buf: setitimer(REAL) failed", strerror(errno));
@@ -244,7 +246,7 @@ again:
 	e = errno;
 
 	/*
-	 *  Disable timer.
+	 *  Disable the timer.
 	 *
 	 *  Note:
 	 *	Does setitimer(t.it_interval.tv_sec == 0) above imply

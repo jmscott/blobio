@@ -23,9 +23,8 @@
  *	Signal handling needs to be pushed to main listen loop or cleaned
  *	up with sigaction().
  *
- *	Need to enumerate all the environment variables upon boot up.
- *
- *	Taking the empty blob ought to fail.
+ *	Taking the empty blob ought to fail or at least be a command line
+ *	option.
  */
 #include <sys/stat.h>
 #include <ctype.h>

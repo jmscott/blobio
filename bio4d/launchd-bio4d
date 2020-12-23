@@ -15,13 +15,16 @@
 #	</array>
 #  See:
 #	$BLOBIO_ROOT/lib/blobio.bio4d.plist.example
+#	$BLOBIO_ROOT/etc/profile
 #  Note:
 #	The full environment is expected to be set in blobio.bio4d.plist
 #	and specifically not set in $BLOBIO_ROOT/etc/profile.
 #
 PROG=$(basename $0)
+
 BLOBIO_BIO4D_PORT=${BLOBIO_BIO4D_PORT:=1797}
 BLOBIO_BIO4D_STAT_SAMPLE_DURATION=${BLOBIO_BIO4D_STAT_SAMPLE_DURATION:=60}
+BLOBIO_BIO4D_NET_TIMEOUT=${BLOBIO_BIO4D_STAT_NET_TIMEOUT:=20}
 
 log()
 {
@@ -56,6 +59,7 @@ log "BLOBIO_ROOT=$BLOBIO_ROOT"
 log "PATH=$PATH"
 log "bio4d port: $BLOBIO_BIO4D_PORT"
 log "stat sample duration: $BLOBIO_BIO4D_STAT_SAMPLE_DURATION sec"
+log "net timeout: $BLOBIO_BIO4D_NET_TIMEOUT sec"
 log "current directory: $(pwd)"
 
 log 'insure bio4d-* processes not running' 
@@ -71,10 +75,8 @@ log 'starting sbin/bio4d'
 sbin/bio4d								\
 	--ps-title-XXXXXXXXXXXXXXXXXXXXXXX				\
 	--in-foreground							\
-	--port								\
-	$BLOBIO_BIO4D_PORT						\
-	--root								\
-	$BLOBIO_ROOT							\
-	--stat-sample-duration						\
-	60								||
+	--port $BLOBIO_BIO4D_PORT					\
+	--root $BLOBIO_ROOT						\
+	--net-timeout $BLOBIO_BIO4D_NET_TIMEOUT				\
+	--stat-sample-duration $BLOBIO_BIO4D_STAT_SAMPLE_DURATION	||
   die "sbin/bio4d failed: exit status=$?"
