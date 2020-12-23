@@ -82,6 +82,8 @@ reset_etc()
 log 'hello, world'
 trap leave EXIT
 
+test "$USER" = blobio && die 'can not dev-reboot as user blobio'
+
 log "BLOBIO_ROOT=$BLOBIO_ROOT"
 test -n "$BLOBIO_ROOT" || die "env not defined: BLOBIO_ROOT"
 cd $BLOBIO_ROOT || die "cd $BLOBIO_ROOT failed: exit status=$?"
