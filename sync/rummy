@@ -24,7 +24,7 @@ leave()
 		log "remove work dir: $WORK_DIR"
 		rm -rf $WORK_DIR
 	fi
-	ELAPSED=$(duration-english $(expr $(time +%s) - $START_EPOCH))
+	ELAPSED=$(duration-english $(expr $(date +%s) - $START_EPOCH))
 	log "good bye, cruel world: elapsed $ELAPSED"
 }
 
