@@ -59,6 +59,7 @@ type TipQuery struct {
 type Config struct {
 	Databases		map[string]*PGDatabase `json:"databases"`
 
+	Debug			bool	`json:"debug"`
 	WitnessBlob		string	`json:"witness_blob"`
 	EscapeHTML		bool	`json:"escape_html"`
 	IndentLinePrefix	string	`json:"indent_line_prefix"`
