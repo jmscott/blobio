@@ -5,6 +5,8 @@
  *	The arborist stops searching at a symbolic link in the path.
  *	Ought to follow the symbolic links.
  *  Note:
+ *	Rename process from "bio4d-arborist" to shorter "bio4d-arbor"?
+ *
  *	Need to document why move() and rename() are not combined into
  *	single call.
  */
