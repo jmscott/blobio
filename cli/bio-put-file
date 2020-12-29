@@ -1,21 +1,28 @@
 #!/bin/bash
 #
 #  Synopsis:
-#	Put both the file and a json meta blob to the blob service.
+#	Put as blobs both a file and a json meta blob describing the put.
 #  Usage:
 #	bio-put-file invoice-20160215.pdf
 #	find . -name '*.pdf' -print | bio-put-file
+#  Note:
+#	Replace function escape_json() with call to program to be written
+#	/usr/local/jmscott/bin/escape-json-string.
+#
+#	Consider removing reading the file list from stdin when the argument
+#	list is empty.  xargs is your friend.
 #
 
 PROG=$(basename $0)
 TMPDIR=${TMPDIR:=/tmp}
-JSON=$TMPDIR/$PROG-$$.json
+JSON_TMP=$TMPDIR/$PROG-$$.json
+BASH_PID=$$
 
-trap "rm -f $JSON" EXIT
+trap "rm -f $JSON_TMP" EXIT
 
 die()
 {
-	echo "$PROG: $@" >&2
+	echo "ERROR: $PROG: $@" >&2
 	exit 1
 }
 
@@ -39,36 +46,45 @@ put_file()
 	test -d "$FILE" && die "$FILE is a directory"
 	test -r "$FILE" || die "can't read $FILE"
 
+	#  derive the digest of the file to put
 	DIGEST=$(blobio eat --algorithm $BLOBIO_ALGORITHM --input-path "$FILE")
-	test -n "$DIGEST" || die "blobio eat failed"
+	STATUS=$?
+	test $STATUS = 0 || die "blobio eat file failed: exit status=$STATUS"
+	test -n "$DIGEST" || die "blobio eat failed: empty digest"
 	UDIG=$BLOBIO_ALGORITHM:$DIGEST
+
+	#  does the file blob already exist in the blob service?
 	blobio eat --udig $UDIG --service $BLOBIO_SERVICE
 	STATUS=$?
+	BLOB_EXISTED=false
 	case $STATUS in
 	1)
 		blobio put --udig $UDIG --input-path "$FILE" 		\
 						--service $BLOBIO_SERVICE
-		test $? = 0 || die "blobio put failed: $FILE"
+		test $? = 0						||
+			die "blobio put file failed: exit status=$STATUS"
 		cat <<END
 $FILE
 	>$UDIG
 END
 		;;
 	0)
+		BLOB_EXISTED=true
 		cat <<END
 $FILE
 	@$UDIG
 END
 		;;
 	*)
-		die "blobio eat: unexpected exit status: $FILE"
+		die "blobio eat file failed: exit status=$STATUS"
 		;;
 	esac
 
 	#
-	#  Put the json meta description
+	#  Always put the json meta description, regardless of if the blob
+	#  existed prior to this invocation of bio-put-file.
 	#
-	cat <<END >$JSON
+	cat <<END >$JSON_TMP
 {
 	"blobio.com": {
 		"command-line": {
@@ -77,42 +93,52 @@ END
 			"path":		"$(echo -n "$FILE" | escape_json)",
 			"pwd":		"$(pwd | escape_json)"
 		},
-		"hostname":	"$(hostname)",
-		"environment": 		{
+		"hostname":	"$(hostname | escape_json)",
+		"environment": 	{
 					"USER":	"$USER",
-					"LOGNAME":	"$LOGNAME"
+					"LOGNAME":	"$LOGNAME",
+					"BLOBIO_SERVICE": "$BLOBIO_SERVICE"
 		},
 		"gnu-file":	"$(file "$FILE" | escape_json)",
-		"date":		"$(date)",
-		"stat":		"$(stat "$FILE" | escape_json)"
+		"date":		"$(date | escape_json)",
+		"stat":		"$(stat "$FILE" | escape_json)",
+		"blob-existed":	$BLOB_EXISTED,
+		"bash-pid":	$BASH_PID,
+		"json-tmp":	"$(echo "$JSON_TMP" | escape_json)"
 	}
 }
 END
-	test -s $JSON || die "file has size of zero: $JSON"
+	STATUS=$?
+	test $STATUS = 0 || die "cat >json failed: exit status=$STATUS"
+	test -s $JSON_TMP || die "json file has size of zero: $JSON_TMP"
 
-	DIGEST=$(blobio eat --algorithm $BLOBIO_ALGORITHM --input-path $JSON)
-	test -n "$DIGEST" || die "blobio eat failed: $JSON"
+	#  derive digest for json meta blob
+	DIGEST=$(
+		blobio eat						\
+			--algorithm $BLOBIO_ALGORITHM			\
+			--input-path $JSON_TMP
+	)
+	STATUS=$?
+	test $STATUS = 0 || die "blobio eat json failed: exit status=$STATUS"
+	test -n "$DIGEST" || die "blobio eat json: empty digest"
+
 	UDIG=$BLOBIO_ALGORITHM:$DIGEST
+
+	#  Paranoid check that the json meta blob does NOT exist.
+
 	blobio eat --udig $UDIG --service $BLOBIO_SERVICE
 	STATUS=$?
-	case $STATUS in
-	1)
-		blobio put --udig $UDIG --input-path $JSON 		\
-				--service $BLOBIO_SERVICE
-		test $? = 0 || die "blobio put failed: $JSON"
-		cat <<END
+	test $STATUS = 0						&&
+		die "impossible: json meta blob already exists: $UDIG"
+	test $STATUS != 1 && die "blobio eat json failed: exit status=$STATUS"
+
+	blobio put --udig $UDIG --input-path $JSON_TMP 			\
+					--service $BLOBIO_SERVICE
+	STATUS=$?
+	test $STATUS = 0 || die "blobio put json failed: exit status=$STATUS"
+	cat <<END
 	>>$UDIG
 END
-		;;
-	0)
-		cat <<END
-	@@$UDIG
-END
-		;;
-	*)
-		die "blobio eat: unexpected exit status: $JSON"
-		;;
-	esac
 }
 
 case $# in
