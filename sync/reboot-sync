@@ -7,11 +7,17 @@
 #	export BLOBIO_ROOT=/usr/local/blobio
 #	reboot-sync
 #
-#	#  From cron-reboot
+#	#  Called from cron-reboot
 #	reboot-sync
+#
+#	reboot-sync --no-zap-flowd	#  do not zap the flowd process
+#  Note:
+#	No safety value check for user blobio, which typically is controlled
+#	by systemd or launchctl.
 #
 PROG=$(basename $0)
 PKILL_USER=$(id -un)
+NO_ZAP_FLOWD=no
 
 log()
 {
@@ -24,7 +30,17 @@ die()
 	exit 1
 }
 
-test $# = 0 || die "wrong number of command arguments: got $#, expected 0"
+case $# in
+0)
+	;;
+1)
+	test "$1" eq '--no-zap-flowd' || die "unknown option: $1"
+	NO_ZAP_FLOWD=yes
+	;;
+*)
+	die "wrong argument count: got $@, expected 0 or 1"
+	;;
+esac
 
 log 'hello, world'
 trap 'log good bye, cruel world' EXIT
@@ -32,6 +48,7 @@ trap 'log good bye, cruel world' EXIT
 log "BLOBIO_ROOT=$BLOBIO_ROOT"
 
 cd $BLOBIO_ROOT || die "cd $BLOBIO_ROOT failed: exit status=$?"
+log "no zap flowd: $NO_ZAP_FLOWD"
 
 if [ ! -e sync/host ];  then
 	log "creating sync directory: $(pwd)/sync/host"
@@ -54,7 +71,10 @@ find $BLOBIO_ROOT/sync/host/ -mindepth 1 -maxdepth 1 -type d 		|
 	log "sync host: $HOST"
 	cd $SYNC_ROOT || dieh "cd $SYNC_ROOT failed: exit status=$?"
 
-	zap-proc run/flowd.pid || dieh "zap-proc flowd failed: exit status=$?"
+	if [ $NO_ZAP_FLOWD = no ];  then
+		zap-proc run/flowd.pid					||
+				dieh "zap-proc flowd failed: exit status=$?"
+	fi
 	log "starting sync flowd server: $HOST ..."
 	log "BLOBIO_ROOT for sync flowd: $SYNC_ROOT"
 	BLOBIO_ROOT=$SYNC_ROOT flowd server etc/sync-$HOST.flow &

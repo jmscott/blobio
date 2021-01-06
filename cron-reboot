@@ -8,6 +8,8 @@
 #	LOG=$BLOBIO_ROOT/log/cron-reboot.log
 #
 #	@reboot $BLOBIO_ROOTsbin/cron-reboot >>$LOG 2>&1
+#
+#	cron-reboot --no-zap-flowd	#  do not zap bio4/flowd processes
 #  Note:
 #	inexact zapping of flowd process by zap-proc when the file
 #	run/flowd.pid is missing.
@@ -17,6 +19,7 @@ PROG=$(basename $0)
 USER=$(id -un)
 FLOWD_PAUSE=4
 PKILL_PAUSE=4
+NO_ZAP_FLOWD=no
 
 log()
 {
@@ -40,18 +43,32 @@ trap leave EXIT
 test -n "$BLOBIO_ROOT" || die "environment variable not defined: BLOBIO_ROOT"
 log "BLOBIO_ROOT=$BLOBIO_ROOT"
 
+case $# in
+0)
+	;;
+1)
+	test "$1" = '--no-zap-flowd' || die "unknown argument: $1"
+	NO_ZAP_FLOWD=yes
+	;;
+*)
+	die "wrong argument count: got $#, expected 0 or 1"
+	;;
+esac
+
 cd $BLOBIO_ROOT || die "cd $BLOBIO_ROOT failed"
 . etc/profile
 
+log "no zap flowd: $NO_ZAP_FLOWD"
+
+test $NO_ZAP_FLOWD = no && zap-proc run/flowd.pid
 if [ $USER = blobio ];  then
 	log 'user is blobio, so process controled by launchd or systemd'
-	zap-proc run/flowd.pid
 	zap-proc run/bio4d.pid biod4d-listen
+	log 'pausing 3 seconds while system restarts process'
+	sleep 3
 	run-stat-report
 	exit
 fi
-
-zap-proc run/flowd.pid || die "zap-proc flowd failed: exit status=$?"
 
 log 'calling bio4d_ctl restart ...'
 bio4d_ctl restart || die "bio4d_ctl restart failed: exit status=$?"
