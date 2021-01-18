@@ -85,8 +85,18 @@ case $# in
 	NO_ZAP_FLOWD=no
 	;;
 1)
-	test $1 -eq '--no-zap-flowd' || die "unexpected argument: $1"
-	NO_ZAP_FLOWD=yes
+	case "$1" in
+	help|--help)
+		echo "usage: $PROG [--no-zap-flowd]"
+		exit 0
+		;;
+	--no-zap-flowd)
+		NO_ZAP_FLOWD=yes
+		;;
+	*)
+		die "unexpected argument: $1"
+		;;
+	esac
 	;;
 *)
 	die "wrong argument count: got $#, expected 0 or 2"
