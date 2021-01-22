@@ -9,6 +9,8 @@
 #
 #	wish installs goyacc in $GOPATH/bin.
 #  Note:
+#	Need to eliminate redundant create of dir such as /bin, /sbin.
+#
 #	Consider always compiling in pprof.
 #	Apparently the execution overhead of pprof is not much.
 #
@@ -66,17 +68,19 @@ flowd: $(GOSRC)
 	$(GO) build $(GCFLAGS) $(GO_BUILD_RACE) $(GOSRC)
 
 install: all
-	install -g $(DIST_GROUP) -o $(DIST_USER) -m u=rwx,go=		\
+	install -g $(DIST_GROUP) -o $(DIST_USER) -m u=rwx,g=rx,o=	\
+		-d $(DIST_ROOT)/src
+	install -g $(DIST_GROUP) -o $(DIST_USER) -m u=rwx,g=rx,o=	\
 		-d $(DIST_ROOT)/src/flowd
-	install -g $(DIST_GROUP) -o $(DIST_USER)			\
+	install -g $(DIST_GROUP) -o $(DIST_USER) -m u=rwx,g=x,o=	\
 		-d $(DIST_ROOT)/lib
+	install -g $(DIST_GROUP) -o $(DIST_USER) -m u=rwx,g=rx,o=	\
+		-d $(DIST_ROOT)/bin
 	install -g $(DIST_GROUP) -o $(DIST_USER) -m ug=r,o=		\
+		flowd-execv.c						\
 		parser.y						\
 		$(GOSRC)						\
 		$(DIST_ROOT)/src/flowd
-	install -g $(DIST_GROUP) -o $(DIST_USER) -m ug=r,o=		\
-		flowd-execv.c						\
-		$(DIST_ROOT)/src
 	install -g $(DIST_GROUP) -o $(DIST_USER) -m ugo=rx		\
 		fdr2pg							\
 		fdr2psql						\
@@ -98,7 +102,6 @@ clean:
 distclean:
 	rm -rf 								\
 		$(DIST_ROOT)/src/flowd	 				\
-		$(DIST_ROOT)/src/flowd-execv.c 				\
 		$(DIST_ROOT)/bin/flowd					\
 		$(DIST_ROOT)/bin/flowd-execv				\
 		$(DIST_ROOT)/sbin/launchd-flowd
@@ -137,3 +140,9 @@ lint:
 		fgrep -v 'use CamelCase'				|\
 		fgrep -v 'should not use dot imports'			|\
 		grep -v 'receiver name .* should be consistent with previous receiver name'); exit 0
+
+world:
+	$(MAKE) $(MFLAGS) clean
+	$(MAKE) $(MFLAGS) all
+	$(MAKE) $(MFLAGS) distclean
+	$(MAKE) $(MFLAGS) install
