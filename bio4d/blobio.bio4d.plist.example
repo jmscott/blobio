@@ -5,9 +5,16 @@
  <key>Label</key>
  <string>blobio.bio4d</string>
 
+ <!--
+ 	All environment vars defined here.
+	All others vars defined in $BLOBIO_ROOT/etc/profile,
+	sourced in by $BLOBIO_ROOT/sbin/launchd-bio4d.
+ -->
  <key>EnvironmentVariables</key>
  <dict>
+  
   <key>PATH</key>
+  <!--  need zap-proc in /usr/local/jmscott -->
   <string>/usr/local/jmscott/bin:/usr/bin:/bin</string>
 
   <key>BLOBIO_ROOT</key>
@@ -16,12 +23,12 @@
   <key>BLOBIO_BIO4D_PORT</key>
   <string>1797</string>
 
-  <!-- 
-    Write round robin stats every 60 seconds to $BLOBIO_ROOT/log/bio4d-stat.log.
-    0 disables logging of stat samples.
-  -->
   <key>BLOBIO_BIO4D_STAT_SAMPLE_DURATION</key>
   <string>60</string>
+
+  <key>BLOBIO_BIO4D_NET_TIMEOUT</key>
+  <string>20</string>
+
  </dict>
 
  <key>KeepAlive</key>

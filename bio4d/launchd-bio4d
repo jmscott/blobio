@@ -13,6 +13,14 @@
 #	  <string>/usr/local/jmscott/sbin/launchd-log</string>
 #	  <string>/usr/local/blobio/sbin/launchd-bio4d</string>
 #	</array>
+#	...
+#	<key>EnvironmentVariables</key>
+#	<key>BLOBIO_ROOT</key>
+#	<string>/usr/local/blobio</string>
+#	<key>BLOBIO_BIO4D_STAT_SAMPLE_DURATION</key>
+#	<string>60</string>
+#	<key>BLOBIO_BIO4D_PORT</key>
+#	<string>1797</string>
 #  See:
 #	$BLOBIO_ROOT/lib/blobio.bio4d.plist.example
 #	$BLOBIO_ROOT/etc/profile
@@ -22,9 +30,11 @@
 #
 PROG=$(basename $0)
 
-BLOBIO_BIO4D_PORT=${BLOBIO_BIO4D_PORT:=1797}
-BLOBIO_BIO4D_STAT_SAMPLE_DURATION=${BLOBIO_BIO4D_STAT_SAMPLE_DURATION:=60}
-BLOBIO_BIO4D_NET_TIMEOUT=${BLOBIO_BIO4D_STAT_NET_TIMEOUT:=20}
+#  Define defaults for vars specific to daemon bio4d
+export	\
+      BLOBIO_BIO4D_STAT_SAMPLE_DURATION=${BLOBIO_BIO4D_STAT_SAMPLE_DURATION:=60}
+export BLOBIO_BIO4D_NET_TIMEOUT=${BLOBIO_BIO4D_NET_TIMEOUT:=20}
+export BLOBIO_BIO4D_PORT=${BLOBIO_BIO4D_PORT:=1797}
 
 log()
 {
@@ -54,6 +64,9 @@ trap leave EXIT
 trap catch_SIG SIGQUIT SIGTERM
 
 test -n "$BLOBIO_ROOT" || die 'env not defined: BLOBIO_ROOT'
+log "cd to BLOBIO_ROOT: $BLOBIO_ROOT"
+cd $BLOBIO_ROOT || die "cd failed: exit status=$?"
+test -r etc/profile && . etc/profile
 
 log "BLOBIO_ROOT=$BLOBIO_ROOT"
 log "PATH=$PATH"
