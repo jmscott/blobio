@@ -11,6 +11,9 @@
 
 PROG=$(basename $0)
 
+#  golang libpq gripes about PGSYSCONFDIR
+unset PGSYSCONFDIR
+
 log()
 {
 	echo "$(date +'%Y/%m/%d %H:%M:%S'): $PROG: $@"
