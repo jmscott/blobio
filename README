@@ -175,6 +175,9 @@ Protocol Flow:
 	described above.
 
 Protocol Questions:
+	-  what should be a minimum length of the digest portion of a udig?
+	   is min of 32 chars to lomg for base58 of 160 bits?
+
 	-  should "put" wait for response ok/no response from server before
 	   sending the blob?
 

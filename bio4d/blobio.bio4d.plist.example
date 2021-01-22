@@ -47,8 +47,6 @@
  <key>GroupName</key>
  <string>staff</string>
 
- <!--  env var BLOBIO_ROOT is set to $(pwd) by script launchd-bio4d -->
-
  <key>WorkingDirectory</key>
  <string>/usr/local/blobio</string>
 
