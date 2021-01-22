@@ -26,6 +26,7 @@ OBJS=									\
 	signal.o							\
 	tmp.o
 CSRC=									\
+	append-brr.c							\
 	arbor.c								\
 	bio4d.c								\
 	bio4d.h								\
