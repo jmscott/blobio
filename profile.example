@@ -4,39 +4,19 @@
 #  Usage:
 #	Sourced by flowd startup scripts and bash_login.
 #  Note:
+#	Need to consider environment var PGSERVICE!
+#
+#	Consider adding syslog support!
+#
 #	Ought to be named profile-bash.example
 #
 #	Also ought to document all required variables.
 #
 export BLOBIO_ROOT=${BLOBIO_ROOT:=/usr/local/blobio}
-
-#
-#  The script 'bio4d_ctl' consults $BLOBIO_SERVICE to change the port from the
-#  default port of 1797 to a different port. For example, a development server
-#  might listen on port 1796.
-#
-#  $BLOBIO_BIO4D_PORT is not used by any client software.
-#
-#  Note:
-#  	The bio4d_ctl script ought to derive the port from $BLOBIO_SERVICE.
-#  	Defining a second variable is stupid.  BLOBIO_BIO4D_PORT must die.
-#
-
-export BLOBIO_BIO4D_PORT=${BLOBIO_BIO4D_PORT:=1797}
-
-export BLOBIO_SERVICE=${BLOBIO_SERVICE:=bio4:localhost:$BLOBIO_BIO4D_PORT}
-
-#  write stat samples to $BLOBIO_ROOT/log/bio4d-stat.log every 60 seconds
-#  set to 0 to disable
-
-export BLOBIO_STAT_SAMPLE_DURATION=60
-
-#
-#  The default digest algorithm to use when new blobs must be generated.
-#
+export BLOBIO_SERVICE=${BLOBIO_SERVICE:=bio4:localhost:1797}
 export BLOBIO_ALGORITHM=${BLOBIO_ALGORITHM:=bc160}
 
-#  set postgresql variables
+#  set postgresql variables for flowd.
 
 export PGHOME=${PGHOME:=/usr/local/pgsql}
 export PGHOST=${PGHOST:=/tmp}
@@ -45,16 +25,8 @@ export PGUSER=${PGUSER:=postgres}
 export PGPASSWORD=${PGPASSWORD:=}
 export PGDATABASE=${PGDATABASE:=blobio}
 
-#  golang libpq gripes about PGSYSCONFDIR
-unset PGSYSCONFDIR
+#  Various interactive blobio scripts require jms tools.
+#  However, the daemon bio4d does NOT need any outside executable.
 
 export JMSCOTT_ROOT=${JMSCOTT_ROOT:=/usr/local/jmscott}
 PATH=$BLOBIO_ROOT/bin:$BLOBIO_ROOT/sbin:$PGHOME/bin:$PATH:$JMSCOTT_ROOT/bin
-
-export TMPDIR=$BLOBIO_ROOT/tmp
-if [ ! -e $TMPDIR ];  then
-	mkdir -p $TMPDIR || exit 1
-fi
-
-#  Ubuntu 4.4 needs USER defined
-USER=${USER:=$LOGNAME}
