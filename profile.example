@@ -16,6 +16,14 @@ export BLOBIO_ROOT=${BLOBIO_ROOT:=/usr/local/blobio}
 export BLOBIO_SERVICE=${BLOBIO_SERVICE:=bio4:localhost:1797}
 export BLOBIO_ALGORITHM=${BLOBIO_ALGORITHM:=bc160}
 
+
+#
+#  set var BLOBIO_GET_SERVICE explicitly for optimized get requests:
+#
+#	export BLOBIO_GET_SERVICE=fs:$BLOBIO_ROOT
+#
+unset BLOBIO_GET_SERVICE
+
 #  set postgresql variables for flowd.
 
 export PGHOME=${PGHOME:=/usr/local/pgsql}
