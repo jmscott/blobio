@@ -4,7 +4,7 @@
 #  Usage:
 #	sbin/launchd-flowd etc/blobio.flow
 #
-#	BLOBIO_ROOT=/usr/local/blobio/syunc/host/wework
+#	BLOBIO_ROOT=/usr/local/blobio/sync/host/wework
 #	cd $BLOBIO_ROOT
 #	sbin/launchd-flowd etc/wework.flow
 #
@@ -12,6 +12,10 @@
 PROG=$(basename $0)
 
 #  golang libpq gripes about PGSYSCONFDIR
+#
+#  Note:
+#	Ponder moving 'unset PGSYSCONFDIR' somewhere else.
+#
 unset PGSYSCONFDIR
 
 log()
@@ -35,10 +39,11 @@ log "BLOBIO_ROOT=$BLOBIO_ROOT"
 log "PATH=$PATH"
 log "flow conf: $FLOW_CONF"
 
-mkdir -p run || die "mkdir run/ failed: exit status=$?"
-mkdir -p spool || die "mkdir spool/ failed: exit status=$?"
+#  Note: need flowd to be smarted about missing brr file!
 touch spool/bio4d.brr || die "touch bio4d.brr failed: exit status=$?"
 
-zap-proc run/flowd.pid || die "zap-proc flowd failed: exit status=$?"
+#  Note: trust launchd to correctly track flowd
+rm -f run/flowd.pid || die "rm run/flowd.pid failed: exit status=$?"
+
 log 'booting flowd ...'
 bin/flowd server $FLOW_CONF || die "flowd failed: exit status=$?"
