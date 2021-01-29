@@ -229,6 +229,8 @@ Billing Model Questions:
 	  start_time.
 
 To Do:
+	- move pgsql data type public.udig to schema blobio.udig?!
+
 	- rename sha_fs and bc160_fs to sha_posix and bc160_posix?
 
 	- follow project for atomic write in linux
