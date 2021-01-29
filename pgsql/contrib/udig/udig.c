@@ -137,6 +137,10 @@ hex2dig20(char *d40, unsigned char *d20)
 {
 	int i;
 
+	/*
+	 *  Note:
+	 *	why clear memory?
+	 */
 	memset(d20, 0, 20);
 
 	/*
@@ -158,7 +162,7 @@ hex2dig20(char *d40, unsigned char *d20)
 		d20[i >> 1] |= nib;
 	}
 	if (*d40)
-		return -1;
+		return -1;			// not null terminated.
 	return 0;
 }
 
