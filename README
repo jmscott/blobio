@@ -176,7 +176,8 @@ Protocol Flow:
 
 Protocol Questions:
 	-  what should be a minimum length of the digest portion of a udig?
-	   is min of 32 chars to lomg for base58 of 160 bits?
+	   is min of 32 chars to lomg for base58 of 160 bits?  Base64 requires
+	   28 chars.
 
 	-  should "put" wait for response ok/no response from server before
 	   sending the blob?
@@ -229,6 +230,10 @@ Billing Model Questions:
 	  start_time.
 
 To Do:
+	- in brr should transport be called endpoint?
+
+	- on a brr record, should transport+start_time be required to be unique?
+
 	- move pgsql data type public.udig to schema blobio.udig?!
 
 	- rename sha_fs and bc160_fs to sha_posix and bc160_posix?
