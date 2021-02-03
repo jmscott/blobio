@@ -702,7 +702,7 @@ request()
 	 *  Scan for request from the client.
 	 *  We are looking for
 	 *
-	 *	UDIG_RE=[:alpha:][:alnum:]{0,7}:[[:isgraph:]]{32,128}]
+	 *	UDIG_RE=[:alpha:][:alnum:]{0,7}:[[:isgraph:]]{28,128}]
 	 *	[get|put|give|take|eat|wrap|roll] $UDIG_RE\n
 	 *  
 	 *  or

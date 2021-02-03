@@ -327,7 +327,7 @@ is_udig(char *arg, char **brr)
 	char c, *a;
 	size_t len;
 
-	arg2brr(nm, arg, 1 + 1 + 32, 8+1+128, brr);
+	arg2brr(nm, arg, 1 + 1 + 28, 8+1+128, brr);
 	a = arg;
 	if (*a < 'a' || *a > 'z')
 		die3(EXIT_BAD_BRR, nm, "algorithm not ^[a-z]", arg);
@@ -347,8 +347,8 @@ is_udig(char *arg, char **brr)
 
 	a++;
 	len = strlen(a);
-	if (len < 32)
-		die3(EXIT_BAD_BRR, nm, "digest: length < 32", arg);
+	if (len < 28)
+		die3(EXIT_BAD_BRR, nm, "digest: length < 28", arg);
 	if (len > 128)
 		die3(EXIT_BAD_BRR, nm, "digest: length > 128", arg);
 

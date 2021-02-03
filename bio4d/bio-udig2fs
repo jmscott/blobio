@@ -13,7 +13,7 @@ sub udig2fs
 	$udig =~ s/^\s+|\s+$//g;
 
 	die "unrecognized udig: $udig"
-		unless $udig =~ /^([a-z][a-z0-9]{0,7}):([[:graph:]]{32,128})$/;
+		unless $udig =~ /^([a-z][a-z0-9]{0,7}):([[:graph:]]{28,128})$/;
 	my ($algo, $digest) = ($1, $2);
 
 	die "unknown algorithm: $algo"
