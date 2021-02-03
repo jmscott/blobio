@@ -14,6 +14,7 @@
  *	--algorithm name
  *	--input-path <path/to/file>
  *	--output-path <path/to/file>
+ *	--brr-path path/to/fs.brr
  *	--help
  *  Note:
  *	Investigate linux system calls splice(), sendfile() and
@@ -22,7 +23,7 @@
  *	Timeout needs to be explicit status, so network flaps can be
  *	diagnosed.
  *
- *	The following fails with exit 1 for service fs:/usr/local/blob
+ *	The following fails with exit 1 for service fs:/usr/local/blobio
  *	when blob actually exists but output dir does not!
  *
  *		blobio get						\
@@ -195,6 +196,7 @@ Options:\n\
 	--udig          algorithm:digest for get/put/give/take/eat/empty/roll\n\
 	--algorithm     algorithm name for local eat request\n\
 	--trace		trace i/o to standard error\n\
+	--brr-path	append a blob request record to file at path\n\
 	--help\n\
 Exit Status:\n\
 	0	request succeed\n\
