@@ -76,6 +76,8 @@ install: all
 		-d $(DIST_ROOT)/lib
 	install -g $(DIST_GROUP) -o $(DIST_USER) -m u=rwx,g=rx,o=	\
 		-d $(DIST_ROOT)/bin
+	install -g $(DIST_GROUP) -o $(DIST_USER) -m u=rwx,go=		\
+		-d $(DIST_ROOT)/sbin
 	install -g $(DIST_GROUP) -o $(DIST_USER) -m ug=r,o=		\
 		flowd-execv.c						\
 		parser.y						\
