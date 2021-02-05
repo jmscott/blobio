@@ -104,7 +104,7 @@ END
 		"stat":		"$(stat "$FILE" | escape_json)",
 		"blob-existed":	$BLOB_EXISTED,
 		"bash-pid":	$BASH_PID,
-		"json-tmp":	"$(echo "$JSON_TMP" | escape_json)"
+		"json-tmp":	"$(echo -n "$JSON_TMP" | escape_json)"
 	}
 }
 END
