@@ -309,5 +309,7 @@ To Do:
 	- signal handling needs to be pushed to main listen loop or cleaned
  	  up with sigaction().
 Note:
+	Consider posix fadvise(POSIX_FADV_DONTNEED) as a command line option.
+
 	This simple protocol is officially named bio4.  That needs to be
 	clarified in this document.
