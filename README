@@ -159,29 +159,65 @@ Protocol Flow:
 	    			# a wrap set.
 	    <no\n[close]	# not all logs in set forgotten
 
-	Warning: the protocol is ambiguous about how the end of the blob stream
+	WARNING: the protocol is ambiguous about how the end of the blob stream
 	is physically interpreted.  This may turn out to be a serious design
 	flaw, particulary with regard to denial-of-service attacks.  Essentially
 	the only indication that the end of the blob has been reached is that 
 	the socket has closed;  nothing in the protocol explicity indicates
 	"END of BLOB", other than the sequence of bytes matching the digest
 	signature.  In other words, only the digest presented by the request
-	determines the correctness of the blob.
+	determines the correctness of the blob.  A possible fix is to extend
+	the protocol with an optional byte count preceding the <udig>.  For
+	example, currently the request
 
-	As blobio evolves, I (jmscott) expect a client friendly, RESTful and
-	inherently more complex caching protocol to be built in front of the
-	blobio protocol described above.  In other words, a bio4d server never
-	talks to untrusted code, due to the denial of service susceptibility
-	described above.
+		get <udig>
+		get sha:cd50d19784897085a8d0e3e413f8612b097c03f1
+
+		put <udig>
+		put sha:cd50d19784897085a8d0e3e413f8612b097c03f1
+
+	could be extended as
+
+		get <blob-byte-count> <udig>
+		get 1499 sha:cd50d19784897085a8d0e3e413f8612b097c03f1
+
+		put <blob-byte-count>
+		put 1499 sha:cd50d19784897085a8d0e3e413f8612b097c03f1
+
+	problematically, such an extension does leak info about the blob.
+	probing for support of the <byte-count> extension could be "solved"
+	by requiring all bio4 servers to contain the "empty" blob
+	("epsilon knowledge").
+
+	to illustrate probing for byte count support, consider the empty
+	blob for sha digest:
+
+		sha:da39a3ee5e6b4b0d3255bfef95601890afd80709
+
+	the chat probe looks like
+
+		> get sha:da39a3ee5e6b4b0d3255bfef95601890afd80709
+		< ok
+		
+		> take sha:da39a3ee5e6b4b0d3255bfef95601890afd80709
+		< no
+
+		> get 0 sha:da39a3ee5e6b4b0d3255bfef95601890afd80709
+		< no
+
+	proves that the server does not support <byte-count> for the get
+	request.  and
+
+		> get 0 sha:da39a3ee5e6b4b0d3255bfef95601890afd80709
+		< ok
+
+	proves <byte-count> is supported for get request.
+
+	As blobio evolves, forward facing, untrusted applications will rarely
+	speak the bio4 protocol.  instead, a security oriented gateway protocol
+	will sit in front of the bio4 services, such as http.
 
 Protocol Questions:
-	-  what should be a minimum length of the digest portion of a udig?
-	   is min of 32 chars to lomg for base58 of 160 bits?  Base64 requires
-	   28 chars.
-
-	-  should "put" wait for response ok/no response from server before
-	   sending the blob?
-
 	- should wrap send the algorithm?
 
 	- what about forbidding ':' as a digest character?
