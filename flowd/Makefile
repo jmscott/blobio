@@ -5,6 +5,7 @@
 #	Compiled with yacc at
 #
 #		/usr/local/go/bin/go get -v -u golang.org/x/tools/cmd/goyacc
+#		export GO111MODULE=off
 #		/usr/local/go/bin/go get -v -u github.com/lib/pq
 #
 #	wish installs goyacc in $GOPATH/bin.
@@ -19,6 +20,8 @@ include ../blobio.mk
 
 export PATH := $(GODIST)/bin:$(PATH)
 GO=$(GODIST)/bin/go
+
+export GO111MODULE := off
 
 GOYACC=$(shell $(GO) env GOPATH)/bin/goyacc
 
