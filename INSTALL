@@ -1,0 +1,28 @@
+#
+#  Synopsis:
+#	How to install blobio.
+#  Note:
+#	This document desparatley needs improvement.
+#	Desparatley.
+#
+
+BlobIO has been built and tested on MacOS/Darwin back to Snow Leopard
+(10.6, 64bi) and Linux back to 64bit 2.32.
+
+
+On 64 bit Linux systems, do
+
+	cp local-linux.mk.example local.mk
+
+	#  tweak for your environment
+	vi local.mk
+	make world		#  default target is /usr/local/blobio
+
+On modern Mac/Darwin, do
+
+	cp local-linux.mk.example local.mk
+
+	#  tweak local.mk for your environment
+	vi local-darwin.mk.example local.mk
+
+	make world		#  default target is /usr/local/blobio
