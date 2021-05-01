@@ -89,7 +89,7 @@ cd $BLOBIO_ROOT || die "cd $BLOBIO_ROOT failed"
 if [ -r etc/profile ];  then
 	. /etc/profile
 else
-	WARN: 'etc/profile not found (ok)'
+	WARN 'etc/profile not found (ok)'
 fi
 log "BLOBIO_ROOT=$BLOBIO_ROOT"
 log "PATH=$PATH"
@@ -230,7 +230,7 @@ while read U;  do
 	STATUS=$?
 	case $STATUS in
 	0)
-		WARN: "blob in fs: $U"
+		WARN "blob in fs: $U"
 		;;
 	1)
 		log "?$U"
