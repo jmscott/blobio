@@ -1,30 +1,65 @@
 #
 #  Synopsis:
-#	Example crontab for BlobIO Admin account
+#	Example crontab for BlobIO daemon account
 #
 BLOBIO_ROOT=/usr/local/blobio
+BLOBIO_GET_SERVICE=fs:/usr/local/blobio
+PATH=/opt/local/libexec/gnubin:/usr/local/jmscott/bin:/usr/bin:/bin
 
 #
 #  What:
-#	Daily full dump of blobio database.
+#       Wrap and roll blob request records.
 #  When:
-#	11:59pm, every day
+#       3::44am, every night
 #
-
-59 23 * * * $BLOBIO_ROOT/sbin/cron-pg_dump-daily >>log/cron-pg_dump-daily.out 2>&1
-
-#
-#  What:
-#	Clear log file log/cron-pg_dump-daily.out
-#  When:
-#	2:38am on 9th day of every month.
-#
-38 2 9 * * echo "$(date): cleared by cron" >log/cron-pg_dump-daily.out
+44 3 * * * (echo "$(date): hello, world";  cd $BLOBIO_ROOT;  . etc/profile;  bio-wrap-roll;  echo "$(date): good bye, cruel world") >>log/bio-wrap-roll.log 2>&1
 
 #
 #  What:
-#	Save crontab every night into $BLOBIO_ROOT/etc/
+#       Clear file log/bio-wrap-roll.log
 #  When:
-#	2:52am, every night
+#       6:26am, 4th day of every month
 #
-52 2 * * * crontab -l >$BLOBIO_ROOT/etc/crontab.conf
+26 6 4 * * echo "$(date): cleared by cron" >log/bio-wrap-roll.log
+
+#
+#  What:
+#	Compare blob chain against service table for previous 24 * 3 chains.
+#  When:
+#	54 minutes after every hour.
+#  Note:
+#	Paused until syntax error diagnosed in wrap-wrap-set diagnosed.
+#
+54 * * * * $BLOBIO_ROOT/sbin/rummy 72 >>log/rummy.log 2>&1
+
+#
+#  What:
+#	Clear log file log/rummy.log
+#  When:
+#	Every Tuesday at 9:55am
+#
+55 9 * * Tue echo "$(date): cleared by cron" >log/rummy.log
+
+#
+#  What:
+#	Nighty dump of blobio database.
+#  When:
+#	one minute before midnight.
+#
+59 23 * * * (echo "$(date): hello, world";  . etc/profile;  pg_dump-Dow blobio;  echo "$(date): good bye, cruel world") >>log/pg_dump-Dow-blobio.log 2>&1
+
+#
+#  What:
+#	Clear log file log/pg_dump-Dow-blobio.log
+#  When:
+#	6:01pm, on fourth day of every month.
+#
+01 18 4 * * echo "$(date): cleared by cron" >log/pg_dump-Dow-blobio.log
+
+#
+#  What:
+#	Snapshot crontab to etc/crontab.conf
+#  When:
+#	6:20am, every day
+#
+20 6 * * * crontab -l >etc/crontab.conf
