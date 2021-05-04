@@ -34,7 +34,7 @@ case $# in
 0)
 	;;
 1)
-	test "$1" eq '--no-zap-flowd' || die "unknown option: $1"
+	test "$1" = '--no-zap-flowd' || die "unknown option: $1"
 	NO_ZAP_FLOWD=yes
 	;;
 *)
