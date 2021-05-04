@@ -1,18 +1,18 @@
 #!/bin/bash
 #
 #  Synopsis:
-#	Sync an existing local blob to a remote server by doing a put request.
+#	Pipelined sync of local blob to remote server.
 #  Usage:
 #	sync-put <remote-service> <udig>
 #
 #	UDIG=bc160:a8affdfc1058fe9191b7730aaa0e1b6765d12f05
-#	sync-put bio4:condor.setspace.com $UDIG
+#	sync-put bio4:10.187.1.2:1797 $UDIG
 #  Exit Status:
 #	0	get(local) -> put(remote) ok
 #	1	local blob does not exist
 #	2	remote put failed
 #	3	blobio get | put failed
-#	255	usage error
+#	255	unknown error
 #
 
 die()
@@ -26,14 +26,14 @@ die()
 test -n "$BLOBIO_SERVICE" || die 255 'env variable not defined: BLOBIO_SERVICE'
 
 test $# = 2 || die 255 "wrong number of arguments: got $#, expected 2"
-SERVICE=$1
+REMOTE_SERVICE=$1
 UDIG=$2
 GET_SERVICE=${BLOBIO_GET_SERVICE:=$BLOBIO_SERVICE}
 
 #  pipe the blob to the remote server
 
 blobio get --udig $UDIG --service $GET_SERVICE				|
-	blobio put --udig $UDIG --service $SERVICE
+	blobio put --udig $UDIG --service $REMOTE_SERVICE
 STATUS=${PIPESTATUS[*]}
 case "$STATUS" in
 '0 0')
@@ -45,5 +45,7 @@ case "$STATUS" in
 '0 1')
 	die 2 'remote put failed'
 	;;
+*)
+	die 3 "blobio get | put failed: exit status=$STATUS"
+	;;
 esac
-die 3 "blobio get | put failed: exit status=$STATUS"
