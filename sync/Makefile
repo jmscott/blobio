@@ -23,7 +23,6 @@ LIBs=									\
 	blobio.sync.remote.flowd.plist.example				\
 	jaccard-all.conf.example					\
 	jaccard-tip.conf.example					\
-	lo0-alias-127.0.0.2.plist.example				\
 	not-in-service.sql						\
 	profile-sync.example						\
 	rummy.sql							\
