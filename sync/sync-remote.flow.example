@@ -1,19 +1,9 @@
 #
 #  Synopsis:
-#	Flow for syncing a local blobio server with a remote server.
-#  Usage:
-#	See script make-sync-root to build directory tree for
-#	a particular host in $BLOBIO_ROOT/sync/host.
-#
-#	make-sync-root remote.setspace.com blobio@remote.setspace.com
-#	cd $BLOBIO_ROOT/sync/host/remote.setspace.com
-#	BLOBIO_ROOT=$(pwd)
-#
-#	#  test server, but typically start from systemd or launchd
-#	flowd server etc/sync-remote.setspace.com &
+#	Example flow config for syncing a local bio4 server with a remote.
 #  Note:
-#	Eating an old blob that exists does not trigger a check on the remote
-#	site.
+#	Various scripts expect the name of this file to be
+#	sync-<remote-name>.flow, so do not rename!
 #
 
 boot
@@ -38,7 +28,7 @@ command eat_remote
 	argv = (
 		"eat",
 		"--service",
-		"bio4:127.0.0.1:11797",
+		"{REMOTE_BLOBIO_SERVICE}",
 		"--udig"
 	);
 	exit_status is OK when in {0, 1};
@@ -51,9 +41,9 @@ command sync_put
 {
 	path = "sync-put";
 	argv = (
-		"bio4:127.0.0.1:11797"
+		"{REMOTE_BLOBIO_SERVICE}"
 	);
-	exit_status is OK when in {0, 1, 2};
+	exit_status is OK when in {0, 1};
 }
 
 #  sync wrapped blobs to remote blobio bio4d server.
@@ -63,7 +53,7 @@ command sync_wrap
 {
 	path = "sync-wrap";
 	argv = (
-		"bio4:127.0.0.1:11797"
+		"{REMOTE_BLOBIO_SERVICE}"
 	);
 	exit_status is OK when in {0};
 }
@@ -86,7 +76,7 @@ tail brr
 #
 #  Test if the blob exists locally now, by executing
 #
-#	blobio eat --service bio4:localhost:1797 --udig brr.udig
+#	blobio eat --service $BLOBIO_SERVICE --udig <udig>
 #
 command eat_local
 {
@@ -94,30 +84,31 @@ command eat_local
 	argv = (
 		"eat",
 		"--service",
-		"fs:/usr/local/blobio",
+		"{BLOBIO_SERVICE}",
 		"--udig"
 	);
 	exit_status is OK when in {0, 1};
 }
 
 #
-#  Zap a remote blob by executing take on remote server via ssh.
+#  Zap a remote blob by executing take on remote server.
 #
-#	ssh blobio@remote.setspace.com					\
-#		blobio take --service bio4:localhost:1797 		\
+#	blobio take --service bio4:lct:1797	 		\
 #			--output-path /dev/null				\
-#			--udig brr.udig
+#			--udig sha:a8872ee1db693bf221d33228c920c73ae76c0d60
+#  Note:
+#	A blob zap can be expensive, since the bio4 protocol requires copying
+#	the taken blob over the network.  Eventually a full blown
+#	sync protocol will replace this flowd implementation.
 #
 
 command sync_zap
 {
-	path = "ssh";
+	path = "blobio";
 	argv = (
-		"tunnel-remote",
-		"blobio",
 		"take",
 		"--service",
-		"bio4:localhost:1797",
+		"{REMOTE_BLOBIO_SERVICE}",
 		"--output-path",
 		"/dev/null",
 		"--udig"
@@ -131,7 +122,7 @@ command sync_zap
 #	Including the "eat" verb means we could get into loops with the 
 #	remote server when it probes with an "eat".  Unfortunatly, the brr
 #	tuple only has the ipaddress in the transport field, which is
-#	problematic.
+#	problematic.  More thinking needed here.
 #
 
 call brr_blob_existed()

@@ -3,7 +3,9 @@
 #  Synopsis:
 #	Make the sync directory for a particular host in $BLOBIO_ROOT/sync/host
 #  Usage:
-#	make-sync-root <remote host name> <remote ssh authorization>
+#	make-sync-root <remote name> <remote blobio service>
+#
+#	make-sync-root lct bio4:10.187.1.2:1797
 #
 
 die()
@@ -30,21 +32,25 @@ _ln_root()
 }
 
 test $# = 2 || die "wrong number of arguments: got $#, expected 2"
-HOST="$1"
-SSH_AUTH="$2"
+REMOTE_NAME="$1"
+REMOTE_BLOBIO_SERVICE="$2"
+case "$REMOTE_BLOBIO_SERVICE" in
+'')
+	die 'empty remote blobioservice'
+	;;
+*:*)
+	;;
+*)
+	die "missing colon from blobi service: $REMOTE_BLOBIO_SERVICE"
+	;;
+esac
 
 test -n "$BLOBIO_ROOT" || die 'env not defined: BLOBIO_ROOT'
 
 cd $BLOBIO_ROOT || die "cd $BLOBIO_ROOT failed: exit status=$?"
 
-#  Verify that the blobio command is executable by local server.
-#  The remote "take" depends on blobio execution.
-
-ssh $SSH_AUTH which blobio >/dev/null ||
-		die "ssh $SSH_AUTH which blobio failed: exit status=$?"
-
 #  make sync directories
-SYNC_ROOT=$BLOBIO_ROOT/sync/host/$HOST
+SYNC_ROOT=$BLOBIO_ROOT/sync/host/$REMOTE_NAME
 _mkdir $SYNC_ROOT
 cd $SYNC_ROOT || die "cd $SYNC_ROOT failed: exit status=$?"
 _mkdir log
@@ -60,12 +66,15 @@ _ln_root lib
 #  build a default flow file from the template file in
 #  $BLOBIO_ROOT/lib/sync.flow.example.
 
-FLOW=etc/sync-$HOST.flow
+FLOW=etc/sync-$REMOTE_NAME.flow
+
+#  done if the flow config already exists
 test -e $FLOW && exit 0
+
 TEMPLATE=$BLOBIO_ROOT/lib/sync-remote.flow.example
 test -r $TEMPLATE || die "can not read flow template: $TEMPLATE"
-sed "s/user@remote[.]host[.]com/$SSH_AUTH/g" $TEMPLATE 			|
-	sed "s/remote[.]host[.]com/$HOST/g"				\
+sed "s/{REMOTE_BLOBIO_SERVICE}/$REMOTE_BLOBIO_SERVICE/g" $TEMPLATE	|
+	sed "s/{BLOBIO_SERVICE}/$BLOBIO_SERVICE/g"			\
 	>$FLOW
 STATUS=${PIPESTATUS[*]}
 test "$STATUS" = '0 0' ||
