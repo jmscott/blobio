@@ -4,10 +4,11 @@
 #  Usage:
 #	SYNC_ROOT=$BLOBIO_ROOT/sync/host/condor.setspace.com
 #	cp $BLOBIO_ROOT/etc/profile-sync.example $SYNC_ROOT/etc/profile
+#  Note:
+#	Be wary of relative PATH entries, like
+#
+#		PATH=bin:sbin:/usr/local/bin:/usr/bin:/bin
 #
 
-#  Remote ssh authorization
-export BLOBIO_SYNC_SSH_AUTH=blobio@condor
-
 #  For work directory
-export TMPDIR=$BLOBIO_ROOT/sync/host/condor/tmp
+export TMPDIR=$BLOBIO_ROOT/sync/host/wework/tmp
