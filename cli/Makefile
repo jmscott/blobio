@@ -16,6 +16,7 @@ install: all
 		bio-eat							\
 		bio-file 						\
 		bio-get							\
+		bio-get-null						\
 		bio-give						\
 		bio-ls							\
 		bio-merge						\

@@ -1,0 +1,38 @@
+#!/bin/bash
+#
+#  Synopsis:
+#	Get a blob to null device.
+#  Usage:
+#	bio-get sha:a0bc76c479b55b5af2e3c7c4a4d2ccf44e6c4e71
+#
+
+die()
+{
+	echo "$0: $@" >&2
+	exit 1
+}
+
+test -n "$BLOBIO_SERVICE" || die 'env variable not defined: BLOBIO_SERVICE'
+SERVICE=${BLOBIO_GET_SERVICE:=$BLOBIO_SERVICE}
+
+while [ "$1" ]; do
+	UDIG="$1"
+	shift
+
+	#
+	#  Fetch the file from the blob server.
+	#
+	blobio get --udig "$UDIG" --service $SERVICE --output-path /dev/null
+	STATUS=$?
+	case $STATUS in
+	0)
+		echo ">$UDIG"
+		;;
+	1)
+		echo "?$UDIG"
+		;;
+	*)
+		die "blobio get $UDIG $SERVICE failed: status=$STATUS"
+		;;
+	esac
+done
