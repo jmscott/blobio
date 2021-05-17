@@ -7,7 +7,10 @@
 #	For systemd service: $BLOBIO_ROOT/lib/blobio.flowd.service.example
 #  Note:
 #	The test for failed existence of brr_blob_size is not triggering
-#	update.  Currently only rummy does this.
+#	update.  Currently only rummy does this.  This happens when only
+#	an "eat" request record is seen but not a "get/put/give/take"
+#	record, which has a size.  The fix is to issue a "get" request
+#	when this situation is seen.  This could confuse a stupid person.
 #
 
 boot
