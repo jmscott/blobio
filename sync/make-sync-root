@@ -38,10 +38,12 @@ case "$REMOTE_BLOBIO_SERVICE" in
 '')
 	die 'empty remote blobioservice'
 	;;
-*:*)
+fs:*)
+	;;
+bio4:*:[0-9]*)
 	;;
 *)
-	die "missing colon from blobi service: $REMOTE_BLOBIO_SERVICE"
+	die "unknown blobio service: $REMOTE_BLOBIO_SERVICE"
 	;;
 esac
 

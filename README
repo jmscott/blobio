@@ -181,7 +181,7 @@ Protocol Flow:
 		get <blob-byte-count> <udig>
 		get 1499 sha:cd50d19784897085a8d0e3e413f8612b097c03f1
 
-		put <blob-byte-count>
+		put <blob-byte-count> <udig>
 		put 1499 sha:cd50d19784897085a8d0e3e413f8612b097c03f1
 
 	problematically, such an extension does leak info about the blob.

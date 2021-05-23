@@ -12,6 +12,9 @@
 #	cp local-darwin.mk.example local.mk
 #	nano local.mk
 #	make clean all distclean install
+#  Note:
+#	How safe is an group executable $BLOBIO_ROOT/etc/ ?
+#	Currently $BLOBIO_ROOT/etc/profile is read by group members.
 #
 include local.mk
 include blobio.mk
@@ -65,7 +68,7 @@ install: all
 	install -g $(DIST_GROUP) -o $(DIST_USER)			\
 		-m u=rwx,go= -d $(DIST_ROOT)/sbin
 	install -g $(DIST_GROUP) -o $(DIST_USER)			\
-		-m u=rwx,go= -d $(DIST_ROOT)/etc
+		-m u=rwx,g=x,o= -d $(DIST_ROOT)/etc
 	#  need group read for possible other services
 	install -g $(DIST_GROUP) -o $(DIST_USER)			\
 		-m u=rwx,g=rx,o= -d $(DIST_ROOT)/spool
