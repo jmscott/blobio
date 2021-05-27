@@ -99,12 +99,12 @@ END
 					"LOGNAME":	"$LOGNAME",
 					"BLOBIO_SERVICE": "$BLOBIO_SERVICE"
 		},
-		"gnu-file":	"$(file "$FILE" | escape_json)",
+		"gnu_file":	"$(file "$FILE" | escape_json)",
 		"date":		"$(date | escape_json)",
 		"stat":		"$(stat "$FILE" | escape_json)",
-		"blob-existed":	$BLOB_EXISTED,
-		"bash-pid":	$BASH_PID,
-		"json-tmp":	"$(echo -n "$JSON_TMP" | escape_json)"
+		"blob_existed":	$BLOB_EXISTED,
+		"bash_pid":	$BASH_PID,
+		"json_tmp":	"$(echo -n "$JSON_TMP" | escape_json)"
 	}
 }
 END
