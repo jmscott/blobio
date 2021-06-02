@@ -87,7 +87,7 @@ cd $BLOBIO_ROOT || die "cd $BLOBIO_ROOT failed"
 #  is located in, say, a backup file system.
 
 if [ -r etc/profile ];  then
-	. /etc/profile
+	. etc/profile
 else
 	WARN 'etc/profile not found (ok)'
 fi
