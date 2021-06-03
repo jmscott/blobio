@@ -217,6 +217,7 @@ func (conf *config) server(par *parse) {
 	leave := func(status int) {
 
 		os.Remove(pid_path)
+		os.Remove("run/flowd.stat")
 		info("good bye, cruel world")
 		os.Exit(status)
 	}
@@ -547,7 +548,43 @@ func (conf *config) server(par *parse) {
 			boot_sample.fault_count += sample.fault_count
 			boot_sample.wall_duration += sample.wall_duration
 
-			sample = flow_worker_sample{}
+			/*
+			 *  Write stats to run/flowd.stat
+			 */
+			stat_path := "run/flowd.stat";
+			sf, err := os.OpenFile(
+					stat_path,
+					os.O_CREATE|os.O_WRONLY,
+					0740,
+			)
+			if err != nil {
+				croak(
+					"failed to open stat file: %s",
+					err.Error(),
+				)
+			}
+			stat := Sprintf(
+				"boot\t%d\t%d\t%d\t%f\n" +
+				"sample\t%d\t%d\t%d\t%f\n",
+					boot_sample.fdr_count,
+					boot_sample.ok_count,
+					boot_sample.fault_count,
+					float64(boot_sample.wall_duration)/
+						1000000000,
+					sample.fdr_count,
+					sample.ok_count,
+					sample.fault_count,
+					float64(sample.wall_duration)/
+						1000000000,
+			);
+			if _, err := sf.Write([]byte(stat));  err != nil {
+				croak("Write(stat) failed: %s", err)
+			}
+			if err := sf.Close();  err != nil {
+				croak("close(stat) failed: %s", err)
+			}
+
+			sample = flow_worker_sample{}	//  clear samples
 
 			info("boot: %s", boot_sample)
 			info("blob requests in queue: %d", bl)
