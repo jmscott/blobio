@@ -1,8 +1,12 @@
 #
 #  Synopsis:
-#	Summarize process stats and duration by examining *.pid files.
+#	Summarize process stats and duration by examining *.{pid,stat} files.
 #  Usage:
 #	run-stat
+#
+#	Writes to standard out
+#
+#		<process> <state> <up-duration>
 #  Note:
 #	Probing process existence with pgrep might be useful.
 #	Not clear if another script should do this.
@@ -15,7 +19,7 @@ die()
 	exit 1
 }
 
-_stale_pid()
+_cat_run()
 {
 	WHAT=$1
 	PID_PATH=$2
@@ -47,12 +51,12 @@ test $# = 0 || die "wrong number cli arguments: got $#, expected 0"
 test -n "$BLOBIO_ROOT" || die "environment not defined: BLOBIO_ROOT"
 cd $BLOBIO_ROOT || die "cd $BLOBIO_ROOT: exit status=$?"
 
-_stale_pid bio4d run/bio4d.pid
-_stale_pid flowd run/flowd.pid
+_cat_run bio4d run/bio4d.pid
+_cat_run flowd run/flowd.pid
 
 #  check sync flowd process
 
 find sync/host -name run -type d | while read RUN_DIR;  do
 	HOST=$(basename $(dirname $RUN_DIR))
-	_stale_pid flowd/$HOST $RUN_DIR/flowd.pid 
+	_cat_run flowd/$HOST $RUN_DIR/flowd.pid 
 done
