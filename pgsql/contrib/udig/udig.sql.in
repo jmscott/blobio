@@ -23,14 +23,16 @@ SET search_path = public;
 CREATE TYPE udig_sha;					-- sha1 udig type
 
 CREATE OR REPLACE FUNCTION udig_sha_in(cstring)		-- cstring to internal
-RETURNS udig_sha
-AS 'MODULE_PATHNAME', 'udig_sha_in'
-LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
+  RETURNS udig_sha
+  AS 'MODULE_PATHNAME', 'udig_sha_in'
+  LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE
+; 
 
 CREATE OR REPLACE FUNCTION udig_sha_out(udig_sha)	-- internal to cstring
-RETURNS cstring
-AS 'MODULE_PATHNAME', 'udig_sha_out'
-LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
+  RETURNS cstring
+  AS 'MODULE_PATHNAME', 'udig_sha_out'
+  LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE
+; 
 
 CREATE TYPE udig_sha
 (
