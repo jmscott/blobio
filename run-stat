@@ -1,13 +1,39 @@
 #
 #  Synopsis:
 #	Summarize process stats and duration by examining *.{pid,stat} files.
+#  Description:
+#	Convert contents of status files in run/ directory to tab
+#	separated row, suitable for parsing by shell scripts.  The
+#	processes summarized are bio4d and flowd, typically in either
+#	${BLOBIO_ROOT, SETSPACE_ROOT}/run or $BLOBIO_ROOT/sync/<host>/run
+#	directories.
+#
+#	run-stat writes tab separated rows to standard out.
+#
+#		bio4d <state> <uptime> <request> <ok> <faults> <wall-duration>
+#		flowd <state> <uptime> <request> <ok> <faults> <wall-duration>
+#
+#	where <request> is the count of either blob requests (for bio4d) or
+#	flow description records (log/*.fdr).  <ok> is the total number
+#	<ok> requests, <faults> is the total number of any class of error
+#	needing attention, and wall duration is the accumlated time across
+#	all requests, as a floating point number.
 #  Usage:
 #	run-stat
 #
 #	Writes to standard out
 #
-#		<process> <state> <up-duration>
+#		bio4d <state> <uptime> <request> <ok> <faults> <wall-duration>
+#		flowd <state> <uptime> <request> <ok> <faults> <wall-duration>
+#
+#	where <request> is the count of eith blob requests (for bio4d) or
+#	flow description records (log/*.fdr).
 #  Note:
+#	Need both the total since process boot AND the most recent sample!
+#
+#	Really, really, really need to move the files in log/*.{qdr,xdr,fdr}
+#	to directory data/!
+#
 #	Probing process existence with pgrep might be useful.
 #	Not clear if another script should do this.
 #
@@ -43,7 +69,20 @@ _cat_run()
 		die "stale-mtime failed: exit status=$?"
 		;;
 	esac
-	echo "$WHAT	$STATE	$SINCE"
+
+	case $WHAT in
+	bio4d)
+		echo "$WHAT	$STATE	$SINCE"
+		;;
+	flowd)
+		STAT=run/flowd.stat
+		BOOT=$(grep '^boot	' $STAT | sed 's/.....//')
+		echo "$WHAT	$STATE	$SINCE	$BOOT"
+		;;
+	*)
+		die "impossible what: $WHAT"
+		;;
+	esac
 }
 
 test $# = 0 || die "wrong number cli arguments: got $#, expected 0"

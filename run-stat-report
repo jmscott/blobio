@@ -28,7 +28,7 @@ die()
 	echo '-------------	------	-----------'
 	run-stat							|
 		sort --key=2 --key=1 --field-separator=$'\t'		|
-		while read PID STATUS START_EPOCH;  do
+		while read PID STATUS START_EPOCH ;  do
 			case "$START_EPOCH" in
 			[0-9]*)
 				DURATION=$(duration-english $(
