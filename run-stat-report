@@ -25,7 +25,7 @@ die()
 
 (
 	echo 'Process	Status	Up Time	Boot Request,Ok,Flt	Recent 10s Sample'
-	echo '-------	------	-------	-------------------	-------------'
+	echo '-------	------	-------	-------------------	-----------------'
 	run-stat							|
 		sort --key=2 --key=1 --field-separator=$'\t'		|
 		while read PID STATUS START_EPOCH			\
