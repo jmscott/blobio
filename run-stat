@@ -77,7 +77,8 @@ _cat_run()
 	flowd)
 		STAT=run/flowd.stat
 		BOOT=$(grep '^boot	' $STAT | sed 's/.....//')
-		echo "$WHAT	$STATE	$SINCE	$BOOT"
+		SAMPLE=$(grep '^sample	' $STAT | sed 's/.......//')
+		echo "$WHAT	$STATE	$SINCE	$BOOT	$SAMPLE"
 		;;
 	*)
 		die "impossible what: $WHAT"
