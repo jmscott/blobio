@@ -16,6 +16,10 @@ export BLOBIO_ROOT=${BLOBIO_ROOT:=/usr/local/blobio}
 export BLOBIO_SERVICE=${BLOBIO_SERVICE:=bio4:localhost:1797}
 export BLOBIO_ALGORITHM=${BLOBIO_ALGORITHM:=bc160}
 
+#  set sample rate (sec) for stats in run/bio4d.stat
+#  0 disables.  note, BLOBIO_BIO4D_RRD_DURATION >= LOG_HEARTBEAT
+export BLOBIO_BIO4D_RRD_DURATION=0
+
 
 #
 #  set var BLOBIO_GET_SERVICE explicitly for optimized get requests:

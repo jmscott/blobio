@@ -37,7 +37,7 @@ extern pid_t		request_pid;
 extern unsigned char	request_exit_status;
 extern time_t		recent_log_heartbeat;
 extern time_t		recent_pid_heartbeat;
-extern u2		stat_sample_duration;
+extern u2		rrd_duration;
 extern time_t		start_time;	
 extern char		pid_path[];
 
@@ -188,7 +188,7 @@ roll_log_Dow()
 		stat_msg,
 		sizeof stat_msg,
 		"stat sample duration: %u",
-		stat_sample_duration
+		rrd_duration
 	);
 	info(stat_msg);
 	info2("elapsed running time", server_elapsed());

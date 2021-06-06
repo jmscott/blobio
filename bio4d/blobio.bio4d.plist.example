@@ -23,7 +23,7 @@
   <key>BLOBIO_BIO4D_PORT</key>
   <string>1797</string>
 
-  <key>BLOBIO_BIO4D_STAT_SAMPLE_DURATION</key>
+  <key>BLOBIO_BIO4D_RRD_DURATION</key>
   <string>60</string>
 
   <key>BLOBIO_BIO4D_NET_TIMEOUT</key>

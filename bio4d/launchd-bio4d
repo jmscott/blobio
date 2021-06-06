@@ -17,7 +17,7 @@
 #	<key>EnvironmentVariables</key>
 #	<key>BLOBIO_ROOT</key>
 #	<string>/usr/local/blobio</string>
-#	<key>BLOBIO_BIO4D_STAT_SAMPLE_DURATION</key>
+#	<key>BLOBIO_BIO4D_RRD_DURATION</key>
 #	<string>60</string>
 #	<key>BLOBIO_BIO4D_PORT</key>
 #	<string>1797</string>
@@ -32,7 +32,7 @@ PROG=$(basename $0)
 
 #  Define defaults for vars specific to daemon bio4d
 export	\
-      BLOBIO_BIO4D_STAT_SAMPLE_DURATION=${BLOBIO_BIO4D_STAT_SAMPLE_DURATION:=60}
+      BLOBIO_BIO4D_RRD_DURATION=${BLOBIO_BIO4D_RRD_DURATION:=60}
 export BLOBIO_BIO4D_NET_TIMEOUT=${BLOBIO_BIO4D_NET_TIMEOUT:=20}
 export BLOBIO_BIO4D_PORT=${BLOBIO_BIO4D_PORT:=1797}
 
@@ -71,7 +71,7 @@ test -r etc/profile && . etc/profile
 log "BLOBIO_ROOT=$BLOBIO_ROOT"
 log "PATH=$PATH"
 log "bio4d port: $BLOBIO_BIO4D_PORT"
-log "stat sample duration: $BLOBIO_BIO4D_STAT_SAMPLE_DURATION sec"
+log "stat sample duration: $BLOBIO_BIO4D_RRD_DURATION sec"
 log "net timeout: $BLOBIO_BIO4D_NET_TIMEOUT sec"
 log "current directory: $(pwd)"
 
@@ -81,7 +81,7 @@ zap-proc run/bio4d.pid							\
 	bio4d-brr-logger						\
 	bio4d-listen							\
 	bio4d-logger							\
-	bio4d-request						||
+	bio4d-request							||
   die "zap-proc failed: exit status=$?"
 
 log 'starting sbin/bio4d'
@@ -91,5 +91,5 @@ sbin/bio4d								\
 	--port $BLOBIO_BIO4D_PORT					\
 	--root $BLOBIO_ROOT						\
 	--net-timeout $BLOBIO_BIO4D_NET_TIMEOUT				\
-	--stat-sample-duration $BLOBIO_BIO4D_STAT_SAMPLE_DURATION	||
+	--rrd-duration $BLOBIO_BIO4D_RRD_DURATION			||
   die "sbin/bio4d failed: exit status=$?"
