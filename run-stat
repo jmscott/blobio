@@ -76,8 +76,13 @@ _cat_run()
 		;;
 	flowd)
 		STAT=run/flowd.stat
-		BOOT=$(grep '^boot	' $STAT | sed 's/.....//')
-		SAMPLE=$(grep '^sample	' $STAT | sed 's/.......//')
+		if [ -e $STAT ];  then
+			BOOT=$(grep '^boot	' $STAT | sed 's/.....//')
+			SAMPLE=$(grep '^sample	' $STAT | sed 's/.......//')
+		else
+			BOOT=""
+			SAMPLE=""
+		fi
 		echo "$WHAT	$STATE	$SINCE	$BOOT	$SAMPLE"
 		;;
 	*)

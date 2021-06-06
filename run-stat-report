@@ -24,7 +24,7 @@ die()
 }
 
 (
-	echo 'Process	Status	Up Time	Boot Request,Ok,Flt	Recent 10s Sample'
+	echo 'Process	Status	Up Time	Boot Request,Ok,Fail	Recent 10s Sample'
 	echo '-------	------	-------	-------------------	-----------------'
 	run-stat							|
 		sort --key=2 --key=1 --field-separator=$'\t'		|
