@@ -266,6 +266,8 @@ Billing Model Questions:
 	  start_time.
 
 To Do:
+	- should the term "fault" be replaced with "panic", in the code?
+
 	- in brr should transport be called endpoint?
 
 	- on a brr record, should transport+start_time be required to be unique?
