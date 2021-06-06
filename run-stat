@@ -45,6 +45,19 @@ die()
 	exit 1
 }
 
+_cat_flowd()
+{
+	STAT=$1
+	if [ -e $STAT ];  then
+		BOOT=$(grep '^boot	' $STAT | sed 's/.....//')
+		SAMPLE=$(grep '^sample	' $STAT | sed 's/.......//')
+	else
+		BOOT=""
+		SAMPLE=""
+	fi
+	echo "$WHAT	$STATE	$SINCE	$BOOT	$SAMPLE"
+}
+
 _cat_run()
 {
 	WHAT=$1
@@ -75,15 +88,11 @@ _cat_run()
 		echo "$WHAT	$STATE	$SINCE"
 		;;
 	flowd)
-		STAT=run/flowd.stat
-		if [ -e $STAT ];  then
-			BOOT=$(grep '^boot	' $STAT | sed 's/.....//')
-			SAMPLE=$(grep '^sample	' $STAT | sed 's/.......//')
-		else
-			BOOT=""
-			SAMPLE=""
-		fi
-		echo "$WHAT	$STATE	$SINCE	$BOOT	$SAMPLE"
+		_cat_stat run/flowd.stat
+		;;
+	flowd/[a-z0-9]*)
+		STAT_PATH=$(echo "$WHAT" | sed 's/\//\/host')
+		_cat_stat $STAT_PATH/run/flowd.stat 
 		;;
 	*)
 		die "impossible what: $WHAT"
