@@ -45,7 +45,7 @@ die()
 	exit 1
 }
 
-_cat_flowd()
+_cat_stat()
 {
 	STAT=$1
 	if [ -e $STAT ];  then
@@ -91,7 +91,7 @@ _cat_run()
 		_cat_stat run/flowd.stat
 		;;
 	flowd/[a-z0-9]*)
-		STAT_PATH=$(echo "$WHAT" | sed 's/\//\/host')
+		STAT_PATH=$(echo "$WHAT" | sed 's/\//\/host/')
 		_cat_stat $STAT_PATH/run/flowd.stat 
 		;;
 	*)
