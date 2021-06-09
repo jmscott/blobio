@@ -47,10 +47,10 @@ die()
 
 _cat_stat()
 {
-	STAT=$1
-	if [ -e $STAT ];  then
-		BOOT=$(grep '^boot	' $STAT | sed 's/.....//')
-		SAMPLE=$(grep '^sample	' $STAT | sed 's/.......//')
+	STAT_PATH=$1
+	if [ -e $STAT_PATH ];  then
+		BOOT=$(grep '^boot	' $STAT_PATH | sed 's/.....//')
+		SAMPLE=$(grep '^sample	' $STAT_PATH | sed 's/.......//')
 	else
 		BOOT=""
 		SAMPLE=""
@@ -91,8 +91,8 @@ _cat_run()
 		_cat_stat run/flowd.stat
 		;;
 	flowd/[a-z0-9]*)
-		STAT_PATH=$(echo "$WHAT" | sed 's/\//\/host/')
-		_cat_stat $STAT_PATH/run/flowd.stat 
+		HOST=$(echo "$WHAT" | sed 's/......//')
+		_cat_stat sync/host/$HOST/run/flowd.stat 
 		;;
 	*)
 		die "impossible what: $WHAT"
