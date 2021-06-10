@@ -25,7 +25,11 @@ func write_pid_log() {
 		strconv.FormatInt(int64(os.Getpid()), 10) + "\n" +
 		strconv.FormatInt(int64(boot_time.Unix()), 10)+ "\n",
 	)
-	f, err := os.OpenFile(pid_path, os.O_WRONLY | os.O_CREATE, 0740)
+	f, err := os.OpenFile(
+			pid_path,
+			os.O_WRONLY|os.O_CREATE|os.O_TRUNC,
+			0740,
+	)
 	if err != nil {
 		croak("os.OpenFile(pid log) failed: %s", err)
 	}

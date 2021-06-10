@@ -91,11 +91,65 @@ type flow_worker struct {
 	seq_chan <-chan uint64
 }
 
+func put_stat(
+	boot_fdr_count, boot_ok_count, boot_fault_count uint64,
+		boot_wall_duration Duration,
+	sample_fdr_count, sample_ok_count, sample_fault_count uint64,
+		sample_wall_duration Duration,
+) {
+	/*
+	 *  Write stats to run/flowd.stat
+	 */
+	stat_path := "run/flowd.stat";
+	sf, err := os.OpenFile(
+			stat_path,
+			os.O_CREATE|os.O_WRONLY|os.O_TRUNC,
+			0740,
+	)
+	if err != nil {
+		croak(
+			"os.OpenFile(run/stat) failed: %s",
+			err.Error(),
+		)
+	}
+	stat := Sprintf(
+		"boot\t%d\t%d\t%d\t%f\n" +
+		"sample\t%d\t%d\t%d\t%f\n",
+			boot_fdr_count,
+			boot_ok_count,
+			boot_fault_count,
+			float64(boot_wall_duration)/
+				1000000000,
+			sample_fdr_count,
+			sample_ok_count,
+			sample_fault_count,
+			float64(sample_wall_duration)/
+				1000000000,
+	);
+	if _, err := sf.Write([]byte(stat));  err != nil {
+		croak("Write(stat) failed: %s", err)
+	}
+	if err := sf.Close();  err != nil {
+		croak("close(stat) failed: %s", err)
+	}
+}
+
 //  Synchronusly boot up the flowd server.
 
 func (conf *config) server(par *parse) {
 
 	start_time := Now()
+
+	put_stat(
+		uint64(0),
+		uint64(0),
+		uint64(0),
+		Duration(0),
+		uint64(0),
+		uint64(0),
+		uint64(0),
+		Duration(0),
+	)
 
 	//  start a rolled logger to flowd-Dow.log, rolled daily
 	info_log_ch := make(file_byte_chan)
@@ -548,41 +602,16 @@ func (conf *config) server(par *parse) {
 			boot_sample.fault_count += sample.fault_count
 			boot_sample.wall_duration += sample.wall_duration
 
-			/*
-			 *  Write stats to run/flowd.stat
-			 */
-			stat_path := "run/flowd.stat";
-			sf, err := os.OpenFile(
-					stat_path,
-					os.O_CREATE|os.O_WRONLY,
-					0740,
+			put_stat(
+				boot_sample.fdr_count,
+				boot_sample.ok_count,
+				boot_sample.fault_count,
+				boot_sample.wall_duration,
+				sample.fdr_count,
+				sample.ok_count,
+				sample.fault_count,
+				sample.wall_duration,
 			)
-			if err != nil {
-				croak(
-					"failed to open stat file: %s",
-					err.Error(),
-				)
-			}
-			stat := Sprintf(
-				"boot\t%d\t%d\t%d\t%f\n" +
-				"sample\t%d\t%d\t%d\t%f\n",
-					boot_sample.fdr_count,
-					boot_sample.ok_count,
-					boot_sample.fault_count,
-					float64(boot_sample.wall_duration)/
-						1000000000,
-					sample.fdr_count,
-					sample.ok_count,
-					sample.fault_count,
-					float64(sample.wall_duration)/
-						1000000000,
-			);
-			if _, err := sf.Write([]byte(stat));  err != nil {
-				croak("Write(stat) failed: %s", err)
-			}
-			if err := sf.Close();  err != nil {
-				croak("close(stat) failed: %s", err)
-			}
 
 			sample = flow_worker_sample{}	//  clear samples
 
