@@ -37,9 +37,8 @@
  <key>ProcessType</key>
  <string>Background</string>
 
- <!--  bio4d shutdowns down the kids -->
  <key>AbandonProcessGroup</key>
- <true/>
+ <false/>
 
  <key>ProgramArguments</key>
  <array>

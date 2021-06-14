@@ -11,6 +11,7 @@
 
 PROG=$(basename $0)
 
+#
 #  golang libpq gripes about PGSYSCONFDIR
 #
 #  Note:
@@ -39,11 +40,17 @@ log "BLOBIO_ROOT=$BLOBIO_ROOT"
 log "PATH=$PATH"
 log "flow conf: $FLOW_CONF"
 
-#  Note: need flowd to be smarted about missing brr file!
+#  Note: need flowd to be smarter about missing brr file!
 touch spool/bio4d.brr || die "touch bio4d.brr failed: exit status=$?"
 
-#  Note: trust launchd to correctly track flowd
-rm -f run/flowd.pid || die "rm run/flowd.pid failed: exit status=$?"
+#
+#  Launchd is responsible for killing the kids, so we can
+#  confidently clean out the run/flowd files.
+#
+#	 <key>AbandonProcessGroup</key>
+#	<false/>
+#
+rm -f run/flowd.* || die "rm run/flowd.* failed: exit status=$?"
 
-log 'booting flowd ...'
-bin/flowd server $FLOW_CONF || die "flowd failed: exit status=$?"
+log 'execing flowd ...'
+exec bin/flowd server $FLOW_CONF

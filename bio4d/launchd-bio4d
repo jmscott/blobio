@@ -53,15 +53,8 @@ leave()
 	exit
 }
 
-catch_SIG()
-{
-	log 'caught signal'
-	exit 1 
-}
-
 log hello, world
 trap leave EXIT
-trap catch_SIG SIGQUIT SIGTERM
 
 test -n "$BLOBIO_ROOT" || die 'env not defined: BLOBIO_ROOT'
 log "cd to BLOBIO_ROOT: $BLOBIO_ROOT"
@@ -75,21 +68,19 @@ log "stat sample duration: $BLOBIO_BIO4D_RRD_DURATION sec"
 log "net timeout: $BLOBIO_BIO4D_NET_TIMEOUT sec"
 log "current directory: $(pwd)"
 
-log 'insure bio4d-* processes not running' 
-zap-proc run/bio4d.pid							\
-	bio4d-arborist							\
-	bio4d-brr-logger						\
-	bio4d-listen							\
-	bio4d-logger							\
-	bio4d-request							||
-  die "zap-proc failed: exit status=$?"
+#
+#  Assume launchd has already killed the descendents
+#
+#	<key>AbandonProcessGroup</key>
+#	<false/>
+#
+rm -f run/bio4d-* || die "rm run/bio4d-* failed: exit status=$?"
 
-log 'starting sbin/bio4d'
-sbin/bio4d								\
+log 'execing sbin/bio4d ...'
+exec sbin/bio4d								\
 	--ps-title-XXXXXXXXXXXXXXXXXXXXXXX				\
 	--in-foreground							\
 	--port $BLOBIO_BIO4D_PORT					\
 	--root $BLOBIO_ROOT						\
 	--net-timeout $BLOBIO_BIO4D_NET_TIMEOUT				\
-	--rrd-duration $BLOBIO_BIO4D_RRD_DURATION			||
-  die "sbin/bio4d failed: exit status=$?"
+	--rrd-duration $BLOBIO_BIO4D_RRD_DURATION
