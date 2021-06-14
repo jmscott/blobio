@@ -99,6 +99,7 @@ install: all
 		$(DIST_ROOT)/sbin
 	install -g $(DIST_GROUP) -o $(DIST_USER) -m ugo=r		\
 		blobio.flowd.plist.example				\
+		blobio.flowd.service.example				\
 		$(DIST_ROOT)/lib
 
 clean:

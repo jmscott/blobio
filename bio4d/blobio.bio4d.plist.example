@@ -37,8 +37,10 @@
  <key>ProcessType</key>
  <string>Background</string>
 
+ <!--  bio4d shutdowns down the kids -->
  <key>AbandonProcessGroup</key>
- <false/>
+ <true/>
+
  <key>ProgramArguments</key>
  <array>
   <string>/usr/local/jmscott/sbin/launchd-log</string>
