@@ -87,7 +87,7 @@ END
 	cat <<END >$JSON_TMP
 {
 	"blobio.com": {
-		"command-line": {
+		"command_line": {
 			"command":	"bio-put-file",
 			"udig":		"$UDIG",
 			"path":		"$(echo -n "$FILE" | escape_json)",
