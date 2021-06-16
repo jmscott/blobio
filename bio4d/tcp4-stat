@@ -6,18 +6,19 @@
 #	Write tab separated tuples that summarize blob request records
 #	by tcp4 netflow.  The output tuples are
 #
-#		ip4	verb	count
+#		ip4	verb	chat	count
 #
 #  Usage:
 #	tcp4-stat <$BLOBIO_ROOT/spool/bio4d.brr
 #  Note:
-#	Requires GNU version of cut for argument --output-delimiter.
+#	Requires GNU version of cut for arguement --output-delimiter.
 #  Exit Status:
 #	0	ok
 #	1	failed
 #
 
-my %TUPLE;
+my (%TUPLE, %MAX_BYTE_COUNT);
+
 my $tcp4_re = qr /
 		#  skip the timestamp
 		^[^\t]+\t
@@ -33,14 +34,29 @@ my $tcp4_re = qr /
 
 		#  chat
 		([nok,]{2,8})\t
+
+		#  byte count
+		(\d{1,20})\t
 	/x
 ;
 
 while (<STDIN>) {
-	$TUPLE{$1 . "\t" . $2 . "\t" .$3}++  if $_ =~ $tcp4_re;
+	next unless $_ =~ $tcp4_re;
+	my $t = $1 . "\t" . $2 . "\t" . $3;
+	$TUPLE{$t}++;
+	$MAX_BYTE_COUNT{$t} = $4
+		if $MAX_BYTE_COUNT{$t} < $4 || !$MAX_BYTE_COUNT{$t}
+	;
 }
 
 for my $tuple (keys %TUPLE) {
-	my ($netflow, $verb, $chat) = split("\t", $tuple);
-	print $netflow, "\t", $verb, "\t", $chat, "\t" . $TUPLE{$tuple}, "\n";
+	my ($netflow, $verb, $chat, $byte_count) = split("\t", $tuple);
+	print
+		$netflow, "\t",
+		$verb, "\t",
+		$chat, "\t",
+		$TUPLE{$tuple}, "\t",
+		$MAX_BYTE_COUNT{$tuple}, 
+		"\n"
+	;	
 }
