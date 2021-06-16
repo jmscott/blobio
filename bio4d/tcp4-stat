@@ -1,0 +1,46 @@
+#!/usr/bin/env perl
+#
+#  Synopsis:
+#	Summarize tcp4 traffic by parsing blob request records (brr).
+#  Description:
+#	Write tab separated tuples that summarize blob request records
+#	by tcp4 netflow.  The output tuples are
+#
+#		ip4	verb	count
+#
+#  Usage:
+#	tcp4-stat <$BLOBIO_ROOT/spool/bio4d.brr
+#  Note:
+#	Requires GNU version of cut for argument --output-delimiter.
+#  Exit Status:
+#	0	ok
+#	1	failed
+#
+
+my %TUPLE;
+my $tcp4_re = qr /
+		#  skip the timestamp
+		^[^\t]+\t
+
+		#  netflow
+		tcp4~(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})[^\t]+\t
+
+		#  verb
+		([a-z]{1,8})\t
+
+		#  skip the blob
+		[^\t]+\t
+
+		#  chat
+		([nok,]{2,8})\t
+	/x
+;
+
+while (<STDIN>) {
+	$TUPLE{$1 . "\t" . $2 . "\t" .$3}++  if $_ =~ $tcp4_re;
+}
+
+for my $tuple (keys %TUPLE) {
+	my ($netflow, $verb, $chat) = split("\t", $tuple);
+	print $netflow, "\t", $verb, "\t", $chat, "\t" . $TUPLE{$tuple}, "\n";
+}

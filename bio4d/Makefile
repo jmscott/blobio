@@ -45,6 +45,7 @@ CSRC=									\
 	tmp.c
 
 SBINs=									\
+	tcp4-stat							\
 	append-brr							\
 	bio4d								\
 	bio4d_ctl							\
