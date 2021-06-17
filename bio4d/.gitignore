@@ -1,2 +1,11 @@
 append-brr
+bin
 bio4d
+bio4d-*.log
+htdocs
+lib
+log
+run
+sbin
+spool
+tmp
