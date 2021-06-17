@@ -221,7 +221,7 @@ cache4_get(int *ok_no)
 	 *  blob written to temp directory, so move blob file from temp to
 	 *  cache tree:
 	 *
-	 *	data/<algo>_fs/<path to blob>
+	 *	data/fs_<algo>/<path to blob>
 	 */
 	output_fd = -1;
 	if (uni_close(tmp_fd))
@@ -231,7 +231,7 @@ cache4_get(int *ok_no)
 	char cache_path[PATH_MAX+1];
 	cache_path[0] = 0;
 	snprintf(cache_path, sizeof cache_path,
-		"%s/data/%s_fs",
+		"%s/data/fs_%s",
 		right_colon + 1,
 		bio4_service.digest->algorithm
 	);
@@ -241,7 +241,7 @@ cache4_get(int *ok_no)
 	 *  Note:
 	 *	Unfortunatly, digest->fs_mkdir() only makes the hash portion
 	 *	of the path to the blob.  Need to also mkdir the dirs in
-	 *	data/<algo>_fs.
+	 *	data/fs_<algo>.
 	 */
 	status = fs_service.digest->fs_mkdir(
 			cache_path,

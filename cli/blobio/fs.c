@@ -76,7 +76,7 @@ fs_end_point_syntax(char *root_dir)
 	}
 	/*
 	 *  root directory can't be too long.  Need room for
-	 *  trailing $BLOBIO_ROOT/data/<algorithm>_fs/path/to/blob.
+	 *  trailing $BLOBIO_ROOT/data/fs_<algorithm>/path/to/blob.
 	 *
 	 *  Note:
 	 *	Seems like this code ought to be in the digest module.
@@ -128,18 +128,18 @@ fs_open()
 		return strerror(errno);
 	if (!S_ISDIR(st.st_mode))
 		return "root blob directory is not a directory";
-	//  build the path to the $BLOBIO_ROOT/data/<algo>_fs/ directory
+	//  build the path to the $BLOBIO_ROOT/data/fs_<algo>/ directory
 
 	*fs_path = 0;
-	buf4cat(fs_path, sizeof fs_path, end_point, "/data/", algorithm, "_fs");
+	buf4cat(fs_path, sizeof fs_path, end_point, "/data/", "fs_", algorithm);
 
 	//  verify permissons on data/ directory
 
 	if (uni_access(fs_path, X_OK)) {
 		if (errno == ENOENT)
-			return "directory does not exists: data/<algo>_fs";
+			return "directory does not exit: data/fs_<algo>";
 		if (errno == EPERM)
-			return "no permission for directory: data/<algo>_fs/";
+			return "no permission for directory: data/fs_<algo>/";
 		return strerror(errno);
 	}
 			
@@ -148,7 +148,7 @@ fs_open()
 	if (stat(fs_path, &st))
 		return strerror(errno);
 	if (!S_ISDIR(st.st_mode))
-		return "not a directory: data/<algo>_fs";
+		return "not a directory: data/fs_<algo>";
 
 	//  if writing a blob then build path to temporary directory.
 
