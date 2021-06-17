@@ -274,7 +274,7 @@ To Do:
 
 	- move pgsql data type public.udig to schema blobio.udig?!
 
-	- rename sha_fs and bc160_fs to sha_posix and bc160_posix?
+	- rename fs_sha and fs_bc160 to posix_sha and posix_bc160?
 
 	- follow project for atomic write in linux
 		https://lwn.net/Articles/789600/
@@ -317,9 +317,6 @@ To Do:
 
 	- think about adding fadvise to file system blob reads.
           seems natural since every open of blob file will read the entire blob.
-
-	- cleanup the code in server/sha_fs.c
-
 	- create an is_empty() function in pgsql udig datatype.
 
 	- add support for unix domain socket, std{in,out}, inetd, and libevent

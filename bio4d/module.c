@@ -4,12 +4,12 @@
  */
 #include "bio4d.h"
 
-#ifdef SHA_FS_MODULE
-extern struct digest_module		sha_fs_module;
+#ifdef FS_SHA_MODULE
+extern struct digest_module		fs_sha_module;
 #endif
 
-#ifdef BC160_FS_MODULE
-extern struct digest_module		bc160_fs_module;
+#ifdef FS_BC160_MODULE
+extern struct digest_module		fs_bc160_module;
 #endif
 
 /*
@@ -18,12 +18,12 @@ extern struct digest_module		bc160_fs_module;
  */
 static struct digest_module		*modules[] =
 {
-#ifdef BC160_FS_MODULE
-	&bc160_fs_module,
+#ifdef FS_BC160_MODULE
+	&fs_bc160_module,
 #endif
 
-#ifdef SHA_FS_MODULE 
-	&sha_fs_module
+#ifdef FS_SHA_MODULE 
+	&fs_sha_module
 #endif
 };
 static int module_count;

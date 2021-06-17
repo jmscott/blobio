@@ -4,7 +4,7 @@
  *  Note:
  *  	Not a timed read() since assumed to be local file.
  */
-#ifdef SHA_FS_MODULE    
+#ifdef FS_SHA_MODULE    
 
 #include <sys/stat.h>
 #include <string.h>
@@ -264,7 +264,7 @@ sha_eat_input()
  *  Convert an ascii digest to a name of blob file.
  */
 static char *
-sha_fs_name(char *name, int size)
+fs_sha_name(char *name, int size)
 {
 	if (size < 41)
 		return "file name size too small: size < 41 bytes";
@@ -285,7 +285,7 @@ _mkdir(char *path)
  *  directory entries.
  */
 static char *
-sha_fs_mkdir(char *path, int size)
+fs_sha_mkdir(char *path, int size)
 {
 	char *dp, *p;
 
@@ -319,7 +319,7 @@ sha_fs_mkdir(char *path, int size)
  *  for a blob with sha digest 4f39dfffcfe2e4cc1b089b3e4b5b595cf904b7b2.
  */
 static char *
-sha_fs_path(char *file_path, int size)
+fs_sha_path(char *file_path, int size)
 {
 	char *dp, *fp;
 
@@ -372,9 +372,9 @@ struct digest	sha_digest =
 	.empty		=	sha_empty,
 	.empty_digest	=	sha_empty_digest,
 
-	.fs_name	=	sha_fs_name,
-	.fs_mkdir	=	sha_fs_mkdir,
-	.fs_path	=	sha_fs_path
+	.fs_name	=	fs_sha_name,
+	.fs_mkdir	=	fs_sha_mkdir,
+	.fs_path	=	fs_sha_path
 };
 
 #endif

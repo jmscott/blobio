@@ -1,6 +1,6 @@
 /*
  *  Synopsis:
- *	Hash Digest Modules
+ *	Hooks for all Hash Digest Modules
  */
 #include <string.h>
 #include <errno.h>
@@ -9,21 +9,21 @@
 extern struct digest	*digest_module;
 extern int		errno;
 
-#ifdef SHA_FS_MODULE
+#ifdef FS_SHA_MODULE
 extern struct digest	sha_digest;
 #endif
 
-#ifdef BC160_FS_MODULE
+#ifdef FS_BC160_MODULE
 extern struct digest	bc160_digest;
 #endif
 
 struct digest *digests[] =
 {
-#ifdef SHA_FS_MODULE
+#ifdef FS_SHA_MODULE
 	&sha_digest,
 #endif
 
-#ifdef BC160_FS_MODULE
+#ifdef FS_BC160_MODULE
 	&bc160_digest,
 #endif
 

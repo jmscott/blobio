@@ -1,4 +1,4 @@
-#ifdef BC160_FS_MODULE
+#ifdef FS_BC160_MODULE
 /*
  *  Synopsis:
  *	Module of bitcoin ripemd160(sha256) digested blobs in POSIX file system.
@@ -31,7 +31,7 @@
  */
 #define CHUNK_SIZE		(4 * 1024)
 
-static char	bc160_fs_root[]	= "data/bc160_fs";
+static char	fs_bc160_root[]	= "data/fs_bc160";
 static char	empty[]	= "b472a266d0bd89c13706a4132ccfb16f7c3b9fcb";
 
 typedef struct
@@ -40,7 +40,7 @@ typedef struct
 	SHA256_CTX	sha256;
 } BC160_CTX;
 
-struct bc160_fs_request
+struct fs_bc160_request
 {
 	/*
 	 *  Directory path to where blob file will be stored,
@@ -52,7 +52,7 @@ struct bc160_fs_request
 	int		blob_fd;
 };
 
-static struct bc160_fs_boot
+static struct fs_bc160_boot
 {
 	char		root_dir_path[MAX_FILE_PATH_LEN];
 } boot_data;
@@ -201,14 +201,14 @@ nib2digest(char *hex_digest, unsigned char *digest)
 }
 
 static int
-bc160_fs_open(struct request *r)
+fs_bc160_open(struct request *r)
 {
-	struct bc160_fs_request *s;
+	struct fs_bc160_request *s;
 
 	//  why malloc()?
-	s = (struct bc160_fs_request *)malloc(sizeof *s);
+	s = (struct fs_bc160_request *)malloc(sizeof *s);
 	if (s == NULL)
-		_panic2(r, "malloc(bc160_fs_request) failed", strerror(errno));
+		_panic2(r, "malloc(fs_bc160_request) failed", strerror(errno));
 	memset(s, 0, sizeof *s);
 	s->blob_fd = -1;
 	if (strcmp("wrap", r->verb))
@@ -246,7 +246,7 @@ _unlink(struct request *r, char *path, int *exists)
 static int
 zap_blob(struct request *r)
 {
-	struct bc160_fs_request *s = (struct bc160_fs_request *)r->open_data;
+	struct fs_bc160_request *s = (struct fs_bc160_request *)r->open_data;
 	int exists = 0;
 
 	if (_unlink(r, s->blob_path, &exists)) {
@@ -368,7 +368,7 @@ _mkdir(struct request *r, char *path, int exists_ok)
 static void
 make_path(struct request *r, char *digest)
 {
-	struct bc160_fs_request *s = (struct bc160_fs_request *)r->open_data;
+	struct fs_bc160_request *s = (struct fs_bc160_request *)r->open_data;
 	char *p, *q;
 
 	/*
@@ -418,18 +418,18 @@ make_path(struct request *r, char *digest)
 }
 
 static int
-bc160_fs_get_request(struct request *r)
+fs_bc160_get_request(struct request *r)
 {
-	struct bc160_fs_request *s = (struct bc160_fs_request *)r->open_data;
+	struct fs_bc160_request *s = (struct fs_bc160_request *)r->open_data;
 
 	make_path(r, r->digest);
 	return _open(r, s->blob_path, &s->blob_fd);
 }
 
 static int
-bc160_fs_get_bytes(struct request *r)
+fs_bc160_get_bytes(struct request *r)
 {
-	struct bc160_fs_request *s = (struct bc160_fs_request *)r->open_data;
+	struct fs_bc160_request *s = (struct fs_bc160_request *)r->open_data;
 	int status = 0;
 	BC160_CTX ctx;
 	unsigned char sha_digest[32];
@@ -501,19 +501,19 @@ cleanup:
  *  Copy a local blob to a local stream.
  *
  *  Return 0 if stream matches signature, -1 otherwise.
- *  Note: this needs to be folded into bc160_fs_get().
+ *  Note: this needs to be folded into fs_bc160_get().
  */
 static int
-bc160_fs_copy(struct request *r, int out_fd)
+fs_bc160_copy(struct request *r, int out_fd)
 {
-	struct bc160_fs_request *s = (struct bc160_fs_request *)r->open_data;
+	struct fs_bc160_request *s = (struct fs_bc160_request *)r->open_data;
 	int status = 0;
 	BC160_CTX ctx;
 	unsigned char sha_digest[32];
 	unsigned char digest[20];
 	unsigned char chunk[CHUNK_SIZE];
 	int nread;
-	static char n[] = "bc160_fs_write";
+	static char n[] = "fs_bc160_write";
 
 	make_path(r, r->digest);
 
@@ -578,9 +578,9 @@ cleanup:
 }
 
 static int
-bc160_fs_eat(struct request *r)
+fs_bc160_eat(struct request *r)
 {
-	struct bc160_fs_request *s = (struct bc160_fs_request *)r->open_data;
+	struct fs_bc160_request *s = (struct fs_bc160_request *)r->open_data;
 	int status = 0;
 	BC160_CTX ctx;
 	unsigned char digest[20];
@@ -648,7 +648,7 @@ static int
 eat_chunk(struct request *r, SHA256_CTX *sha_ctx, int fd, unsigned char *buf,
 	  int buf_size)
 {
-	struct bc160_fs_request *s = (struct bc160_fs_request *)r->open_data;
+	struct fs_bc160_request *s = (struct fs_bc160_request *)r->open_data;
 	SHA256_CTX tmp_sha;
 	RIPEMD160_CTX tmp_ripe;
 	unsigned char sha_digest[32];
@@ -689,16 +689,16 @@ eat_chunk(struct request *r, SHA256_CTX *sha_ctx, int fd, unsigned char *buf,
 }
 
 static int
-bc160_fs_put_request(struct request *r)
+fs_bc160_put_request(struct request *r)
 {
 	(void)r;
 	return 0;
 }
 
 static int
-bc160_fs_put_bytes(struct request *r)
+fs_bc160_put_bytes(struct request *r)
 {
-	struct bc160_fs_request *s = (struct bc160_fs_request *)r->open_data;
+	struct fs_bc160_request *s = (struct fs_bc160_request *)r->open_data;
 	BC160_CTX ctx;
 	char tmp_path[MAX_FILE_PATH_LEN];
 	unsigned char chunk[CHUNK_SIZE], *cp, *cp_end;
@@ -816,7 +816,7 @@ digested:
 	make_path(r, r->digest);
 
 	arbor_rename(tmp_path,
-			((struct bc160_fs_request *)r->open_data)->blob_path);
+			((struct fs_bc160_request *)r->open_data)->blob_path);
 	goto cleanup;
 croak:
 	status = -1;
@@ -827,15 +827,15 @@ cleanup:
 	return status; 
 }
 
-static int bc160_fs_take_request(struct request *r)
+static int fs_bc160_take_request(struct request *r)
 {
-	return bc160_fs_get_request(r);
+	return fs_bc160_get_request(r);
 }
 
 static int
-bc160_fs_take_bytes(struct request *r)
+fs_bc160_take_bytes(struct request *r)
 {
-	return bc160_fs_get_bytes(r);
+	return fs_bc160_get_bytes(r);
 }
 
 /*
@@ -843,9 +843,9 @@ bc160_fs_take_bytes(struct request *r)
  *	Handle reply from client after client took blob.
  */
 static int
-bc160_fs_take_reply(struct request *r, char *reply)
+fs_bc160_take_reply(struct request *r, char *reply)
 {
-	struct bc160_fs_request *s = (struct bc160_fs_request *)r->open_data;
+	struct fs_bc160_request *s = (struct fs_bc160_request *)r->open_data;
 
 	/*
 	 *  If client replies 'ok', then delete the blob.
@@ -876,7 +876,7 @@ bc160_fs_take_reply(struct request *r, char *reply)
 }
 
 static int
-bc160_fs_give_request(struct request *r)
+fs_bc160_give_request(struct request *r)
 {
 	(void)r;
 
@@ -888,17 +888,17 @@ bc160_fs_give_request(struct request *r)
  *	Client is giving us a blob.
  */
 static int
-bc160_fs_give_bytes(struct request *r)
+fs_bc160_give_bytes(struct request *r)
 {
-	return bc160_fs_put_bytes(r);
+	return fs_bc160_put_bytes(r);
 }
 
 /*
  *  Synopsis:
- *	Handle client reply from bc160_fs_give_bytes().
+ *	Handle client reply from fs_bc160_give_bytes().
  */
 static int
-bc160_fs_give_reply(struct request *r, char *reply)
+fs_bc160_give_reply(struct request *r, char *reply)
 {
 	(void)r;
 	(void)reply;
@@ -910,7 +910,7 @@ bc160_fs_give_reply(struct request *r, char *reply)
  *  Digest a local blob stream and store the digested blob.
  */
 static int
-bc160_fs_digest(struct request *r, int fd, char *hex_digest)
+fs_bc160_digest(struct request *r, int fd, char *hex_digest)
 {
 	char unsigned buf[4096], digest[20], *d, *d_end;
 	char *h;
@@ -1001,7 +1001,7 @@ bc160_fs_digest(struct request *r, int fd, char *hex_digest)
 	 */
 	make_path(r, hex_digest);
 	arbor_move(tmp_path,
-		((struct bc160_fs_request *)r->open_data)->blob_path);
+		((struct fs_bc160_request *)r->open_data)->blob_path);
 	tmp_path[0] = 0;
 
 	goto cleanup;
@@ -1017,12 +1017,12 @@ cleanup:
 }
 
 static int
-bc160_fs_close(struct request *r, int status)
+fs_bc160_close(struct request *r, int status)
 {
 	(void)r;
 	(void)status;
 
-	struct bc160_fs_request *s = (struct bc160_fs_request *)r->open_data;
+	struct fs_bc160_request *s = (struct fs_bc160_request *)r->open_data;
 	_close(r, &s->blob_fd);
 
 	return 0;
@@ -1041,14 +1041,14 @@ binfo2(char *msg1, char *msg2)
 }
 
 static int
-bc160_fs_boot()
+fs_bc160_boot()
 {
 	binfo("starting");
 	binfo("storage is file system");
 	binfo2("openssl algorithm", OPENSSL_VERSION_TEXT);
 	binfo("bitcoin ripemd160(sha256) hash");
 
-	strcpy(boot_data.root_dir_path, bc160_fs_root);
+	strcpy(boot_data.root_dir_path, fs_bc160_root);
 	binfo2("fs root directory", boot_data.root_dir_path);
 
 	/*
@@ -1061,7 +1061,7 @@ bc160_fs_boot()
 }
 
 static int
-bc160_fs_is_digest(char *digest)
+fs_bc160_is_digest(char *digest)
 {
 	char *d, *d_end;
 
@@ -1082,41 +1082,41 @@ bc160_fs_is_digest(char *digest)
 }
 
 static int
-bc160_fs_shutdown()
+fs_bc160_shutdown()
 {
 	info("bc160: shutdown: bye");
 	return 0;
 }
 
-struct digest_module bc160_fs_module =
+struct digest_module fs_bc160_module =
 {
 	.name		=	"bc160",
 
-	.boot		=	bc160_fs_boot,
-	.open		=	bc160_fs_open,
+	.boot		=	fs_bc160_boot,
+	.open		=	fs_bc160_open,
 
-	.get_request	=	bc160_fs_get_request,
-	.get_bytes	=	bc160_fs_get_bytes,
+	.get_request	=	fs_bc160_get_request,
+	.get_bytes	=	fs_bc160_get_bytes,
 
-	.take_request	=	bc160_fs_take_request,
-	.take_bytes	=	bc160_fs_take_bytes,
-	.take_reply	=	bc160_fs_take_reply,
-	.copy		=	bc160_fs_copy,
+	.take_request	=	fs_bc160_take_request,
+	.take_bytes	=	fs_bc160_take_bytes,
+	.take_reply	=	fs_bc160_take_reply,
+	.copy		=	fs_bc160_copy,
 
-	.put_request	=	bc160_fs_put_request,
-	.put_bytes	=	bc160_fs_put_bytes,
+	.put_request	=	fs_bc160_put_request,
+	.put_bytes	=	fs_bc160_put_bytes,
 
-	.give_request	=	bc160_fs_give_request,
-	.give_bytes	=	bc160_fs_give_bytes,
-	.give_reply	=	bc160_fs_give_reply,
+	.give_request	=	fs_bc160_give_request,
+	.give_bytes	=	fs_bc160_give_bytes,
+	.give_reply	=	fs_bc160_give_reply,
 
-	.eat		=	bc160_fs_eat,
+	.eat		=	fs_bc160_eat,
 
-	.digest		=	bc160_fs_digest,
-	.is_digest	=	bc160_fs_is_digest,
+	.digest		=	fs_bc160_digest,
+	.is_digest	=	fs_bc160_is_digest,
 
-	.close		=	bc160_fs_close,
-	.shutdown	=	bc160_fs_shutdown
+	.close		=	fs_bc160_close,
+	.shutdown	=	fs_bc160_shutdown
 };
 
 #endif

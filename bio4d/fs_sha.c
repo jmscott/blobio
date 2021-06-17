@@ -1,4 +1,4 @@
-#ifdef SHA_FS_MODULE
+#ifdef FS_SHA_MODULE
 /*
  *  Synopsis:
  *	Module that manages sha digested blobs in POSIX file system.
@@ -22,10 +22,10 @@
  */
 #define CHUNK_SIZE		(4 * 1024)
 
-static char	sha_fs_root[]	= "data/sha_fs";
+static char	fs_sha_root[]	= "data/fs_sha";
 static char	empty_ascii[]	= "da39a3ee5e6b4b0d3255bfef95601890afd80709";
 
-struct sha_fs_request
+struct fs_sha_request
 {
 	/*
 	 *  Directory path to where blob file will be stored,
@@ -37,7 +37,7 @@ struct sha_fs_request
 	int		blob_fd;
 };
 
-static struct sha_fs_boot
+static struct fs_sha_boot
 {
 	char		root_dir_path[MAX_FILE_PATH_LEN];
 } boot_data;
@@ -169,13 +169,13 @@ _warn3(struct request *r, char *msg1, char *msg2, char *msg3)
 }
 
 static int
-sha_fs_open(struct request *r)
+fs_sha_open(struct request *r)
 {
-	struct sha_fs_request *s;
+	struct fs_sha_request *s;
 
-	s = (struct sha_fs_request *)malloc(sizeof *s);
+	s = (struct fs_sha_request *)malloc(sizeof *s);
 	if (s == NULL)
-		_panic2(r, "malloc(sha_fs_request) failed", strerror(errno));
+		_panic2(r, "malloc(fs_sha_request) failed", strerror(errno));
 	memset(s, 0, sizeof *s);
 	s->blob_fd = -1;
 	if (strcmp("wrap", r->verb))
@@ -213,7 +213,7 @@ _unlink(struct request *r, char *path, int *exists)
 static int
 zap_blob(struct request *r)
 {
-	struct sha_fs_request *s = (struct sha_fs_request *)r->open_data;
+	struct fs_sha_request *s = (struct fs_sha_request *)r->open_data;
 	int exists = 0;
 
 	if (_unlink(r, s->blob_path, &exists)) {
@@ -339,7 +339,7 @@ _mkdir(struct request *r, char *path, int exists_ok)
 static void
 make_path(struct request *r, char *digest)
 {
-	struct sha_fs_request *s = (struct sha_fs_request *)r->open_data;
+	struct fs_sha_request *s = (struct fs_sha_request *)r->open_data;
 	char *p, *q;
 
 	/*
@@ -389,18 +389,18 @@ make_path(struct request *r, char *digest)
 }
 
 static int
-sha_fs_get_request(struct request *r)
+fs_sha_get_request(struct request *r)
 {
-	struct sha_fs_request *s = (struct sha_fs_request *)r->open_data;
+	struct fs_sha_request *s = (struct fs_sha_request *)r->open_data;
 
 	make_path(r, r->digest);
 	return _open(r, s->blob_path, &s->blob_fd);
 }
 
 static int
-sha_fs_get_bytes(struct request *r)
+fs_sha_get_bytes(struct request *r)
 {
-	struct sha_fs_request *s = (struct sha_fs_request *)r->open_data;
+	struct fs_sha_request *s = (struct fs_sha_request *)r->open_data;
 	int status = 0;
 	SHA_CTX ctx;
 	unsigned char digest[20];
@@ -458,18 +458,18 @@ cleanup:
  *  Copy a local blob to a local stream.
  *
  *  Return 0 if stream matches signature, -1 otherwise.
- *  Note: this needs to be folded into sha_fs_get_bytes().
+ *  Note: this needs to be folded into fs_sha_get_bytes().
  */
 static int
-sha_fs_copy(struct request *r, int out_fd)
+fs_sha_copy(struct request *r, int out_fd)
 {
-	struct sha_fs_request *s = (struct sha_fs_request *)r->open_data;
+	struct fs_sha_request *s = (struct fs_sha_request *)r->open_data;
 	int status = 0;
 	SHA_CTX ctx;
 	unsigned char digest[20];
 	unsigned char chunk[CHUNK_SIZE];
 	int nread;
-	static char n[] = "sha_fs_write";
+	static char n[] = "fs_sha_write";
 
 	make_path(r, r->digest);
 
@@ -524,9 +524,9 @@ cleanup:
 }
 
 static int
-sha_fs_eat(struct request *r)
+fs_sha_eat(struct request *r)
 {
-	struct sha_fs_request *s = (struct sha_fs_request *)r->open_data;
+	struct fs_sha_request *s = (struct fs_sha_request *)r->open_data;
 	int status = 0;
 	SHA_CTX ctx;
 	unsigned char digest[20];
@@ -586,7 +586,7 @@ static int
 eat_chunk(struct request *r, SHA_CTX *p_ctx, int fd, unsigned char *buf,
 	  int buf_size)
 {
-	struct sha_fs_request *s = (struct sha_fs_request *)r->open_data;
+	struct fs_sha_request *s = (struct fs_sha_request *)r->open_data;
 	SHA_CTX ctx;
 	unsigned char digest[20];
 	static char n[] = "eat_chunk";
@@ -614,21 +614,21 @@ eat_chunk(struct request *r, SHA_CTX *p_ctx, int fd, unsigned char *buf,
 }
 
 static int
-sha_fs_put_request(struct request *r)
+fs_sha_put_request(struct request *r)
 {
 	(void)r;
 	return 0;
 }
 
 static int
-sha_fs_put_bytes(struct request *r)
+fs_sha_put_bytes(struct request *r)
 {
 	SHA_CTX ctx;
 	char tmp_path[MAX_FILE_PATH_LEN];
 	unsigned char chunk[CHUNK_SIZE], *cp, *cp_end;
 	int status = 0;
 	char buf[MSG_SIZE*2];
-	struct sha_fs_request *s = (struct sha_fs_request *)r->open_data;
+	struct fs_sha_request *s = (struct fs_sha_request *)r->open_data;
 
 	/*
 	 *  Open a temporary file in tmp to accumulate the
@@ -744,7 +744,7 @@ digested:
 	make_path(r, r->digest);
 
 	arbor_rename(tmp_path,
-		((struct sha_fs_request *)r->open_data)->blob_path);
+		((struct fs_sha_request *)r->open_data)->blob_path);
 	goto cleanup;
 croak:
 	status = -1;
@@ -757,15 +757,15 @@ cleanup:
 	return status; 
 }
 
-static int sha_fs_take_request(struct request *r)
+static int fs_sha_take_request(struct request *r)
 {
-	return sha_fs_get_request(r);
+	return fs_sha_get_request(r);
 }
 
 static int
-sha_fs_take_bytes(struct request *r)
+fs_sha_take_bytes(struct request *r)
 {
-	return sha_fs_get_bytes(r);
+	return fs_sha_get_bytes(r);
 }
 
 /*
@@ -773,9 +773,9 @@ sha_fs_take_bytes(struct request *r)
  *	Handle reply from client after client took blob.
  */
 static int
-sha_fs_take_reply(struct request *r, char *reply)
+fs_sha_take_reply(struct request *r, char *reply)
 {
-	struct sha_fs_request *s = (struct sha_fs_request *)r->open_data;
+	struct fs_sha_request *s = (struct fs_sha_request *)r->open_data;
 
 	/*
 	 *  If client replies 'ok', then delete the blob.
@@ -806,7 +806,7 @@ sha_fs_take_reply(struct request *r, char *reply)
 }
 
 static int
-sha_fs_give_request(struct request *r)
+fs_sha_give_request(struct request *r)
 {
 	(void)r;
 
@@ -818,17 +818,17 @@ sha_fs_give_request(struct request *r)
  *	Client is giving us a blob.
  */
 static int
-sha_fs_give_bytes(struct request *r)
+fs_sha_give_bytes(struct request *r)
 {
-	return sha_fs_put_bytes(r);
+	return fs_sha_put_bytes(r);
 }
 
 /*
  *  Synopsis:
- *	Handle client reply from sha_fs_give_bytes().
+ *	Handle client reply from fs_sha_give_bytes().
  */
 static int
-sha_fs_give_reply(struct request *r, char *reply)
+fs_sha_give_reply(struct request *r, char *reply)
 {
 	(void)r;
 	(void)reply;
@@ -840,7 +840,7 @@ sha_fs_give_reply(struct request *r, char *reply)
  *  Digest a local blob stream and store the digested blob.
  */
 static int
-sha_fs_digest(struct request *r, int fd, char *hex_digest)
+fs_sha_digest(struct request *r, int fd, char *hex_digest)
 {
 	char unsigned buf[4096], digest[20], *d, *d_end;
 	char *h;
@@ -919,7 +919,7 @@ sha_fs_digest(struct request *r, int fd, char *hex_digest)
 	 */
 	make_path(r, hex_digest);
 	arbor_move(tmp_path,
-		((struct sha_fs_request *)r->open_data)->blob_path);
+		((struct fs_sha_request *)r->open_data)->blob_path);
 	tmp_path[0] = 0;
 
 	goto cleanup;
@@ -935,11 +935,11 @@ cleanup:
 }
 
 static int
-sha_fs_close(struct request *r, int status)
+fs_sha_close(struct request *r, int status)
 {
 	(void)status;
 
-	struct sha_fs_request *s = (struct sha_fs_request *)r->open_data;
+	struct fs_sha_request *s = (struct fs_sha_request *)r->open_data;
 	_close(r, "blob", &s->blob_fd);
 
 	return 0;
@@ -958,13 +958,13 @@ binfo2(char *msg1, char *msg2)
 }
 
 static int
-sha_fs_boot()
+fs_sha_boot()
 {
 	binfo("starting");
 	binfo("storage is file system");
 	binfo2("openssl sha1 hash algorithm", OPENSSL_VERSION_TEXT);
 
-	strcpy(boot_data.root_dir_path, sha_fs_root);
+	strcpy(boot_data.root_dir_path, fs_sha_root);
 	binfo2("fs root directory", boot_data.root_dir_path);
 
 	/*
@@ -977,7 +977,7 @@ sha_fs_boot()
 }
 
 static int
-sha_fs_is_digest(char *digest)
+fs_sha_is_digest(char *digest)
 {
 	static char empty[] = "da39a3ee5e6b4b0d3255bfef95601890afd80709";
 	char *d, *d_end;
@@ -999,41 +999,41 @@ sha_fs_is_digest(char *digest)
 }
 
 static int
-sha_fs_shutdown()
+fs_sha_shutdown()
 {
 	info("sha: shutdown: bye");
 	return 0;
 }
 
-struct digest_module sha_fs_module =
+struct digest_module fs_sha_module =
 {
 	.name		=	"sha",
 
-	.boot		=	sha_fs_boot,
-	.open		=	sha_fs_open,
+	.boot		=	fs_sha_boot,
+	.open		=	fs_sha_open,
 
-	.get_request	=	sha_fs_get_request,
-	.get_bytes	=	sha_fs_get_bytes,
+	.get_request	=	fs_sha_get_request,
+	.get_bytes	=	fs_sha_get_bytes,
 
-	.take_request	=	sha_fs_take_request,
-	.take_bytes	=	sha_fs_take_bytes,
-	.take_reply	=	sha_fs_take_reply,
-	.copy		=	sha_fs_copy,
+	.take_request	=	fs_sha_take_request,
+	.take_bytes	=	fs_sha_take_bytes,
+	.take_reply	=	fs_sha_take_reply,
+	.copy		=	fs_sha_copy,
 
-	.put_request	=	sha_fs_put_request,
-	.put_bytes	=	sha_fs_put_bytes,
+	.put_request	=	fs_sha_put_request,
+	.put_bytes	=	fs_sha_put_bytes,
 
-	.give_request	=	sha_fs_give_request,
-	.give_bytes	=	sha_fs_give_bytes,
-	.give_reply	=	sha_fs_give_reply,
+	.give_request	=	fs_sha_give_request,
+	.give_bytes	=	fs_sha_give_bytes,
+	.give_reply	=	fs_sha_give_reply,
 
-	.eat		=	sha_fs_eat,
+	.eat		=	fs_sha_eat,
 
-	.digest		=	sha_fs_digest,
-	.is_digest	=	sha_fs_is_digest,
+	.digest		=	fs_sha_digest,
+	.is_digest	=	fs_sha_is_digest,
 
-	.close		=	sha_fs_close,
-	.shutdown	=	sha_fs_shutdown
+	.close		=	fs_sha_close,
+	.shutdown	=	fs_sha_shutdown
 };
 
 #endif

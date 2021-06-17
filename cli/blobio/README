@@ -2,7 +2,7 @@ Syntax of BlobIO Service URI
 	The syntax of the URI to describe a blobio service matches this
 	perl5 regex:
 
-		^[a-z][a-z0-9]{0,7}:[[:graph:]]{1,128}$
+		^[a-z][a-z0-9]{0,7}:[[:graph:]]{32,128}$
 
 	The "bio4" service is the trivial bio4 protocol described in ../README
 	over TCP4.  A bio4 service looks like:
@@ -20,6 +20,5 @@ Syntax of BlobIO Service URI
 		--udig sha:14018a1c515e37eb5a1eb89abdbb14075fbecb97
 
 	will search for a blob in
-		
-		B=/usr/local/blobio
-		$B/sha_fs/1/40/18a1/c515e37e/b5a1eb89abdbb140/75fbecb97
+		FS=/usr/local/blobio/data/fs_sha
+		$FS/140/18a/14018a1c515e37eb5a1eb89abdbb14075fbecb97

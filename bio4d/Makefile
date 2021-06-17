@@ -11,7 +11,7 @@ LIB=$(DIST_ROOT)/lib
 
 OBJS=									\
 	arbor.o								\
-	bc160_fs.o							\
+	fs_bc160.o							\
 	bio4d.o								\
 	blob_set.o							\
 	brr.o								\
@@ -22,7 +22,7 @@ OBJS=									\
 	net.o								\
 	ps_title.o							\
 	req.o								\
-	sha_fs.o							\
+	fs_sha.o							\
 	signal.o							\
 	tmp.o
 CSRC=									\
@@ -32,6 +32,7 @@ CSRC=									\
 	bio4d.h								\
 	blob_set.c							\
 	brr.c								\
+	fs_sha.c							\
 	io.c								\
 	log.c								\
 	macosx.c							\
@@ -40,7 +41,6 @@ CSRC=									\
 	net.c								\
 	ps_title.c							\
 	req.c								\
-	sha_fs.c							\
 	signal.c							\
 	tmp.c
 
@@ -118,11 +118,11 @@ brr.o: brr.c bio4d.h
 blob_set.o: blob_set.c bio4d.h
 	$(CC) $(CFLAGS) -c blob_set.c
 
-sha_fs.o: sha_fs.c bio4d.h
-	$(CC) $(CFLAGS) $(OPENSSL_INC) -c sha_fs.c
+fs_sha.o: fs_sha.c bio4d.h
+	$(CC) $(CFLAGS) $(OPENSSL_INC) -c fs_sha.c
 
-bc160_fs.o: bc160_fs.c bio4d.h
-	$(CC) $(CFLAGS) $(OPENSSL_INC) -c bc160_fs.c
+fs_bc160.o: fs_bc160.c bio4d.h
+	$(CC) $(CFLAGS) $(OPENSSL_INC) -c fs_bc160.c
 
 io.o: io.c bio4d.h bio4d.h
 	$(CC) $(CFLAGS) -c io.c
@@ -152,21 +152,21 @@ tmp.o: tmp.c
 	$(CC) $(CFLAGS) -c tmp.c
 
 dev-links:
+	test -e bin || ln -s . bin
+	test -e data || mkdir data
+	test -e data/fs_bc160 || mkdir -p data/fs_bc160
+	test -e data/fs_sha || mkdir -p data/fs_sha
 	test -e htdocs || ln -s . htdocs
+	test -e lib || ln -s . lib
 	test -e log || ln -s . log
 	test -e run || ln -s . run
-	test -e bin || ln -s . bin
 	test -e sbin || ln -s . sbin
-	test -e lib || ln -s . lib
-	test -e tmp || ln -s . tmp
-	test -e data || mkdir data
-	test -e data/sha_fs || mkdir -p data/sha_fs
-	test -e data/bc160_fs || mkdir -p data/bc160_fs
 	test -e spool || mkdir spool
 	test -e spool/wrap || mkdir spool/wrap
+	test -e tmp || ln -s . tmp
 
 clean-dev-links:
-	rm -rf htdocs log run bin sbin lib tmp data sha_fs bc160_fs spool
+	rm -rf htdocs log run bin sbin lib tmp data fs_sha fs_bc160 spool
 
 clean:
 	rm -f $(OBJS) bio4d append-brr

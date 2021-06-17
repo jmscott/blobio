@@ -10,7 +10,7 @@
 #	  In particular, to constuct the udig from the file path, we strip off
 #	  the two directories by zapping the first eight chars in the file path:
 #
-#		sha_fs/797/d4b/797d4b6ca43b699fd27f1b55fca62b50e72db0f5
+#		fs_sha/797/d4b/797d4b6ca43b699fd27f1b55fca62b50e72db0f5
 #
 #	- Would be nice display timestamps blobs, to quickly identify
 #	  blobs that arrived during scan.

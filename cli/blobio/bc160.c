@@ -7,7 +7,7 @@
  *
  *  	Not a timed read() since assumed to be local file.
  */
-#ifdef BC160_FS_MODULE    
+#ifdef FS_BC160_MODULE    
 
 #include <sys/stat.h>
 #include <string.h>
@@ -302,7 +302,7 @@ bc160_eat_input()
  *  Convert an ascii digest to a file system path.
  */
 static char *
-bc160_fs_name(char *name, int size)
+fs_bc160_name(char *name, int size)
 {
 
 	if (size < 41)
@@ -323,7 +323,7 @@ _mkdir(char *path)
  *  Make the directory path to a file system blob, appending "/" at end.
  */
 static char *
-bc160_fs_mkdir(char *path, int size)
+fs_bc160_mkdir(char *path, int size)
 {
 	char *dp, *p;
 
@@ -353,7 +353,7 @@ bc160_fs_mkdir(char *path, int size)
  *  Convert an ascii digest to a file system path.
  */
 static char *
-bc160_fs_path(char *file_path, int size)
+fs_bc160_path(char *file_path, int size)
 {
 	char *dp, *fp;
 
@@ -406,9 +406,9 @@ struct digest	bc160_digest =
 	.empty		=	bc160_empty,
 	.empty_digest	=	bc160_empty_digest,
 
-	.fs_name	=	bc160_fs_name,
-	.fs_mkdir	=	bc160_fs_mkdir,
-	.fs_path	=	bc160_fs_path
+	.fs_name	=	fs_bc160_name,
+	.fs_mkdir	=	fs_bc160_mkdir,
+	.fs_path	=	fs_bc160_path
 };
 
 #endif
