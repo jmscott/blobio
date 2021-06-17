@@ -93,8 +93,8 @@ struct request
 
 	u8	blob_size;
 
-	u4	read_timeout;	/* # seconds before a request read times out */
-	u4	write_timeout;	/* # seconds before a request write times out */
+	u4	read_timeout;	/* # seconds before a request read timeout */
+	u4	write_timeout;	/* # seconds before a request write timeout */
 
 	void	*module_boot_data;	/* allocated by module.boot() */
 };
