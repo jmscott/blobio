@@ -1,7 +1,15 @@
 append-brr
 bin
 bio4d
-bio4d-*.log
+bio4d-Fri.log
+bio4d-Mon.log
+bio4d-Sat.log
+bio4d-Sun.log
+bio4d-Thu.log
+bio4d-Tue.log
+bio4d-Wed.log
+bio4d.brr
+bio4d.log
 htdocs
 lib
 log
