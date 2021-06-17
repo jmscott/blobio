@@ -1735,7 +1735,7 @@ main(int argc, char **argv, char **env)
 			tmo = argv[i];
 			if (net_timeout >= 0)
 				die2(o, "given more than once");
-			if (argv[i] == 0)
+			if (tmo[i] == 0)
 				die2(o, "empty seconds");
 
 			if (!isdigit(tmo[0]))
