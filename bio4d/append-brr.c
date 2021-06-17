@@ -3,7 +3,7 @@
  *  	Atomic append of a blob request record to a fifo or file.
  *  Usage:
  *  	append-brr							\
- *		/path/to/file
+ *		/path/to/file.brr					\
  *  		start_request_time					\
  *		transport						\
  *		verb							\
@@ -19,6 +19,8 @@
  *	4	the write() failed
  *	5	the close() failed
  *	6	a brr field is wrong syntax.
+ *  See:
+ *	https://github.com/jmscott/work/blob/master/RFC3339Nano.c
  *  Note:
  *  	No syntax checking is done on the fields of the blob request record.
  *  	Only field sizes are checked.
