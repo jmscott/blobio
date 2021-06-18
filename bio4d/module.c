@@ -1,6 +1,8 @@
 /*
  *  Synopsis:
  *	Digest module list for bio4d.
+ *  Note:
+ *	Fix the mess requiting modules in alphabetic order!
  */
 #include "bio4d.h"
 
@@ -10,10 +12,11 @@ extern struct digest_module		fs_sha_module;
 
 #ifdef FS_BC160_MODULE
 extern struct digest_module		fs_bc160_module;
+extern struct digest_module		fs_trust_bc160_module;
 #endif
 
 /*
- *  List of all digest modules.
+ *  List of all digest modules.  Must be in alphabetical order.
  *  The module list should really be in a separate file, not here.
  */
 static struct digest_module		*modules[] =
@@ -23,8 +26,18 @@ static struct digest_module		*modules[] =
 #endif
 
 #ifdef FS_SHA_MODULE 
-	&fs_sha_module
+	&fs_sha_module,
 #endif
+
+#ifdef XFS_BC160_MODULE
+	&fs_trust_bc160_module,
+#endif
+	/*
+	 *  Uggh.  Null terminationg resolves parsing error generated
+	 *  possible trailing comma.  Need to remove requirement
+	 *  of ordered digests names in "modules" list.
+	 */  
+	(struct digest_module *)0
 };
 static int module_count;
 
@@ -41,6 +54,8 @@ module_boot()
 
 	if (module_count == 0)
 		panic2(nm, "no compiled signature modules");
+
+	module_count--;
 
 	/*
 	 *  Double check that modules are stored lexical order by name.
@@ -87,6 +102,13 @@ struct digest_module *
 module_get(char *name)
 {
 	size_t i;
+	char buf[8+9+1];	//  digest names cannot be > 8, per protocol
+
+	if (trust_fs == 1) {
+		strcpy(buf, "trust_fs_");
+		strcat(buf, name);
+		name = buf;
+	}
 
 	for (i = 0;  i < sizeof modules / sizeof *modules;  i++)
 		if (strcmp(name, modules[i]->name) == 0)

@@ -5,6 +5,8 @@
  *	cd /usr/local/blobio
  *	sbin/bio4d
  *  Note:
+ *	Need to rethink need for BLOBIO_TMPDIR_MAP!
+ *
  *	Is reap_request() needed to be called after each socket accept()?
  *
  *	The entire start/stop code in bio4d needs a full shakedown.
@@ -102,12 +104,13 @@ int		leaving = 0;
 unsigned char	request_exit_status = 0;
 time_t		start_time;	
 u2		rrd_duration = 0;
+int		trust_fs = -1;
 
-char	pid_path[] = "run/bio4d.pid";
+char pid_path[] ="run/bio4d.pid";
 
-static char		*BLOBIO_ROOT = 0;
+static char	*BLOBIO_ROOT = 0;
 
-static char		wrap_digest_algorithm[MAX_ALGORITHM_SIZE+1];
+static char	wrap_digest_algorithm[MAX_ALGORITHM_SIZE+1];
 
 static int	net_timeout = -1;
 
@@ -1755,6 +1758,21 @@ main(int argc, char **argv, char **env)
 			if (sec == 0)
 				die2(o, "timeout is 0");
 			net_timeout = (u1)sec;
+		} else if (strcmp("--trust-fs", argv[i]) == 0) {
+			static char o[] = "option --trust-fs";
+
+			if (++i >= argc)
+				die2(o, "missing true or false");
+			if (trust_fs >= 0)
+				die2(o, "given more than once");
+
+			char *a = argv[i];
+			if (strcmp(a, "true") == 0)
+				trust_fs = 1;
+			else if (strcmp(a, "false") == 0)
+				trust_fs = 0;
+			else
+				die3(o, "unknown boolean", a);
 		} else if (strncmp("--", argv[i], 2) == 0)
 			die2("unknown option", argv[i]);
 		else

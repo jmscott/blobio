@@ -295,7 +295,7 @@ _close(struct request *r, int *p_fd)
 }
 
 /*
- *  Open a local file to read, retrying on interrupt and logging errors.
+ *  Open a local file to read.
  */
 static int
 _open(struct request *r, char *path, int *p_fd)
@@ -692,7 +692,7 @@ static int
 fs_bc160_put_request(struct request *r)
 {
 	(void)r;
-	return 0;
+	return 0;	//  fs drivers require no pre setup for put
 }
 
 static int

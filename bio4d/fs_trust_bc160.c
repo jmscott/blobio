@@ -1,13 +1,15 @@
-#ifdef FS_SHA_MODULE
+#ifdef FS_BC160_MODULE
 /*
  *  Synopsis:
- *	Module that manages sha digested blobs in POSIX file system.
- *  Note:
- *	trust_fs is ignored for sha, due to time constraints.
+ *	Version of module of fs_trust_bc160.c that trusts the local filesystem.
+ *  See:
+ *	fs_trust_bc160.c
+ *  Description:
+ *	Implement the bitcoin 160 bit public hash algorithm.  In openssl
+ *	the 20byte/40char digest can be calculated in the shell using openssl
  *
- *	The tmp file path does not include the digest.  Not a serious problem
- *	since the odds of two different blobs having the same digest
- *	for two different algorithms is slim.  Still needs to be addressed.
+ * 		openssl dgst -binary -sha256 |
+ *				openssl dgst -ripemd160 -r | cut -c 1-40
  */
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -16,18 +18,18 @@
 
 #include "openssl/opensslv.h"
 #include "openssl/sha.h"
+#include "openssl/ripemd.h"
 #include "bio4d.h"
 
 /*
  *  How many bytes to read and write the blobs from either client or fs.
- *  Note: might want to make the get chunk size be much bigger than the put.
  */
 #define CHUNK_SIZE		(4 * 1024)
 
-static char	fs_sha_root[]	= "data/fs_sha";
-static char	empty_ascii[]	= "da39a3ee5e6b4b0d3255bfef95601890afd80709";
+static char	fs_trust_bc160_root[]	= "data/fs_trust_bc160";
+static char	empty[]	= "b472a266d0bd89c13706a4132ccfb16f7c3b9fcb";
 
-struct fs_sha_request
+struct fs_trust_bc160_request
 {
 	/*
 	 *  Directory path to where blob file will be stored,
@@ -39,7 +41,7 @@ struct fs_sha_request
 	int		blob_fd;
 };
 
-static struct fs_sha_boot
+static struct fs_trust_bc160_boot
 {
 	char		root_dir_path[MAX_FILE_PATH_LEN];
 } boot_data;
@@ -51,46 +53,38 @@ static char nib2hex[] =
 };
 
 static void
-_panic(struct request *r, char *msg1)
+_panic(struct request *r, char *msg)
 {
-	char msg[MSG_SIZE];
+	char buf[MSG_SIZE];
 
 	if (r) {
-		char msg3[MSG_SIZE];
-
 		if (r->step)
-			log_strcpy4(
-				msg3,
-				sizeof msg3,
+			panic(log_strcpy4(
+				buf,
+				sizeof buf,
 				r->verb,
 				r->step,
 				r->algorithm,
-				msg1
-			);
+				msg
+			));
 		else
-			log_strcpy3(
-				msg3,
-				sizeof msg3,
-				r->verb,r->algorithm,
-				msg1
-			);
-		log_format(msg3, msg, sizeof msg);
-		panic(msg);
-	} else {
-		log_format(msg1, msg, sizeof msg);
-		panic2("sha", msg);
-	}
+			panic(log_strcpy3(
+				buf,
+				sizeof buf,
+				r->verb,
+				r->algorithm,
+				msg
+			));
+	} else
+		panic2("bc160", msg);
 }
 
 static void
 _panic2(struct request *r, char *msg1, char *msg2)
 {
-	char msg[MSG_SIZE], msg12[MSG_SIZE];
+	char buf[MSG_SIZE];
 
-	log_strcpy2(msg12, sizeof msg12, msg1, msg2);
-	log_format(msg12, msg, sizeof msg); 
-
-	_panic(r, msg);
+	_panic(r, log_strcpy2(buf, sizeof buf, msg1, msg2));
 }
 
 static void
@@ -113,19 +107,19 @@ _error(struct request *r, char *msg)
 				sizeof buf,
 				r->verb,
 				r->step,
-				r->algorithm,msg
+				r->algorithm,
+				msg
 			));
 		else
 			error(log_strcpy3(
 				buf,
 				sizeof buf,
 				r->verb,
-				r->algorithm,msg
+				r->algorithm,
+				msg
 			));
-		if (r->digest)
-			error2("digest", r->digest);
 	} else
-		error2("sha", msg);
+		error2("bc160", msg);
 }
 
 static void
@@ -134,6 +128,14 @@ _error2(struct request *r, char *msg1, char *msg2)
 	char buf[MSG_SIZE];
 
 	_error(r, log_strcpy2(buf, sizeof buf, msg1, msg2));
+}
+
+static void
+_error3(struct request *r, char *msg1, char *msg2, char *msg3)
+{
+	char buf[MSG_SIZE];
+
+	_error2(r, msg1, log_strcpy2(buf, sizeof buf, msg2, msg3));
 }
 
 static void
@@ -163,25 +165,47 @@ _warn2(struct request *r, char *msg1, char *msg2)
 }
 
 static void
-_warn3(struct request *r, char *msg1, char *msg2, char *msg3)
+nib2digest(char *hex_digest, unsigned char *digest)
 {
-	char buf[MSG_SIZE];
+	char *h = hex_digest;
+	unsigned char *d = digest;
+	int i;
 
-	_warn2(r, log_strcpy2(buf, sizeof buf, msg1, msg2), msg3);
+	/*
+	 *  Derive the 20 byte, binary digest from the 40 
+	 *  character version.
+	 */
+	for (i = 0;  i < 40;  i++) {
+		char c = *h++;
+		unsigned char nib;
+
+		if (c >= '0' && c <= '9')
+			nib = c - '0';
+		else
+			nib = c - 'a' + 10;
+		if ((i & 1) == 0)
+			nib <<= 4;
+		d[i >> 1] |= nib;
+	}
 }
 
 static int
-fs_sha_open(struct request *r)
+fs_trust_bc160_open(struct request *r)
 {
-	struct fs_sha_request *s;
+	struct fs_trust_bc160_request *s;
 
-	s = (struct fs_sha_request *)malloc(sizeof *s);
+	//  why malloc()?
+	s = (struct fs_trust_bc160_request *)malloc(sizeof *s);
 	if (s == NULL)
-		_panic2(r, "malloc(fs_sha_request) failed", strerror(errno));
+		_panic2(
+			r,
+			"malloc(fs_trust_bc160_request) failed",
+			strerror(errno)
+		);
 	memset(s, 0, sizeof *s);
 	s->blob_fd = -1;
 	if (strcmp("wrap", r->verb))
-		decode_hex(r->digest, s->digest);
+		nib2digest(r->digest, s->digest);
 	r->open_data = (void *)s;
 
 	return 0;
@@ -208,26 +232,8 @@ _unlink(struct request *r, char *path, int *exists)
 }
 
 /*
- *  Do a hard delete of a corrupted blob.
- *  Calling zap blob indicates a panicy situation with the server.
- *  Eventually will want to remove an empty, enclosing directory.
- */
-static int
-zap_blob(struct request *r)
-{
-	struct fs_sha_request *s = (struct fs_sha_request *)r->open_data;
-	int exists = 0;
-
-	if (_unlink(r, s->blob_path, &exists)) {
-		_panic(r, "zap_blob: _unlink() failed");
-		return -1;
-	}
-	return 0;
-}
-
-/*
- *  Read a chunk from a local stream, reading up to end of either the stream
- *  or the chunk.
+ *  Read a chunk from a local stream, reading up to either the end of the stream
+ *  or the end of the digested chunk.
  */
 static int
 _read(struct request *r, int fd, unsigned char *buf, int buf_size)
@@ -250,25 +256,21 @@ _read(struct request *r, int fd, unsigned char *buf, int buf_size)
 	return buf_size;
 }
 
-static void
-_close(struct request *r, char *what, int *p_fd)
+static int
+_close(struct request *r, int *p_fd)
 {
 	int fd = *p_fd;
 
-	if (fd == -1)
-		return;
+	if (fd < 0)
+		return 0;
 	*p_fd = -1;
-	if (io_close(fd)) {
-		char msg[MSG_SIZE];
-
-		snprintf(msg, sizeof msg,
-				"close(%s) failed: %s", what, strerror(errno));
-		_panic(r, msg);
-	}
+	if (io_close(fd))
+		_panic2(r, "close() failed", strerror(errno));
+	return 0;
 }
 
 /*
- *  Open a local file to read, retrying on interrupt and logging errors.
+ *  Open a local file to read, where missing file is not an error.
  */
 static int
 _open(struct request *r, char *path, int *p_fd)
@@ -341,7 +343,9 @@ _mkdir(struct request *r, char *path, int exists_ok)
 static void
 make_path(struct request *r, char *digest)
 {
-	struct fs_sha_request *s = (struct fs_sha_request *)r->open_data;
+	struct fs_trust_bc160_request *s =
+			(struct fs_trust_bc160_request *)r->open_data
+	;
 	char *p, *q;
 
 	/*
@@ -391,26 +395,26 @@ make_path(struct request *r, char *digest)
 }
 
 static int
-fs_sha_get_request(struct request *r)
+fs_trust_bc160_get_request(struct request *r)
 {
-	struct fs_sha_request *s = (struct fs_sha_request *)r->open_data;
+	struct fs_trust_bc160_request *s =
+		(struct fs_trust_bc160_request *)r->open_data
+	;
 
 	make_path(r, r->digest);
 	return _open(r, s->blob_path, &s->blob_fd);
 }
 
 static int
-fs_sha_get_bytes(struct request *r)
+fs_trust_bc160_get_bytes(struct request *r)
 {
-	struct fs_sha_request *s = (struct fs_sha_request *)r->open_data;
+	struct fs_trust_bc160_request *s =
+		(struct fs_trust_bc160_request *)r->open_data
+	;
 	int status = 0;
-	SHA_CTX ctx;
 	unsigned char digest[20];
 	unsigned char chunk[CHUNK_SIZE];
 	int nread;
-
-	if (!SHA1_Init(&ctx))
-		_panic(r, "SHA1_Init() failed");
 
 	/*
 	 *  Read a chunk from the file, write chunk to client,
@@ -422,118 +426,31 @@ fs_sha_get_bytes(struct request *r)
 	while ((nread = _read(r, s->blob_fd, chunk, sizeof chunk)) > 0) {
 		if (blob_write(r, chunk, nread))
 			goto croak;
-		/*
-		 *  Update the incremental digest.
-		 */
-		SHA1_Update(&ctx, chunk, nread);
 	}
 	if (nread < 0)
 		_panic(r, "_read(blob) failed");
-	/*
-	 *  Finalize the digest.
-	 */
-	SHA1_Final(digest, &ctx);
-	/*
-	 *  If the calculated digest does NOT match the stored digest,
-	 *  then zap the blob from storage and get panicy.
-	 *  A corrupt blob is a bad, bad thang.
-	 *
-	 *  Note:
-	 *	No record of the deleted blob will exist until the next failed
-	 *	get/take/eat request, which is problematic.
-	 */
-	if (memcmp(s->digest, digest, 20)) {
-		_error2(r, "PANIC: fs blob fails udig digest", r->digest);
-		if (zap_blob(r))
-			_panic(r, "zap_blob(get_bytes) failed");
-		_panic2(r, "zapped corrupted blob file", s->blob_path);
-	}
 	goto cleanup;
 croak:
 	status = -1;
 cleanup:
-	_close(r, "server blob", &s->blob_fd);
+	_close(r, &s->blob_fd);
 	return status;
 }
 
 /*
  *  Copy a local blob to a local stream.
- *
- *  Return 0 if stream matches signature, -1 otherwise.
- *  Note: this needs to be folded into fs_sha_get_bytes().
  */
 static int
-fs_sha_copy(struct request *r, int out_fd)
+fs_trust_bc160_copy(struct request *r, int out_fd)
 {
-	struct fs_sha_request *s = (struct fs_sha_request *)r->open_data;
+	struct fs_trust_bc160_request *s =
+		(struct fs_trust_bc160_request *)r->open_data
+	;
 	int status = 0;
-	SHA_CTX ctx;
 	unsigned char digest[20];
 	unsigned char chunk[CHUNK_SIZE];
 	int nread;
-	static char n[] = "fs_sha_write";
-
-	make_path(r, r->digest);
-
-	/*
-	 *  Open the file to the blob.
-	 */
-	if (_open(r, s->blob_path, &s->blob_fd) == ENOENT) {
-		_warn3(r, n, "open(blob): not found", r->digest);
-		return 1; 
-	}
-
-	if (!SHA1_Init(&ctx))
-		_panic2(r, n, "SHA1_Init() failed");
-
-	/*
-	 *  Read a chunk from the file, write chunk to local stream,
-	 *  update incremental digest.
-	 */
-	while ((nread = _read(r, s->blob_fd, chunk, sizeof chunk)) > 0) {
-		if (io_write_buf(out_fd, chunk, nread)) {
-			_error2(r, n, "write_buf() failed");
-			goto croak;
-		}
-
-		/*
-		 *  Update the incremental digest.
-		 */
-		if (!SHA1_Update(&ctx, chunk, nread))
-			_panic2(r, n, "SHA1_Update(chunk) failed");
-	}
-	if (nread < 0)
-		_panic2(r, n, "_read(blob) failed");
-	/*
-	 *  Finalize the digest.
-	 */
-	if (!SHA1_Final(digest, &ctx))
-		_panic2(r, n, "SHA1_Final() failed");
-
-	/*
-	 *  If the calculated digest does NOT match the stored digest,
-	 *  then zap the blob from storage and get panicy.
-	 *  A corrupt blob is a bad, bad thang.
-	 */
-	if (memcmp(s->digest, digest, 20))
-		_panic3(r, n, "stored blob doesn't match digest", r->digest);
-	goto cleanup;
-croak:
-	status = -1;
-cleanup:
-	_close(r, "copied server blob", &s->blob_fd);
-	return status;
-}
-
-static int
-fs_sha_eat(struct request *r)
-{
-	struct fs_sha_request *s = (struct fs_sha_request *)r->open_data;
-	int status = 0;
-	SHA_CTX ctx;
-	unsigned char digest[20];
-	unsigned char chunk[CHUNK_SIZE];
-	int nread;
+	static char n[] = "fs_trust_bc160_write";
 
 	make_path(r, r->digest);
 
@@ -543,40 +460,35 @@ fs_sha_eat(struct request *r)
 	if (_open(r, s->blob_path, &s->blob_fd) == ENOENT)
 		return 1;
 
-	if (!SHA1_Init(&ctx))
-		_panic(r, "SHA1_Init() failed");
-
 	/*
-	 *  Read a chunk from the file and chew.
+	 *  Read a chunk from the file, write chunk to local stream,
+	 *  update incremental digest.
 	 */
 	while ((nread = _read(r, s->blob_fd, chunk, sizeof chunk)) > 0)
-		/*
-		 *  Update the incremental digest.
-		 */
-		if (!SHA1_Update(&ctx, chunk, nread))
-			_panic(r, "SHA1_Update(chunk) failed");
+		if (io_write_buf(out_fd, chunk, nread)) {
+			_error2(r, n, "write_buf() failed");
+			goto croak;
+		}
 	if (nread < 0)
-		_panic(r, "_read(blob) failed");
-	/*
-	 *  Finalize the digest.
-	 */
-	if (!SHA1_Final(digest, &ctx))
-		_panic(r, "SHA1_Final() failed");
-
-	/*
-	 *  If the calculated digest does NOT match the stored digest,
-	 *  then zap the blob from storage and get panicy.
-	 *  A corrupt blob is a bad, bad thang.
-	 *
-	 *  Note: unfortunately we've already deceived the client
-	 *        by sending "ok".  Probably need to improve for
-	 *	  the special case when the entire blob is read
-	 *        in first chunk.
-	 */
-	if (memcmp(s->digest, digest, 20))
-		_panic2(r, "stored blob doesn't match digest", r->digest);
-	_close(r, "server blob", &s->blob_fd);
+		_panic2(r, n, "_read(blob) failed");
+	goto cleanup;
+croak:
+	status = -1;
+cleanup:
+	_close(r, &s->blob_fd);
 	return status;
+}
+
+static int
+fs_trust_bc160_eat(struct request *r)
+{
+	struct fs_trust_bc160_request *s =
+		(struct fs_trust_bc160_request *)r->open_data
+	;
+	struct stat st;
+
+	make_path(r, r->digest);
+	return _stat(r, s->blob_path, &st)) == 0;
 }
 
 /*
@@ -585,52 +497,69 @@ fs_sha_eat(struct request *r)
  *  0 if the partial digest does not match do not match.
  */
 static int
-eat_chunk(struct request *r, SHA_CTX *p_ctx, int fd, unsigned char *buf,
+eat_chunk(struct request *r, SHA256_CTX *sha_ctx, int fd, unsigned char *buf,
 	  int buf_size)
 {
-	struct fs_sha_request *s = (struct fs_sha_request *)r->open_data;
-	SHA_CTX ctx;
+	struct fs_trust_bc160_request *s =
+		(struct fs_trust_bc160_request *)r->open_data
+	;
+	SHA256_CTX tmp_sha;
+	RIPEMD160_CTX tmp_ripe;
+	unsigned char sha_digest[32];
 	unsigned char digest[20];
-	static char n[] = "eat_chunk";
+	char n[] = "eat_chunk";
 
 	/*
 	 *  Update the incremental digest.
 	 */
-	if (!SHA1_Update(p_ctx, buf, buf_size))
-		_panic2(r, n, "SHA1_Update() failed");
+	if (!SHA256_Update(sha_ctx, buf, buf_size))
+		_panic2(r, n, "SHA256_Update() failed");
 
 	/*
 	 *  Write the chunk to the local temp file.
 	 */
 	if (io_write_buf(fd, buf, buf_size))
-		_panic2(r, "eat_chunk: write(tmp) failed", strerror(errno));
+		_panic3(r, n, "write(tmp) failed", strerror(errno));
 	/*
 	 *  Determine if we have seen the whole blob
 	 *  by copying the incremental digest, finalizing it,
 	 *  then comparing to the expected blob.
 	 */
-	memcpy(&ctx, p_ctx, sizeof *p_ctx);
-	if (!SHA1_Final(digest, &ctx))
-		_panic2(r, n, "SHA1_Final() failed");
+	tmp_sha = *sha_ctx;
+	if (!SHA256_Final(sha_digest, &tmp_sha))
+		_panic3(r, n, "SHA256_Final(tmp) failed", strerror(errno));
+
+	/*
+	 *  Calulate RIPEMD160(SHA256) of incremental digest.
+	 */
+	if (!RIPEMD160_Init(&tmp_ripe))
+		_panic2(r, n, "RIPEMD160_Init(tmp) failed");
+	if (!RIPEMD160_Update(&tmp_ripe, sha_digest, 32))
+		_panic2(r, n, "RIPEMD160_Update(SHA256) failed");
+	if (!RIPEMD160_Final(digest, &tmp_ripe))
+		_panic2(r, n, "RIPEMD160_Final(SHA256) failed");
+
 	return memcmp(s->digest, digest, 20) == 0 ? 1 : 0;
 }
 
 static int
-fs_sha_put_request(struct request *r)
+fs_trust_bc160_put_request(struct request *r)
 {
 	(void)r;
-	return 0;
+	return 0;	//  fs drivers require no pre setup for put
 }
 
 static int
-fs_sha_put_bytes(struct request *r)
+fs_trust_bc160_put_bytes(struct request *r)
 {
-	SHA_CTX ctx;
+	struct fs_trust_bc160_request *s =
+		(struct fs_trust_bc160_request *)r->open_data
+	;
+	BC160_CTX ctx;
 	char tmp_path[MAX_FILE_PATH_LEN];
 	unsigned char chunk[CHUNK_SIZE], *cp, *cp_end;
 	int status = 0;
 	char buf[MSG_SIZE*2];
-	struct fs_sha_request *s = (struct fs_sha_request *)r->open_data;
 
 	/*
 	 *  Open a temporary file in tmp to accumulate the
@@ -655,8 +584,7 @@ fs_sha_put_bytes(struct request *r)
 	 */
 	s->blob_fd = io_open(
 			tmp_path,
-			O_CREAT|O_EXCL|O_WRONLY|O_APPEND,
-			S_IRUSR
+			O_CREAT|O_EXCL|O_WRONLY|O_APPEND, S_IRUSR
 	);
 	if (s->blob_fd < 0) {
 		snprintf(buf, sizeof buf, "open(%s) failed: %s", tmp_path,
@@ -667,15 +595,15 @@ fs_sha_put_bytes(struct request *r)
 	/*
 	 *  Initialize digest of blob being scanned from the client.
 	 */
-	if (!SHA1_Init(&ctx))
-		_panic(r, "SHA1_Init() failed");
+	if (!SHA256_Init(&ctx.sha256))
+		_panic(r, "SHA256_Init() failed");
 
 	/*
 	 *  An empty blob is always put.
 	 *  Note: the caller has already ensured that no more data has
 	 *  been written by the client, so no need to check r->scan_size.
 	 */
-	if (strcmp(r->digest, empty_ascii) == 0)
+	if (strcmp(r->digest, empty) == 0)
 		goto digested;
 
 	/*
@@ -687,13 +615,10 @@ fs_sha_put_bytes(struct request *r)
 	if (r->scan_size > 0) {
 
 		//  Note: regress, sanity test ... remove later.
-		if ((u8)r->scan_size != r->blob_size) {
-			io_unlink(tmp_path);
+		if ((u8)r->scan_size != r->blob_size)
 			_panic(r, "r->scan_size != r->blob_size");
-		}
 
 		if (r->scan_size > (int)(sizeof chunk - 1)) {
-			io_unlink(tmp_path);
 			snprintf(buf, sizeof buf, "max=%lu", 
 					(long unsigned)(sizeof chunk - 1));
 			_panic2(r, "scanned chunk too big", buf);
@@ -702,7 +627,13 @@ fs_sha_put_bytes(struct request *r)
 		/*
 		 *  See if the entire blob fits in the first read.
 		 */
-		if (eat_chunk(r, &ctx, s->blob_fd, r->scan_buf, r->scan_size))
+		if (eat_chunk(
+				r,
+				&ctx.sha256,
+				s->blob_fd,
+				r->scan_buf,
+				r->scan_size
+		))
 			goto digested;
 	}
 	cp = chunk;
@@ -724,50 +655,43 @@ again:
 			goto croak;
 		}
 		if (nread == 0) {
-			_error(r, "blob_read(client) of 0 bytes");
+			_error(r, "blob_read() returns 0 before digest seen");
 			goto croak;
 		}
-		switch (eat_chunk(r, &ctx, s->blob_fd, cp, nread)) {
-		case -1:
-			_panic(r, "eat_chunk(local) failed");
-		case 1:
+		if (eat_chunk(r, &ctx.sha256, s->blob_fd, cp, nread))
 			goto digested;
-		}
 		cp += nread;
 	}
 	cp = chunk;
 	goto again;
 
 digested:
-
 	/*
 	 *  Rename the temp blob file to the final blob path.
 	 */
 	make_path(r, r->digest);
 
 	arbor_rename(tmp_path,
-		((struct fs_sha_request *)r->open_data)->blob_path);
+			((struct fs_trust_bc160_request *)r->open_data)->blob_path);
 	goto cleanup;
 croak:
 	status = -1;
 cleanup:
-	_close(r, "tmp blob", &s->blob_fd);
-	if (tmp_path[0] && _unlink(r, tmp_path, (int *)0)) {
+	_close(r, &s->blob_fd);
+	if (tmp_path[0] && _unlink(r, tmp_path, (int *)0))
 		_panic(r, "_unlink() failed");
-		status = -1;
-	}
 	return status; 
 }
 
-static int fs_sha_take_request(struct request *r)
+static int fs_trust_bc160_take_request(struct request *r)
 {
-	return fs_sha_get_request(r);
+	return fs_trust_bc160_get_request(r);
 }
 
 static int
-fs_sha_take_bytes(struct request *r)
+fs_trust_bc160_take_bytes(struct request *r)
 {
-	return fs_sha_get_bytes(r);
+	return fs_trust_bc160_get_bytes(r);
 }
 
 /*
@@ -775,9 +699,11 @@ fs_sha_take_bytes(struct request *r)
  *	Handle reply from client after client took blob.
  */
 static int
-fs_sha_take_reply(struct request *r, char *reply)
+fs_trust_bc160_take_reply(struct request *r, char *reply)
 {
-	struct fs_sha_request *s = (struct fs_sha_request *)r->open_data;
+	struct fs_trust_bc160_request *s =
+		(struct fs_trust_bc160_request *)r->open_data
+	;
 
 	/*
 	 *  If client replies 'ok', then delete the blob.
@@ -808,7 +734,7 @@ fs_sha_take_reply(struct request *r, char *reply)
 }
 
 static int
-fs_sha_give_request(struct request *r)
+fs_trust_bc160_give_request(struct request *r)
 {
 	(void)r;
 
@@ -820,17 +746,17 @@ fs_sha_give_request(struct request *r)
  *	Client is giving us a blob.
  */
 static int
-fs_sha_give_bytes(struct request *r)
+fs_trust_bc160_give_bytes(struct request *r)
 {
-	return fs_sha_put_bytes(r);
+	return fs_trust_bc160_put_bytes(r);
 }
 
 /*
  *  Synopsis:
- *	Handle client reply from fs_sha_give_bytes().
+ *	Handle client reply from fs_trust_bc160_give_bytes().
  */
 static int
-fs_sha_give_reply(struct request *r, char *reply)
+fs_trust_bc160_give_reply(struct request *r, char *reply)
 {
 	(void)r;
 	(void)reply;
@@ -842,16 +768,19 @@ fs_sha_give_reply(struct request *r, char *reply)
  *  Digest a local blob stream and store the digested blob.
  */
 static int
-fs_sha_digest(struct request *r, int fd, char *hex_digest)
+fs_trust_bc160_digest(struct request *r, int fd, char *hex_digest)
 {
 	char unsigned buf[4096], digest[20], *d, *d_end;
 	char *h;
-	SHA_CTX ctx;
+	SHA256_CTX sha_ctx;
+	RIPEMD160_CTX ripemd_ctx;
 	int nread;
 	int tmp_fd = -1;
 	char tmp_path[MAX_FILE_PATH_LEN];
 	int status = 0;
 	static int drift = 0;
+	static char n[] = "digest";
+	unsigned char sha_digest[32];
 
 	tmp_path[0] = 0;
 
@@ -877,34 +806,43 @@ fs_sha_digest(struct request *r, int fd, char *hex_digest)
 	 *  Open the file ... need O_LARGEFILE support!!
 	 *  Need to catch EINTR!!!!
 	 */
-	tmp_fd = io_open(tmp_path, O_CREAT|O_EXCL|O_WRONLY|O_APPEND,
-							S_IRUSR);
-	if (tmp_fd < 0)
-		_panic3(r, "digest: open(tmp) failed", tmp_path,
-						strerror(errno));
-	if (!SHA1_Init(&ctx))
-		_panic(r, "SHA1_Init() failed");
+	tmp_fd = io_open(tmp_path, O_CREAT|O_EXCL|O_WRONLY|O_APPEND, S_IRUSR);
+	if (tmp_fd < 0) {
+		_error3(r, n, "open(tmp) failed", tmp_path);
+		_panic3(r, n, "open(tmp) failed", strerror(errno));
+	}
+	if (!SHA256_Init(&sha_ctx))
+		_panic(r, "SHA256_Init() failed");
 	while ((nread = io_read(fd, buf, sizeof buf)) > 0) {
-		if (!SHA1_Update(&ctx, buf, nread))
-			_panic(r, "SHA1_Update(chunk) failed");
+		if (!SHA256_Update(&sha_ctx, buf, nread))
+			_panic(r, "SHA256_Update(read) failed");
 		if (io_write_buf(tmp_fd, buf, nread) != 0)
-			_panic2(r, "digest: write_buf(tmp) failed",
-						strerror(errno));
+			_panic3(r, n, "write_buf(tmp) failed", strerror(errno));
 	}
 	if (nread < 0) {
-		_error(r, "digest: _read() failed");
+		_error2(r, n, "read() failed");
 		goto croak;
 	}
-	if (!SHA1_Final(digest, &ctx))
-		_panic(r, "SHA1_Final() failed");
+	if (!SHA256_Final(sha_digest, &sha_ctx))
+		_panic2(r, n, "SHA256_Final() failed");
 
 	status = io_close(tmp_fd);
 	tmp_fd = -1;
 	if (status)
-		_panic2(r, "digest: close(tmp) failed", strerror(errno));
+		_panic3(r, n, "close(tmp) failed", strerror(errno));
 
 	/*
-	 *  Convert the binary sha digest to text.
+	 *  Calulate RIPEMD160(sha_digest)
+	 */
+	if (!RIPEMD160_Init(&ripemd_ctx))
+		_panic2(r, n, "RIPEMD160_Init() failed");
+	if (!RIPEMD160_Update(&ripemd_ctx, sha_digest, 32))
+		_panic2(r, n, "RIPEMD160_Update(SHA256) failed");
+	if (!RIPEMD160_Final(digest, &ripemd_ctx))
+		_panic2(r, n, "RIPEMD160_Final() failed");
+
+	/*
+	 *  Convert the binary bc160=ripemd160(sha256) digest to text.
 	 */
 	h = hex_digest;
 	d = digest;
@@ -921,7 +859,7 @@ fs_sha_digest(struct request *r, int fd, char *hex_digest)
 	 */
 	make_path(r, hex_digest);
 	arbor_move(tmp_path,
-		((struct fs_sha_request *)r->open_data)->blob_path);
+		((struct fs_trust_bc160_request *)r->open_data)->blob_path);
 	tmp_path[0] = 0;
 
 	goto cleanup;
@@ -932,17 +870,18 @@ cleanup:
 		_panic2(r, "digest: close(tmp) failed", strerror(errno));
 	if (tmp_path[0] && io_unlink(tmp_path))
 		_panic3(r, "digest: unlink(tmp) failed", tmp_path,
-						strerror(errno));
+								strerror(errno));
 	return status;
 }
 
 static int
-fs_sha_close(struct request *r, int status)
+fs_trust_bc160_close(struct request *r, int status)
 {
+	(void)r;
 	(void)status;
 
-	struct fs_sha_request *s = (struct fs_sha_request *)r->open_data;
-	_close(r, "blob", &s->blob_fd);
+	struct fs_trust_bc160_request *s = (struct fs_trust_bc160_request *)r->open_data;
+	_close(r, &s->blob_fd);
 
 	return 0;
 }
@@ -950,38 +889,38 @@ fs_sha_close(struct request *r, int status)
 static void
 binfo(char *msg)
 {
-	info2("sha: boot", msg);
+	info2("bc160: boot", msg);
 }
 
 static void
 binfo2(char *msg1, char *msg2)
 {
-	info3("sha: boot", msg1, msg2);
+	info3("bc160: boot", msg1, msg2);
 }
 
 static int
-fs_sha_boot()
+fs_trust_bc160_boot()
 {
 	binfo("starting");
 	binfo("storage is file system");
-	binfo2("openssl sha1 hash algorithm", OPENSSL_VERSION_TEXT);
+	binfo2("openssl algorithm", OPENSSL_VERSION_TEXT);
+	binfo("bitcoin ripemd160(sha256) hash");
 
-	strcpy(boot_data.root_dir_path, fs_sha_root);
+	strcpy(boot_data.root_dir_path, fs_trust_bc160_root);
 	binfo2("fs root directory", boot_data.root_dir_path);
 
 	/*
 	 *  Verify or create root directory path.
 	 */
 	if (_mkdir((struct request *)0, boot_data.root_dir_path, 1))
-		panic("sha: boot: _mkdir(root_dir) failed");
+		panic("bc160: boot: _mkdir(root_dir) failed");
 
 	return 0;
 }
 
 static int
-fs_sha_is_digest(char *digest)
+fs_trust_bc160_is_digest(char *digest)
 {
-	static char empty[] = "da39a3ee5e6b4b0d3255bfef95601890afd80709";
 	char *d, *d_end;
 
 	if (strlen(digest) != 40)
@@ -1001,41 +940,41 @@ fs_sha_is_digest(char *digest)
 }
 
 static int
-fs_sha_shutdown()
+fs_trust_bc160_shutdown()
 {
-	info("sha: shutdown: bye");
+	info("bc160: shutdown: bye");
 	return 0;
 }
 
-struct digest_module fs_sha_module =
+struct digest_module fs_trust_bc160_module =
 {
-	.name		=	"sha",
+	.name		=	"bc160",
 
-	.boot		=	fs_sha_boot,
-	.open		=	fs_sha_open,
+	.boot		=	fs_trust_bc160_boot,
+	.open		=	fs_trust_bc160_open,
 
-	.get_request	=	fs_sha_get_request,
-	.get_bytes	=	fs_sha_get_bytes,
+	.get_request	=	fs_trust_bc160_get_request,
+	.get_bytes	=	fs_trust_bc160_get_bytes,
 
-	.take_request	=	fs_sha_take_request,
-	.take_bytes	=	fs_sha_take_bytes,
-	.take_reply	=	fs_sha_take_reply,
-	.copy		=	fs_sha_copy,
+	.take_request	=	fs_trust_bc160_take_request,
+	.take_bytes	=	fs_trust_bc160_take_bytes,
+	.take_reply	=	fs_trust_bc160_take_reply,
+	.copy		=	fs_trust_bc160_copy,
 
-	.put_request	=	fs_sha_put_request,
-	.put_bytes	=	fs_sha_put_bytes,
+	.put_request	=	fs_trust_bc160_put_request,
+	.put_bytes	=	fs_trust_bc160_put_bytes,
 
-	.give_request	=	fs_sha_give_request,
-	.give_bytes	=	fs_sha_give_bytes,
-	.give_reply	=	fs_sha_give_reply,
+	.give_request	=	fs_trust_bc160_give_request,
+	.give_bytes	=	fs_trust_bc160_give_bytes,
+	.give_reply	=	fs_trust_bc160_give_reply,
 
-	.eat		=	fs_sha_eat,
+	.eat		=	fs_trust_bc160_eat,
 
-	.digest		=	fs_sha_digest,
-	.is_digest	=	fs_sha_is_digest,
+	.digest		=	fs_trust_bc160_digest,
+	.is_digest	=	fs_trust_bc160_is_digest,
 
-	.close		=	fs_sha_close,
-	.shutdown	=	fs_sha_shutdown
+	.close		=	fs_trust_bc160_close,
+	.shutdown	=	fs_trust_bc160_shutdown
 };
 
 #endif
