@@ -16,6 +16,7 @@
  *	since the odds of two different blobs having the same digest
  *	for two different algorithms is slim.  Still needs to be addressed.
  */
+
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
@@ -427,8 +428,40 @@ fs_bc160_get_request(struct request *r)
 }
 
 static int
+fs_bc160_get_trusted_bytes(struct request *r)
+{
+	struct fs_bc160_request *s = (struct fs_bc160_request *)r->open_data;
+	int status = 0;
+	unsigned char chunk[CHUNK_SIZE];
+	int nread;
+
+	/*
+	 *  Read a chunk from the file, write chunk to client,
+	 *  update incremental digest.
+	 *
+	 *  In principle, we ought to first scan the blob file
+	 *  before sending "ok" to the requestor.
+	 */
+	while ((nread = _read(r, s->blob_fd, chunk, sizeof chunk)) > 0) {
+		if (blob_write(r, chunk, nread))
+			goto croak;
+	}
+	if (nread < 0)
+		_panic(r, "_read(blob) failed");
+	goto cleanup;
+croak:
+	status = -1;
+cleanup:
+	_close(r, &s->blob_fd);
+	return status;
+}
+
+static int
 fs_bc160_get_bytes(struct request *r)
 {
+	if (trust_fs == 1)
+		return fs_bc160_get_trusted_bytes(r);
+
 	struct fs_bc160_request *s = (struct fs_bc160_request *)r->open_data;
 	int status = 0;
 	BC160_CTX ctx;
@@ -504,8 +537,54 @@ cleanup:
  *  Note: this needs to be folded into fs_bc160_get().
  */
 static int
+fs_bc160_trusted_copy(struct request *r, int out_fd)
+{
+	struct fs_bc160_request *s = (struct fs_bc160_request *)r->open_data;
+	int status = 0;
+	unsigned char chunk[CHUNK_SIZE];
+	int nread;
+	static char n[] = "fs_bc160_trusted_copy";
+
+	make_path(r, r->digest);
+
+	/*
+	 *  Open the file to the blob.
+	 */
+	if (_open(r, s->blob_path, &s->blob_fd) == ENOENT)
+		return 1;
+
+	/*
+	 *  Read a chunk from the file, write chunk to local stream,
+	 *  update incremental digest.
+	 */
+	while ((nread = _read(r, s->blob_fd, chunk, sizeof chunk)) > 0)
+		if (io_write_buf(out_fd, chunk, nread)) {
+			_error2(r, n, "write_buf() failed");
+			goto croak;
+		}
+	if (nread < 0)
+		_panic2(r, n, "_read(blob) failed");
+
+	goto cleanup;
+croak:
+	status = -1;
+cleanup:
+	_close(r, &s->blob_fd);
+	return status;
+}
+
+/*
+ *  Copy a local blob to a local stream.
+ *
+ *  Return 0 if stream matches signature, -1 otherwise.
+ *  Note: this needs to be folded into fs_bc160_get().
+ */
+static int
 fs_bc160_copy(struct request *r, int out_fd)
 {
+	if (trust_fs == 1)
+		return fs_bc160_trusted_copy(r, out_fd);
+
 	struct fs_bc160_request *s = (struct fs_bc160_request *)r->open_data;
 	int status = 0;
 	BC160_CTX ctx;
@@ -513,7 +592,7 @@ fs_bc160_copy(struct request *r, int out_fd)
 	unsigned char digest[20];
 	unsigned char chunk[CHUNK_SIZE];
 	int nread;
-	static char n[] = "fs_bc160_write";
+	static char n[] = "fs_bc160_copy";
 
 	make_path(r, r->digest);
 
@@ -578,8 +657,23 @@ cleanup:
 }
 
 static int
+fs_trust_bc160_eat(struct request *r)
+{
+	struct fs_bc160_request *s = (struct fs_bc160_request *)r->open_data;
+	struct stat st;
+
+	make_path(r, r->digest);
+	if (_stat(r, s->blob_path, &st) == ENOENT)
+		return 1;
+	return 0;
+}
+
+static int
 fs_bc160_eat(struct request *r)
 {
+	if (trust_fs == 1)
+		return fs_trust_bc160_eat(r);
+
 	struct fs_bc160_request *s = (struct fs_bc160_request *)r->open_data;
 	int status = 0;
 	BC160_CTX ctx;
@@ -876,7 +970,7 @@ fs_bc160_take_reply(struct request *r, char *reply)
 }
 
 static int
-fs_bc160_give_request(struct request *r)
+fs_bc160_give_request(struct request *r)	// no pre-proc for fs give
 {
 	(void)r;
 
@@ -1056,6 +1150,8 @@ fs_bc160_boot()
 	 */
 	if (_mkdir((struct request *)0, boot_data.root_dir_path, 1))
 		panic("bc160: boot: _mkdir(root_dir) failed");
+	if (trust_fs == 1)
+		binfo("trust filesystem is enabled");
 
 	return 0;
 }

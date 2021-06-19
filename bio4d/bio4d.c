@@ -1848,6 +1848,10 @@ main(int argc, char **argv, char **env)
 	else
 		info("no environment variables (ok)");
 
+	if (trust_fs == 1)
+		info("trust fs is enabled");
+	else
+		info("trust fs is disabled");
 	if (module_boot())
 		die("modules_boot() failed");
 

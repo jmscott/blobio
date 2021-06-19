@@ -16,6 +16,12 @@ export BLOBIO_ROOT=${BLOBIO_ROOT:=/usr/local/blobio}
 export BLOBIO_SERVICE=${BLOBIO_SERVICE:=bio4:localhost:1797}
 export BLOBIO_ALGORITHM=${BLOBIO_ALGORITHM:=bc160}
 
+#
+#  Can we trust that the blobs in $BLOBIO_ROOT/data/fs_bc160 do not need to be
+#  digested for correctness.
+#
+export BLOBIO_TRUST_FS=${BLOBIO_TRUST_FS:=false}
+
 #  set sample rate (sec) for stats in run/bio4d.stat
 #  0 disables.  note, BLOBIO_BIO4D_RRD_DURATION >= LOG_HEARTBEAT
 export BLOBIO_BIO4D_RRD_DURATION=0

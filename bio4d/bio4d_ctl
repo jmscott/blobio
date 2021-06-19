@@ -61,6 +61,10 @@ NET_TIMEOUT=${BLOBIO_NET_TIMEOUT:=20}
 #  0 disables.
 RRD_DURATION=${BLOBIO_BIO4D_RRD_DURATION:=0}
 
+#  can we trust the correctness of blobs in $BLOBIO_ROOT/data/fs_bc160?
+TRUST_FS=${BLOBIO_TRUST_FS:=false}
+log "trust file system: $BLOBIO_TRUST_FS"
+
 case "$ACTION" in
 boot)
 	rm -f $PID_PATH || die "rm $PID_PATH failed"
@@ -71,9 +75,10 @@ start)
 	$BIO4D								\
 		--root $BLOBIO_ROOT					\
 		--port $PORT						\
-		--ps-title-XXXXXXXXXXXXXXXXXXXXXXX			\
+		--trust-fs $TRUST_FS					\
+		--net-timeout $NET_TIMEOUT				\
 		--rrd-duration $RRD_DURATION				\
-		--net-timeout $NET_TIMEOUT
+		--ps-title-XXXXXXXXXXXXXXXXXXXXXXX
 	STATUS=$?
 	test $STATUS = 0 || die "bio4d failed to start: exit status=$STATUS"
 
