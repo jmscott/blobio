@@ -17,7 +17,10 @@
 
 #include "blobio.h"
 
-//  Note: where is HOST_NAME_MAX defined on OX X?
+#define BIO4_TIMEOUT_DEFAULT	20
+#define BIO4_TRUST_FS_DEFAULT	0
+
+//  Note: where is HOST_NAME_MAX defined on OS X?
 
 #ifndef HOST_NAME_MAX
 #define HOST_NAME_MAX	64
@@ -52,9 +55,13 @@ extern char	*null_device;
 extern int	output_fd;
 extern char	*input_path;
 extern int	input_fd;
+extern int	trust_fs;
 
 static int server_fd = -1;
-static unsigned int timeout =	20;
+static int timeout = -1;
+
+static char *get_timeout(char *frag, int *p_tmo, int *p_tfs);
+static char *get_trust_fs(char *frag, int *p_tfs, int *p_tmo);
 
 extern struct service bio4_service;		//  initialized below
 
@@ -89,9 +96,9 @@ ctrace2(char *msg1, char *msg2)
 }
 
 static char *
-get_timeout(char *frag, unsigned int *p_tmo)
+get_timeout(char *frag, int *p_tmo, int *p_tfs)
 {
-	TRACE2("get_timeout", frag);
+	TRACE2("get_query_frag", frag);
 	char buf[4], *bp;		//  0 to 255
 	char *fp = frag, c;
 	unsigned int tmo;
@@ -100,8 +107,14 @@ get_timeout(char *frag, unsigned int *p_tmo)
 		return "expected tmo= in query fragment";
 	if (!isdigit(*fp))
 		return "missing seconds after tmo= in query fragment";
+
+	/*
+	 *  copy timeout digits into buf, upto '?' or null character.
+	 */
 	bp = buf;
 	while ((c = *fp++)) {
+		if (c == '&')
+			break;
 		if (!isdigit(c))
 			return "expected digit in tmo query fragment";
 		if (bp - buf > 3)
@@ -112,13 +125,38 @@ get_timeout(char *frag, unsigned int *p_tmo)
 	tmo = atoi(buf);
 	if (tmo > 255)
 		return "timeout > 255 seconds";
-	if (p_tmo)
+	if (p_tmo) {
+		if (*p_tmo == -1)
+			return "query frag 'tmo' given more than once";
 		*p_tmo = tmo;
+	}
+	return get_trust_fs(fp, p_tfs, p_tmo);
+}
+
+static char *
+get_trust_fs(char *frag, int *p_tfs, int *p_tmo)
+{
+	(void)frag;
+	(void)p_tfs;
+	(void)p_tmo;
 	return (char *)0;
 }
 
+static char *
+get_query_frag(char *frag, int *p_tmo, int *p_tfs)
+{
+	if (frag[0] == 't') {
+		if (frag[1] == 'm')
+			return get_timeout(frag, p_tmo, p_tfs); 
+		if (frag[1] == 'f')
+			return get_trust_fs(frag, p_tfs, p_tmo);
+	}
+	return "unknown query fragment";
+}
+
 /*
- *  Parse the host name/ip4, port and optional timeout from the end point.
+ *  Parse the host name/ip4, port and optional timeout and trust file
+ *  system options from the end point.
  */
 static char *
 bio4_end_point_syntax(char *endp)
@@ -162,11 +200,13 @@ bio4_end_point_syntax(char *endp)
 	if (!c)
 		return (char *)0;
 	/*
-	 *  Is a timeout specified as a query fragment on the URI:
+	 *  parse query fragments for tmo or trusted file system
+	 *  in the uri:
 	 *
 	 *	?tmo=[0-9]{1,3}
+	 *	?tfs=true
 	 */
-	return get_timeout(ep, (unsigned int *)0);
+	return get_query_frag(ep, (int *)0, (int *)0);
 }
 
 /*
@@ -303,13 +343,16 @@ bio4_open()
 	_TRACE2("port fragment", p);
 	qmark = strchr(p, '?');
 	if (qmark) {
-		get_timeout(qmark + 1, &timeout);
+		get_query_frag(qmark + 1, &timeout, &trust_fs);
 		memcpy(pbuf, p, qmark - p);
 		pbuf[p - qmark] = 0;
 	} else
 		strcpy(pbuf, p);
+	if (timeout == -1)
+		timeout = BIO4_TIMEOUT_DEFAULT;
+	if (trust_fs == -1)
+		trust_fs = BIO4_TRUST_FS_DEFAULT;
 
-		
 	port = atoi(pbuf);
 
 	/*
@@ -416,7 +459,7 @@ _write(int fd, unsigned char *buf, int buf_size)
 	if (timeout > 0) {
 		if (signal(SIGALRM, catch_write_ALRM) == SIG_ERR)
 			return strerror(errno);
-		alarm(timeout);
+		alarm((unsigned int)timeout);
 	}
 	if (uni_write_buf(fd, (unsigned char *)buf, buf_size))
 		err = strerror(errno);
@@ -443,7 +486,7 @@ _read(int fd, unsigned char *buf, int buf_size, int *nread)
 	if (timeout > 0) {
 		if (signal(SIGALRM, catch_read_ALRM) == SIG_ERR)
 			return strerror(errno);
-		alarm(timeout);
+		alarm((unsigned int)timeout);
 	}
 	if ((nr = uni_read(fd, (unsigned char *)buf, buf_size)) < 0)
 		err = strerror(errno);
@@ -648,12 +691,52 @@ bio4_eat(int *ok_no)
 }
 
 static char *
+_put_untrusted()
+{
+	char *err;
+	int nread, more;
+	unsigned char buf[PIPE_MAX];
+
+	//  write the blob to the server
+	more = 1;
+	while (more) {
+		err = _read(input_fd, buf, sizeof buf, &nread);
+		if (err)
+			return err;
+
+		char *status = bio4_service.digest->get_update(buf, nread);
+		if (*status == '0')
+			more = 0;
+		else if (*status != '1')
+			return status;
+
+		if (nread == 0)
+			break;
+		/*
+		 *  Partial blob verified locally, so write() to server.
+		 */
+		err = _write(server_fd, buf, nread);
+		if (err)
+			return err;
+#ifdef COMPILE_TRACE
+		if (tracing) {
+			_trace("write ok");
+			if (more)
+				_TRACE("more data to digest");
+			hexdump((unsigned char *)buf, nread, '<');
+		}
+#endif
+	}
+	if (more)
+		return "blob does not match digest";
+	return (char *)0;
+}
+
+static char *
 bio4_put(int *ok_no)
 {
 	char *err;
 	char req[5 + 8 + 1 + 128 + 1 + 1];
-	int nread, more;
-	unsigned char buf[PIPE_MAX];
 
 	_TRACE("request to put()");
 
@@ -672,40 +755,10 @@ bio4_put(int *ok_no)
 	if (*ok_no == 1)
 		return (char *)0;		//  server said no
 
-	//  write the blob to the server
-	more = 1;
-	while (more) {
-
-		err = _read(input_fd, buf, sizeof buf, &nread);
-		if (err)
-			return err;
-
-		char *status = bio4_service.digest->get_update(buf, nread);
-		if (*status == '0')
-			more = 0;
-		else if (*status != '1')
-			return status;
-
-		if (nread == 0)
-			break;
-
-		/*
-		 *  Partial blob verified locally, so write() to server.
-		 */
-		err = _write(server_fd, buf, nread);
-		if (err)
-			return err;
-#ifdef COMPILE_TRACE
-		if (tracing) {
-			_trace("write ok");
-			if (more)
-				_TRACE("more data to digest");
-			hexdump((unsigned char *)buf, nread, '<');
-		}
-#endif
-	}
-	if (more)
-		return "blob does not match digest";
+	if (trust_fs == 0)
+		err = _put_untrusted();
+	else
+		return "trusted fs not supported";
 
 	//  read "ok" or "no" reply from the server
 

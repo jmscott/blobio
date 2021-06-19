@@ -109,11 +109,13 @@ char	transport[129] = {0};
 unsigned long long	blob_size;
 
 struct timespec	start_time;
+int trust_fd = -1;
 
 // standard in/out must remain open before calling leave()
 
 int	input_fd = 0;
 int	output_fd = 1;
+int	trust_fs = -1;
 
 extern struct digest		*digests[];
 extern struct service		*services[];
