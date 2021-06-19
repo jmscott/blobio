@@ -35,6 +35,7 @@ export	\
       BLOBIO_BIO4D_RRD_DURATION=${BLOBIO_BIO4D_RRD_DURATION:=60}
 export BLOBIO_BIO4D_NET_TIMEOUT=${BLOBIO_BIO4D_NET_TIMEOUT:=20}
 export BLOBIO_BIO4D_PORT=${BLOBIO_BIO4D_PORT:=1797}
+export BLOBIO_TRUST_FS=${BLOBIO_TRUST_FS:=false}
 
 log()
 {
@@ -78,9 +79,10 @@ rm -f run/bio4d-* || die "rm run/bio4d-* failed: exit status=$?"
 
 log 'execing sbin/bio4d ...'
 exec sbin/bio4d								\
-	--ps-title-XXXXXXXXXXXXXXXXXXXXXXX				\
-	--in-foreground							\
+	--trust-fs $BLOBIO_TRUST_FS					\
 	--port $BLOBIO_BIO4D_PORT					\
 	--root $BLOBIO_ROOT						\
 	--net-timeout $BLOBIO_BIO4D_NET_TIMEOUT				\
+	--in-foreground							\
+	--ps-title-XXXXXXXXXXXXXXXXXXXXXXX				\
 	--rrd-duration $BLOBIO_BIO4D_RRD_DURATION
