@@ -124,9 +124,6 @@ fs_sha.o: fs_sha.c bio4d.h
 fs_bc160.o: fs_bc160.c bio4d.h
 	$(CC) $(CFLAGS) $(OPENSSL_INC) -c fs_bc160.c
 
-#fs_trust_bc160.o: fs_trust_bc160.c bio4d.h
-	#$(CC) $(CFLAGS) $(OPENSSL_INC) -c fs_trust_bc160.c
-
 io.o: io.c bio4d.h bio4d.h
 	$(CC) $(CFLAGS) -c io.c
 
