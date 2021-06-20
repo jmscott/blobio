@@ -1,6 +1,10 @@
 /*
  *  Synopsis:
- *	A client driver for the very paranoid blobio service 'bio4' over TCP/IP4
+ *	A client driver semi-paranoid blobio service 'bio4' over TCP/IP4
+ *  Note:
+ *	Timeout not active when waiting for for the reply from a blob with
+ *	incorrect digest.  The remote times out, but the client "blobio"
+ *	does not!
  */
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -98,7 +102,8 @@ ctrace2(char *msg1, char *msg2)
 static char *
 get_timeout(char *frag, int *p_tmo, int *p_tfs)
 {
-	TRACE2("get_query_frag", frag);
+	_TRACE2("get_timeout", frag);
+
 	char buf[4], *bp;		//  0 to 255
 	char *fp = frag, c;
 	unsigned int tmo;
@@ -109,7 +114,7 @@ get_timeout(char *frag, int *p_tmo, int *p_tfs)
 		return "missing seconds after tmo= in query fragment";
 
 	/*
-	 *  copy timeout digits into buf, upto '?' or null character.
+	 *  copy timeout digits into buf, upto '&' or null character.
 	 */
 	bp = buf;
 	while ((c = *fp++)) {
@@ -125,21 +130,49 @@ get_timeout(char *frag, int *p_tmo, int *p_tfs)
 	tmo = atoi(buf);
 	if (tmo > 255)
 		return "timeout > 255 seconds";
+	if (tmo == 0)
+		return "timeout must > 0";
 	if (p_tmo) {
 		if (*p_tmo == -1)
 			return "query frag 'tmo' given more than once";
 		*p_tmo = tmo;
 	}
-	return get_trust_fs(fp, p_tfs, p_tmo);
+	return c ? get_trust_fs(fp, p_tfs, p_tmo) : (char *)0;
 }
 
+/*
+ *  Parse query fragment "tfs=t|f"
+ */
 static char *
 get_trust_fs(char *frag, int *p_tfs, int *p_tmo)
 {
-	(void)frag;
-	(void)p_tfs;
-	(void)p_tmo;
-	return (char *)0;
+	_TRACE2("get_trust_fs", frag);
+
+	char *fp = frag;
+
+	if (*fp++ != 't' || *fp++ != 'f' || *fp++ != 's' || *fp++ != '=')
+		return "expected tfs= in query fragment";
+	int tfs = -1;
+	switch(*fp++) {
+	case 'f':
+		tfs = 0;
+		break;
+	case 't':
+		tfs = 1;
+		break;
+	default:
+		return "expected only 't' or 'f' for query fragment tfs";
+	}
+	if (p_tfs) {
+		if (*p_tfs != -1)
+			return "query fragment tfs given more than once";
+		*p_tfs = tfs;
+	}
+	if (!*fp)
+		return (char *)0;
+	if (*fp++ != '&')
+		return "expected & in query fragment";
+	return get_timeout(fp, p_tmo, p_tfs);
 }
 
 static char *
@@ -164,7 +197,7 @@ bio4_end_point_syntax(char *endp)
 	char *ep, c;
 	char buf[6], *bp;
 
-	TRACE2("end point syntax", endp);
+	_TRACE2("end point syntax", endp);
 
 	/*
 	 *  Extract the ascii DNS host or ip4 address.
@@ -436,6 +469,8 @@ die_ALRM(char *func)
 static void
 catch_write_ALRM(int sig)
 {
+	_TRACE("catch_write_ALRM");
+
 	(void)sig;
 	die_ALRM("write");
 }
@@ -443,6 +478,8 @@ catch_write_ALRM(int sig)
 static void
 catch_read_ALRM(int sig)
 {
+	_TRACE("catch_read_ALRM");
+
 	(void)sig;
 	die_ALRM("read");
 }
@@ -693,6 +730,8 @@ bio4_eat(int *ok_no)
 static char *
 _put_untrusted()
 {
+	_TRACE("_put_untrusted");
+
 	char *err;
 	int nread, more;
 	unsigned char buf[PIPE_MAX];
@@ -733,6 +772,27 @@ _put_untrusted()
 }
 
 static char *
+_put_trusted()
+{
+	_TRACE("_put_trusted");
+
+	char *err;
+	int nread;
+	unsigned char buf[PIPE_MAX];
+
+	nread = -1;
+	while (nread != 0) {
+		err = _read(input_fd, buf, sizeof buf, &nread);
+		if (err)
+			return err;
+		err = _write(server_fd, buf, nread);
+		if (err)
+			return err;
+	}
+	return (char *)0;
+}
+
+static char *
 bio4_put(int *ok_no)
 {
 	char *err;
@@ -758,7 +818,9 @@ bio4_put(int *ok_no)
 	if (trust_fs == 0)
 		err = _put_untrusted();
 	else
-		return "trusted fs not supported";
+		err = _put_trusted();
+	if (err)
+		return err;
 
 	//  read "ok" or "no" reply from the server
 
@@ -817,8 +879,8 @@ bio4_give(int *ok_no)
 
 	_TRACE("blob sent to server");
 
-	//  server replied "ok" and we put the blob successfully,
-	//  so remove the local input.
+	//  server replied "ok", which implies the blob was accepted, so remove
+	//  the local input.
 
 	if (input_path) {
 		int status = uni_unlink(input_path);
