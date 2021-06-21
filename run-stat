@@ -10,24 +10,21 @@
 #
 #	run-stat writes tab separated rows to standard out.
 #
-#		bio4d <state> <uptime> <request> <ok> <faults> <wall-duration>
-#		flowd <state> <uptime> <request> <ok> <faults> <wall-duration>
+#		[bio4d|flowd] [UP|DOWN|ZOMBIE] <uptime-duration>	\
+#			<boot-req> <boot-ok> <boot-flt> <boot-wall>	\
+#			<sample-req> <sample-ok> <sample-flt> <sample-wall>
 #
-#	where <request> is the count of either blob requests (for bio4d) or
-#	flow description records (log/*.fdr).  <ok> is the total number
-#	<ok> requests, <faults> is the total number of any class of error
-#	needing attention, and wall duration is the accumlated time across
-#	all requests, as a floating point number.
+#	<boot> stats are since process start and <sample> is the most recent
+#	sample stat.
+#
+#	<req> is the count of either blob requests (for bio4d) or flow
+#	description records (log/*.fdr).  <ok> is the total number <ok>
+#	requests, <flt> is the total number of any class of error needing
+#	attention, and <wall> is accumulated wall duration for all in seconds
+#	across all requests, as a floating point number, and
+#	
 #  Usage:
 #	run-stat
-#
-#	Writes to standard out
-#
-#		bio4d <state> <uptime> <request> <ok> <faults> <wall-duration>
-#		flowd <state> <uptime> <request> <ok> <faults> <wall-duration>
-#
-#	where <request> is the count of eith blob requests (for bio4d) or
-#	flow description records (log/*.fdr).
 #  Note:
 #	Need both the total since process boot AND the most recent sample!
 #
@@ -51,6 +48,19 @@ _cat_stat()
 	if [ -e $STAT_PATH ];  then
 		BOOT=$(grep '^boot	' $STAT_PATH | sed 's/.....//')
 		SAMPLE=$(grep '^sample	' $STAT_PATH | sed 's/.......//')
+	else
+		BOOT=""
+		SAMPLE=""
+	fi
+	echo "$WHAT	$STATE	$SINCE	$BOOT	$SAMPLE"
+}
+
+_cat_rrd()
+{
+	RRD_PATH=$1
+	if [ -e $RRD_PATH ];  then
+		BOOT=$(grep '^boot	' $RRD_PATH | sed 's/.....//')
+		SAMPLE=$(grep '^sample	' $RRD_PATH | sed 's/.......//')
 	else
 		BOOT=""
 		SAMPLE=""

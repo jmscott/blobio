@@ -1,0 +1,67 @@
+#!/usr/bin/env perl
+#
+#  Synopsis:
+#	Generate bio4d tuple of round robin database stats for script run-stat
+#  Usage:
+#	run-stat-rrd path/to/bio4d.brr
+#  See:
+#	script "run-stat"
+#
+
+die 'wrong number of arguments' unless @ARGV == 1;
+
+my $rrd_path = $ARGV[0];
+
+my $RRD;
+my (
+	$boot_connect_count,
+	$boot_ok_count,
+	$boot_fault_count,
+	$sample_ok_count,
+	$sample_fault_count
+) = (0, 0, 0, 0, 0);
+
+open($RRD, "<$rrd_path") or die "open(<rrd) failed: $!";
+
+while (<$RRD>) {
+	my (
+		$sample_time,
+		$success_count,
+		$error_count,
+		$timeout_count,
+		$signal_count,
+		$fault_count,
+		$get_count,
+		$put_count,
+		$give_count,
+		$take_count,
+		$eat_count,
+		$wrap_count,
+		$roll_count,
+		$chat_ok_count,
+		$chat_no_count,
+		$chat_no2_count,
+		$chat_no3_count,
+		$eat_no_count,
+		$take_no_count,
+	) = split(':');
+
+	$boot_ok_count += $success_count;
+	$boot_fault_count +=
+			$error_count + $timeout_count + $signal_count +
+	                $fault_count
+	;
+	$boot_connect_count += $boot_ok_count + $boot_fault_count;
+
+	$sample_ok_count = $success_count;
+	$sample_fault_count =
+			$error_count + $timeout_count + $signal_count +
+	                $fault_count
+	;
+	$sample_connect_count = $sample_ok_count + $sample_fault_count;
+}
+
+print <<END;
+boot	$boot_connect_count	$boot_ok_count	$boot_fault_count
+sample	$sample_connect_count	$sample_ok_count	$sample_fault_count
+END

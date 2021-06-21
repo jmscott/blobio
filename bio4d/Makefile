@@ -45,7 +45,6 @@ CSRC=									\
 	tmp.c
 
 SBINs=									\
-	tcp4-stat							\
 	append-brr							\
 	bio4d								\
 	bio4d_ctl							\
@@ -53,6 +52,8 @@ SBINs=									\
 	fs2udig								\
 	graph-rrd							\
 	launchd-bio4d							\
+	run-stat-rrd							\
+	tcp4-stat							\
 	update-rrd							\
 
 LIBs=									\
