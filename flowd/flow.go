@@ -1,10 +1,13 @@
-//Synopsis:
+//  Synopsis:
 //	OpCodes for flow engine
 //  See:
 //
 //	For rumsfeld's source see:
 //
 //		https://en.m.wikipedia.org/wiki/Four_stages_of_competence
+//  Note:
+//	Signal terminal appears to not be included in fault count.
+//
 
 package main
 
