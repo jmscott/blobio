@@ -13,6 +13,8 @@
 #	2	remote put failed
 #	3	blobio get | put failed
 #	255	unknown error
+#  Note:
+#	Need to trap SIGPIPE.
 #
 
 die()
