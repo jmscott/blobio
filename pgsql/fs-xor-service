@@ -70,11 +70,11 @@ log "starting scan of $(pwd)/data/ ..."
 log "file system only in column <, service only in column >"
 comm -3 <(
 	cd data || die "cd $(pwd)/data failed"
-	find *_fs -follow -type f -print				|
+	find fs_* -follow -type f -print				|
 		fgrep -v '/tmp/'					|
 		fgrep -v '.DS_Store'					|
 		sed 's/\.\///'						|
-		sed 's/_fs\//:/'					|
+		sed 's/fs_\//:/'					|
 		sed 's/:......../:/g'					|
 		tee x0							|
 		sort
