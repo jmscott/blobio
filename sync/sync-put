@@ -25,6 +25,8 @@ die()
 	exit $STATUS
 }
 
+trap '' SIGPIPE
+
 test -n "$BLOBIO_SERVICE" || die 255 'env variable not defined: BLOBIO_SERVICE'
 
 test $# = 2 || die 255 "wrong number of arguments: got $#, expected 2"
