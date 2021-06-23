@@ -1,7 +1,9 @@
 #!/usr/bin/env perl
 #
 #  Synopsis:
-#	Generate bio4d tuple of round robin database stats for script run-stat
+#	Write tuple from round robin database sample in run/bio4d.stat
+#  Description:
+#	Write a tuple summaring stats written in run/bio4d.stat
 #  Usage:
 #	run-stat-rrd path/to/bio4d.brr
 #  See:
