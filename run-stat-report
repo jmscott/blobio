@@ -25,7 +25,7 @@ die()
 
 (
 	cat <<END
-Process	Status	Up	Req,Ok,Fail	Recent 10s Sample
+Process	Status	Up	Req, Ok, Fail	Recent 10s Sample
 -------	------	----	-------------------	-----------------
 END
 	run-stat							|

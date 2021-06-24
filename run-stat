@@ -1,28 +1,41 @@
 #
 #  Synopsis:
-#	Summarize process stats and duration by examining *.{pid,stat} files.
+#	Summarize stats and duration in run/{flowd,bio4d}.{pid,stat} files.
 #  Description:
-#	Convert contents of status files in run/ directory to tab
-#	separated row, suitable for parsing by shell scripts.  The
-#	processes summarized are bio4d and flowd, typically in either
-#	${BLOBIO_ROOT, SETSPACE_ROOT}/run or $BLOBIO_ROOT/sync/<host>/run
-#	directories.
+#	Summarize the overall message flow by converting the contents of
+#	status files in the directory
+#
+#		run/{flowd,bio4d}.{pid,stat}
+#
+#	to tab separated rows, suitable for parsing by shell scripts.  The
+#	processes summarized are "bio4d" and "flowd", typically in either
+#	directories ${BLOBIO_ROOT, SETSPACE_ROOT}/<schema>/*/run or
+#	$BLOBIO_ROOT/sync/<host>/run.
 #
 #	run-stat writes tab separated rows to standard out.
 #
 #		[bio4d|flowd] [UP|DOWN|ZOMBIE] <up-epoch>		\
-#			<boot-req> <boot-ok> <boot-fail> <boot-wall>	\
-#			<sample-req> <sample-ok> <sample-fail> <sample-wall>
+#			<boot-ok> <boot-fail> 				\
+#			<sample-ok> <sample-fail>
 #
 #	<boot> stats are since process start and <sample> is the most recent
-#	sample stat.
+#	sample stat, typically within 10 seconds.
 #
-#	<req> is the count of either blob requests (for bio4d) or flow
-#	description records (log/*.fdr).  <ok> is the total number <ok>
-#	requests, <fail> is the total number of any class of error needing
-#	attention (ERROR|PANIC), and <wall> is accumulated wall clock
-#	duration in floating point seconds, for all requests.  <wall>/<req>
-#	is the average duration per request.
+#	<ok> is the total number correct requests, <fail> is the total number of
+#	requests, possibly needing attention.
+#
+#	For bio4d, <fail> sums mundane client errors, timeouts, signals and
+#	server-side panics. <ok> sums all syntactally correct requests by
+#	clients, including requests for non-existant blobs.
+#
+#	For flowd, the stats sum the columns in the *.fdr records.  <ok>
+#	is the sum of both process (exit code) and query execution (SQLSTATE)
+#	status codes.  Typically, <ok> for a process (*.xdr) is the exit status
+#	0, although the meaning of "OK" can be overridden in the etc/*.flow
+#	file. Similary for sql queries, "OK" can be extened from "00000" to
+#	other codes.  The <fail> counds are the complement of "OK" counts.
+#	A common example of a failed SQL code would "23503" foreign key
+#	violation, indicated a bug in the etc/*.flow file.
 #	
 #  Usage:
 #	run-stat | ... sort | ... column
