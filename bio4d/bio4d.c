@@ -172,7 +172,7 @@ static u8	chat_no3_count =0;	//  ok,ok,no
 static u8	eat_no_count =	0;	//  no occured on eat
 static u8	take_no_count =	0;	//  single no on take
 
-static char	rrd_path[] = "run/bio4d.rrd";
+static char	rrd_path[] = "run/bio4d.stat";
 
 static unsigned char	in_foreground = 0;
 

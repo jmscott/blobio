@@ -10,26 +10,31 @@
 #
 #	run-stat writes tab separated rows to standard out.
 #
-#		[bio4d|flowd] [UP|DOWN|ZOMBIE] <uptime-duration>	\
-#			<boot-req> <boot-ok> <boot-flt> <boot-wall>	\
-#			<sample-req> <sample-ok> <sample-flt> <sample-wall>
+#		[bio4d|flowd] [UP|DOWN|ZOMBIE] <up-epoch>		\
+#			<boot-req> <boot-ok> <boot-fail> <boot-wall>	\
+#			<sample-req> <sample-ok> <sample-fail> <sample-wall>
 #
 #	<boot> stats are since process start and <sample> is the most recent
 #	sample stat.
 #
 #	<req> is the count of either blob requests (for bio4d) or flow
 #	description records (log/*.fdr).  <ok> is the total number <ok>
-#	requests, <flt> is the total number of any class of error needing
-#	attention, and <wall> is accumulated wall duration for all in seconds
-#	across all requests, as a floating point number, and
+#	requests, <fail> is the total number of any class of error needing
+#	attention (ERROR|PANIC), and <wall> is accumulated wall clock
+#	duration in floating point seconds, for all requests.  <wall>/<req>
+#	is the average duration per request.
 #	
 #  Usage:
-#	run-stat
-#  Note:
-#	Need both the total since process boot AND the most recent sample!
+#	run-stat | ... sort | ... column
 #
+#	while sleep 60;  do
+#		run-stat | put-to-db
+#	done
+#  See:
+#	run-stat-report
+#  Note:
 #	Really, really, really need to move the files in log/*.{qdr,xdr,fdr}
-#	to directory data/!
+#	to directory data/ or spool/!
 #
 #	Probing process existence with pgrep might be useful.
 #	Not clear if another script should do this.

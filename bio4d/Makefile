@@ -52,7 +52,7 @@ SBINs=									\
 	fs2udig								\
 	graph-rrd							\
 	launchd-bio4d							\
-	run-stat-rrd							\
+	bio4d-run-stat							\
 	tcp4-stat							\
 	update-rrd							\
 

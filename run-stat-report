@@ -24,11 +24,13 @@ die()
 }
 
 (
-	echo 'Process	Status	Up Time	Boot Request,Ok,Fail	Recent 10s Sample'
-	echo '-------	------	-------	-------------------	-----------------'
+	cat <<END
+Process	Status	Up	Req,Ok,Fail	Recent 10s Sample
+-------	------	----	-------------------	-----------------
+END
 	run-stat							|
 		sort --key=2 --key=1 --field-separator=$'\t'		|
-		while read PID STATUS START_EPOCH			\
+		while read PROC STATUS START_EPOCH			\
 		           FDR OK FLT WALL				\
 		           sFDR sOK sFLT sWALL				\
 			   ;  do
@@ -42,7 +44,7 @@ die()
 				DURATION=UNKNOWN
 				;;
 			esac
-			echo "$PID	$STATUS	$DURATION	$FDR,$OK,$FLT	$sFDR,$sOK,$sFLT"
+			echo "$PROC	$STATUS	$DURATION	$FDR,$OK,$FLT	$sFDR,$sOK,$sFLT"
 		done
 		
 )									|
