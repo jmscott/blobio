@@ -270,7 +270,8 @@ static void
 die(char *msg)
 {
 	/*
-	 *  If no logger process then we are probably still booting.
+	 *  If no logger process then we probably crashed during boot,
+	 *  so gripe to stderr and die.
 	 */
 	if (logged_pid == 0) {
 		static char ERROR[] = "\nbio4d: ERROR: ";
