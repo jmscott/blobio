@@ -60,12 +60,12 @@ die()
 	exit 1
 }
 
-_cat_stat()
+_cat_flowd()
 {
 	STAT_PATH=$1
 	if [ -e $STAT_PATH ];  then
-		BOOT=$(grep '^boot	' $STAT_PATH | sed 's/.....//')
-		SAMPLE=$(grep '^sample	' $STAT_PATH | sed 's/.......//')
+		BOOT=$(grep '^boot	' $STAT_PATH | cut -f2-4)
+		SAMPLE=$(grep '^sample	' $STAT_PATH | cut -f2-4)
 	else
 		BOOT=""
 		SAMPLE=""
@@ -73,12 +73,20 @@ _cat_stat()
 	echo "$WHAT	$STATE	$SINCE	$BOOT	$SAMPLE"
 }
 
-_cat_rrd()
+_cat_bio4d()
 {
-	RRD_PATH=$1
-	if [ -e $RRD_PATH ];  then
-		BOOT=$(grep '^boot	' $RRD_PATH | sed 's/.....//')
-		SAMPLE=$(grep '^sample	' $RRD_PATH | sed 's/.......//')
+	STAT_PATH=run/bio4d.stat
+	if [ -e $STAT_PATH ];  then
+		BOOT=$(
+			run-stat-bio4d $STAT_PATH			|
+			grep '^boot	'				|
+			sed 's/.....//'
+		)
+		SAMPLE=$(
+			run-stat-bio4d $STAT_PATH			|
+			grep '^sample	' 				|
+			sed 's/.......//'
+		)
 	else
 		BOOT=""
 		SAMPLE=""
@@ -113,14 +121,14 @@ _cat_run()
 
 	case $WHAT in
 	bio4d)
-		echo "$WHAT	$STATE	$SINCE"
+		_cat_bio4d
 		;;
 	flowd)
-		_cat_stat run/flowd.stat
+		_cat_flowd run/flowd.stat
 		;;
 	flowd/[a-z0-9]*)
 		HOST=$(echo "$WHAT" | sed 's/......//')
-		_cat_stat sync/host/$HOST/run/flowd.stat 
+		_cat_flowd sync/host/$HOST/run/flowd.stat 
 		;;
 	*)
 		die "impossible what: $WHAT"

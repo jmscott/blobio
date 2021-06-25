@@ -19,6 +19,7 @@ my (
 	$boot_connect_count,
 	$boot_ok_count,
 	$boot_fault_count,
+	$sample_connect_count,
 	$sample_ok_count,
 	$sample_fault_count
 ) = (0, 0, 0, 0, 0);
@@ -48,19 +49,16 @@ while (<$RRD>) {
 		$take_no_count,
 	) = split(':');
 
-	$boot_ok_count += $success_count;
-	$boot_fault_count +=
-			$error_count + $timeout_count + $signal_count +
-	                $fault_count
-	;
-	$boot_connect_count += $boot_ok_count + $boot_fault_count;
-
 	$sample_ok_count = $success_count;
 	$sample_fault_count =
 			$error_count + $timeout_count + $signal_count +
 	                $fault_count
 	;
 	$sample_connect_count = $sample_ok_count + $sample_fault_count;
+
+	$boot_ok_count += $success_count;
+	$boot_fault_count += $sample_fault_count;
+	$boot_connect_count += $sample_ok_count + $sample_fault_count;
 }
 
 print <<END;
