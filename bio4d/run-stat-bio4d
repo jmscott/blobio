@@ -5,14 +5,14 @@
 #  Description:
 #	Write a tuple summaring stats written in run/bio4d.stat
 #  Usage:
-#	run-stat-rrd path/to/bio4d.brr
+#	run-stat-bio4d path/to/bio4d.brr
 #  See:
 #	script "run-stat"
 #
 
 die 'wrong number of arguments' unless @ARGV == 1;
 
-my $rrd_path = $ARGV[0];
+my $stat_path = $ARGV[0];
 
 my $RRD;
 my (
@@ -23,7 +23,7 @@ my (
 	$sample_fault_count
 ) = (0, 0, 0, 0, 0);
 
-open($RRD, "<$rrd_path") or die "open(<rrd) failed: $!";
+open($RRD, "<$stat_path") or die "open(<run/bio4d.stat) failed: $!";
 
 while (<$RRD>) {
 	my (
