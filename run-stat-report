@@ -25,7 +25,7 @@ die()
 
 (
 	cat <<END
-Process	Status	Up	Req, Ok, Fail	Recent 10s Sample
+Process	Status	Up	Req, Ok, Fail	Recent Sample
 -------	------	----	-------------------	-----------------
 END
 	run-stat							|
@@ -34,6 +34,28 @@ END
 		           FDR OK FLT 					\
 		           sFDR sOK sFLT				\
 			   ;  do
+			SP=run/$PROC.stat
+			case $PROC in
+			bio4d|flowd)
+				SP=run/$PROC.stat
+				;;
+			flowd/*)
+				HOST=$(echo $PROC | sed 's/......//')
+				SP="sync/host/$HOST/run/flowd.stat"
+				;;
+			*)
+				die "unknown sttable process: $PROC"
+				;;
+			esac
+
+			if [ -e $SP ];  then
+				AGO="($(duration-english $(
+					duration-mtime $SP
+				)) ago)"
+			else
+				AGO=""
+			fi
+					
 			case "$START_EPOCH" in
 			[0-9]*)
 				DURATION=$(duration-english $(
@@ -45,7 +67,7 @@ END
 				;;
 			esac
 			cat <<END
-$PROC	$STATUS	$DURATION	$FDR,$OK,$FLT	$sFDR,$sOK,$sFLT
+$PROC	$STATUS	$DURATION	$FDR,$OK,$FLT	$sFDR,$sOK,$sFLT $AGO
 END
 		done
 		
