@@ -32,6 +32,7 @@ CSRC=									\
 	bio4d.h								\
 	blob_set.c							\
 	brr.c								\
+	fs_bc160.c							\
 	fs_sha.c							\
 	io.c								\
 	log.c								\
