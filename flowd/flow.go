@@ -49,6 +49,10 @@ const (
 var and = [137]rummy{}
 var or = [137]rummy{}
 
+//  global named lock table, for coordinating across flows
+var flow_tas sync.Mutex
+var flow_tas_locked	map[string]bool
+
 func init() {
 
 	//  some shifted constants for left hand bits
@@ -300,6 +304,9 @@ type flow struct {
 
 	//  count of go routines still flowing expressions
 	confluent_count int
+
+	//  lock is active.  closed when session ends
+	active_lock	string
 }
 
 //  the river of blobs
@@ -944,6 +951,70 @@ func (flo *flow) argv1(in string_chan) (out argv_chan) {
 			out <- &argv_value{
 				is_null: sv.is_null,
 				argv:    argv[:],
+				flow:    flo,
+			}
+		}
+	}()
+	return out
+}
+
+//  test and set a global lock using string as a lock name 
+
+func (flo *flow) test_and_lock(in string_chan) (out bool_chan) {
+
+	out = make(bool_chan)
+
+	go func() {
+		defer close(out)
+
+		for flo = flo.get(); flo != nil; flo = flo.get() {
+
+			sv := <-in
+			if sv == nil {
+				return
+			}
+			lock_exists := false
+			flow_tas.Lock()
+			if flow_tas_locked[sv.string] {
+				lock_exists = true
+			} else {
+				flow_tas_locked[sv.string] = true
+			}
+			flow_tas.Unlock()
+			out <- &bool_value{
+				bool:    lock_exists,
+				is_null: false,
+				flow:    flo,
+			}
+		}
+	}()
+	return out
+}
+//  test and set a global lock using string as a lock name 
+
+func (flo *flow) test_and_unlock(in string_chan) (out bool_chan) {
+
+	out = make(bool_chan)
+
+	go func() {
+		defer close(out)
+
+		for flo = flo.get(); flo != nil; flo = flo.get() {
+
+			sv := <-in
+			if sv == nil {
+				return
+			}
+			lock_exists := false
+			flow_tas.Lock()
+			if flow_tas_locked[sv.string] {
+				lock_exists = true
+				delete(flow_tas_locked, sv.string)
+			}
+			flow_tas.Unlock()
+			out <- &bool_value{
+				bool:    lock_exists,
+				is_null: false,
 				flow:    flo,
 			}
 		}
