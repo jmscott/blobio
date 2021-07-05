@@ -49,8 +49,8 @@ unset BLOBIO_GET_SERVICE
 export PGHOME=${PGHOME:=/usr/local/pgsql}
 export PGHOST=${PGHOST:=/tmp}
 export PGPORT=${PGPORT:=5432}
-export PGUSER=${PGUSER:=postgres}
+export PGUSER=${PGUSER:=$USER}
 export PGPASSWORD=${PGPASSWORD:=}
-export PGDATABASE=${PGDATABASE:=blobio}
+export PGDATABASE=${PGDATABASE:=$USER}
 export LD_LIBRARY_PATH=$PGHOME/lib:$LD_LIBRARY_PATH
 PATH=$PGHOME/bin:$PATH
