@@ -1,9 +1,13 @@
+#!/bin/bash
 #
 #  Synopsis:
 #	Bash profile for typical blobio server admin 
 #  Usage:
-#	Sourced by flowd startup scripts and bash_login.
+#	Sourced by both deamon flowd startup scripts and bash_login.
 #  Note:
+#	Need to write script purge-bio4d-stat or add
+#	BLOBIO_BIO4D_RRD_AGE for roll interval.
+#
 #	Need to consider environment var PGSERVICE!
 #
 #	Consider adding syslog support!
@@ -13,22 +17,28 @@
 #	Also ought to document all required variables.
 #
 export BLOBIO_ROOT=${BLOBIO_ROOT:=/usr/local/blobio}
-export BLOBIO_SERVICE=${BLOBIO_SERVICE:=bio4:localhost:1797}
+export BLOBIO_BIO4D_PORT=${BLOBIO_BIO4D_PORT:1797}
+export BLOBIO_SERVICE=${BLOBIO_SERVICE:=bio4:127.0.0.1:$BLOBIO_BIO4D_PORT}
 export BLOBIO_ALGORITHM=${BLOBIO_ALGORITHM:=bc160}
 
+PATH=$BLOBIO_ROOT/sbin:$BLOBIO_ROOT/bin:$PATH
+
 #
-#  Can we trust that the blobs in $BLOBIO_ROOT/data/fs_bc160 do not need to be
-#  digested for correctness.
+#  Can we trust that the blobs in $BLOBIO_ROOT/data/fs_bc160 have
+#  correct digests?  set BLOBIO_TRUST_FS=true for speedier requests.
 #
 export BLOBIO_TRUST_FS=${BLOBIO_TRUST_FS:=false}
 
+#
 #  set sample rate (sec) for stats in run/bio4d.stat
 #  0 disables.  note, BLOBIO_BIO4D_RRD_DURATION >= LOG_HEARTBEAT
+#
+#  the script run-stat-report uses run/bio4d.stat
+#
 export BLOBIO_BIO4D_RRD_DURATION=0
 
-
 #
-#  set var BLOBIO_GET_SERVICE explicitly for optimized get requests:
+#  set var BLOBIO_GET_SERVICE explicitly for trusted reads from filesystem.
 #
 #	export BLOBIO_GET_SERVICE=fs:$BLOBIO_ROOT
 #
@@ -42,9 +52,5 @@ export PGPORT=${PGPORT:=5432}
 export PGUSER=${PGUSER:=postgres}
 export PGPASSWORD=${PGPASSWORD:=}
 export PGDATABASE=${PGDATABASE:=blobio}
-
-#  Various interactive blobio scripts require jms tools.
-#  However, the daemon bio4d does NOT need any outside executable.
-
-export JMSCOTT_ROOT=${JMSCOTT_ROOT:=/usr/local/jmscott}
-PATH=$BLOBIO_ROOT/bin:$BLOBIO_ROOT/sbin:$PGHOME/bin:$PATH:$JMSCOTT_ROOT/bin
+export LD_LIBRARY_PATH=$PGHOME/lib:$LD_LIBRARY_PATH
+PATH=$PGHOME/bin:$PATH
