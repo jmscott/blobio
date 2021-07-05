@@ -66,6 +66,7 @@ END
 				DURATION=UNKNOWN
 				;;
 			esac
+			PROC=$(echo $PROC | sed 's/\//>/')
 			cat <<END
 $PROC	$STATUS	$DURATION	$FDR,$OK,$FLT	$sFDR,$sOK,$sFLT $AGO
 END
