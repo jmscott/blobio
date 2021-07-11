@@ -1,7 +1,7 @@
 #!/bin/bash
 #
 #  Synopsis:
-#	Wrapper script for foreground execution of bio4d process from launchd
+#	Script for foreground execution of bio4d process from launchd
 #  Exit Status:
 #	0	ok
 #	1	error
@@ -17,16 +17,12 @@
 #	<key>EnvironmentVariables</key>
 #	<key>BLOBIO_ROOT</key>
 #	<string>/usr/local/blobio</string>
-#	<key>BLOBIO_BIO4D_RRD_DURATION</key>
-#	<string>60</string>
-#	<key>BLOBIO_BIO4D_PORT</key>
-#	<string>1797</string>
 #  See:
 #	$BLOBIO_ROOT/lib/blobio.bio4d.plist.example
 #	$BLOBIO_ROOT/etc/profile
 #  Note:
-#	The full environment is expected to be set in blobio.bio4d.plist
-#	and specifically not set in $BLOBIO_ROOT/etc/profile.
+#	The full environment is expected to be set in
+#	$BLOBIO_ROOT/etc/profile.
 #
 PROG=$(basename $0)
 
@@ -67,6 +63,7 @@ log "PATH=$PATH"
 log "bio4d port: $BLOBIO_BIO4D_PORT"
 log "stat sample duration: $BLOBIO_BIO4D_RRD_DURATION sec"
 log "net timeout: $BLOBIO_BIO4D_NET_TIMEOUT sec"
+log "trust file system: $BLOBIO_TRUST_FS sec"
 log "current directory: $(pwd)"
 
 #
@@ -75,7 +72,8 @@ log "current directory: $(pwd)"
 #	<key>AbandonProcessGroup</key>
 #	<false/>
 #
-rm -f run/bio4d-* || die "rm run/bio4d-* failed: exit status=$?"
+log 'clearing run/bio4d* files ...'
+rm -vf run/bio4d* || die "rm run/bio4d* failed: exit status=$?"
 
 log 'execing sbin/bio4d ...'
 exec sbin/bio4d								\
