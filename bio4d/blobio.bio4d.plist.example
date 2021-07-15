@@ -6,15 +6,14 @@
  <string>blobio.bio4d</string>
 
  <!--
- 	All environment vars defined here.
-	All others vars defined in $BLOBIO_ROOT/etc/profile,
-	sourced in by $BLOBIO_ROOT/sbin/launchd-bio4d.
+	All environment vars defined in $BLOBIO_ROOT/etc/profile,
+	loaded by script $BLOBIO_ROOT/sbin/launchd-bio4d.
  -->
  <key>EnvironmentVariables</key>
  <dict>
   
   <key>BLOBIO_ROOT</key>
-  <string>/opt/blobio/root/jmsdesk</string>
+  <string>/opt/blobio</string>
 
  </dict>
 
@@ -30,26 +29,26 @@
  <key>ProgramArguments</key>
  <array>
   <string>/usr/local/jmscott/sbin/launchd-log</string>
-  <string>/opt/blobio/root/jmsdesk/sbin/launchd-bio4d</string>
+  <string>/opt/blobio/sbin/launchd-bio4d</string>
  </array>
 
  <key>RunAtLoad</key>
  <true/>
 
  <key>UserName</key>
- <string>jmscott</string>
+ <string>blobio</string>
 
  <key>GroupName</key>
  <string>staff</string>
 
  <key>WorkingDirectory</key>
- <string>/opt/blobio/root/jmsdesk</string>
+ <string>/opt/blobio</string>
 
  <key>StandardErrorPath</key>
- <string>/Users/jmscott/log/launchd-jmsdesk-bio4d.log</string>
+ <string>/Users/blobio/log/launchd-jmsdesk-bio4d.log</string>
 
  <key>StandardOutPath</key>
- <string>/Users/jmscott/log/launchd-jmsdesk-bio4d.log</string>
+ <string>/Users/blobio/log/launchd-jmsdesk-bio4d.log</string>
 
 </dict>
 </plist>
