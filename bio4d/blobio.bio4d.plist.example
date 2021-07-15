@@ -13,21 +13,8 @@
  <key>EnvironmentVariables</key>
  <dict>
   
-  <key>PATH</key>
-  <!--  need zap-proc in /usr/local/jmscott -->
-  <string>/usr/local/jmscott/bin:/usr/bin:/bin</string>
-
   <key>BLOBIO_ROOT</key>
-  <string>/usr/local/blobio</string>
-
-  <key>BLOBIO_BIO4D_PORT</key>
-  <string>1797</string>
-
-  <key>BLOBIO_BIO4D_RRD_DURATION</key>
-  <string>60</string>
-
-  <key>BLOBIO_BIO4D_NET_TIMEOUT</key>
-  <string>20</string>
+  <string>/opt/blobio/root/jmsdesk</string>
 
  </dict>
 
@@ -43,26 +30,26 @@
  <key>ProgramArguments</key>
  <array>
   <string>/usr/local/jmscott/sbin/launchd-log</string>
-  <string>/usr/local/blobio/sbin/launchd-bio4d</string>
+  <string>/opt/blobio/root/jmsdesk/sbin/launchd-bio4d</string>
  </array>
 
  <key>RunAtLoad</key>
  <true/>
 
  <key>UserName</key>
- <string>blobio</string>
+ <string>jmscott</string>
 
  <key>GroupName</key>
  <string>staff</string>
 
  <key>WorkingDirectory</key>
- <string>/usr/local/blobio</string>
+ <string>/opt/blobio/root/jmsdesk</string>
 
  <key>StandardErrorPath</key>
- <string>/Users/blobio/log/launchd-bio4d.log</string>
+ <string>/Users/jmscott/log/launchd-jmsdesk-bio4d.log</string>
 
  <key>StandardOutPath</key>
- <string>/Users/blobio/log/launchd-bio4d.log</string>
+ <string>/Users/jmscott/log/launchd-jmsdesk-bio4d.log</string>
 
 </dict>
 </plist>
