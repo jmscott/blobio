@@ -49,6 +49,9 @@
 
  <key>StandardOutPath</key>
  <string>/Users/blobio/log/launchd-jmsdesk-bio4d.log</string>
+ 
+ <key>Disabled</key>
+ <false/>
 
 </dict>
 </plist>
