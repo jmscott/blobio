@@ -1,0 +1,38 @@
+#
+#  Synopsis:
+#	Interactive bash_login script, sets up PS1, etc.
+#  Usage:
+#	export BLOBIO_ROOT=$HOME/opt/blobio
+#	cd $BLOBIO_ROOT
+#	cp lib/bash_login.example etc/bash_login
+#	. etc/bash_login
+#
+
+if [ ! -n "$BLOBIO_ROOT" ];  then
+	echo "ERROR: env not defined: BLOBIO_ROOT" >&2
+	return
+fi
+
+if [ ! -d $BLOBIO_ROOT ];  then
+	echo "ERROR: no directory: $BLOBIO_ROOT" >&2
+	return
+fi
+	
+cd $BLOBIO_ROOT || exit 1
+
+if [ -r etc/profile ];  then
+	. etc/profile
+else
+	echo "ERROR: can not read profile: $(pwd)/etc/profile"
+	return
+fi
+
+echo
+alias rr=run-stat-report
+echo
+
+PS1="blob:$PGDATABASE@$(hostname | sed 's/\..*//')> "
+
+export R=$BLOBIO_ROOT
+
+test -e etc/psqlrc && export PSQLRC=$BLOBIO_ROOT/etc/psqlrc

@@ -122,6 +122,7 @@ install: all
 		$(DIST_ROOT)/sbin
 
 	install -g $(DIST_GROUP) -o $(DIST_USER) -m ug=r,o=		\
+		bash_login.example					\
 		bash_login-dev.example					\
 		crontab.example						\
 		hamlet.txt						\
