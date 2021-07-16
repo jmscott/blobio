@@ -4,6 +4,10 @@
 <!--
   Synopsis:
   	Example of Mac launchd configurations for bio4d daemon.
+  See:
+  	Requires jmscott work tools on github.
+
+  		https://github.com/jmscott/work
   Note:
   	Add example substitution of ${BLOBIO_ROOT} variable.
 -->
