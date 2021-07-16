@@ -19,32 +19,8 @@
 
   <key>EnvironmentVariables</key>
   <dict>
-  	<key>PATH</key>
-	<string>sbin:bin:/usr/local/jmscott/bin:/usr/local/pgsql/bin:/usr/bin:/bin</string>
-
 	<key>BLOBIO_ROOT</key>
 	<string>/usr/local/blobio</string>
-
-	<key>BLOBIO_ALGORITHM</key>
-	<string>bc160</string>
-
-	<key>BLOBIO_SERVICE</key>
-	<string>bio4:localhost:1797</string>
-
-	<key>PGHOST</key>
-	<string>/tmp</string>
-
-	<key>PGPORT</key>
-	<string>5432</string>
-
-	<key>PGUSER</key>
-	<string>postgres</string>
-
-	<key>PGPASSWORD</key>
-	<string></string>
-
-	<key>PGDATABASE</key>
-	<string>blobio</string>
   </dict>
 
   <key>ProgramArguments</key>
