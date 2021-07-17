@@ -6,4 +6,4 @@
  *	export PSQLRC=$BLOBIO/etc/psqlrc
  */
 \set timing on
-set search_path to blobio,public;
+SET search_path TO blobio,public;
