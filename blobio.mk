@@ -2,6 +2,10 @@
 #  Synopsis:
 #	Static make rules for blobio.
 #
+ifndef DIST_ROOT
+$(error var DIST_ROOT is not set)
+endif
+
 UNAME=$(shell uname)
 
 #  Most extreme compilation flags
