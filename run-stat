@@ -10,7 +10,7 @@
 #	to tab separated rows, suitable for parsing by shell scripts.  The
 #	processes summarized are "bio4d" and "flowd", typically in either
 #	directories ${BLOBIO_ROOT, SETSPACE_ROOT}/<schema>/*/run or
-#	$BLOBIO_ROOT/sync/<host>/run.
+#	$BLOBIO_ROOT/sync/root/<remote-name>/run.
 #
 #	run-stat writes tab separated rows to standard out.
 #
@@ -46,13 +46,17 @@
 #  See:
 #	run-stat-report
 #  Note:
+#	Ambigous about definition of staleness of files in  run/*.
+#	Probably ought to consult etc/profile for vars like
+#	BLOBIO_BIO4D_RRD_DURATION or heartbeat duration.
+#	
 #	Really, really, really need to move the files in log/*.{qdr,xdr,fdr}
 #	to directory data/ or spool/!
 #
 #	Probing process existence with pgrep might be useful.
 #	Not clear if another script should do this.
 #
-STALE_AFTER=60
+STALE_AFTER=62
 
 die()
 {
@@ -128,7 +132,7 @@ _cat_run()
 		;;
 	flowd/[a-z0-9]*)
 		HOST=$(echo "$WHAT" | sed 's/......//')
-		_cat_flowd sync/host/$HOST/run/flowd.stat 
+		_cat_flowd sync/root/$HOST/run/flowd.stat 
 		;;
 	*)
 		die "impossible what: $WHAT"
@@ -146,7 +150,7 @@ _cat_run flowd run/flowd.pid
 
 #  check sync flowd process
 
-find sync/host -name run -type d | while read RUN_DIR;  do
+find sync/root -name run -type d | while read RUN_DIR;  do
 	HOST=$(basename $(dirname $RUN_DIR))
 	_cat_run flowd/$HOST $RUN_DIR/flowd.pid 
 done
