@@ -2,21 +2,19 @@
 #  Synopsis:
 #	Start flowd process from MAC OS launchd, consulting run/flowd.pid
 #  Usage:
+#	Ponder moving 'unset PGSYSCONFDIR' somewhere else.
+#	Only gocode/libpq croaks on defined PGSYSCONFDIR, so we can
+#	not put 'unset PGSYSCONFDIR' in etc/profile.
+#
 #	sbin/launchd-flowd etc/blobio.flow
 #
-#	BLOBIO_ROOT=/usr/local/blobio/sync/host/wework
+#	BLOBIO_ROOT=/usr/local/blobio/sync/root/wework
 #	cd $BLOBIO_ROOT
 #	sbin/launchd-flowd etc/wework.flow
 #
 
 PROG=$(basename $0)
 
-#
-#  golang libpq gripes about PGSYSCONFDIR
-#
-#  Note:
-#	Ponder moving 'unset PGSYSCONFDIR' somewhere else.
-#
 unset PGSYSCONFDIR
 
 log()
@@ -44,13 +42,31 @@ log "flow conf: $FLOW_CONF"
 touch spool/bio4d.brr || die "touch bio4d.brr failed: exit status=$?"
 
 #
-#  Launchd is responsible for killing the kids, so we can
+#  In theory, launchd is responsible for killing the kids, so we can
 #  confidently clean out the run/flowd files.
 #
-#	 <key>AbandonProcessGroup</key>
+#	<key>AbandonProcessGroup</key>
 #	<false/>
 #
+#  However, we do not trust launchd, so simply kill a running flowd
+#  and move on.
+#
+RUN_PID=run/flowd.pid
+if [ -e $RUN_PID ];  then
+	log "pid file exists: $RUN_PID"
+	if [ -s $RUN_PID ];  then
+		PID=$(head -1 $RUN_PID)
+		log "killing possible flowd process: #$PID"
+		kill $PID
+	else
+		log 'pid file is empty, so perhaps flowd crashed'
+	fi
+else
+	log 'no run/flowd.pid (good)'
+fi
 rm -f run/flowd.* || die "rm run/flowd.* failed: exit status=$?"
 
+test -r etc/profile || die "can not read $(pwd)/etc/profile"
+. etc/profile
 log 'execing flowd ...'
 exec bin/flowd server $FLOW_CONF
