@@ -41,7 +41,7 @@ END
 				;;
 			flowd/*)
 				HOST=$(echo $PROC | sed 's/......//')
-				SP="sync/host/$HOST/run/flowd.stat"
+				SP="sync/root/$HOST/run/flowd.stat"
 				;;
 			*)
 				die "unknown sttable process: $PROC"

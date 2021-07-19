@@ -48,7 +48,7 @@ install: all
 	install -g $(DIST_GROUP) -o $(DIST_USER)			\
 		-m u=rwx,go= -d $(DIST_ROOT)/sync
 	install -g $(DIST_GROUP) -o $(DIST_USER)			\
-		-m u=rwx,go= -d $(DIST_ROOT)/sync/host
+		-m u=rwx,go= -d $(DIST_ROOT)/sync/root
 	install -g $(DIST_GROUP) -o $(DIST_USER) -m u=rx,go=		\
 		$(SBINs)						\
 		$(DIST_ROOT)/sbin
@@ -75,11 +75,3 @@ dev-links:
 	test -e sbin || ln -s . sbin
 	test -e lib || ln -s . lib
 	test -e etc || ln -s . etc
-
-dev-sync:
-	rm -rf sync
-	mkdir sync && cd sync 						&&\
-		ln -s . etc						&&\
-		ln -s . host						&&\
-		ln -s . tmp						&&\
-		cp ../profile-sync.example profile

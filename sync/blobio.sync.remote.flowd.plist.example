@@ -27,7 +27,7 @@
 	<string>sbin:bin:/usr/local/pgsql/bin:/usr/local/jmscott/bin:/usr/bin:/bin</string>
 
 	<key>BLOBIO_ROOT</key>
-	<string>/usr/local/blobio/sync/host/remote</string>
+	<string>/usr/local/blobio/sync/root/remote</string>
 
 	<key>BLOBIO_ALGORITHM</key>
 	<string>bc160</string>
@@ -54,7 +54,7 @@
   <string>staff</string>
 
   <key>WorkingDirectory</key>
-  <string>/usr/local/blobio/sync/host/remote</string>
+  <string>/usr/local/blobio/sync/root/remote</string>
 
   <key>StandardErrorPath</key>
   <string>/Users/blobio/log/launchd-sync-remote-flowd.log</string>

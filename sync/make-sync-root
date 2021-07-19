@@ -1,7 +1,7 @@
 #!/bin/bash
 #
 #  Synopsis:
-#	Make the sync directory for a particular host in $BLOBIO_ROOT/sync/host
+#	Make the sync directory for a remote service in $BLOBIO_ROOT/sync/root
 #  Usage:
 #	make-sync-root <remote name> <remote blobio service>
 #
@@ -52,7 +52,7 @@ test -n "$BLOBIO_ROOT" || die 'env not defined: BLOBIO_ROOT'
 cd $BLOBIO_ROOT || die "cd $BLOBIO_ROOT failed: exit status=$?"
 
 #  make sync directories
-SYNC_ROOT=$BLOBIO_ROOT/sync/host/$REMOTE_NAME
+SYNC_ROOT=$BLOBIO_ROOT/sync/root/$REMOTE_NAME
 _mkdir $SYNC_ROOT
 cd $SYNC_ROOT || die "cd $SYNC_ROOT failed: exit status=$?"
 _mkdir log
@@ -65,21 +65,25 @@ _ln_root spool
 _ln_root bin
 _ln_root lib
 
-#  build a default flow file from the template file in
-#  $BLOBIO_ROOT/lib/sync.flow.example.
+#  build a default flow file from the example file in
+#  $BLOBIO_ROOT/lib/sync-remote.flow.example .
 
 FLOW=etc/sync-$REMOTE_NAME.flow
 
-#  done if the flow config already exists
-test -e $FLOW && exit 0
-
-TEMPLATE=$BLOBIO_ROOT/lib/sync-remote.flow.example
-test -r $TEMPLATE || die "can not read flow template: $TEMPLATE"
-sed "s/{REMOTE_BLOBIO_SERVICE}/$REMOTE_BLOBIO_SERVICE/g" $TEMPLATE	|
+FLOW_EXAMPLE=$BLOBIO_ROOT/lib/sync-remote.flow.example
+test -r $FLOW_EXAMPLE || die "can not read flow example: $FLOW_EXAMPLE"
+sed "s/{REMOTE_BLOBIO_SERVICE}/$REMOTE_BLOBIO_SERVICE/g" $FLOW_EXAMPLE	|
 	sed "s/{BLOBIO_SERVICE}/$BLOBIO_SERVICE/g"			\
 	>$FLOW
 STATUS=${PIPESTATUS[*]}
 test "$STATUS" = '0 0' ||
-	die "sed template >$FLOW failed: exit status=$STATUS"
+	die "sed example >$FLOW failed: exit status=$STATUS"
+
+#  default profile just dots in local profile and resets BLOBIO_ROOT
+
+cat >etc/profile <<END || die "cat >etc/profile failed: exit status=$?"
+. ../../../etc/profile
+export BLOBIO_ROOT=$SYNC_ROOT
+END
 
 exit 0

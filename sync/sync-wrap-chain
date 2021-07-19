@@ -9,7 +9,7 @@
 #	is verified on the remote server with an "eat" request.  Successful
 #	eats are cached.
 #  Usage:
-#	sync-wrap-chain <remote host> <stop brr log count> 
+#	sync-wrap-chain <remote service> <stop brr log count> 
 #	sync-wrap-chain condor.setspace.com 24
 #	
 #  Exit Status:
@@ -21,7 +21,7 @@
 #
 #	Can the variable EXISTS_COUNT be replaced with global bash variable?
 #
-#	Need to run sync process in $BLOBIO_ROOT/sync/host/$SYNC_HOST.
+#	Need to run sync process in $BLOBIO_ROOT/sync/root/$SYNC_NAME.
 #
 #	Does cache need to remove taken blobs?
 #
@@ -65,13 +65,13 @@ leave()
 }
 
 test $# = 2 || die 1 "wrong number of arguments, got $#, expected 2"
-SYNC_HOST=$1
+SYNC_NAME=$1
 STOP_BRR_LOG_COUNT=$2
 
 log 'hello, world'
 trap leave EXIT QUIT INT TERM
 
-log "sync host: $SYNC_HOST"
+log "sync root name: $SYNC_NAME"
 log "stop brr log count: $STOP_BRR_LOG_COUNT"
 
 test -n "$BLOBIO_ROOT" || die 'env variable not defined: BLOBIO_ROOT'
@@ -88,7 +88,7 @@ LOCAL_GET_SERVICE=${BLOBIO_GET_SERVICE:=$BLOBIO_SERVICE}
 log "local blobio get service: $LOCAL_GET_SERVICE"
 
 #  Get the remote service from $SYNC_ROOT/etc/profile
-SYNC_ROOT=$BLOBIO_ROOT/sync/host/$SYNC_HOST
+SYNC_ROOT=$BLOBIO_ROOT/sync/root/$SYNC_NAME
 log "sync root: $SYNC_ROOT"
 test -d $SYNC_ROOT || die "sync root dir does not exist: $SYNC_ROOT"
 SYNC_PROFILE=$SYNC_ROOT/etc/profile

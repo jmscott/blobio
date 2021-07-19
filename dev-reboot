@@ -148,14 +148,14 @@ fi
 log 'zapping bio4d ...'
 zap-proc run/bio4d.pid bio4d-listen
 
-log 'zap files in directories: run/ log/ and sync/host'
+log 'zap files in directories: run/ log/ and sync/root'
 (
 	echo bloody-bsd-xargs-missing-no-run-if-empty
 	find run log -follow -type f					|
 		#  don't zap log/dev-reboot.log
 		fgrep -v log/dev-reboot.log
 	find $(
-		find sync/host						\
+		find sync/root						\
 		-mindepth 2						\
 		-maxdepth 2						\
 		-type d							\

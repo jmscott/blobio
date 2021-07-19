@@ -1,9 +1,9 @@
 #!/bin/bash
 #
 #  Synopsis:
-#	Purge cached files and directories for a particular sunk host.
+#	Purge cached files and directories for a synced remote service.
 #  Usage:
-#	purge-sync-cache <stale-days> <sync-host>
+#	purge-sync-cache <stale-days> <sync-root-name>
 #	purge-sync-cache 7 condor.setspace.com
 #
 
@@ -36,10 +36,10 @@ case "$1" in
 esac
 info "stale days: $STALE_DAYS days"
 
-SYNC_HOST="$2"
-info "sync host: $SYNC_HOST"
-SYNC_ROOT=$BLOBIO_ROOT/sync/host/$SYNC_HOST
+SYNC_ROOT="$2"
 info "sync root: $SYNC_ROOT"
+SYNC_ROOT=$BLOBIO_ROOT/sync/root/$SYNC_ROOT
+info "sync root path: $SYNC_ROOT"
 cd $SYNC_ROOT || die "cd $SYNC_ROOT failed: exit status=$?"
 
 if [ ! -e cache/exists ];  then
