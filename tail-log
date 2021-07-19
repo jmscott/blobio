@@ -2,7 +2,7 @@
 #  Synopsis:
 #	Tail today's log files for bio4d, flowd and sync processes.
 #  Note:
-#	Inactive logs in sync/host/*/log are tailed.
+#	Inactive logs in sync/root/*/log are tailed.
 #
 #	Not correctly handling when "today" become "tomorrow".
 #
@@ -22,8 +22,8 @@ case $# in
 	START_DIRS='log sync'
 	;;
 *)
-	for H in $@;  do
-		SYNC_DIR=sync/host/$H
+	for N in $@;  do
+		SYNC_DIR=sync/root/$N
 		test -d $SYNC_DIR ||
 				die "sync directory does not exist: $SYNC_DIR"
 		START_DIRS="$START_DIRS $SYNC_DIR"
