@@ -28,8 +28,9 @@ else
 fi
 
 echo
-alias rr=run-stat-report
+run-stat-report
 echo
+alias rr=run-stat-report
 
 PS1="blob:$PGDATABASE@$(hostname | sed 's/\..*//')> "
 
