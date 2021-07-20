@@ -26,12 +26,12 @@
 #  DIST_ROOT points to where to install entire blobio distribution.
 #  For example for development set DIST_ROOT to $(HOME)/opt/blobio
 
-DIST_ROOT?=/usr/local/blobio
-#DIST_ROOT?=$(HOME)/opt/blobio
+DIST_ROOT=/usr/local/blobio
+#DIST_ROOT=$(HOME)/opt/blobio
 
 #  openssl 1+ installed by standard distro package
-OPENSSL_INC?=
-OPENSSL_LIB?=-lssl -lcrypto
+OPENSSL_INC=
+OPENSSL_LIB=-lssl -lcrypto
 
-#  where is go distribution installed.
-GODIST?=/usr/local/go
+#  where golang distribution installed
+GODIST=/usr/local/go
