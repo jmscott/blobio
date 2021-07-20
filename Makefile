@@ -58,8 +58,6 @@ install: all
 	install -g $(DIST_GROUP) -o $(DIST_USER)			\
 		-d $(DIST_ROOT)/bin
 	install -g $(DIST_GROUP) -o $(DIST_USER)			\
-		-d $(DIST_ROOT)/root
-	install -g $(DIST_GROUP) -o $(DIST_USER)			\
 		-d $(DIST_ROOT)/src
 	install -g $(DIST_GROUP) -o $(DIST_USER)			\
 		-d $(DIST_ROOT)/src/pgsql
@@ -100,8 +98,6 @@ install: all
 		-m u=rwx,go= -d $(DIST_ROOT)/data/fs_bc160/tmp
 	install -g $(DIST_GROUP) -o $(DIST_USER)			\
 		-m u=rwx,g=rx,o= -d $(DIST_ROOT)/sync
-	install -g $(DIST_GROUP) -o $(DIST_USER)			\
-		-m u=rwx,g=rx,o= -d $(DIST_ROOT)/sync/root
 	install -g $(DIST_GROUP) -o $(DIST_USER)			\
 		-d $(DIST_ROOT)/lib
 	#install -g $(DIST_GROUP) -o $(DIST_USER)			\
