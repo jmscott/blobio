@@ -8,7 +8,12 @@
 #	. etc/bash_login
 #
 
-if [ ! -n "$BLOBIO_ROOT" ];  then
+if [ -z "$JMSCOTT_ROOT" ];  then
+	export JMSCOTT_ROOT=/usr/local/jmscott
+	. $JMSCOTT_ROOT/lib/bash_login.example
+fi
+
+if [ -z "$BLOBIO_ROOT" ];  then
 	echo "ERROR: env not defined: BLOBIO_ROOT" >&2
 	return
 fi
