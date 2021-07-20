@@ -103,11 +103,11 @@ install: all
 	#install -g $(DIST_GROUP) -o $(DIST_USER)			\
 		#-d $(DIST_ROOT)/www
 	install -g $(DIST_GROUP) -o $(DIST_USER) -m ugo=rx		\
+		BLOBIO_ROOT-bash					\
 		pgsql/bio-merge-service					\
 		$(DIST_ROOT)/bin
 
 	install -g $(DIST_GROUP) -o $(DIST_USER) -m u=rx,go=		\
-		BLOBIO_ROOT-bash					\
 		brr-stat						\
 		cron-pg_dump-daily					\
 		cron-reboot						\
