@@ -95,6 +95,7 @@ install: all
 		xdr2psql						\
 		$(DIST_ROOT)/bin
 	install -g $(DIST_GROUP) -o $(DIST_USER) -m u=rx,go=		\
+		boot-flowd						\
 		launchd-flowd						\
 		$(DIST_ROOT)/sbin
 	install -g $(DIST_GROUP) -o $(DIST_USER) -m ugo=r		\

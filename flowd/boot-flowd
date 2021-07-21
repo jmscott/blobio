@@ -1,18 +1,15 @@
+#!/bin/bash
 #
 #  Synopsis:
-#	Start flowd process from MAC OS launchd, consulting run/flowd.pid
+#	Boot flowd process from MAC OS launchd or systemd.
 #  Usage:
 #	Ponder moving 'unset PGSYSCONFDIR' somewhere else.
 #	Only gocode/libpq croaks on defined PGSYSCONFDIR, so we can
 #	not put 'unset PGSYSCONFDIR' in etc/profile.
 #
-#		sbin/launchd-flowd etc/blobio.flow
-#
-#	BLOBIO_ROOT=/usr/local/blobio/sync/root/wework
-#	cd $BLOBIO_ROOT
-#	sbin/launchd-flowd etc/wework.flow
-#  Note:
-#	Merge launchd-flowd and systemd-flowd into boot-flowd.
+#		BLOBIO_ROOT=/usr/local/blobio/sync/root/wework
+#		cd $BLOBIO_ROOT
+#		sbin/boot-flowd etc/wework.flow
 #
 
 PROG=$(basename $0)
@@ -39,13 +36,14 @@ trap 'log good bye, cruel world' EXIT
 log "BLOBIO_ROOT=$BLOBIO_ROOT"
 log "PATH=$PATH"
 log "flow conf: $FLOW_CONF"
+log "current directory: $(pwd)"
 
 #  Note: need flowd to be smarter about missing brr file!
 touch spool/bio4d.brr || die "touch bio4d.brr failed: exit status=$?"
 
 #
-#  In theory, launchd is responsible for killing the kids, so we can
-#  confidently clean out the run/flowd files.
+#  In theory, launchd or systemd is responsible for killing the kids,
+#  so we can confidently clean out the run/flowd files.
 #
 #	<key>AbandonProcessGroup</key>
 #	<false/>
