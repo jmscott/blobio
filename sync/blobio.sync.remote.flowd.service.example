@@ -1,0 +1,47 @@
+#
+#  Synopsis:
+#	System unit definition for flowd daemon to sync to remote service
+#  Usage:
+#	# cp $BLOBIO_ROOT/lib/blobio.sync.remote.service.example	\
+#		/etc/systemd/system/blobio.sync.<remote>.flowd.service
+#  Note:
+#	Need to rename this file as
+#
+#		blobio.sync.remote.flowd.service.example
+#
+
+[Unit]
+Description=BlobIO Flowd Server to Sync Remote Host
+BindsTo=blobio.bio4d.service postgresql.service
+After=network-online.target blobio.bio4d.service
+
+[Service]
+Type=simple
+User=blobio
+
+WorkingDirectory=/usr/local/blobio/sync/root/remote.host.com
+
+Environment=BLOBIO_ROOT=/usr/local/blobio/sync/root/remote.host.com
+Environment=BLOBIO_SERVICE=bio4:localhost:1797
+Environment=BLOBIO_ALGORITHM=bc160
+Environment=TMPDIR=/usr/local/blobio/tmp
+
+Environment=PGHOST=/tmp
+Environment=PGPORT=5432
+Environment=PGUSER=postgres
+Environment=PGPASSWORD=
+Environment=PGDATABASE=blobio
+Environment=PATH=/usr/local/pgsql/bin:/usr/local/blobio/sbin:/usr/local/blobio/bin:/usr/bin:/bin
+
+StandardOutput=file:/home/blobio/log/systemd-blobio.sync.remote.service.log
+StandardError=file:/home/blobio/log/systemd-blobio.sync.remote.service.log
+ExecStart=/usr/local/blobio/bin/flowd server etc/sync-remote.host.com.flow
+PIDFile=/usr/local/blobio/sync/root/remote/run/flowd.pid
+KillMode=control-group
+KillSignal=SIGTERM
+TimeoutSec=20
+RestartSec=20
+Restart=always
+
+[Install]
+WantedBy=multi-user.target

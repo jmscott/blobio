@@ -7,7 +7,7 @@
 #
 [Unit]
 Description=BlobIO bio4d Server
-After=network.target
+After=network-online.target
 
 [Service]
 Type=simple
