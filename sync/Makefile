@@ -19,8 +19,8 @@ SBINs=									\
 	walk-wrap-set							\
 
 LIBs=									\
-	blobio.sync.remote.service.example				\
 	blobio.sync.remote.flowd.plist.example				\
+	blobio.sync.remote.flowd.service.example			\
 	jaccard-all.conf.example					\
 	jaccard-tip.conf.example					\
 	not-in-service.sql						\
