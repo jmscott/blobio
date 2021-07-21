@@ -28,7 +28,7 @@ cd $BLOBIO_ROOT || exit 1
 if [ -r etc/profile ];  then
 	. etc/profile
 else
-	echo "ERROR: can not read profile: $(pwd)/etc/profile"
+	echo "ERROR: can not read profile: $(pwd)/etc/profile" >&2
 	return
 fi
 
