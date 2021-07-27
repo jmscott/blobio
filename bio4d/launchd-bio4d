@@ -59,12 +59,12 @@ cd $BLOBIO_ROOT || die "cd failed: exit status=$?"
 test -r etc/profile && . etc/profile
 
 log "BLOBIO_ROOT=$BLOBIO_ROOT"
+log "current directory: $(pwd)"
 log "PATH=$PATH"
 log "bio4d port: $BLOBIO_BIO4D_PORT"
 log "stat sample duration: $BLOBIO_BIO4D_RRD_DURATION sec"
 log "net timeout: $BLOBIO_BIO4D_NET_TIMEOUT sec"
-log "trust file system: $BLOBIO_TRUST_FS sec"
-log "current directory: $(pwd)"
+log "trust file system: $BLOBIO_TRUST_FS"
 
 #
 #  Assume launchd has already killed the descendents
