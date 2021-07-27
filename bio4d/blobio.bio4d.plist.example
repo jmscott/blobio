@@ -4,17 +4,25 @@
 <!--
   Synopsis:
   	Example of Mac launchd configurations for bio4d daemon.
+  Usage:
+  	cat blobio.bio4d.plist.example				|
+  	sed 's@{BLOBIO_ROOT}@/path/to/blobio@g' 		|
+	sed 's/{BLOBIO_USER}/jmscott/g'				|
+	sed 's/{BLOBIO_GROUP}/staff/g'				|
+	sed 's/{BLOBIO_LAUNCHD_NAME}/jmsdesk.blobio.bio4d/g'	\
+		>/Library/LaunchDaemons/{BLOBIO_LAUNCHD_NAME}.plist
   See:
   	Requires jmscott work tools on github.
 
   		https://github.com/jmscott/work
   Note:
-  	Add example substitution of ${BLOBIO_ROOT} variable.
+  	Ought to write script sed-blobio.bio4d.plist, to paramterize above
+	sed script.
 -->
 <plist version="1.0">
 <dict>
  <key>Label</key>
- <string>blobio.bio4d</string>
+ <string>{BLOBIO_LAUNCHD_NAME}</string>
 
  <!--
 	All environment vars defined in $BLOBIO_ROOT/etc/profile,
@@ -24,7 +32,7 @@
  <dict>
   
   <key>BLOBIO_ROOT</key>
-  <string>/opt/blobio</string>
+  <string>{BLOBIO_ROOT}</string>
 
  </dict>
 
@@ -40,26 +48,26 @@
  <key>ProgramArguments</key>
  <array>
   <string>/usr/local/jmscott/sbin/launchd-log</string>
-  <string>/opt/blobio/sbin/launchd-bio4d</string>
+  <string>{BLOBIO_ROOT}/sbin/launchd-bio4d</string>
  </array>
 
  <key>RunAtLoad</key>
  <true/>
 
  <key>UserName</key>
- <string>blobio</string>
+ <string>{BLOBIO_USER}</string>
 
  <key>GroupName</key>
- <string>staff</string>
+ <string>{BLOBIO_GROUP}</string>
 
  <key>WorkingDirectory</key>
- <string>/opt/blobio</string>
+ <string>{BLOBIO_ROOT}</string>
 
  <key>StandardErrorPath</key>
- <string>/Users/blobio/log/launchd-jmsdesk-bio4d.log</string>
+ <string>/Users/{BLOBIO_USER}/log/launchd-jmsdesk-bio4d.log</string>
 
  <key>StandardOutPath</key>
- <string>/Users/blobio/log/launchd-jmsdesk-bio4d.log</string>
+ <string>/Users/{BLOBIO_USER}/log/launchd-jmsdesk-bio4d.log</string>
  
  <key>Disabled</key>
  <false/>
