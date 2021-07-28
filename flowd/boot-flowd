@@ -68,5 +68,9 @@ rm -f run/flowd.* || die "rm run/flowd.* failed: exit status=$?"
 
 test -r etc/profile || die "can not read $(pwd)/etc/profile"
 . etc/profile
-log 'execing flowd ...'
-exec bin/flowd server $FLOW_CONF
+log "invoking flowd server: $FLOW_CONF"
+bin/flowd server $FLOW_CONF
+STATUS=$?
+log "flowd exit status: $STATUS"
+rm -f run/flowd.* || die "rm -f run failed: exit sttus=$?"
+exit $STATUS
