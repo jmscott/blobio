@@ -73,9 +73,9 @@ log "trust file system: $BLOBIO_TRUST_FS"
 #	<false/>
 #
 log 'clearing run/bio4d* files ...'
-rm -vf run/bio4d* || die "rm run/bio4d* failed: exit status=$?"
+rm -vf run/bio4d* || die "pre: rm run/bio4d* failed: exit status=$?"
 
-log 'execing sbin/bio4d ...'
+log 'invoking sbin/bio4d ...'
 exec sbin/bio4d								\
 	--trust-fs $BLOBIO_TRUST_FS					\
 	--port $BLOBIO_BIO4D_PORT					\
@@ -84,3 +84,4 @@ exec sbin/bio4d								\
 	--in-foreground							\
 	--ps-title-XXXXXXXXXXXXXXXXXXXXXXX				\
 	--rrd-duration $BLOBIO_BIO4D_RRD_DURATION
+rm -vf run/bio4d* || die "post: rm run/bio4d* failed: exit status=$?"
