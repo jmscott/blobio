@@ -1,0 +1,50 @@
+#!/bin/bash
+#
+#  Synopsis:
+#	export BLOBIO_ROOT=/opt/jmscott/jmsdesk/blobio
+#	kill-bio4d
+#
+
+PROG=$(basename $0)
+PAUSE=3
+
+die()
+{
+	log "ERROR: $@" >&2
+	exit 1
+}
+
+log()
+{
+	echo "$(date +'%Y/%m/%d %H:%M:%S'): $PROG: $@"
+}
+
+test $# = 0 || die "wrong number of arguments: got $#, expected 0"
+
+log "BLOBIO_ROOT=$BLOBIO_ROOT"
+cd $BLOBIO_ROOT || die "cd BLOBIO_ROOT failed: exit status=$?"
+
+#  kill bio4d process if run/bio4d.pid exists
+PID_PATH=run/bio4.pid
+if [ -e $PID_PATH ];  then
+	log "pid file exists: $PID_PATH"
+	PID=$(head -1 $PID_PATH)
+	case "$PID" in
+	'')
+		log 'WARN: empty pid file'
+		;;
+	[1-9]*[0-9])
+		log "killing bio4d #$PID ..."
+		kill $PID
+		;;
+	*)
+		die "unexpected pid in $PID_PATH"
+		;;
+	esac
+else
+	log "no pid file: $PID_PATH"
+fi
+
+log 'clear any stale run/bio4d* ...'
+rm -f run/bio4d* || die "rm run/bio4d* failed: exit status=$?"
+exit 0

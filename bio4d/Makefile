@@ -49,9 +49,11 @@ SBINs=									\
 	append-brr							\
 	bio4d								\
 	bio4d_ctl							\
+	boot-bio4d							\
 	create-rrd							\
 	fs2udig								\
 	graph-rrd							\
+	kill-bio4d							\
 	launchd-bio4d							\
 	run-stat-bio4d							\
 	tcp4-stat							\

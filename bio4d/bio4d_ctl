@@ -20,23 +20,12 @@ die()
 
 log()
 {
-	if [ -z "$ACTION" ];  then
-		echo "$PROG: $@"
-	else
-		echo "$PROG: $ACTION: $@"
+	_A="$PROG"
+	if [ -n "$ACTION" ];  then
+		_A="$_A: $ACTION:"
 	fi
-}
-
-zap_bio4d()
-{
-	log 'insure bio4d-* processes not running' 
-	zap-proc run/bio4d.pid						\
-		bio4d-arborist						\
-		bio4d-brr-logger					\
-		bio4d-listen						\
-		bio4d-logger						\
-		bio4d-request						||
-	  die "zap-proc failed: exit status=$?"
+	echo "$(date +'%Y/%m/%d %H:%M:%S'): $_A: $@"
+	
 }
 
 ACTION="$1"
@@ -51,36 +40,10 @@ case "$BLOBIO_ROOT" in
 esac
 
 cd $BLOBIO_ROOT || die "cd $BLOBIO_ROOT failed"
-BIO4D=$BLOBIO_ROOT/sbin/bio4d
-test -r etc/profile && . etc/profile
-PORT=${BLOBIO_BIO4D_PORT:=1797}
-PID_PATH=$BLOBIO_ROOT/run/bio4d.pid
-NET_TIMEOUT=${BLOBIO_NET_TIMEOUT:=20}
-
-#  duration in seconds to write stat samples to run/bio4d.rrd
-#  0 disables.
-RRD_DURATION=${BLOBIO_BIO4D_RRD_DURATION:=0}
-
-#  can we trust the correctness of blobs in $BLOBIO_ROOT/data/fs_bc160?
-TRUST_FS=${BLOBIO_TRUST_FS:=false}
-log "trust file system: $BLOBIO_TRUST_FS"
 
 case "$ACTION" in
-boot)
-	rm -f $PID_PATH || die "rm $PID_PATH failed"
-	;;
 start)
-	zap_bio4d || exit
-	log 'starting biod4 process ...'
-	$BIO4D								\
-		--root $BLOBIO_ROOT					\
-		--port $PORT						\
-		--trust-fs $TRUST_FS					\
-		--net-timeout $NET_TIMEOUT				\
-		--rrd-duration $RRD_DURATION				\
-		--ps-title-XXXXXXXXXXXXXXXXXXXXXXX
-	STATUS=$?
-	test $STATUS = 0 || die "bio4d failed to start: exit status=$STATUS"
+	sbin/boot-bio4d $BLOBIO_ROOT
 
 	log "pausing $PAUSE seconds while bio4d starts ..."
 	sleep $PAUSE
@@ -90,7 +53,7 @@ start)
 	tail log/bio4d-$(date +'%a').log
 	;;
 stop)
-	zap_bio4d || exit
+	sbin/kill-bio4d
 	;;
 restart)
 	log 'restart'

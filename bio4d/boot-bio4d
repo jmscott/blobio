@@ -10,7 +10,7 @@ PROG=$(basename $0)
 
 log()
 {
-	echo "$(date +'%Y/'): $PROG: $@"
+	echo "$(date +'%Y/%m/%d %H:%M:%S'): $PROG: $@"
 }
 
 die()
@@ -79,22 +79,7 @@ bio4:*:[1-9]*)
 	;;
 esac
 
-PID_PATH=run/bio4d.pid
-if [ -e $PID_PATH ];  then
-	log "pid file exists: $PID_PATH"
-	if [ -s $PID_PATH ];  then
-		PID=$(head -1 $PID_PATH)
-		log "killing possible bio4d process: $PID"
-		kill $PID 2>/dev/null
-		sleep 1
-		kill -9 $PID 2>/dev/null
-	else
-		log 'WARN: pid file is empty'
-	fi
-fi
-
-log 'clearing stale files in run/'
-rm -f run/bio4* || die "rm stale run/ failed: exit status=$?"
+kill-bio4d
 
 BLOBIO_TRUST_FS=${BLOBIO_TRUST_FS:=false}
 log "trust fs: $BLOBIO_TRUST_FS"
@@ -116,3 +101,4 @@ sbin/bio4d								\
 	--rrd-duration $BLOBIO_BIO4D_RRD_DURATION
 STATUS=$?
 log "sbin/bio4d exit status: $STATUS"
+kill-bio4d
