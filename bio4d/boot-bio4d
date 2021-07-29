@@ -19,10 +19,21 @@ die()
 	exit 1
 }
 
+leave()
+{
+	STATUS=$?
+	if [ -n "$BLOBIO_ROOT" ];  then
+		log 'removing stale files in run/'
+		rm -f run/*						||
+			log "WARN: rm stale run/* failed: exit status=$?"
+	fi
+	log 'good bye, cruel world'
+}
+
 test $# = 1 || die "wrong number of arguments: got $#, expected 1"
 
 log 'hello, world'
-trap 'log good bye, cruel world' EXIT
+trap leave EXIT
 
 export BLOBIO_ROOT="$1"
 log "BLOBIO_ROOT=$BLOBIO_ROOT"
@@ -38,6 +49,8 @@ env | while read KV;  do
 	log "$KV"
 done
 
+BLOBIO_TRUST_FS=${BLOBIO_TRUST_FS:=false}
+
 case "$BLOBIO_SERVICE" in
 '')
 	die 'env not defined: BLOBIO_SERVICE'
@@ -46,16 +59,15 @@ bio4:*:[1-9]*)
 	case "$BLOBIO_BIO4D_PORT" in
 	'')
 		log 'env BLOBIO_BIO4D_PORT not defined'
-		log 'extrating port from BLOBIO_SERVICE'
 		#  extract port from BLOBIO_SERVICE
 		BLOBIO_BIO4D_PORT=$(
 			echo $BLOBIO_SERVICE				|
-			sed 's/.*:\([1-9][0-9]*)$/\1/'
+			sed 's/.*:\([1-9][0-9]*\)$/\1/'
 		)
-		log "BLOBIO_BIO4D_PORT=$BLOBIO_BIO4D_PORT"
+		log "extracted bio4d port: $BLOBIO_BIO4D_PORT"
 		;;
 	[1-9]*[0-9])
-		log BLOBIO_BIO4D_PORT=$BLOBIO_BIO4D_PORT
+		log "predefined bio4d port: $BLOBIO_BIO4D_PORT" 
 		;;
 	*)
 		die "unrecognized BLOBIO_BIO4D_PORT: $BLOBIO_BIO4D_PORT"
@@ -66,3 +78,41 @@ bio4:*:[1-9]*)
 	die "BLOBIO_SERVICE not bio4: $BLOBIO_SERVICE"
 	;;
 esac
+
+PID_PATH=run/bio4d.pid
+if [ -e $PID_PATH ];  then
+	log "pid file exists: $PID_PATH"
+	if [ -s $PID_PATH ];  then
+		PID=$(head -1 $PID_PATH)
+		log "killing possible bio4d process: $PID"
+		kill $PID 2>/dev/null
+		sleep 1
+		kill -9 $PID 2>/dev/null
+	else
+		log 'WARN: pid file is empty'
+	fi
+fi
+
+log 'clearing stale files in run/'
+rm -f run/bio4* || die "rm stale run/ failed: exit status=$?"
+
+BLOBIO_TRUST_FS=${BLOBIO_TRUST_FS:=false}
+log "trust fs: $BLOBIO_TRUST_FS"
+
+BLOBIO_BIO4D_NET_TIMEOUT=${BLOBIO_BIO4D_NET_TIMEOUT:=20}
+log "net timeout: $BLOBIO_BIO4D_NET_TIMEOUT sec"
+
+BLOBIO_BIO4D_RRD_DURATION=${BLOBIO_BIO4D_RRD_DURATION:=0}
+log "rrd duration: $BLOBIO_BIO4D_NET_TIMEOUT"
+
+log 'invoking sbin/bio4d ...'
+sbin/bio4d								\
+	--trust-fs $BLOBIO_TRUST_FS					\
+	--port $BLOBIO_BIO4D_PORT					\
+	--root $BLOBIO_ROOT						\
+	--net-timeout $BLOBIO_BIO4D_NET_TIMEOUT				\
+	--in-foreground							\
+	--ps-title-XXXXXXXXXXXXXXXXXXXXXXX				\
+	--rrd-duration $BLOBIO_BIO4D_RRD_DURATION
+STATUS=$?
+log "sbin/bio4d exit status: $STATUS"
