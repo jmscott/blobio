@@ -1,0 +1,68 @@
+#!/bin/bash
+#
+#  Synopsis:
+#	Boot bio4d daemon, extracting properties from etc/profile
+#  Usage:
+#	boot-bio4d $BLOBIO_ROOT
+#
+
+PROG=$(basename $0)
+
+log()
+{
+	echo "$(date +'%Y/'): $PROG: $@"
+}
+
+die()
+{
+	log "ERROR: $@" >&2
+	exit 1
+}
+
+test $# = 1 || die "wrong number of arguments: got $#, expected 1"
+
+log 'hello, world'
+trap 'log good bye, cruel world' EXIT
+
+export BLOBIO_ROOT="$1"
+log "BLOBIO_ROOT=$BLOBIO_ROOT"
+cd $BLOBIO_ROOT || die "cd BLOBIO_ROOT failed: exit status=$?"
+
+_P=etc/profile
+test -r $_P || die "can not read $_P"
+
+. $_P
+
+log 'dumping process environment ...'
+env | while read KV;  do
+	log "$KV"
+done
+
+case "$BLOBIO_SERVICE" in
+'')
+	die 'env not defined: BLOBIO_SERVICE'
+	;;
+bio4:*:[1-9]*)
+	case "$BLOBIO_BIO4D_PORT" in
+	'')
+		log 'env BLOBIO_BIO4D_PORT not defined'
+		log 'extrating port from BLOBIO_SERVICE'
+		#  extract port from BLOBIO_SERVICE
+		BLOBIO_BIO4D_PORT=$(
+			echo $BLOBIO_SERVICE				|
+			sed 's/.*:\([1-9][0-9]*)$/\1/'
+		)
+		log "BLOBIO_BIO4D_PORT=$BLOBIO_BIO4D_PORT"
+		;;
+	[1-9]*[0-9])
+		log BLOBIO_BIO4D_PORT=$BLOBIO_BIO4D_PORT
+		;;
+	*)
+		die "unrecognized BLOBIO_BIO4D_PORT: $BLOBIO_BIO4D_PORT"
+		;;
+	esac
+	;;
+*)
+	die "BLOBIO_SERVICE not bio4: $BLOBIO_SERVICE"
+	;;
+esac
