@@ -76,7 +76,6 @@ comm -3 <(
 		sed 's/\.\///'						|
 		sed 's/fs_\//:/'					|
 		sed 's/:......../:/g'					|
-		tee x0							|
 		sort
 	#
 	#  Need to check error condition!!!
