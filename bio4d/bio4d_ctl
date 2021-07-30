@@ -85,7 +85,7 @@ restart)
 	. etc/profile
 	case "$BLOBIO_BIO4D_RRD_DURATION" in
 	[1-9]*)
-		log "pause $BLOBIO_BIO4D_RRD_DURATION sec for stats"
+		log "pause $BLOBIO_BIO4D_RRD_DURATION sec for stats ..."
 		sleep $BLOBIO_BIO4D_RRD_DURATION
 		echo
 		run-stat-report
