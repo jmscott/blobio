@@ -205,18 +205,19 @@ func (conf *Config) open() {
 	}
 
 	//  insure system ids for databases are distinct
-	sid := make(map[string]bool, len(conf.Databases)) 
+	sid := make(map[string]string, len(conf.Databases)) 
 	for cnt := len(conf.Databases);  cnt > 0;  cnt-- {
 
 		//  Note:  do we need a timeout?
 		pg := <- done
-		if sid[pg.SystemIdentifier] {
+		if sid[pg.SystemIdentifier] != "" {
 			pg.die(
-				"duplicate system identifier: %s",
+				"duplicate system identifier: %s->%s",
+				sid[pg.SystemIdentifier],
 				pg.SystemIdentifier,
 			)
 		}
-		sid[pg.SystemIdentifier] = true
+		sid[pg.SystemIdentifier] = pg.tag
 	}
 	if len(sid) != len(conf.Databases) {
 		die("count of distinct system identifiers != database count")
