@@ -1,0 +1,50 @@
+#!/bin/bash
+#
+#  Synopsis:
+#	export BLOBIO_ROOT=/opt/jmscott/jmsdesk/blobio
+#	kill-flowd
+#
+
+PROG=$(basename $0)
+PAUSE=3
+
+die()
+{
+	log "ERROR: $@" >&2
+	exit 1
+}
+
+log()
+{
+	echo "$(date +'%Y/%m/%d %H:%M:%S'): $PROG: $@"
+}
+
+test $# = 0 || die "wrong number of arguments: got $#, expected 0"
+
+log "BLOBIO_ROOT=$BLOBIO_ROOT"
+cd $BLOBIO_ROOT || die "cd BLOBIO_ROOT failed: exit status=$?"
+
+#  kill flowd process if run/flowd.pid exists
+PID_PATH=run/flowd.pid
+if [ -e $PID_PATH ];  then
+	log "pid file exists: $PID_PATH"
+	PID=$(head -1 $PID_PATH)
+	case "$PID" in
+	'')
+		log 'WARN: empty pid file'
+		;;
+	[1-9]*[0-9])
+		log "killing flowd #$PID ..."
+		kill $PID
+		;;
+	*)
+		die "unexpected pid in $PID_PATH"
+		;;
+	esac
+else
+	log "no pid file: $PID_PATH"
+fi
+
+log 'clear any stale file: run/flowd* ...'
+rm -f run/flowd* || die "rm run/flowd* failed: exit status=$?"
+exit 0
