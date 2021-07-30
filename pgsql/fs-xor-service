@@ -40,7 +40,6 @@ die()
 
 leave()
 {
-	sleep 13
 	DURATION=$(expr $(date +%s) - $START_TIME)
 	log "$(duration-english $DURATION): good bye, cruel world"
 }
@@ -68,29 +67,9 @@ log "PATH=$PATH"
 
 log "starting scan of $(pwd)/data/ ..."
 log "file system only in column <, service only in column >"
-comm -3 <(
-	cd data || die "cd $(pwd)/data failed"
-	find fs_* -follow -type f -print				|
-		fgrep -v '/tmp/'					|
-		fgrep -v '.DS_Store'					|
-		sed 's/\.\///'						|
-		sed 's/fs_\//:/'					|
-		sed 's/:......../:/g'					|
-		sort
-	#
-	#  Need to check error condition!!!
-	#
-) <(
-	psql --no-psqlrc --quiet --no-align --tuples-only --command '
-SELECT
-	blob::text
-  FROM
-  	blobio.service
-  ORDER BY
-  	1 ASC
-') |
-	sed 's/^\t/> /' 		|
-	sed 's/^\([^>]\)/< \1/'		|
+comm -3 <(fs2udig | sort) <(ls-service)					|
+	sed 's/^\t/> /' 						|
+	sed 's/^\([^>]\)/< \1/'						|
 	while read LINE;  do
 		log $LINE
 	done
