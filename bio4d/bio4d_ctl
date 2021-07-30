@@ -11,6 +11,7 @@
 
 PROG=$(basename $0)
 PAUSE=3
+SOCKET_EXPIRE_PAUSE=20
 
 die()
 {
@@ -20,15 +21,26 @@ die()
 
 log()
 {
-	_A="$PROG"
+	_A="$PROG: "
 	if [ -n "$ACTION" ];  then
-		_A="$_A: $ACTION:"
+		_A="$_A$ACTION: "
 	fi
-	echo "$(date +'%Y/%m/%d %H:%M:%S'): $_A: $@"
+	echo "$(date +'%Y/%m/%d %H:%M:%S'): $_A$@"
 	
 }
 
-ACTION="$1"
+case "$1" in
+'')
+	die 'empty action'
+	;;
+start|stop|restart)
+	ACTION="$1"
+	;;
+*)
+	die "unknown action: $1";
+	;;
+esac
+
 case "$BLOBIO_ROOT" in
 '')
 	die 'not defined: BLOBIO_ROOT environment variable'
@@ -43,28 +55,50 @@ cd $BLOBIO_ROOT || die "cd $BLOBIO_ROOT failed"
 
 case "$ACTION" in
 start)
-	sbin/boot-bio4d $BLOBIO_ROOT
+	log 'boot biod4 into background ...'
+	sbin/boot-bio4d $BLOBIO_ROOT &
 
-	log "pausing $PAUSE seconds while bio4d starts ..."
+	log "pausing $PAUSE sec while bio4d starts ..."
 	sleep $PAUSE
-	test -f $PID_PATH || die "no pid file $PID_PATH, so bio4d aborted"
-	log "started with pid #$(cat $PID_PATH)"
-	log 'tail of log file follows ...'
-	tail log/bio4d-$(date +'%a').log
+	test -s run/bio4d.pid || die 'bio4d did not start'
+	log "process id of bio4d: $(head -1 run/bio4d.pid)"
 	;;
 stop)
 	sbin/kill-bio4d
 	;;
 restart)
 	log 'restart'
-	(bio4d_ctl stop && bio4d_ctl start) || die 'stop/start failed, bye'
-	;;
-'')
-	die 'missing expected action: start|stop|restart'
+	SOCKET_MAY_BE_BUSY=$(test -e run/bio4d.pid;  echo $?)
+	(
+		bio4d_ctl stop						&&
+		(
+			test $SOCKET_MAY_BE_BUSY = 0			&&
+			(
+				log "pause $SOCKET_EXPIRE_PAUSE sec for socket"
+				sleep $SOCKET_EXPIRE_PAUSE
+			)
+			true
+		)							&&
+		bio4d_ctl start
+	) || die 'stop/start failed, bye'
+
+	. etc/profile
+	case "$BLOBIO_BIO4D_RRD_DURATION" in
+	[1-9]*)
+		log "pause $BLOBIO_BIO4D_RRD_DURATION sec for stats"
+		sleep $BLOBIO_BIO4D_RRD_DURATION
+		echo
+		run-stat-report
+		echo
+		;;
+	0)
+		log 'bio4d not reporting stats'
+		;;
+	esac
+	log 'our work here is done'
 	;;
 *)
-	ACTION=
-	die "unknown action: expected start|stop|restart"
+	die "impossible action: $ACTION"
 	;;
 esac
 exit 0;

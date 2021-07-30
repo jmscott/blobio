@@ -25,7 +25,7 @@ log "BLOBIO_ROOT=$BLOBIO_ROOT"
 cd $BLOBIO_ROOT || die "cd BLOBIO_ROOT failed: exit status=$?"
 
 #  kill bio4d process if run/bio4d.pid exists
-PID_PATH=run/bio4.pid
+PID_PATH=run/bio4d.pid
 if [ -e $PID_PATH ];  then
 	log "pid file exists: $PID_PATH"
 	PID=$(head -1 $PID_PATH)
@@ -45,6 +45,6 @@ else
 	log "no pid file: $PID_PATH"
 fi
 
-log 'clear any stale run/bio4d* ...'
+log 'clear any stale file: run/bio4d* ...'
 rm -f run/bio4d* || die "rm run/bio4d* failed: exit status=$?"
 exit 0
