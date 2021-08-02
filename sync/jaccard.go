@@ -272,10 +272,13 @@ func (pg *PGDatabase) open(done chan *PGDatabase) {
 	err = pg.db.QueryRow(
 		`
 SELECT
-	system_identifier
+	system_identifier || '-' || db.oid
   FROM
-  	pg_control_system()
-
+  	pg_control_system(),
+	pg_database db
+  WHERE
+  	db.datname = 'jmsdesk'
+;
 	`).Scan(&pg.SystemIdentifier)
 	if err != nil {
 		pg.die("db.Query(system_identifier) failed: %s", err)
@@ -283,7 +286,7 @@ SELECT
 	if len(pg.SystemIdentifier) == 0 {
 		pg.die("empty system identifier")
 	}
-	debug("pg system id: %s: %s", pg.tag, pg.SystemIdentifier)
+	debug("pg database id: %s: %s", pg.tag, pg.SystemIdentifier)
 	done <- pg
 }
 
