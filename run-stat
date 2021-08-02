@@ -56,7 +56,7 @@
 #	Probing process existence with pgrep might be useful.
 #	Not clear if another script should do this.
 #
-STALE_AFTER=62
+STALE_AFTER=120
 
 die()
 {
