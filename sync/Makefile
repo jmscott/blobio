@@ -12,7 +12,7 @@ SBINs=									\
 	make-sync-root							\
 	purge-sync-cache						\
 	reboot-sync							\
-	rummy								\
+	rummy-chain							\
 	sync-put							\
 	sync-wrap							\
 	sync-wrap-chain							\
@@ -25,7 +25,7 @@ LIBs=									\
 	jaccard-tip.conf.example					\
 	not-in-service.sql						\
 	profile-sync.example						\
-	rummy.sql							\
+	rummy-chain.sql							\
 	sync-remote.flow.example					\
 	syncness.sql							\
 

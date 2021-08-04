@@ -57,7 +57,7 @@ log "PGUSER=$PGUSER"
 log "PGPASSWORD=$PGPASSWORD"
 log "PGDATABASE=$PGDATABASE"
 
-SQL=$BLOBIO_ROOT/lib/rummy.sql
+SQL=$BLOBIO_ROOT/lib/rummy-sync.sql
 log "rummy sql: $SQL"
 test -r $SQL || die "can not read sql file: $SQL"
 
