@@ -9,6 +9,7 @@
 #
 
 RUMMY_UDIG_SET=${TMPDIR:=/tmp}/$(basename $0)-$$.udig
+PSQL='psql --quiet --no-align --no-psqlrc --tuples-only'
 
 log()
 {
@@ -49,15 +50,9 @@ log "PGPASSWORD=$PGPASSWORD"
 log "PGDATABASE=$PGDATABASE"
 
 log "service blobs not in table brr_blob_size since $SINCE"
-psql									\
-	--file=lib/cron-rummy.sql					\
-	--set since="$SINCE"						\
-	--quiet								\
-	--no-align							\
-	--no-psqlrc							\
-	--tuples-only							\
-		>$RUMMY_UDIG_SET					||
-			die "psql rummy failed: exit status=$?"
+$PSQL --set since="$SINCE" --file=lib/cron-rummy.sql >$RUMMY_UDIG_SET	||
+	die "psql rummy failed: exit status=$?"
+
 NO_SIZE_COUNT=$(wc -l $RUMMY_UDIG_SET | awk '{print $1}')
 log "blobs with no brr_blob_size: $NO_SIZE_COUNT"
 
