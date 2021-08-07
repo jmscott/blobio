@@ -5,7 +5,7 @@
 include ../local.mk
 include ../blobio.mk
 
-LIBs="
+LIBs=									\
 	blobio.flow.example						\
 	contrib/udig/udig.sql.in					\
 	cron-rummy.sql							\
@@ -13,8 +13,8 @@ LIBs="
 	eat-wrap-missed.sql						\
 	merge-bio4d_request_stat.sql					\
 	schema.sql							\
-"
-SBINs="
+
+SBINs=									\
 	cron-bio4d-stat2pg						\
 	cron-eat-unroll							\
 	cron-rummy							\
@@ -22,7 +22,6 @@ SBINs="
 	fs-eat								\
 	fs-xor-service							\
 	minus-service							\
-"
 
 install:
 	install -g $(DIST_GROUP) -o $(DIST_USER) -m ug=r,o=		\
@@ -49,6 +48,11 @@ dev-links:
 
 frisk ff:
 	flowd frisk blobio.flow.example
+
 distclean:
 	test ! -d $(DIST_ROOT)/lib || (cd $(DIST_ROOT)/lib;  rm -f $(LIBs))
 	test ! -d $(DIST_ROOT)/sbin || (cd $(DIST_ROOT)/sbin;  rm -f $(SBINs))
+
+world:
+	$(MAKE) $(MFLAGS) distclean
+	$(MAKE) $(MFLAGS) install
