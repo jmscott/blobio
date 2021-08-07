@@ -1,8 +1,11 @@
+#!/bin/bash
 #
 #  Synopsis:
 #	Find blobs in service with missing information.
 #  Usage:
 #	*/15 * * * *	cron-rummy '-1week' >>log/cron-rummy.log 2>&1
+#  Note:
+#	Move to $BLOBIO_ROOT/sbin
 #
 
 RUMMY_UDIG_SET=${TMPDIR:=/tmp}/$(basename $0)-$$.udig
@@ -20,7 +23,7 @@ die()
 
 leave()
 {
-	rm -f $RUMMY_UDIG_SET || log "ERROR: rm -f $RUMMY_UDIG_SET failed"
+	rm -f $RUMMY_UDIG_SET || log "ERROR: rm -f $RUMMY_UDIG_SET failed" >&2
 	log 'good bye, cruel world'
 }
 
@@ -47,14 +50,14 @@ log "PGDATABASE=$PGDATABASE"
 
 log "service blobs not in table brr_blob_size since $SINCE"
 psql									\
-	--file lib/no-brr_blob_size.sql					\
-	--set since="'$SINCE'"						\
+	--file=lib/cron-rummy.sql					\
+	--set since="$SINCE"						\
 	--quiet								\
 	--no-align							\
 	--no-psqlrc							\
 	--tuples-only							\
 		>$RUMMY_UDIG_SET					||
-			die "psql >$RUMMY_UDIG_SET failed: exit status=$?"
+			die "psql rummy failed: exit status=$?"
 NO_SIZE_COUNT=$(wc -l $RUMMY_UDIG_SET | awk '{print $1}')
 log "blobs with no brr_blob_size: $NO_SIZE_COUNT"
 
