@@ -45,6 +45,7 @@ dev-links:
 	test -e run || ln -s . run
 	test -e sbin || ln -s . sbin
 	test -e log || ln -s . log
+	test -e spool || ln -s . spool
 
 frisk ff:
 	flowd frisk blobio.flow.example
