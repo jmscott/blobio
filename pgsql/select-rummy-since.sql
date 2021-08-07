@@ -1,3 +1,11 @@
+/*
+ *  Synopsis:
+ *	Find blobs in postgres blobio.service with missing data since a PIT.
+ *  Usage:
+ *	psql -f select-rummy-since.sql
+ *  See:
+ *	sbin/cron-rummy
+ */
 SELECT
 	srv.blob
   FROM

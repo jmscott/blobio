@@ -8,11 +8,11 @@ include ../blobio.mk
 LIBs=									\
 	blobio.flow.example						\
 	contrib/udig/udig.sql.in					\
-	cron-rummy.sql							\
 	eat-unroll.sql							\
 	eat-wrap-missed.sql						\
 	merge-bio4d_request_stat.sql					\
 	schema.sql							\
+	select-rummy-since.sql						\
 
 SBINs=									\
 	cron-bio4d-stat2pg						\

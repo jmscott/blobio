@@ -1,11 +1,13 @@
 #!/bin/bash
 #
 #  Synopsis:
-#	Find blobs in pg service table with missing information, back to PIT.
+#	Find blobs in pg service table with missing information.
 #  Usage:
 #	export BLOBIO_ROOT=/opt/jmscott/jmsdesk/blobio
 #	LOG=$BLOBIO_ROOT/log/cron-rummy.log
 #	*/15 * * * * $BLOBIO_ROOT/sbin/cron-rummy '-1week' >>$LOG
+#
+#	cron-rummy all
 #  Depends:
 #	https://github.com/jmscott/work
 #  Exit Status:
@@ -71,7 +73,7 @@ log "PGPASSWORD=$PGPASSWORD"
 log "PGDATABASE=$PGDATABASE"
 
 log "blobs not in table brr_blob_size since $SINCE"
-$PSQL --set since="$SINCE" --file=lib/cron-rummy.sql >$RUMMY_UDIG_SET	||
+$PSQL --set since="$SINCE" --file=lib/select-rummy-since.sql >$RUMMY_UDIG_SET	||
 	die "psql rummy failed: exit status=$?"
 
 NO_SIZE_COUNT=$(wc -l $RUMMY_UDIG_SET | awk '{print $1}')
