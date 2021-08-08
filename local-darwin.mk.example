@@ -9,6 +9,9 @@
 #		DIST_ROOT	Where to install full blobio distribution;
 #				  e.g., /usr/local/blobio for production or
 #				  $HOME/opt/blobio for development.
+#				  Only the basename directory (blobio) is
+#				  created.
+#
 #		OPENSSL_INC	Where ssl include files live
 #		OPENSSL_LIB	Link line for openssl libraries
 #
@@ -27,10 +30,11 @@
 #	Never ends.
 #
 
-#  where to install entire blobio distribution
-#  in dev environment set to $(HOME)/opt/blobio
-DIST_ROOT=/usr/local/blobio
-#DIST_ROOT=$(HOME)/opt/blobio
+#  Where to install entire blobio distribution.
+#  Example is typical dev environment set to $(HOME)/opt/blobio.
+#  Production might be DIST_ROOT=/opt/jmscott/jmsdesk/blobio
+
+DIST_ROOT=$(HOME)/opt/blobio
 
 #  openssl install by port package manager.
 OPENSSL_INC=-I/opt/local/include
