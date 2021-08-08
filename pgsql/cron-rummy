@@ -16,8 +16,7 @@
 #	1	error
 #
 
-# RFC3339Nano not in PATH
-START_TIME=$(date --rfc-3339 ns --utc|sed 's/ /T/')
+START_TIME=$(RFC3339Nano)		#  Note: need $JMSCOTT_ROOT in PATH
 START_EPOCH=$(date +'%s')
 
 RUMMY_UDIG_SET=${TMPDIR:=/tmp}/$(basename $0)-$$.udig
