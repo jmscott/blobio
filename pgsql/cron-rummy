@@ -66,6 +66,7 @@ case "$SINCE_SEC" in
 esac
 log "tmp rummy udig set: $RUMMY_UDIG_SET"
 log "BLOBIO_SERVICE=$BLOBIO_SERVICE"
+log "PATH=$PATH"
 log "PGHOST=$PGHOST"
 log "PGPORT=$PGPORT"
 log "PGUSER=$PGUSER"
