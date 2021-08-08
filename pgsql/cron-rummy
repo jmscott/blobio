@@ -9,13 +9,15 @@
 #
 #	cron-rummy all
 #  Depends:
+#	GNU date
 #	https://github.com/jmscott/work
 #  Exit Status:
 #	0	ok
 #	1	error
 #
 
-START_TIME=$(RFC3339Nano)
+# RFC3339Nano not in PATH
+START_TIME=$(date --rfc-3339 ns --utc|sed 's/ /T/')
 START_EPOCH=$(date +'%s')
 
 RUMMY_UDIG_SET=${TMPDIR:=/tmp}/$(basename $0)-$$.udig
