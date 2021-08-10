@@ -7,8 +7,9 @@ include ../local.mk
 include ../blobio.mk
 
 SRCs=jaccard.go jaccard-tip.go
-BINs=jaccard jaccard-tip
 SBINs=									\
+	jaccard								\
+	jaccard-tip							\
 	make-sync-root							\
 	purge-sync-cache						\
 	reboot-sync							\
@@ -32,17 +33,15 @@ LIBs=									\
 all: jaccard jaccard-tip
 
 jaccard-tip: jaccard-tip.go
-	$(GODIST)/bin/go build  jaccard-tip.go
+	$(GODIST)/bin/go build jaccard-tip.go
 jaccard: jaccard.go
-	$(GODIST)/bin/go build  jaccard.go
+	$(GODIST)/bin/go build jaccard.go
 
 install: all
 	install -g $(DIST_GROUP) -o $(DIST_USER)			\
 		-d $(DIST_ROOT)
 	install -g $(DIST_GROUP) -o $(DIST_USER)			\
 		-m u=rwx,go= -d $(DIST_ROOT)/sbin
-	install -g $(DIST_GROUP) -o $(DIST_USER)			\
-		-m u=rwx,go=rx -d $(DIST_ROOT)/bin
 	install -g $(DIST_GROUP) -o $(DIST_USER)			\
 		-d $(DIST_ROOT)/lib
 	install -g $(DIST_GROUP) -o $(DIST_USER)			\
@@ -52,9 +51,6 @@ install: all
 	install -g $(DIST_GROUP) -o $(DIST_USER) -m u=rx,go=		\
 		$(SBINs)						\
 		$(DIST_ROOT)/sbin
-	install -g $(DIST_GROUP) -o $(DIST_USER) -m ugo=rx		\
-		$(BINs)							\
-		$(DIST_ROOT)/bin
 	install -g $(DIST_GROUP) -o $(DIST_USER) -m ug=r,o=		\
 		$(LIBs)							\
 		$(DIST_ROOT)/lib
