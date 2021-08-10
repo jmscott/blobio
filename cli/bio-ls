@@ -39,7 +39,13 @@ SELECT
 	regexp_replace(age(now(), s.recent_verify_time)::text, '\..*', '') || ' ago'
 		AS "Recent Verify",
 	pg_size_pretty(bs.byte_count) ||
+	CASE
+	  WHEN pg_size_pretty(bs.byte_count) ~ ' bytes'
+	  THEN
+	  	''
+	  ELSE
 		' (' || bs.byte_count || ' bytes)'
+	END
 		AS "Size",
 	s.discover_time AS "Discovered @",
 	s.recent_verify_time AS "Verified @"
