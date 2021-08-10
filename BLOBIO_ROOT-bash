@@ -3,7 +3,8 @@
 #  Synopsis:
 #	Exec a login bash shell with BLOBIO_ROOT set to $1
 #  Usage:
-#	blobio-root-opt jmsdesk
+#	BLOBIO_ROOT-bash /opt/jmscott/jmsdesk/blobio
+#	alias 2jmsdesk='BLOBIO_ROOT-bash /opt/jmscott/jmsdesk/blobio'
 #
 
 die()
