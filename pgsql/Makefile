@@ -12,6 +12,7 @@ LIBs=									\
 	eat-wrap-missed.sql						\
 	merge-bio4d_request_stat.sql					\
 	schema.sql							\
+	select-rummy.sql						\
 	select-rummy-since.sql						\
 
 SBINs=									\
