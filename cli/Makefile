@@ -15,6 +15,7 @@ install: all
 		bio-cat							\
 		bio-eat							\
 		bio-file 						\
+		bio-fs-stat						\
 		bio-get							\
 		bio-get-null						\
 		bio-give						\

@@ -1,0 +1,50 @@
+#!/bin/bash
+#
+#  Synospsis:
+#	Stat the file of a blob stored in $BLOBIO_ROOT/data.
+#  Usage:
+#	bio-fs-stat bc160:1726c3eac51dda6e3b6c99a490948db77a0b85e3
+#  Exit Status:
+#	0	all UDIGs valid
+#	1	error occured
+#
+
+die()
+{
+	echo "$(basename $0): ERROR: $@" >&2
+	exit 1
+}
+
+test -n "$BLOBIO_ROOT" || die "env not defined: BLOBIO_ROOT"
+DATA_PATH="$BLOBIO_ROOT/data"
+test -x "$DATA_PATH" || die "BLOBIO_ROOT/data not executable: $DATA_PATH"
+
+while [ -n "$1" ];  do
+	U="$1"
+	shift
+
+	if [[ "$U" =~ ^(sha):([0-9a-f]{3})([0-9a-f]{3})([0-9a-f]{34})$ ]];  then
+		ALGO=sha
+		F='5-7,8-10,5-'
+	elif [[ "$U" =~ ^(bc160):([0-9a-f]{3})([0-9a-f]{3})([0-9a-f]{34})$ ]];then
+		ALGO=bc160
+		F='7-9,10-12,7-'
+	else
+		die "unknown udig: $U"
+	fi
+	ALGO=${BASH_REMATCH[1]}
+	D1=${BASH_REMATCH[2]}
+	D2=${BASH_REMATCH[3]}
+	DIGEST="$D1$D2${BASH_REMATCH[4]}"
+	BLOB_PATH=$DATA_PATH/fs_$ALGO/$D1/$D2/$DIGEST
+
+	echo
+	if [ ! -e $BLOB_PATH ];  then
+		echo "Blob: ?$U"
+		continue
+	fi
+	echo "  Blob: @$U"
+	stat $BLOB_PATH || die "stat blob failed: $BLOB_PATH"
+done
+
+exit 0
