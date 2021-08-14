@@ -85,10 +85,10 @@ BLOBIO_TRUST_FS=${BLOBIO_TRUST_FS:=false}
 log "trust fs: $BLOBIO_TRUST_FS"
 
 BLOBIO_BIO4D_NET_TIMEOUT=${BLOBIO_BIO4D_NET_TIMEOUT:=20}
-log "net timeout: $BLOBIO_BIO4D_NET_TIMEOUT sec"
+log "net timeout: ${BLOBIO_BIO4D_NET_TIMEOUT}s"
 
 BLOBIO_BIO4D_RRD_DURATION=${BLOBIO_BIO4D_RRD_DURATION:=0}
-log "rrd duration: $BLOBIO_BIO4D_NET_TIMEOUT"
+log "rrd duration: ${BLOBIO_BIO4D_NET_TIMEOUT}s"
 
 log 'invoking sbin/bio4d ...'
 sbin/bio4d								\
