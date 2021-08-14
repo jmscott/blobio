@@ -25,10 +25,10 @@ die()
 
 (
 	cat <<END
-Process	Status	Up	Req, Ok, Fail	Recent Sample
--------	------	----	-------------------	-----------------
+Process	Status	Up Time	Request, Ok, Fail	Recent 10s Sample	When
+-------	------	-------	-------------------	-----------------	----
 END
-	run-stat							|
+	run-stat-tuple							|
 		sort --key=2 --key=1 --field-separator=$'\t'		|
 		while read PROC STATUS START_EPOCH			\
 		           FDR OK FLT 					\
@@ -49,9 +49,9 @@ END
 			esac
 
 			if [ -e $SP ];  then
-				AGO="($(duration-english $(
+				AGO="$(duration-english $(
 					duration-mtime $SP
-				)) ago)"
+				))"
 			else
 				AGO=""
 			fi
@@ -68,7 +68,7 @@ END
 			esac
 			PROC=$(echo $PROC | sed 's/\//>/')
 			cat <<END
-$PROC	$STATUS	$DURATION	$FDR,$OK,$FLT	$sFDR,$sOK,$sFLT $AGO
+$PROC	$STATUS	$DURATION	$FDR,$OK,$FLT	$sFDR,$sOK,$sFLT	$AGO
 END
 		done
 		
