@@ -57,7 +57,7 @@ END
 					duration-mtime $SP
 				))"
 			else
-				if [ $STATE = UP ];  then
+				if [ "$STATUS" = UP ];  then
 					AGO='!!!'
 				else
 					AGO=n/a
