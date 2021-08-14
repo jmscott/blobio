@@ -113,8 +113,8 @@ install: all
 		cron-reboot						\
 		dev-reboot						\
 		ls-service						\
-		run-stat						\
 		run-stat-report						\
+		run-stat-tuple						\
 		tail-log						\
 		$(DIST_ROOT)/sbin
 
