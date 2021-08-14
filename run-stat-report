@@ -23,6 +23,10 @@ die()
 	exit 1
 }
 
+test $# = 0 || die "wrong number of arguments: got $#, expected 0"
+test -n "$BLOBIO_ROOT" || die 'env not defined: BLOBIO_ROOT'
+cd $BLOBIO_ROOT || die "cd BLOBIO_ROOT failed: exit status=$?"
+
 (
 	cat <<END
 Process	Status	Up Time	Request, Ok, Fail	Recent 10s Sample	When
@@ -44,7 +48,7 @@ END
 				SP="sync/root/$HOST/run/flowd.stat"
 				;;
 			*)
-				die "unknown sttable process: $PROC"
+				die "unknown process: $PROC"
 				;;
 			esac
 
@@ -53,7 +57,11 @@ END
 					duration-mtime $SP
 				))"
 			else
-				AGO=""
+				if [ $STATE = UP ];  then
+					AGO='!!!'
+				else
+					AGO=n/a
+				fi
 			fi
 					
 			case "$START_EPOCH" in
