@@ -1,0 +1,40 @@
+#!/bin/bash
+#
+#  Synopsis:
+#	Calculate size of set of udigs read from stdin input.
+# 
+#	echo sha:07197d010a988984e1827645f09b6169cff62ae2 >x
+#	echo bc160:dd049c347d7b936dda490efad963d1aee87b0b89 >>x
+#
+#	bio-sizeof-stdin <x
+#	#  duplicate in set, generates error!
+#	echo bc160:dd049c347d7b936dda490efad963d1aee87b0b89 >>x
+#
+#	bio-sizeof-stdin <x		#  generates sql error
+#
+#	sort -u x | bio-sizeof-stdin	#  correct
+#
+#  Exit Status
+#	0	output byte count of entire set
+#	1	error
+#
+
+PSQL='psql --no-psqlrc'
+PROG=$(basename $0)
+
+die()
+{
+	echo "$PROG: ERROR: $@" >&2
+	exit 1
+}
+
+test $# = 0 || die "wrong number of arguments: got $#, expected 0"
+test -n "$BLOBIO_ROOT" || die 'env not defined: BLOBIO_ROOT'
+
+$PSQL 									\
+	--file $BLOBIO_ROOT/lib/$PROG.sql				\
+	--field-separator="	"					\
+	--quiet								\
+	--no-align							\
+	--pset=tuples_only=t						||
+	die "psql failed: exit status=$?"
