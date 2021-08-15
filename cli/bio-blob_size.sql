@@ -17,8 +17,14 @@ CREATE UNIQUE INDEX idx_cli_bio_byte_count ON cli_bio_byte_count(blob);
 ANALYZE cli_bio_byte_count;
 
 SELECT
+	pg_size_pretty(sum(sz.byte_count)),
 	sum(sz.byte_count),
-	pg_size_pretty(sum(sz.byte_count))
+	count(cli.blob),
+	(SELECT
+		count(cli2.blob) - count(cli.blob)
+	  FROM
+	  	cli_bio_byte_count cli2
+	)
   FROM
   	cli_bio_byte_count cli
 	  JOIN blobio.brr_blob_size sz ON (sz.blob = cli.blob)
