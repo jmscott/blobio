@@ -1784,6 +1784,7 @@ sql_decl_stmt_list:
 	;
 
 statement:
+	/*
 	  PROCESS  LOCK  '('  arg  ')'
 	  {
 		l := yylex.(*yyLexState)
@@ -1804,6 +1805,7 @@ statement:
 		}
 	  }
 	|
+	*/
 	  BOOT {
 		l := yylex.(*yyLexState)
 		if l.seen_boot {
