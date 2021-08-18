@@ -35,7 +35,6 @@ package main
 import (
 	"bytes"
 	"crypto/sha1"
-	"crypto/sha256"
 	"database/sql"
 	"encoding/json"
 	"fmt"
@@ -80,12 +79,9 @@ type AnswerService struct {
 	pg		*PGDatabase
 
 	BlobCount	uint64			`json:"blob_count"`
-	BlobSortSHA256	string			`json:"blob_sort_sha256"`
 
 	answer		*Answer
 
-	service_mutex	sync.Mutex
-	service		map[string]bool
 	QueryDuration	time.Duration		`json:"query_duration"`
 	QueryDurationString	string		`json:"query_duration_string"`
 	query_start_time	time.Time
@@ -98,8 +94,11 @@ type Answer struct {
 	Databases		map[string]*PGDatabase	`json:"databases"`
 	AnswerService	map[string]*AnswerService `json:"answer_service"`
 
-	Missing	[]string			`json:"missing"`
-	MissingCount	int			`json:"missing_count"`
+	exists	map[string]uint8
+	exists_mutex	sync.Mutex
+
+	MissingUdigs		[]string	`json:"missing_udigs"`
+	MissingUdigCount	int		`json:"missing_udig_count"`
 
 	ConfigPath	string			`json:"config_path"`
 	ConfigBlob	string			`json:"config_blob"`
@@ -310,62 +309,36 @@ SELECT
 	blob
   FROM
   	blobio.service
-  ORDER BY
-  	blob ASC
 	`)
 	if err != nil {
 		pg.die("db.Query(service) failed: %s", err)
 	}
 	defer rows.Close()
 
-	h256 := sha256.New()
 	for rows.Next() {
 		var blob string
 
 		if err := rows.Scan(&blob); err != nil {
 			pg.die("rows.Scan(blob) failed: %s", err)
 		}
-		b := []byte(blob)
-		h256.Write(b)
 		as.BlobCount++
 		if as.BlobCount % 100000 == 0 {
 			_debug("blob count: #%d", as.BlobCount)
 		}
-		
-		//  delete the blob seen by all other services
-		seen_count := 0
-		for _, a := range as.answer.AnswerService {
-			if a == as {
-				continue
-			}
-			a.service_mutex.Lock()
-			if a.service[blob] {
-				seen_count++
-			}
-			a.service_mutex.Unlock()
-		}
 
-		//  may not exist in some other service table so record
-		if seen_count < len(as.answer.Databases) - 1 {
-			as.service_mutex.Lock()
-			as.service[blob] = true
-			as.service_mutex.Unlock()
-			continue
+		an := as.answer
+		an.exists_mutex.Lock()
+		an.exists[blob]++
+		if an.exists[blob] == uint8(len(an.Databases)) {
+			delete(an.exists, blob)
 		}
-
-		//  exists in all service tables, so delete all references
-		for _, a := range as.answer.AnswerService {
-			a.service_mutex.Lock()
-			delete(a.service, blob)
-			a.service_mutex.Unlock()
-		}
+		an.exists_mutex.Unlock()
 	}
 	as.QueryDuration = time.Since(as.query_start_time)
 	as.QueryDurationString = as.QueryDuration.String()
 	if as.BlobCount % 100000 != 0 {
 		_debug("blob: total #%d", as.BlobCount)
 	}
-	as.BlobSortSHA256 = fmt.Sprintf("%x", h256.Sum(nil))
 	done <- pg
 }
 
@@ -380,7 +353,6 @@ func (an *Answer) jaccard() {
 		as := &AnswerService{
 			DatabaseTag:	pg.tag,
 			pg:		pg,
-			service:	make(map[string]bool),
 
 			answer:		an,
 		}
@@ -396,22 +368,13 @@ func (an *Answer) jaccard() {
 
 	//  merge the missing blobs into a single set
 	debug("build merge set of missing blobs")
-	missing := make(map[string]bool)
-	for _, a := range an.AnswerService {
-		for b, _ := range a.service {
-			if missing[b] {
-				continue
-			}
-			missing[b] = true
-		}
+	an.MissingUdigs = make([]string, len(an.exists))
+	an.MissingUdigCount = 0;
+	for b, _ := range an.exists {
+		an.MissingUdigs[an.MissingUdigCount] = b;
+		an.MissingUdigCount++
 	}
-	an.Missing = make([]string, len(missing))
-	an.MissingCount = 0;
-	for b, _ := range missing {
-		an.Missing[an.MissingCount] = b;
-		an.MissingCount++
-	}
-	debug("missing blob: %d", an.MissingCount)
+	debug("missing udig count: %d blobs", an.MissingUdigCount)
 }
 
 func main() {
@@ -458,6 +421,7 @@ func main() {
 					"sha:%x",
 					sha1.Sum(cf_buf),
 				),
+		exists:		make(map[string]uint8),
 	}
 	answer.jaccard()
 	conf.close()
