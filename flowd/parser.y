@@ -244,6 +244,7 @@ const (
 %token	HEARTBEAT_DURATION
 %token	IN
 %token	IS
+%token	LOCK
 %token	LOG_DIRECTORY
 %token	MAX_IDLE_CONNS
 %token	MAX_OPEN_CONNS
@@ -253,18 +254,17 @@ const (
 %token	NEQ_BOOL
 %token	NEQ_STRING NO_MATCH_STRING
 %token	NEQ_UINT64
-%token	TRANSPORT
 %token	OS_EXEC_CAPACITY
 %token	OS_EXEC_WORKER_COUNT
 %token	PARSE_ERROR
 %token	PATH
+%token	PROCESS
 %token	PROJECT_BRR
 %token	PROJECT_QDR_ROWS_AFFECTED
 %token	PROJECT_QDR_SQLSTATE
 %token	PROJECT_SQL_QUERY_ROW_BOOL
 %token	PROJECT_XDR_EXIT_STATUS
 %token	QDR_ROLL_DURATION
-%token  QUERY
 %token	QUERY_DURATION
 %token	QUERY_EXEC
 %token	QUERY_EXEC_TXN
@@ -273,31 +273,34 @@ const (
 %token	ROW
 %token	ROWS_AFFECTED
 %token	SQL
+%token	SQLSTATE
 %token	SQL_DATABASE
 %token	SQL_DATABASE_REF
 %token	SQL_EXEC_REF
 %token	SQL_QUERY_ROW_REF
-%token	SQLSTATE
 %token	START_TIME
 %token	STATEMENT
 %token	STRING
 %token	TAIL
 %token	TAIL_REF
 %token	TRANSACTION
+%token	TRANSPORT
 %token	UDIG
 %token	UINT64
+%token	UNLOCK
 %token	VERB
 %token	WALL_DURATION
 %token	WHEN
 %token	XDR_ROLL_DURATION
 %token	yy_AND
-%token  yy_BOOL
 %token	yy_EXEC
 %token	yy_FALSE
 %token	yy_INT64
 %token	yy_OK
 %token	yy_OR
 %token	yy_TRUE
+%token  QUERY
+%token  yy_BOOL
 
 %type	<uint64>	UINT64
 %type	<string>	STRING
@@ -1781,6 +1784,26 @@ sql_decl_stmt_list:
 	;
 
 statement:
+	  PROCESS  LOCK  '('  arg  ')'
+	  {
+		l := yylex.(*yyLexState)
+
+		if !$$.ast.is_string() {
+			l.error("process lock args not a string")
+		}
+	  }  WHEN  qualify
+	  {
+		$$ = &ast{
+			yy_tok:	LOCK,
+			left:	&ast{
+					yy_tok:	ARGV1,
+					left:	$4,
+					uint64:	1,
+			},
+			right:	$8,
+		}
+	  }
+	|
 	  BOOT {
 		l := yylex.(*yyLexState)
 		if l.seen_boot {
@@ -2060,6 +2083,7 @@ statement_list:
 %%
 
 var keyword = map[string]int{
+	"OK":			yy_OK,
 	"and":			yy_AND,
 	"argv":			ARGV,
 	"blob_size":		BLOB_SIZE,
@@ -2069,8 +2093,8 @@ var keyword = map[string]int{
 	"call":			CALL,
 	"chat_history":		CHAT_HISTORY,
 	"command":		COMMAND,
-	"database":		DATABASE,
 	"data_source_name":	DATA_SOURCE_NAME,
+	"database":		DATABASE,
 	"driver_name":		DRIVER_NAME,
 	"exec":			yy_EXEC,
 	"exit_status":		EXIT_STATUS,
@@ -2081,19 +2105,19 @@ var keyword = map[string]int{
 	"in":			IN,
 	"int64":		yy_INT64,
 	"is":			IS,
+	"lock":			LOCK,
 	"log_directory":	LOG_DIRECTORY,
 	"max_idle_conns":	MAX_IDLE_CONNS,
 	"max_open_conns":	MAX_OPEN_CONNS,
 	"memstats_duration":	MEMSTAT_DURATION,
-	"transport":		TRANSPORT,
-	"OK":			yy_OK,
 	"or":			yy_OR,
 	"os_exec_capacity":	OS_EXEC_CAPACITY,
 	"os_exec_worker_count":	OS_EXEC_WORKER_COUNT,
 	"path":			PATH,
+	"process":		PROCESS,
 	"qdr_roll_duration":	QDR_ROLL_DURATION,
-	"query_duration":	QUERY_DURATION,
 	"query":		QUERY,
+	"query_duration":	QUERY_DURATION,
 	"result":		RESULT,
 	"row":			ROW,
 	"rows_affected":	ROWS_AFFECTED,
@@ -2102,8 +2126,10 @@ var keyword = map[string]int{
 	"start_time":		START_TIME,
 	"statement":		STATEMENT,
 	"tail":			TAIL,
+	"transport":		TRANSPORT,
 	"true":			yy_TRUE,
 	"udig":			UDIG,
+	"unlock":		UNLOCK,
 	"verb":			VERB,
 	"wall_duration":	WALL_DURATION,
 	"when":			WHEN,
