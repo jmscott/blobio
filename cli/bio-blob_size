@@ -17,6 +17,9 @@
 #  Exit Status
 #	0	output byte count of entire set
 #	1	error
+#  Note:
+#	The input set must be not contain duplicates.
+#	Need to modify bio-blob_size.sql to eliminate dups.
 #
 
 PSQL='psql --no-psqlrc'
@@ -25,8 +28,35 @@ PROG=$(basename $0)
 die()
 {
 	echo "$PROG: ERROR: $@" >&2
+	echo "usage: $PROG [--help] <set.udig"
 	exit 1
 }
+
+case "$1" in
+help|--help|-h)
+	cat <<END
+Usage: bio-blob_size <rummy.udig
+
+Output: Tab Separated Fields
+
+	Field 1:	Approximate, Readable Total Byte Count
+	Field 2:	Decimal Total Byte Count
+	Field 3:	Count of Blobs with Known Size
+	Field 4:	Count of Blobs with No Known Size
+	Field 5:	Count Blobs not in Table blobio.service
+
+Note:
+	The size of a blob not in service is possible.
+	The input set must contain no duplicates (which will change).
+END
+	exit 0
+	;;
+"")
+	;;
+*)
+	die "unknown option: $1 (do $PROG --help)"
+	;;
+esac
 
 test $# = 0 || die "wrong number of arguments: got $#, expected 0"
 test -n "$BLOBIO_ROOT" || die 'env not defined: BLOBIO_ROOT'
