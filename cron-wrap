@@ -1,0 +1,143 @@
+#!/bin/bash
+#
+#  Synopsis:
+#	Wrap blobs when flowd is "quiet", based upon mtime of run/flowd.stat
+#  Usage:
+#	cron-wrap 60
+#
+
+START_EPOCH=$(date +%s)
+START_TIME=$(RFC3339Nano)
+PROG=$(basename $0)
+TMPDIR=${TMPDIR:=/tmp}
+TMP_JSON=$TMPDIR/$PROG-$$.json
+
+now()
+{
+	date +'%Y/%m/%d %H:%M:%S'
+}
+
+log()
+{
+	echo "$(now): $@"
+}
+
+leave()
+{
+	rm -f $TMP_JSON || log "WARN: rm tmp json failed: exit status=$?" >&2
+	log "good bye, cruel world: $(
+		duration-english $(
+			expr $(date +%s) - $START_EPOCH
+		)
+	) elapsed"
+}
+
+die()
+{
+	NOW=$(now)
+	MSG="$NOW: $@"
+	test -d run/ && echo "$MSG" >>run/$PROG.fault
+	echo "$NOW: ERROR: $@" >&2
+	exit 1
+}
+
+test $# = 1 || die "wrong number of arguments: expected 1, got $#"
+STALE_MTIME=$1
+
+log 'hello, world'
+trap leave EXIT
+
+[[ "$STALE_MTIME" =~ ^[1-9][0-9]{0,9}$ ]]				||
+	die "unknown stale mtime: $STALE_MTIME"
+log "stale mtime: $STALE_MTIME sec"
+
+test -n "$BLOBIO_ROOT" || die "env not defined: $BLOBIO_ROOT"
+log "BLOBIO_ROOT=$BLOBIO_ROOT"
+cd $BLOBIO_ROOT || die "cd BLOBIO_ROOT failed: exit status=$?"
+. etc/profile
+
+test -n "$BLOBIO_SERVICE" || die 'env not defined: BLOBIO_SERVICE'
+log "BLOBIO_SERVICE=$BLOBIO_SERVICE"
+
+test -n "$BLOBIO_ALGORITHM" || die 'env not defined: BLOBIO_ALGORITHM'
+log "BLOBIO_ALGORITHM=$BLOBIO_ALGORITHM"
+
+STAT=run/flowd.stat
+stale-mtime $STALE_MTIME $STAT
+STATUS=$?
+case $STATUS in
+0)
+	log 'run/flowd.stat is stale'
+	;;
+1)
+	log 'run/flowd.stat is fresh, no wrap'
+	exit 0
+	;;
+2)
+	die "run/flowd.stat disappeared"
+	;;
+*)
+	die "stale-mtime failed: exit status=$?"
+	;;
+esac
+
+test -e $STAT || die "run/stat does not exist: $STAT"
+
+WRAP=$(blobio wrap --service $BLOBIO_SERVICE)
+STATUS=$?
+case $STATUS in
+0)
+	log "wrap udig: $WRAP"
+	;;
+1)
+	die 'wrap replied "no", not sure why'
+	;;
+*)
+	die "blobio wrap failed: exit status=$?"
+	;;
+esac
+
+cat >>$TMP_JSON <<END || die "cat tmp json failed: exit status=$?"
+{
+	"job.blobio.com": {
+		"command_line": [
+			"$PROG",
+			"$STALE_MTIME"
+		],
+		"wrap_blob": "$WRAP",
+		"environment": {
+			"BLOBIO_ROOT": "$BLOBIO_ROOT",
+			"BLOBIO_SERVICE": "$BLOBIO_SERVICE",
+			"BLOBIO_ALGORITHM": "$BLOBIO_ALGORITHM",
+			"JMSCOTT_ROOT": "$JMSCOTT_ROOT",
+			"USER": "$USER",
+			"PATH": "$PATH",
+			"LD_LIBRARY_PATH": "$LD_LIBRARY_PATH",
+			"PWD": "$PWD"
+		}
+	},
+	"start_time": "$START_TIME",
+	"stop_time": "$(RFC3339Nano)",
+	"elapsed_duration": "$(duration-english $(
+			expr $(date +%s) - $START_EPOCH
+		))",
+	"hostname": "$(hostname -f)"
+}
+END
+
+JSON_UDIG=$BLOBIO_ALGORITHM:$(
+	blobio eat --algorithm $BLOBIO_ALGORITHM --input-path $TMP_JSON
+)
+STATUS=$?
+test $STATUS = 0 || die "blobio eat failed: exit status=$STATUS"
+log "json txn json: $JSON_UDIG"
+
+blobio give								\
+	--input-path $TMP_JSON						\
+	--udig $JSON_UDIG 						\
+	--service $BLOBIO_SERVICE					||
+  die "blobio give json failed: exit status=$?"
+	
+echo "$(RFC3339Nano)  $JSON_UDIG"  >>spool/$PROG.txn			||
+	die "echo >spool/txn failed: exit status=$?"
+exit 0

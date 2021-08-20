@@ -2,7 +2,7 @@
 HELP=$(cat <<'END'
 
 Synopsis:
-	Roll blob request records of service in $BLOBIO_SERVICE
+	Roll blob request records for service $BLOBIO_SERVICE
 Usage:
 	bio-roll [--help]
 Exit Status:

@@ -111,6 +111,7 @@ install: all
 		brr-stat						\
 		cron-pg_dump-daily					\
 		cron-reboot						\
+		cron-wrap						\
 		dev-reboot						\
 		ls-service						\
 		run-stat-report						\
