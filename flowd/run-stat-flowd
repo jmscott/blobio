@@ -1,0 +1,39 @@
+#!/bin/bash
+#
+#  Synopsis:
+#	Generate a row/tuple for stats in run/flow.stat
+#  Usage:
+#	run-stat-flowd flowd>hp13 run/flowd.stat
+#
+#	Write tab separated fields to standard out
+#
+#		Field 1:	<process>
+#		Field 2:	<boot-epoch>
+#		Field 3:	<boot-success>
+#		Field 4:	<boot-fail>
+#		Field 2:	<sample-epoch>
+#		Field 3:	<sample-success>
+#		Field 4:	<sample-fail>
+#
+die()
+{
+	echo "$(basename $0): ERROR: $@" >&2
+	exit 1
+}
+
+test $# = 2 || die "wrong number of arguments: got $#, expected 2"
+PROCESS=$1
+RUN_PATH=$2
+PID_PATH=$RUN_PATH/flowd.pid
+STAT_PATH=$RUN_PATH/flowd.stat
+test -r $STAT_PATH || die "can not read file: $STAT_PATH"
+
+BOOT_EPOCH=$(tail -1 $PID_PATH)
+SAMPLE_EPOCH=$(stat-mtime $STAT_PATH)
+
+cat <<END
+$PROCESS	$BOOT_EPOCH	$(grep					\
+		'^boot	' $STAT_PATH | cut -f2-4			\
+	)	$SAMPLE_EPOCH	$(grep					\
+		'^sample	' $STAT_PATH | cut -f2-4)
+END

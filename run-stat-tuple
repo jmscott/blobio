@@ -14,12 +14,12 @@
 #
 #	run-stat writes tab separated rows to standard out.
 #
-#		[bio4d|flowd] [UP|DOWN|ZOMBIE] <up-epoch>		\
-#			<boot-ok> <boot-fail> 				\
-#			<sample-ok> <sample-fail>
+#		[bio4d|flowd]	[UP|DOWN|ZOMBI]				\
+#			<boot-epoch>	<boot-ok>	<boot-fail>	\
+#			<sample-epoch>	<sample-ok>	<sample-fail>	\
 #
 #	<boot> stats are since process start and <sample> is the most recent
-#	sample stat, typically within 10 seconds.
+#	non-zero sample stat.
 #
 #	<ok> is the total number correct requests, <fail> is the total number of
 #	requests, possibly needing attention.
@@ -33,10 +33,10 @@
 #	status codes.  Typically, <ok> for a process (*.xdr) is the exit status
 #	0, although the meaning of "OK" can be overridden in the etc/*.flow
 #	file. Similary for sql queries, "OK" can be extened from "00000" to
-#	other codes.  The <fail> counds are the complement of "OK" counts.
+#	other codes.  The <fail> counts are the complement of "OK" counts.
 #	A common example of a failed SQL code would "23503" foreign key
 #	violation, indicated a bug in the etc/*.flow file.
-#	
+#
 #  Usage:
 #	run-stat | ... sort | ... column
 #
@@ -46,17 +46,14 @@
 #  See:
 #	run-stat-report
 #  Note:
-#	Ambigous about definition of staleness of files in  run/*.
-#	Probably ought to consult etc/profile for vars like
-#	BLOBIO_BIO4D_RRD_DURATION or heartbeat duration.
-#	
 #	Really, really, really need to move the files in log/*.{qdr,xdr,fdr}
 #	to directory data/ or spool/!
 #
 #	Probing process existence with pgrep might be useful.
 #	Not clear if another script should do this.
 #
-STALE_AFTER=120
+
+STALE_AFTER=120		#  need to derive heartbeat values in etc/profile
 
 die()
 {
@@ -77,6 +74,12 @@ _cat_flowd()
 	echo "$WHAT	$STATE	$SINCE	$BOOT	$SAMPLE"
 }
 
+#
+#  Stats for bio4d are written every $BLOBIO_BIO4D_RRD_DURATION seconds.
+#  Typically stats are written every 10 seconds, which code assumes.
+#  Eventually we will consult Z$BLOBIO_BIO4D_RRD_DURATION defined in
+#  etc/profile.
+#
 _cat_bio4d()
 {
 	STAT_PATH=run/bio4d.stat

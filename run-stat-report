@@ -29,8 +29,8 @@ cd $BLOBIO_ROOT || die "cd BLOBIO_ROOT failed: exit status=$?"
 
 (
 	cat <<END
-Process	Status	Up Time	Request, Sucess, Fail	Recent 10s Sample	When
--------	------	-------	---------------------	-----------------	----
+Process	State	UpTim	Request, Success, Fail	Recent 10s Sample	When
+-------	-----	-----	---------------------	-----------------	----
 END
 	run-stat-tuple							|
 		sort --key=2 --key=1 --field-separator=$'\t'		|
