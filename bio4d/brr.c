@@ -351,13 +351,13 @@ brr_close()
  *  Write the blob request record to the brr logger.
  */
 void
-brr_write(struct request *r)
+brr_send(struct request *r)
 {
 	char brr[BRR_SIZE + 1];
 	long int sec, nsec;
 	size_t len;
 	struct tm *t;
-	static char n[] = "brr_write";
+	static char n[] = "brr_send";
 
 	if (log_fd < 0)
 		panic2(n, "brr log file is not open");
