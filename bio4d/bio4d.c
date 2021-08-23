@@ -874,7 +874,7 @@ request()
 		if (clock_gettime(CLOCK_REALTIME, &req.end_time) < 0)
 			panic2("clock_gettime(end REALTIME) failed",
 							strerror(errno));
-		brr_write(&req);
+		brr_send(&req);
 	} else
 		error("incomplete read from client");
 	/*
@@ -893,7 +893,7 @@ request()
  *
  *	Process Exit Class - Bits 1 and 2:
  *
- *	  ------00	normal request  - successful request
+ *	  ------00	normal request  - successful request, brr made
  *	  ------01	client error	- unknown verb, bad udig syntax,
  *					  read error taking to client
  *	  ------10	hard time out	- read()/write() timeout occured

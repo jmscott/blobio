@@ -380,7 +380,7 @@ int		io_msg_read(struct io_message *ip);
  */
 void	brr_close();
 void	brr_open();
-void	brr_write(struct request *);
+void	brr_send(struct request *);
 int	brr_roll();
 int	brr_roll_final();
 void	brr_roll_free_all();
