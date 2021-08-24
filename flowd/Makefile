@@ -98,7 +98,6 @@ install: all
 		boot-flowd						\
 		kill-flowd						\
 		launchd-flowd						\
-		run-stat-flowd						\
 		$(DIST_ROOT)/sbin
 	install -g $(DIST_GROUP) -o $(DIST_USER) -m ugo=r		\
 		blobio.flowd.plist.example				\

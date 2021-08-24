@@ -1,0 +1,104 @@
+#!/usr/bin/env perl
+#
+#  Synopsis:
+#	Write summary tuples from round robin database sample in run/bio4d.stat
+#  Description:
+#	Write a two tab separated tuples that summarze stats written in
+#	run/bio4d.stat.  The fields are:
+#
+#		Field 1:	[boot|sample]
+#		Field 2:	epoch
+#		Field 3:	green count
+#		Field 4:	yellow count
+#		Field 5:	red count
+#	
+#	GYR catorizes the exit status of the blob request processes.
+#
+#		Green:
+#			successfull requests that ended in "ok" or single "no"
+#			reply.	For example, a "eat>no" is green, whereas a
+#			"take>ok>no" is not green.
+#		Yellow:
+#			client side errors that do not affect proper server
+#			behavior, but are problematic.  This includes networks
+#			errors, syntax errors and multi-chat requests that
+#			fail, like "take>ok>no".
+#		Red:
+#			server side panicy requests that require immediate
+#			attention.
+#
+#	For full protocol of exit status, see preamble in reap_request() in
+#	bio4d.c
+#		
+#  Usage:
+#	run-stat-tuple-bio4d path/to/bio4d.stat
+#  See:
+#	script "run-stat-tuple"
+#  Note:
+#	Change "sample" to "recent"!
+#
+
+die 'wrong number of arguments' unless @ARGV == 1;
+
+my $run_path = $ARGV[0];
+
+my $RRD;
+my (
+	$boot_epoch,
+	$boot_green_count,
+	$boot_yellow_count,
+	$boot_red_count,
+	$sample_epoch,
+	$sample_green_count,
+	$sample_yellow_count,
+	$sample_red_count,
+) = (0, 0, 0, 0, 0);
+
+my $stat_path = "$run_path/bio4d.stat";
+open($RRD, "<$stat_path") or die "open(<$stat_path) failed: $!";
+
+while (<$RRD>) {
+	my (
+		$epoch,
+		$success_count,
+		$error_count,
+		$timeout_count,
+		$signal_count,
+		$fault_count,
+		$get_count,
+		$put_count,
+		$give_count,
+		$take_count,
+		$eat_count,
+		$wrap_count,
+		$roll_count,
+		$chat_ok_count,
+		$chat_no_count,
+		$chat_no2_count,
+		$chat_no3_count,
+		$eat_no_count,
+		$take_no_count,
+	) = split(':');
+	$boot_epoch = $epoch if $boot_epoch == 0;
+
+	next if m/[1-9]\d{9}:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0$/;
+
+	$sample_epoch = $epoch;
+	$sample_green_count = $success_count;
+	$sample_yellow_count = $error_count +
+					$chat_no2_count + $chat_no3_count +
+					$timeout_count
+				;
+	$sample_red_count = + $signal_count + $fault_count;
+
+	$boot_green_count += $success_count;
+	$boot_yellow_count += $sample_yellow_count;
+	$boot_red_count += $sample_red_count;
+}
+
+close($RRD) or die "close($stat_path) failed: $!";
+
+print <<END;
+boot	$boot_epoch	$boot_green_count	$boot_yellow_count	$boot_red_count
+sample	$sample_epoch	$sample_green_count	$sample_yellow_count	$sample_red_count
+END

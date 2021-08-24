@@ -161,11 +161,11 @@ Protocol Flow:
 
 	WARNING: the protocol is ambiguous about how the end of the blob stream
 	is physically interpreted.  This may turn out to be a serious design
-	flaw, particulary with regard to denial-of-service attacks.  Essentially
-	the only indication that the end of the blob has been reached is that 
-	the socket has closed;  nothing in the protocol explicity indicates
-	"END of BLOB", other than the sequence of bytes matching the digest
-	signature.  In other words, only the digest presented by the request
+	flaw, particulary with regard to denial-of-service attacks.
+	Essentially the only indication that the end of the blob has been
+	reached is that the socket has closed;  nothing in the protocol
+	explicity indicates "END of BLOB" other than matching the digest.
+	In other words, only the digest presented by the request
 	determines the correctness of the blob.  A possible fix is to extend
 	the protocol with an optional byte count preceding the <udig>.  For
 	example, currently the request
@@ -179,10 +179,10 @@ Protocol Flow:
 	could be extended as
 
 		get <blob-byte-count> <udig>
-		get 1499 sha:cd50d19784897085a8d0e3e413f8612b097c03f1
+		get=1499 sha:cd50d19784897085a8d0e3e413f8612b097c03f1
 
 		put <blob-byte-count> <udig>
-		put 1499 sha:cd50d19784897085a8d0e3e413f8612b097c03f1
+		put=1499 sha:cd50d19784897085a8d0e3e413f8612b097c03f1
 
 	problematically, such an extension does leak info about the blob.
 	probing for support of the <byte-count> extension could be "solved"
@@ -202,13 +202,13 @@ Protocol Flow:
 		> take sha:da39a3ee5e6b4b0d3255bfef95601890afd80709
 		< no
 
-		> get 0 sha:da39a3ee5e6b4b0d3255bfef95601890afd80709
+		> get=0 sha:da39a3ee5e6b4b0d3255bfef95601890afd80709
 		< no
 
 	proves that the server does not support <byte-count> for the get
 	request.  and
 
-		> get 0 sha:da39a3ee5e6b4b0d3255bfef95601890afd80709
+		> get=0 sha:da39a3ee5e6b4b0d3255bfef95601890afd80709
 		< ok
 
 	proves <byte-count> is supported for get request.

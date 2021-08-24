@@ -90,7 +90,7 @@ _cat_bio4d()
 			sed 's/.....//'
 		)
 		SAMPLE=$(
-			run-stat-bio4d $STAT_PATH			|
+			run-stat-tuple-bio4d $STAT_PATH			|
 			grep '^sample	' 				|
 			sed 's/.......//'
 		)

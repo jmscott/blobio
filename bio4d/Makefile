@@ -54,7 +54,7 @@ SBINs=									\
 	fs2udig								\
 	graph-rrd							\
 	kill-bio4d							\
-	run-stat-bio4d							\
+	run-stat-tuple-bio4d						\
 	tcp4-stat							\
 	update-rrd							\
 

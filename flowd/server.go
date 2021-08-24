@@ -49,9 +49,15 @@ const (
 type flow_worker_sample struct {
 	worker_id int
 
-	fdr_count     uint64
-	ok_count      uint64
-	fault_count   uint64
+	epoch		int64
+
+	fdr_count	uint64
+	ok_count	uint64
+	fault_count	uint64
+
+	success_count	uint64
+	fail_count	uint64
+
 	wall_duration Duration
 }
 
@@ -91,12 +97,8 @@ type flow_worker struct {
 	seq_chan <-chan uint64
 }
 
-func put_stat(
-	boot_fdr_count, boot_ok_count, boot_fault_count uint64,
-		boot_wall_duration Duration,
-	sample_fdr_count, sample_ok_count, sample_fault_count uint64,
-		sample_wall_duration Duration,
-) {
+func put_stat(boot, recent flow_worker_sample) {
+
 	/*
 	 *  Write stats to run/flowd.stat
 	 */
@@ -108,23 +110,21 @@ func put_stat(
 	)
 	if err != nil {
 		croak(
-			"os.OpenFile(run/stat) failed: %s",
+			"os.OpenFile(%s) failed: %s",
+			stat_path,
 			err.Error(),
 		)
 	}
 	stat := Sprintf(
-		"boot\t%d\t%d\t%d\t%f\n" +
-		"sample\t%d\t%d\t%d\t%f\n",
-			boot_fdr_count,
-			boot_ok_count,
-			boot_fault_count,
-			float64(boot_wall_duration)/
-				1000000000,
-			sample_fdr_count,
-			sample_ok_count,
-			sample_fault_count,
-			float64(sample_wall_duration)/
-				1000000000,
+		"boot\t%d\t%d\t0\t%d\n" +
+		"recent\t%d\t%d\t0\t%d\n",
+			boot.epoch,
+			boot.success_count,
+			recent.fail_count,
+
+			recent.epoch,
+			recent.success_count,
+			recent.fail_count,
 	);
 	if _, err := sf.Write([]byte(stat));  err != nil {
 		croak("Write(stat) failed: %s", err)
@@ -139,17 +139,14 @@ func put_stat(
 func (conf *config) server(par *parse) {
 
 	start_time := Now()
+	boot := flow_worker_sample{
+				epoch:	start_time.Unix(),
+			}
+	recent := flow_worker_sample{
+			epoch:	boot.epoch,
+	}
 
-	put_stat(
-		uint64(0),
-		uint64(0),
-		uint64(0),
-		Duration(0),
-		uint64(0),
-		uint64(0),
-		uint64(0),
-		Duration(0),
-	)
+	put_stat(boot, recent)
 
 	//  start a rolled logger to flowd-Dow.log, rolled daily
 	info_log_ch := make(file_byte_chan)
@@ -158,7 +155,6 @@ func (conf *config) server(par *parse) {
 		Sprintf("%s/flowd", conf.log_directory), "log", true)
 	roll_when_start := "today"
 	roll_when_end := "yesterday"
-	boot_sample := flow_worker_sample{}
 
 	//  accumulate per roll statistics on roll_sample channel.
 	//  burp those stats into end of closing log file and
@@ -191,7 +187,7 @@ func (conf *config) server(par *parse) {
 				entries[1] = roll_entry(
 					"%s: %s",
 					"boot",
-					boot_sample.String(),
+					boot.String(),
 				)
 				z, off := Now().Zone()
 				entries[2] = roll_entry(
@@ -252,13 +248,15 @@ func (conf *config) server(par *parse) {
 				roll_end <- fr
 				today_sample = flow_worker_sample{}
 
-			// update daily roll stats in between rolls
+			// update daily roll stats in between log file rolls
 
 			case sam := <-roll_sample:
 				today_sample.fdr_count++
 				today_sample.wall_duration += sam.wall_duration
 				today_sample.ok_count += sam.ok_count
 				today_sample.fault_count += sam.fault_count
+				today_sample.success_count += sam.success_count
+				today_sample.fail_count += sam.fail_count 
 			}
 		}
 	}()
@@ -486,12 +484,6 @@ func (conf *config) server(par *parse) {
 		}).flow()
 	}
 
-	//  monitor the incremental samples sent by the workers
-	//  and periodically publish the stats
-
-	info("starting logger for incremental stats")
-	sample := flow_worker_sample{}
-
 	//  stat burped on every heart beat
 	active_count := conf.flow_worker_count
 	worker_stats := make([]int, conf.flow_worker_count)
@@ -502,24 +494,34 @@ func (conf *config) server(par *parse) {
 	memstat_tick := NewTicker(conf.memstats_duration)
 
 	info("flow starvation threshold: %d", flow_starvation_how_busy)
+
 	//  wait for all workers to finish
 	for active_count > 0 {
 		select {
 
-		//  fdr sample from flow worker
+		//  fdr sample sent by flow worker
 		case sam := <-flow_sample_ch:
 			if sam.worker_id < 0 {
 				info("worker #%d exited", -sam.worker_id)
 				active_count--
 				break
 			}
-			sample.fdr_count++
-			sample.ok_count += sam.ok_count
-			sample.fault_count += sam.fault_count
-			sample.wall_duration += sam.wall_duration
+			recent.fdr_count++
+			recent.ok_count += sam.ok_count
+			recent.fault_count += sam.fault_count
+			recent.wall_duration += sam.wall_duration
+
+			if sam.fault_count > 0 {
+				boot.fail_count++
+				recent.fail_count++
+			} else {		//  not sure what empty is
+				boot.success_count++
+				recent.success_count++
+			}
+			recent.epoch = Now().Unix()
 			worker_stats[sam.worker_id-1]++
 
-			//  update roll level sample stats
+			//  update log file roll level sample stats
 			roll_sample <- sam
 
 		//  burp out stats every heartbeat
@@ -548,7 +550,7 @@ func (conf *config) server(par *parse) {
 
 			bl := len(brr_chan)
 
-			sfc := sample.fdr_count
+			sfc := recent.fdr_count
 			switch {
 
 			//  no completed flows seen, no blob requests in queue
@@ -564,7 +566,7 @@ func (conf *config) server(par *parse) {
 				WARN("perhaps increase heartbeat duration")
 				continue
 			}
-			info("%s sample: %s", conf.heartbeat_duration, sample)
+			info("%s recent: %s", conf.heartbeat_duration, recent)
 
 			//  help debug starvation of flow thread
 
@@ -584,10 +586,14 @@ func (conf *config) server(par *parse) {
 				}
 			}
 
+			//
 			//  check that all flow workers are busy.
 			//  warn about existence of idle workers when at
 			//  least one worker appears to be be "busy".
-			//  Note: wouldn't standard deviation be better measure?
+			//
+			//  Note:
+			//	wouldn't standard deviation be better
+			//	measure?
 
 			if idle_count == 0 {
 				info("all %d flow workers busy", active_count)
@@ -597,25 +603,16 @@ func (conf *config) server(par *parse) {
 			}
 
 			//  update accumulated totals
-			boot_sample.fdr_count += sfc
-			boot_sample.ok_count += sample.ok_count
-			boot_sample.fault_count += sample.fault_count
-			boot_sample.wall_duration += sample.wall_duration
+			boot.fdr_count += sfc
+			boot.ok_count += recent.ok_count
+			boot.fault_count += recent.fault_count
+			boot.wall_duration += recent.wall_duration
 
-			put_stat(
-				boot_sample.fdr_count,
-				boot_sample.ok_count,
-				boot_sample.fault_count,
-				boot_sample.wall_duration,
-				sample.fdr_count,
-				sample.ok_count,
-				sample.fault_count,
-				sample.wall_duration,
-			)
+			put_stat(boot, recent)
 
-			sample = flow_worker_sample{}	//  clear samples
+			recent = flow_worker_sample{}	//  clear samples
 
-			info("boot: %s", boot_sample)
+			info("boot: %s", boot)
 			info("blob requests in queue: %d", bl)
 		case <-memstat_tick.C:
 			var m runtime.MemStats
