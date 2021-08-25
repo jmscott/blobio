@@ -5,6 +5,8 @@
 #  Usage:
 #	fs2udig | xargs bio-eat		#  touch every blob
 #  Note:
+#	The "find" command should do a "-follow".
+#
 #	Must have read access to $BLOBIO_ROOT/data.
 #	Starting directory must be match <algorithm>_fs
 #
