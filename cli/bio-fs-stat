@@ -9,6 +9,9 @@
 #	1	error occured
 #
 
+ALGO_RE='[a-z][a-z0-9]{0,7}'
+HEX40_RE='([0-9a-f]{3})([0-9a-f]{3})([0-9a-f]{34})'
+
 die()
 {
 	echo "$(basename $0): ERROR: $@" >&2
@@ -23,13 +26,7 @@ while [ -n "$1" ];  do
 	U="$1"
 	shift
 
-	if [[ "$U" =~ ^(sha):([0-9a-f]{3})([0-9a-f]{3})([0-9a-f]{34})$ ]];  then
-		ALGO=sha
-		F='5-7,8-10,5-'
-	elif [[ "$U" =~ ^(bc160):([0-9a-f]{3})([0-9a-f]{3})([0-9a-f]{34})$ ]];then
-		ALGO=bc160
-		F='7-9,10-12,7-'
-	else
+	if [[ ! ( $U =~ ^($ALGO_RE):${HEX40_RE}$ ) ]];  then
 		die "unknown udig: $U"
 	fi
 	ALGO=${BASH_REMATCH[1]}
