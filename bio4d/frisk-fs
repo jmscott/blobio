@@ -1,0 +1,120 @@
+#!/bin/bash
+#
+#  Synopsis:
+#	Verify correctness of file system blobs in $BLOBIO_ROOT/data/fs_*
+#  Usage:
+#	bio-fsck >bio-fsck.out 2>&1
+#  Exit Status:
+#	0	no errors
+#	1	ok, some blobs disappeared
+#	2	ok, but some blobs corrupted!
+#	3	unexpected error
+#  	
+#	corrupted has highest priority, then missing, then no errors.
+#	so, if bad_count > 0 then exit 2;  if missing_count > 0 then exit 1;
+#  Note:
+#	Need to insure bot WORK_DIR and $BLOBIO_ROOT/data/fs_*
+#	are on the same file systems.
+#
+START_EPOCH=$(date +%s)
+START_DIR=$(pwd)
+WORK_DIR=${TMPDIR:=/tmp}/$(basename $0)-$$.d
+PROGRESS_MODULUS=100
+
+log()
+{
+	echo "$(date +'%Y/%m/%d: %H:%M:%S'): $@"
+}
+
+die()
+{
+	log "ERROR: $@" >&2
+	exit 3
+}
+
+leave()
+{
+	cd $START_DIR
+	test -d "$WORK_DIR" && (
+		rm -r $WORK_DIR || log "WARN: rm work/ failed: exit status=$?"
+	)
+	log "good bye, cruel world: $(elapsed-english $START_EPOCH) elapsed"
+}
+
+log 'hello, world'
+trap leave EXIT
+
+log "BLOBIO_ROOT=$BLOBIO_ROOT"
+log "PATH=$PATH"
+log "work dir: $WORK_DIR"
+log "progress modulus: $PROGRESS_MODULUS"
+
+mkdir "$WORK_DIR" || die "mkdir work dir failed: exit status=$?"
+
+cd $WORK_DIR || die "cd work dir failed: exist status=$?"
+DATA=$BLOBIO_ROOT/data
+log "data dir: $DATA"
+test -d $DATA || die "cannot verify blob data dir: $DATA"
+
+log 'snapshot fs blobs ...'
+fs2udig | bio-udig2fs >FS
+STATUS=${PIPESTATUS[*]}
+test "$STATUS" = '0 0' || die "fs2udig failed: exit status=$STATUS"
+
+log 'counting fs blobs ...'
+SNAP_COUNT=$(wc -l FS | cut -d' ' -f1)
+test $? = 0 || die "count blob failed: exit statsus=$?"
+log "snapshot count: $SNAP_COUNT blobs"
+
+let count=0
+let progress_mod=0
+let ok_count=0
+let bad_count=0
+let missing_count=0
+
+while read U P;  do
+	let count+=1
+	ALGO=$(echo $U | cut -d: -f1)
+	BP=$BLOBIO_ROOT/data/$P
+
+	#  minor race condition until "blobio eat" has specific
+	#  exit status for missing --input-path.
+	if [ ! -e $BP ];  then
+		log "?$U"
+		let missing_count+=1
+		continue
+	fi
+	D=$(blobio eat --algorithm $ALGO --input-path $BP)
+	STATUS=$?
+	case $STATUS in
+	0)
+		if [ "$ALGO:$D" = $U ];  then
+			let ok_count+=1
+		else
+			log "!$U"
+			let bad_count+=1
+		fi
+		;;
+	*)
+		die "blobio eat failed: exit status=$STATUS"
+		;;
+	esac
+	let progress=count%PROGRESS_MODULUS
+	if (($progress==0));  then
+		log "$count frisked"
+	fi
+done <FS
+log "ok count: $ok_count"
+log "missing count: $missing_count"
+log "bad count: $bad_count"
+log "scanned: $count blobs total"
+
+if (($bad_count>0));  then
+	exit 2
+fi
+
+if (($missing_count>0));  then
+	exit 1
+fi
+log 'all blobs correct!'
+exit 0
