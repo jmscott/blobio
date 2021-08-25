@@ -17,6 +17,10 @@
  *	--brr-path path/to/fs.brr
  *	--help
  *  Note:
+ *	When --input-path does not exist, then exit status should indicate
+ *	specifically.  such a code help sctip frisk-fs with rare race
+ *	condition.  thinking exit=3 does the trick.
+ *	
  *	Investigate linux system calls splice(), sendfile() and
  *	copy_file_range().
  *
