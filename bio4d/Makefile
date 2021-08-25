@@ -51,10 +51,11 @@ SBINs=									\
 	bio4d_ctl							\
 	boot-bio4d							\
 	create-rrd							\
+	frisk-fs							\
 	fs2udig								\
 	graph-rrd							\
+	gyr-run-tuple-bio4d						\
 	kill-bio4d							\
-	run-stat-tuple-bio4d						\
 	tcp4-stat							\
 	update-rrd							\
 

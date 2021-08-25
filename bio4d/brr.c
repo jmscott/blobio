@@ -111,7 +111,7 @@ answer_wrap(char *reply_fifo_path)
 	 *  Reopen the spool/bio4d.brr log file.  No other process can write
 	 *  to bio4d.brr till this answer_wrap() exits.
 	 */
-	if ((log_fd = io_open_append(log_path, 0)) < 0)
+	if ((log_fd = io_open_append(log_path)) < 0)
 		panic4(n, "open(brr) failed", log_path, strerror(errno));
 
 	/*
@@ -323,7 +323,7 @@ brr_open()
 	/*
 	 *  Open the Blob Request Record file for append.
 	 */
-	if ((log_fd = io_open_append(log_path, 0)) < 0)
+	if ((log_fd = io_open_append(log_path)) < 0)
 		panic4(n, "open() failed", log_path, strerror(errno));
 	fork_brr_logger();
 }

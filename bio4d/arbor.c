@@ -144,7 +144,7 @@ _move(char *src_path, char *tgt_path)
 		goto croak;
 	}
 
-	//  verify the target directory live on same device as source
+	//  verify the target path points to a directory.
 
 	strncpy(buf, tgt_path, sizeof buf - 1);
 	slash = rindex(buf, '/');
@@ -165,6 +165,10 @@ _move(char *src_path, char *tgt_path)
 	
 	/*
 	 *  Files on same device, so just rename.
+	 *
+	 *  Note:
+	 *	Race condition with rename exists!
+	 *	Fortunatly will not corrpt blobs.
 	 */
 	if (src_st.st_dev == tgt_st.st_dev) {
 		int err;
@@ -194,7 +198,7 @@ _move(char *src_path, char *tgt_path)
 		goto croak;
 	}
 
-	tgt_fd = io_open_append(tgt_path, 0);
+	tgt_fd = io_open_trunc(tgt_path);
 	if (tgt_fd < 0) {
 		error4(n, "open(target) failed", strerror(errno), tgt_path);
 		goto croak;

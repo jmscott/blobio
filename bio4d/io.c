@@ -48,13 +48,23 @@ again:
 }
 
 int
-io_open_append(char *path, int truncate)
+io_open_append(char *path)
 {
-	int flags = O_WRONLY | O_CREAT | O_APPEND;
+	return io_open(
+		path,
+		O_WRONLY | O_CREAT | O_APPEND,
+		S_IRUSR|S_IWUSR|S_IRGRP
+	);
+}
 
-	if (truncate)
-		flags |= O_TRUNC;
-	return io_open(path, flags, S_IRUSR|S_IWUSR|S_IRGRP);
+int
+io_open_trunc(char *path)
+{
+	return io_open(
+		path,
+		O_WRONLY | O_CREAT | O_APPEND | O_TRUNC,
+		S_IRUSR | S_IWUSR | S_IRGRP
+	);
 }
 
 /*

@@ -102,8 +102,25 @@ open_log_path(int truncate)
 	 *  Open the log file.
 	 *  If we fail, just write to standard error and croak.
 	 */
-	if ((log_path_fd = io_open_append(log_path, truncate)) < 0)
-		panic4(n, "open(log append) failed", log_path, strerror(errno));
+	if (truncate) {
+		log_path_fd = io_open_trunc(log_path);
+		if (log_path_fd < 0)
+			panic4(
+				n,
+				"open(log trunc) failed",
+				log_path,
+				strerror(errno)
+			);
+	} else {
+		log_path_fd = io_open_append(log_path);
+		if (log_path_fd < 0)
+			panic4(
+				n,
+				"open(log append) failed",
+				log_path,
+				strerror(errno)
+			);
+	}
 	log_dow = now->tm_wday;
 }
 

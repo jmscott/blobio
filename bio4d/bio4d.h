@@ -293,7 +293,8 @@ ssize_t		io_write(int fd, void *buf, size_t count);
 int		io_write_buf(int fd, void *buf, size_t count);
 int		io_pipe(int fds[2]);
 int		io_open(char *path, int flags, int mode);
-int		io_open_append(char *path, int truncate);
+int		io_open_append(char *path);
+int		io_open_trunc(char *path);
 int		io_select(
 			int nfds,
 			fd_set *readfds,

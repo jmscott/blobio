@@ -5,7 +5,20 @@
  *	cd /usr/local/blobio
  *	sbin/bio4d
  *  Note:
- *	Need to rethink need for BLOBIO_TMPDIR_MAP!
+ *	Need to count distinct blobs as part of stats!
+ *
+ *	Verify that a process core dump is always a RED condition.  It may
+ *	be classified as just a termination by signal for the dumping process.
+ *
+ *	Need to add local sockets via the file system.
+ *
+ *	The parent process should only watch the other processes and
+ *	NOT handle the network requests.
+ *
+ *	Push all gyr/stats logging to separate process.
+ *
+ *	Need to rethink need for BLOBIO_TMPDIR_MAP!  May be obsolete.
+ *	The code is hackish.
  *
  *	Is reap_request() needed to be called after each socket accept()?
  *
@@ -172,7 +185,8 @@ static u8	chat_no3_count =0;	//  ok,ok,no
 static u8	eat_no_count =	0;	//  no occured on eat
 static u8	take_no_count =	0;	//  single no on take
 
-static char	rrd_path[] = "run/bio4d.stat";
+static char	rrd_path[] = "run/bio4d.rrd";
+static char	gyr_path[] = "run/bio4d.gyr";
 
 static unsigned char	in_foreground = 0;
 
@@ -1202,12 +1216,23 @@ heartbeat()
 }
 
 /*
- *  Write out a round robin database sample to run/bio4d.rrd
+ *  Write out a green/yellow/red to run/bio4d.gyr and round robin database
+ *  sample to run/bio4d.rrd
  *
  *  Each line sample is suitable as an argument to cron driven round
  *  robin database tool tool rrdupdate.
  *
- *  The sample looks like:
+ *  The GYR file is two, tab separated lines like.
+ *
+ *	boot	<epoch>	<green-count>	<yellow-count>	<red-count>
+ *	recent	<epoch>	<green-count>	<yellow-count>	<red-count>
+ *
+ *  <green-count> are all requests where chat history "(ok,){0,2}ok" or
+ *  "no".  <yellow-count> are all "(ok,){1,2}no", timeouts, signal and
+ *  general client side errors.  <red-count> are server side errors needing
+ *  immediate attention, like core dumps and corrupted file system, etc.
+ *
+ *  The round robin database sample looks like:
  *
  *	time epoch:
  *		//  request summaries
@@ -1238,7 +1263,7 @@ heartbeat()
  *		take_no_count
  */
 static void
-rrd()
+gyr_rrd()
 {
 	int fd;
 	char buf[512];		/* <= PIPE_MAX */
@@ -1289,9 +1314,43 @@ rrd()
 		"\n"
 	;
 
-	fd = io_open_append(rrd_path, 0);
+	fd = io_open_append(rrd_path);
 	if (fd < 0)
 		panic2("open(rrd) failed", strerror(errno));
+
+	snprintf(buf, sizeof buf, format,
+		now,
+
+ 		success_count - success_count_prev,
+		error_count - error_count_prev,
+		timeout_count - timeout_count_prev,
+		signal_count - signal_count_prev,
+		fault_count - fault_count_prev,
+
+		get_count - get_count_prev,
+		put_count - put_count_prev,
+		give_count - give_count_prev,
+		take_count - take_count_prev,
+		eat_count - eat_count_prev,
+		wrap_count - wrap_count_prev,
+		roll_count - roll_count_prev,
+
+		chat_ok_count - chat_ok_count_prev,
+		chat_no_count - chat_no_count_prev,
+		chat_no2_count - chat_no2_count_prev,
+		chat_no3_count - chat_no3_count_prev,
+		eat_no_count - eat_no_count_prev,
+		take_no_count - take_no_count_prev
+	);
+	if (io_write(fd, buf, strlen(buf)) < 0)
+		panic2("write(rrd) failed", strerror(errno));
+	if (io_close(fd))
+		panic2("close(rrd) failed", strerror(errno));
+
+	fd = io_open_trunc(gyr_path);
+	if (fd < 0)
+		panic2("open(rrd) failed", strerror(errno));
+
 	snprintf(buf, sizeof buf, format,
 		now,
 
@@ -1354,7 +1413,7 @@ catch_CHLD(int sig)
 
 	reap_request();
 	heartbeat();
-	rrd();
+	gyr_rrd();
 }
 
 static void
@@ -1958,7 +2017,7 @@ accept_request:
 		/*NOTREACHED*/
 	}
 	heartbeat();
-	rrd();
+	gyr_rrd();
 	reap_request();
 	goto accept_request;
 }
