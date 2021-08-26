@@ -131,12 +131,12 @@ Protocol Flow:
 	  <no\n			#   server can not honor request
 
   	>take udig\n		# request for blob by udig
-  	    <ok\n[bytes]	#   server sends blob bytes
-  		>ok\n		#     client has the blob
-  		    <ok[close]	#       server forgets the blob
-  		    <no[close]	#       server may not forget the blob
-  		>no[close]	#     client rejects blob
-  	    <no\n[close]	#   server can not honor request
+  	  <ok\n[bytes]		#   server sends blob bytes
+  	    >ok\n		#     client has the blob
+	      <no[close]	#       server may not forget the blob
+	      <ok[close]	#       server may forget the blob
+	    >no\n[close		#     client rejects the taken blob
+	  <no\n[close]		#   server can not forget blob
 
  	>give udig\n		# request to put blog matching a udig
 	  <ok\n			#   server ready for blob bytes
@@ -144,6 +144,7 @@ Protocol Flow:
   	      <ok\n		#   server accepts the bytes
   	        >ok[close]	#     client probably forgets blob
   		>no[close]	#     client might remember the blob
+	      <no\n[close]	#   server rejects the blob
   	  <no\n[close]		#   server rejects blob give request
 
 	>eat udig\n		# client requests server to verify blob
@@ -344,6 +345,10 @@ To Do:
 	- signal handling needs to be pushed to main listen loop or cleaned
  	  up with sigaction().
 Note:
+	bio4d considers {wrap,roll}-> to be green.  only {eat}->no should be
+	green.  not sure how to fix other than track.  failed wrap/roll seem
+	yellow condition.
+
 	Consider posix fadvise(POSIX_FADV_DONTNEED) as a command line option.
 
 	This simple protocol is officially named bio4.  That needs to be
