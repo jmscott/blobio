@@ -5,6 +5,8 @@
  *	cd /usr/local/blobio
  *	sbin/bio4d
  *  Note:
+ *	{wrap,roll}->no are considered green, not yellow!
+ *
  *	Need to count distinct blobs as part of stats!
  *
  *	Verify that a process core dump is always a RED condition.  It may
@@ -179,11 +181,21 @@ static u8	roll_count =	0;
  *  Request chat summaries.
  */
 static u8	chat_ok_count = 0;	//  ok OR ok,ok, OR ok,ok,ok
-static u8	chat_no_count = 0;	//  no
-static u8	chat_no2_count =0;	//  ok,no
-static u8	chat_no3_count =0;	//  ok,ok,no
-static u8	eat_no_count =	0;	//  no occured on eat
-static u8	take_no_count =	0;	//  single no on take
+
+static u8	eat_no_count =	0;	//  first "no" on "eat"
+static u8	get_no_count =	0;	//  "no" on "get"
+static u8	put_no_count =	0;	//  first "no" on "put"
+static u8	put_no2_count =	0;	//  second "no" on "eat"
+static u8	wrap_no_count =	0;	//  first "no" on "wrap"
+static u8	roll_no_count =	0;	//  first "no" on "roll"
+
+static u8	take_no_count =	0;	//  first "no" on "take"
+static u8	take_no2_count =0;	//  second "no" on take
+static u8	take_no3_count =0;	//  third "no" on "take"
+
+static u8	give_no_count =	0;	//  first "no" on "give"
+static u8	give_no2_count =0;	//  second "no" on "give"
+static u8	give_no3_count =0;	//  second "no" on "give"
 
 static char	rrd_path[] = "run/bio4d.rrd";
 static char	gyr_path[] = "run/bio4d.gyr";
@@ -439,7 +451,7 @@ put(struct request *rp, struct digest_module *mp)
  *		>ok\n			# client accepted blob, ok to forget
  *		>no[close]		# client rejects blob, bye
  *			<ok[close]	# we probably forget blob, bye
- *			<no[close]	# we will keep the blob, bye
+ *			<no[close]	# we may keep the blob, bye
  *  Note:
  *	Taking the empty blob ought to fail.
  */
@@ -541,6 +553,7 @@ take(struct request *rp, struct digest_module *mp)
  * 	      <ok\n		#   server accepts the bytes
  *	        >ok[close]	#     client probably forgets blob
  *		>no[close]	#     client might remember the blob
+ *	      <no\n[close]	#   server rejects the bytes
  *	  <no\n[close]		#   server rejects blob give request
  */
 static int
@@ -898,8 +911,32 @@ request()
 }
 
 /*
+ *  Chat history stored in bits 6 and 7.
+ */
+static void
+inc_chat_count(unsigned char exit_status, u8 *p_no, u8 *p_no2, u8 *p_no3) {
+
+	if ((exit_status & 0x3) != 0)		//  only count when brr exists
+		return;
+	switch ((exit_status & 0x60) >> 5) {
+	case REQUEST_EXIT_STATUS_CHAT_OK:
+		chat_ok_count++
+		break;
+	case REQUEST_EXIT_STATUS_CHAT_NO:
+		*p_no += 1;
+		break;
+	case REQUEST_EXIT_STATUS_CHAT_NO2:
+		*p_no2 += 1;
+		break;
+	case REQUEST_EXIT_STATUS_CHAT_NO3:
+		*p_no3 += 1;
+		break;
+	}
+}
+
+/*
  *  Synopsis:
- *	Reap child requests and update various stats.
+ *	Reap child requests and update various stats on exit status.
  *
  *  Child Exit Status Codes:
  *  	First seven bits of the exit status encode the final state of the
@@ -915,7 +952,7 @@ request()
  *
  *  	Verb - Bits 3, 4, and 5
  *
- *	  ---000--	unused
+ *	  ---000--	unused		- may become "prove" verb
  *	  ---001--	get request 	
  *	  ---010--	put request 	
  *	  ---011--	give request 	
@@ -1030,8 +1067,10 @@ again:
 				panic(buf);
 			}
 #ifdef WCOREDUMP
+			//  can we insure the REQUEST_EXIT_STATUS_FAULT bit
+			//  is set by dump, exiting child?  not sure.
 			if (WCOREDUMP(status))
-				warn("core dump generated");
+				warn("core dump generated in child");
 #endif
 		}
 
@@ -1066,36 +1105,66 @@ again:
 			switch ((s8 & 0x1C) >> 2) {
 			case REQUEST_EXIT_STATUS_GET:
 				get_count++;
+				inc_chat_count(
+					s8,
+					&get_no_count,
+					(u8*)0,
+					(u8*)0
+				);
 				break;
 			case REQUEST_EXIT_STATUS_PUT:
 				put_count++;
+				inc_chat_count(
+					s8,
+					&put_no_count,
+					&put_no2_count,
+					(u8*)0
+				);
 				break;
 			case REQUEST_EXIT_STATUS_GIVE:
 				give_count++;
+				inc_chat_count(
+					s8,
+					&give_no_count,
+					&give_no2_count,
+					&give_no3_count
+				);
 				break;
 			case REQUEST_EXIT_STATUS_TAKE:
 				take_count++;
-
-				//  blob did not exists (single no)
-
-				if (((s8 & 0x60) >> 5) == 
-					     REQUEST_EXIT_STATUS_CHAT_NO)
-					take_no_count++;
+				inc_chat_count(
+					s8,
+					&take_no_count,
+					&take_no2_count,
+					&take_no3_count
+				);
 				break;
 			case REQUEST_EXIT_STATUS_EAT:
 				eat_count++;
-
-				//  blob probably did not exist
-
-				if (((s8 & 0x60) >> 5) == 
-					     REQUEST_EXIT_STATUS_CHAT_NO)
-					eat_no_count++;
+				inc_chat_count(
+					s8,
+					&eat_no_count,
+					(u8 *)0,
+					(u8 *)0
+				);
 				break;
 			case REQUEST_EXIT_STATUS_WRAP:
 				wrap_count++;
+				inc_chat_count(
+					s8,
+					&wrap_no_count,
+					(u8 *)0,
+					(u8 *)0
+				);
 				break;
 			case REQUEST_EXIT_STATUS_ROLL:
 				roll_count++;
+				inc_chat_count(
+					s8,
+					&roll_no_count,
+					(u8 *)0,
+					(u8 *)0
+				);
 				break;
 			default: {
 				char buf[MSG_SIZE];
@@ -1108,29 +1177,13 @@ again:
 				if (s8 & 0x3)
 					break;
 				snprintf(buf, sizeof buf,
-					"pid #%u: no verb in exit status: 0x%x",
-					 corpse, s8
+					"pid #%u: no verb in exit status: "
+					  "0x%x",
+					corpse,
+					s8
 				);
 				panic(buf);
 			}}
-			/*
-			 *  Chat history stored in bits 6 and 7.
-			 */
-			if ((s8 & 0x3) == 0) 		/* normal request */
-				switch ((s8 & 0x60) >> 5) {
-				case REQUEST_EXIT_STATUS_CHAT_OK:
-					chat_ok_count++;
-					break;
-				case REQUEST_EXIT_STATUS_CHAT_NO:
-					chat_no_count++;
-					break;
-				case REQUEST_EXIT_STATUS_CHAT_NO2:
-					chat_no2_count++;
-					break;
-				case REQUEST_EXIT_STATUS_CHAT_NO3:
-					chat_no3_count++;
-					break;
-				}
 		}
 	}
 	if (corpse) {
@@ -1216,11 +1269,8 @@ heartbeat()
 }
 
 /*
- *  Write out a green/yellow/red to run/bio4d.gyr and round robin database
- *  sample to run/bio4d.rrd
- *
- *  Each line sample is suitable as an argument to cron driven round
- *  robin database tool tool rrdupdate.
+ *  Write out a green/yellow/red tuples to run/bio4d.gyr and
+ *  round robin database sample to run/bio4d.rrd
  *
  *  The GYR file is two, tab separated lines like.
  *
@@ -1232,12 +1282,15 @@ heartbeat()
  *  general client side errors.  <red-count> are server side errors needing
  *  immediate attention, like core dumps and corrupted file system, etc.
  *
+ *  Each line sample in run/bio4d.rrd is suitable as an argument to cron
+ *  driven round robin database tool tool rrdupdate.
+ *
  *  The round robin database sample looks like:
  *
  *	time epoch:
  *		//  request summaries
  *
- *		success_count:		//  request satisfied
+ *		success_count:		//  blob request record generated
  *		error_count:		//  stable error in request
  *		timeout_count:		//  timeout in request
  *		signal_count:		//  request ended due to signal
@@ -1245,22 +1298,29 @@ heartbeat()
  *
  *		//  verb summaries, regardless of ok/no chat history
  *
- *		get_count:
- *		put_count:
- *		give_count:		
- *		take_count:
  *		eat_count:
+ *		eat_no_count:
+ *		get_count:
+ *		get_no_count:
+ *		put_count:
+ *		put_no_count:
+ *		put_no2_count:
+ *		give_count:		
+ *		give_no_count:		
+ *		give_no2_count:		
+ *		give_no3_count:		
+ *		take_count:
+ *		take_no_count:
+ *		take_no2_count:
+ *		take_no3_count:
  *		wrap_count:
+ *		wrap_no_count:
  *		roll_count:
+ *		roll_no_count:
  *
  *		//  chat history summaries
  *
  *		chat_ok_count:
- *		chat_no_count:
- *		chat_no2_count:
- *		chat_no3_count:
- *		eat_no_count:
- *		take_no_count
  */
 static void
 gyr_rrd()
@@ -1283,34 +1343,48 @@ gyr_rrd()
 	/*
 	 *  Request Verbs
 	 */
-	static u8	get_count_prev =	0;
-	static u8	put_count_prev =	0;
-	static u8	give_count_prev =	0;
-	static u8	take_count_prev =	0;
 	static u8	eat_count_prev =	0;
+	static u8	eat_no_count_prev =	0;
+
+	static u8	get_count_prev =	0;
+	static u8	get_no_count_prev =	0;
+
+	static u8	put_count_prev =	0;
+	static u8	put_no_count_prev =	0;
+	static u8	put_no2_count_prev =	0;
+
+	static u8	give_count_prev =	0;
+	static u8	give_no_count_prev =	0;
+	static u8	give_no2_count_prev =	0;
+	static u8	give_no3_count_prev =	0;
+
+	static u8	take_count_prev =	0;
+	static u8	take_no_count_prev =	0;
+	static u8	take_no2_count_prev =	0;
+	static u8	take_no3_count_prev =	0;
+
 	static u8	wrap_count_prev =	0;
+	static u8	wrap_no_count_prev =	0;
+
 	static u8	roll_count_prev =	0;
+	static u8	roll_no_count_prev =	0;
 
 	/*
 	 *  Request chat summaries.
 	 */
 	static u8	chat_ok_count_prev =	0;
-	static u8	chat_no_count_prev =	0;
-	static u8	chat_no2_count_prev =	0;
-	static u8	chat_no3_count_prev =	0;
-	static u8	eat_no_count_prev =	0;
-	static u8	take_no_count_prev =	0;
 
 	time(&now);
 	if (now - rrd_now_prev < rrd_duration)
 		return;
 
-	static char format[] =
+	static char rrd_format[] =
 		"%llu:"					/* time epoch */
 
-		"%llu:%llu:%llu:%llu:%llu:"		/* process exit class */
+		"%llu:%llu:%llu:%llu:%llu:"		/* process exit class*/
 		"%llu:%llu:%llu:%llu:%llu:%llu:%llu:"	/* verb count */
 		"%llu:%llu:%llu:%llu:%llu:%llu"		/* chat history */
+		"%llu:%llu:%llu"			/* {wrap,roll,give}no*/
 		"\n"
 	;
 
@@ -1318,7 +1392,7 @@ gyr_rrd()
 	if (fd < 0)
 		panic2("open(rrd) failed", strerror(errno));
 
-	snprintf(buf, sizeof buf, format,
+	snprintf(buf, sizeof buf, rrd_format,
 		now,
 
  		success_count - success_count_prev,
@@ -1340,7 +1414,9 @@ gyr_rrd()
 		chat_no2_count - chat_no2_count_prev,
 		chat_no3_count - chat_no3_count_prev,
 		eat_no_count - eat_no_count_prev,
-		take_no_count - take_no_count_prev
+		take_no_count - take_no_count_prev,
+		wrap_no_count - wrap_no_count_prev,
+		roll_no_count - roll_no_count_prev
 	);
 	if (io_write(fd, buf, strlen(buf)) < 0)
 		panic2("write(rrd) failed", strerror(errno));
@@ -1351,7 +1427,32 @@ gyr_rrd()
 	if (fd < 0)
 		panic2("open(rrd) failed", strerror(errno));
 
-	snprintf(buf, sizeof buf, format,
+	u8 boot_green_count = success_count -
+			      (chat_no2_count+chat_no3_count+
+			       wrap_no_count+roll_no_count)
+	;
+	u8 recent_green_count = (success_count - success_count_prev) -
+				((chat_no2_count - chat_no2_count_prev) +
+				 (chat_no3_count - chat_no3_count_prev) +
+				 (wrap_no_count-wrap_no_count_prev) +
+				 (roll_no_count-roll_no_count_prev))
+	;
+
+	u8 boot_yellow_count = error_count +
+			       chat_no2_count +
+
+			      (chat_no2_count+chat_no3_count)
+	;
+	u8 recent_yellow_count = (success_count - success_count_prev) -
+				((chat_no2_count - chat_no2_count_prev) +
+				 (chat_no3_count - chat_no3_count_prev))
+	;
+
+	static char gyr_format[] =
+		"boot	%llu	%lld	%lld	%lld\n"
+		"recent	%llu	%lld	%lld	%lld\n"
+	;
+	snprintf(buf, sizeof buf, gyr_format,
 		now,
 
  		success_count - success_count_prev,
