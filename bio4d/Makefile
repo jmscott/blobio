@@ -51,7 +51,7 @@ SBINs=									\
 	bio4d_ctl							\
 	boot-bio4d							\
 	create-rrd							\
-	frisk-fs							\
+	fs-frisk							\
 	fs2udig								\
 	graph-rrd							\
 	gyr-run-tuple-bio4d						\

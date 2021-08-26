@@ -3,12 +3,13 @@
 #  Synopsis:
 #	Verify correctness of file system blobs in $BLOBIO_ROOT/data/fs_*
 #  Usage:
-#	bio-fsck >bio-fsck.out 2>&1
+#	fs-frisk >fs-frisk.out 2>&1
 #  Exit Status:
 #	0	no errors
-#	1	ok, some blobs disappeared
-#	2	ok, but some blobs corrupted!
-#	3	unexpected error
+#	1	ok, some blobs disappeared (no corrupt)
+#	2	ok, but some blobs corrupted (no disappear)
+#	3	both corrupt and disappeared blobs
+#	4	unexpected error
 #  	
 #	corrupted has highest priority, then missing, then no errors.
 #	so, if bad_count > 0 then exit 2;  if missing_count > 0 then exit 1;
@@ -29,7 +30,7 @@ log()
 die()
 {
 	log "ERROR: $@" >&2
-	exit 3
+	exit 4
 }
 
 leave()
@@ -110,11 +111,14 @@ log "bad count: $bad_count"
 log "scanned: $count blobs total"
 
 if (($bad_count>0));  then
+	if (($missing_count>0)); then
+		exit 3
+	fi
 	exit 2
 fi
 
 if (($missing_count>0));  then
 	exit 1
 fi
-log 'all blobs correct!'
+log 'all blobs OK'
 exit 0
