@@ -126,8 +126,8 @@ Protocol Flow:
  	>put udig\n		# request to put blog matching a udig
 	  <ok\n			#   server ready for blob bytes
 	    >[bytes]		#     send bytes to server
-	      <ok\n		#       accepted bytes for blob
-	      <no\n		#       rejects bytes for blob
+	      <ok\n[close]	#       accepted bytes for blob
+	      <no\n[close]	#       rejects bytes for blob
 	  <no\n			#   server can not honor request
 
   	>take udig\n		# request for blob by udig
