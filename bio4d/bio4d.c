@@ -178,14 +178,6 @@ static u8	wrap_count =	0;	//  all "wrap" requests
 static u8	roll_count =	0;	//  all "roll" requests
 
 /*
- *  Request chat summaries.
- */
-static u8	chat_ok_count = 0;	//  ok OR ok,ok, OR ok,ok,ok
-static u8	chat_no_count = 0;	//  "no" on first chat
-static u8	chat_no2_count = 0;	//  "no" on second chat (problematic)
-static u8	chat_no3_count = 0;	//  "no" on third chat (wierd)
-
-/*
  *  Statistics for failed requests that generate blob request record.
  */
 static u8	eat_no_count =	0;	//  first "no" on "eat"
@@ -923,15 +915,12 @@ request()
  *  Chat history stored in bits 6 and 7.
  */
 static void
-inc_chat_count(unsigned char exit_status, u8 *p_no, u8 *p_no2, u8 *p_no3) {
+bump_no(unsigned char exit_status, u8 *p_no, u8 *p_no2, u8 *p_no3) {
 
 	if ((exit_status & 0x3) != 0)		//  only count when brr exists
 		return;
 
 	switch ((exit_status & 0x60) >> 5) {
-	case REQUEST_EXIT_STATUS_CHAT_OK:
-		chat_ok_count++;
-		break;
 	case REQUEST_EXIT_STATUS_CHAT_NO:
 		*p_no += 1;
 		break;
@@ -1115,7 +1104,7 @@ again:
 			switch ((s8 & 0x1C) >> 2) {
 			case REQUEST_EXIT_STATUS_GET:
 				get_count++;
-				inc_chat_count(
+				bump_no(
 					s8,
 					&get_no_count,
 					(u8*)0,
@@ -1124,7 +1113,7 @@ again:
 				break;
 			case REQUEST_EXIT_STATUS_PUT:
 				put_count++;
-				inc_chat_count(
+				bump_no(
 					s8,
 					&put_no_count,
 					&put_no2_count,
@@ -1133,7 +1122,7 @@ again:
 				break;
 			case REQUEST_EXIT_STATUS_GIVE:
 				give_count++;
-				inc_chat_count(
+				bump_no(
 					s8,
 					&give_no_count,
 					&give_no2_count,
@@ -1142,7 +1131,7 @@ again:
 				break;
 			case REQUEST_EXIT_STATUS_TAKE:
 				take_count++;
-				inc_chat_count(
+				bump_no(
 					s8,
 					&take_no_count,
 					&take_no2_count,
@@ -1151,7 +1140,7 @@ again:
 				break;
 			case REQUEST_EXIT_STATUS_EAT:
 				eat_count++;
-				inc_chat_count(
+				bump_no(
 					s8,
 					&eat_no_count,
 					(u8 *)0,
@@ -1160,7 +1149,7 @@ again:
 				break;
 			case REQUEST_EXIT_STATUS_WRAP:
 				wrap_count++;
-				inc_chat_count(
+				bump_no(
 					s8,
 					&wrap_no_count,
 					(u8 *)0,
@@ -1169,7 +1158,7 @@ again:
 				break;
 			case REQUEST_EXIT_STATUS_ROLL:
 				roll_count++;
-				inc_chat_count(
+				bump_no(
 					s8,
 					&roll_no_count,
 					(u8 *)0,
@@ -1260,7 +1249,15 @@ heartbeat()
 	snprintf(buf, sizeof buf, "wrap=%llu, roll=%llu",wrap_count,roll_count);
 	info(buf);
 
-	u8 chat_no_count = put_no_count;
+	u8 chat_no_count = eat_no_count +
+			   get_no_count +
+			   put_no_count + put_no2_count +
+			   give_no_count + give_no2_count + give_no3_count +
+			   take_no_count + take_no2_count + take_no3_count +
+			   wrap_no_count +
+			   roll_no_count
+	;
+	u8 chat_ok_count = success_count - chat_no_count;
 	snprintf(buf, sizeof buf,
 	      "chat: ok=%llu, no[123]=%llu, eat|take no=%llu|%llu",
 			chat_ok_count,
@@ -1380,13 +1377,9 @@ gyr_rrd()
 	static u8	roll_count_prev =	0;
 	static u8	roll_no_count_prev =	0;
 
-	/*
-	 *  Chat history.
-	 */
-	static u8	chat_ok_count_prev = 	0;
-	static u8	chat_no_count_prev = 	0;
-	static u8	chat_no2_count_prev = 	0;
-	static u8	chat_no3_count_prev = 	0;
+	static u8	boot_green_count_prev = 0;
+	static u8	boot_yellow_count_prev = 0;
+	static u8	boot_red_count_prev = 0;
 
 	time(&now);
 	if (now - rrd_now_prev < rrd_duration)
@@ -1396,13 +1389,13 @@ gyr_rrd()
 		"%llu:"					/* time epoch */
 
 		"%llu:%llu:%llu:%llu:%llu:"		/* process exit class*/
-		"%llu:%llu:%llu:%llu:"			/* chat history */
 		"%llu:%llu:"				/* eat: ok,no */
 		"%llu:%llu:"				/* get: ok,no */
 		"%llu:%llu:%llu:"			/* put: ok,no,no2 */
-		"%llu:%llu:%llu:%llu:%llu:%llu:%llu:"	/* verb count */
-		"%llu:%llu:%llu:%llu:%llu:%llu"		/* chat history */
-		"%llu:%llu:%llu"			/* {wrap,roll,give}no*/
+		"%llu:%llu:%llu:%llu:"			/* give: ok,no,no[23] */
+		"%llu:%llu:%llu:%llu:"			/* take: ok,no,no[23] */
+		"%llu:%llu:"				/* wrap: ok,no */
+		"%llu:%llu:"				/* roll: ok,no */
 		"\n"
 	;
 
@@ -1420,21 +1413,23 @@ gyr_rrd()
 		fault_count - fault_count_prev,
 
 		get_count - get_count_prev,
+		get_no_count - get_no_count_prev,
+
 		put_count - put_count_prev,
+		put_no_count - put_no_count_prev,
+
 		give_count - give_count_prev,
+		give_no2_count - give_no2_count_prev,
+		give_no3_count - give_no3_count_prev,
+
 		take_count - take_count_prev,
-		eat_count - eat_count_prev,
+		take_no2_count - take_no2_count_prev,
+		take_no3_count - take_no3_count_prev,
+
 		wrap_count - wrap_count_prev,
-		roll_count - roll_count_prev,
-
-		chat_ok_count - chat_ok_count_prev,
-		chat_no_count - chat_no_count_prev,
-		chat_no2_count - chat_no2_count_prev,
-		chat_no3_count - chat_no3_count_prev,
-
-		eat_no_count - eat_no_count_prev,
-		take_no_count - take_no_count_prev,
 		wrap_no_count - wrap_no_count_prev,
+
+		roll_count - roll_count_prev,
 		roll_no_count - roll_no_count_prev
 	);
 	if (io_write(fd, buf, strlen(buf)) < 0)
@@ -1446,29 +1441,22 @@ gyr_rrd()
 	if (fd < 0)
 		panic2("open(rrd) failed", strerror(errno));
 
+	u8 chat_no2_count = 0;
+	u8 chat_no3_count = 0;
 	u8 boot_green_count = success_count -
-			      (chat_no2_count+chat_no3_count+
-			       wrap_no_count+roll_no_count)
+			      (chat_no2_count+chat_no3_count)+
+			      eat_no_count
 	;
-	u8 recent_green_count = (success_count - success_count_prev) -
-				((chat_no2_count - chat_no2_count_prev) +
-				 (chat_no3_count - chat_no3_count_prev) +
-				 (wrap_no_count-wrap_no_count_prev) +
-				 (roll_no_count-roll_no_count_prev))
-	;
+	u8 recent_green_count = boot_green_count - boot_green_count_prev;
 
-	u8 boot_yellow_count = error_count +
-			       chat_no2_count +
-
-			      (chat_no2_count+chat_no3_count)
+	u8 boot_yellow_count = error_count + timeout_count +
+			       (chat_no2_count+chat_no3_count)+
+			       get_no_count
 	;
-	u8 recent_yellow_count = (success_count - success_count_prev) -
-				((chat_no2_count - chat_no2_count_prev) +
-				 (chat_no3_count - chat_no3_count_prev))
-	;
+	u8 recent_yellow_count = boot_yellow_count - boot_yellow_count_prev;
 
-	u8 boot_red_count = fault_count;
-	u8 recent_red_count = fault_count - fault_count_prev;
+	u8 boot_red_count = fault_count + signal_count;
+	u8 recent_red_count = recent_red_count - recent_red_count_prev;
 
 	static char gyr_format[] =
 		"boot	%llu	%lld	%lld	%lld\n"
@@ -1491,11 +1479,20 @@ gyr_rrd()
 
 	//  reset the samples
 	rrd_now_prev = now;
+
 	success_count_prev = success_count;
 	error_count_prev = error_count;
 	timeout_count_prev = timeout_count;
 	signal_count_prev = signal_count;
 	fault_count_prev = fault_count;
+
+	chat_ok_count_prev = chat_ok_count;
+	chat_no_count_prev = chat_no_count;
+	chat_no2_count_prev = chat_no2_count;
+	chat_no3_count_prev = chat_no3_count;
+
+	eat_count_prev = eat_count;
+	eat_no_count_prev = eat_no_count;
 
 	get_count_prev = get_count;
 	get_no_count_prev = get_no_count;
@@ -1514,16 +1511,11 @@ gyr_rrd()
 	take_no2_count_prev = take_no2_count;
 	take_no3_count_prev = take_no3_count;
 
-	eat_count_prev = eat_count;
 	wrap_count_prev = wrap_count;
-	roll_count_prev = roll_count;
+	wrap_no_count_prev = wrap_no_count;
 
-	chat_ok_count_prev = chat_ok_count;
-	chat_no_count_prev = chat_no_count;
-	chat_no2_count_prev = chat_no2_count;
-	chat_no3_count_prev = chat_no3_count;
-	eat_no_count_prev = eat_no_count;
-	take_no_count_prev = take_no_count;
+	roll_count_prev = roll_count;
+	roll_no_count_prev = roll_no_count;
 }
 
 //  Note: not sure if CHLD signal is queued during handler!
