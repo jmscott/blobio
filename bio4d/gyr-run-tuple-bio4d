@@ -1,10 +1,10 @@
 #!/usr/bin/env perl
 #
 #  Synopsis:
-#	Write summary tuples from round robin database sample in run/bio4d.stat
+#	Write summary tuples from round robin database sample in run/bio4d.gyr
 #  Description:
 #	Write a two tab separated tuples that summarze stats written in
-#	run/bio4d.stat.  The fields are:
+#	run/bio4d.gyr.  The fields are:
 #
 #		Field 1:	[boot|sample]
 #		Field 2:	epoch
@@ -31,16 +31,14 @@
 #	bio4d.c
 #		
 #  Usage:
-#	run-stat-tuple-bio4d path/to/bio4d.stat
+#	run-stat-tuple-bio4d path/to/bio4d.gyr
 #  See:
 #	script "run-stat-tuple"
 #  Note:
 #	Change "sample" to "recent"!
 #
 
-die 'wrong number of arguments' unless @ARGV == 1;
-
-my $run_path = $ARGV[0];
+die 'wrong number of arguments' unless @ARGV == 0;
 
 my $RRD;
 my (
@@ -54,8 +52,8 @@ my (
 	$sample_red_count,
 ) = (0, 0, 0, 0, 0);
 
-my $stat_path = "$run_path/bio4d.stat";
-open($RRD, "<$stat_path") or die "open(<$stat_path) failed: $!";
+my $gyr_path = "run/bio4d.gyr";
+open($RRD, "<$gyr_path") or die "open(<$gyr_path) failed: $!";
 
 while (<$RRD>) {
 	my (
@@ -96,7 +94,7 @@ while (<$RRD>) {
 	$boot_red_count += $sample_red_count;
 }
 
-close($RRD) or die "close($stat_path) failed: $!";
+close($RRD) or die "close($gyr_path) failed: $!";
 
 print <<END;
 boot	$boot_epoch	$boot_green_count	$boot_yellow_count	$boot_red_count

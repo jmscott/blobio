@@ -100,9 +100,9 @@ type flow_worker struct {
 func put_stat(boot, recent flow_worker_sample) {
 
 	/*
-	 *  Write stats to run/flowd.stat
+	 *  Write green/yellow/red stats to run/flowd.gyr
 	 */
-	stat_path := "run/flowd.stat";
+	stat_path := "run/flowd.gyr";
 	sf, err := os.OpenFile(
 			stat_path,
 			os.O_CREATE|os.O_WRONLY|os.O_TRUNC,
@@ -269,7 +269,7 @@ func (conf *config) server(par *parse) {
 	leave := func(status int) {
 
 		os.Remove(pid_path)
-		os.Remove("run/flowd.stat")
+		os.Remove("run/flowd.gyr")
 		info("good bye, cruel world")
 		os.Exit(status)
 	}

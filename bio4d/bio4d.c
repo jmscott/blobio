@@ -166,6 +166,11 @@ static u8	timeout_count =	0;	//  timeout read()/write() with client
 static u8	signal_count =	0;	//  terminated with signal
 static u8	fault_count =	0;	//  faulted (panic in request)
 
+static u8	ok_count = 	0;
+static u8	no_count = 	0;
+static u8	no2_count = 	0;
+static u8	no3_count = 	0;
+
 /*
  *  Request Verbs
  */
@@ -915,20 +920,25 @@ request()
  *  Chat history stored in bits 6 and 7.
  */
 static void
-bump_no(unsigned char exit_status, u8 *p_no, u8 *p_no2, u8 *p_no3) {
+bump_no(unsigned char exit_status, u8 *v_no, u8 *v_no2, u8 *v_no3) {
 
 	if ((exit_status & 0x3) != 0)		//  only count when brr exists
 		return;
 
 	switch ((exit_status & 0x60) >> 5) {
+	case REQUEST_EXIT_STATUS_CHAT_OK:
+		ok_count++;
 	case REQUEST_EXIT_STATUS_CHAT_NO:
-		*p_no += 1;
+		no_count++;
+		*v_no += 1;
 		break;
 	case REQUEST_EXIT_STATUS_CHAT_NO2:
-		*p_no2 += 1;
+		no2_count++;
+		*v_no2 += 1;
 		break;
 	case REQUEST_EXIT_STATUS_CHAT_NO3:
-		*p_no3 += 1;
+		no3_count++;
+		*v_no3 += 1;
 		break;
 	}
 }
@@ -1249,7 +1259,7 @@ heartbeat()
 	snprintf(buf, sizeof buf, "wrap=%llu, roll=%llu",wrap_count,roll_count);
 	info(buf);
 
-	u8 chat_no_count = eat_no_count +
+	u8 no_count = eat_no_count +
 			   get_no_count +
 			   put_no_count + put_no2_count +
 			   give_no_count + give_no2_count + give_no3_count +
@@ -1257,11 +1267,11 @@ heartbeat()
 			   wrap_no_count +
 			   roll_no_count
 	;
-	u8 chat_ok_count = success_count - chat_no_count;
+	u8 chat_ok_count = success_count - no_count;
 	snprintf(buf, sizeof buf,
 	      "chat: ok=%llu, no[123]=%llu, eat|take no=%llu|%llu",
 			chat_ok_count,
-			chat_no_count,
+			no_count,
 			eat_no_count,
 			take_no_count
 	);
@@ -1377,25 +1387,25 @@ gyr_rrd()
 	static u8	roll_count_prev =	0;
 	static u8	roll_no_count_prev =	0;
 
-	static u8	boot_green_count_prev = 0;
-	static u8	boot_yellow_count_prev = 0;
-	static u8	boot_red_count_prev = 0;
+	static u8	green_count_prev = 0;
+	static u8	yellow_count_prev = 0;
+	static u8	red_count_prev = 0;
 
 	time(&now);
 	if (now - rrd_now_prev < rrd_duration)
 		return;
 
 	static char rrd_format[] =
-		"%llu:"					/* time epoch */
+		"%llu:"				/* time epoch */
 
-		"%llu:%llu:%llu:%llu:%llu:"		/* process exit class*/
-		"%llu:%llu:"				/* eat: ok,no */
-		"%llu:%llu:"				/* get: ok,no */
-		"%llu:%llu:%llu:"			/* put: ok,no,no2 */
-		"%llu:%llu:%llu:%llu:"			/* give: ok,no,no[23] */
-		"%llu:%llu:%llu:%llu:"			/* take: ok,no,no[23] */
-		"%llu:%llu:"				/* wrap: ok,no */
-		"%llu:%llu:"				/* roll: ok,no */
+		"%llu:%llu:%llu:%llu:%llu:"	/* process exit class*/
+		"%llu:%llu:"			/* eat: ok,no */
+		"%llu:%llu:"			/* get: ok,no */
+		"%llu:%llu:%llu:"		/* put: ok,no,no2 */
+		"%llu:%llu:%llu:%llu:"		/* give: ok,no,no[23]*/
+		"%llu:%llu:%llu:%llu:"		/* take: ok,no,no[23]*/
+		"%llu:%llu:"			/* wrap: ok,no */
+		"%llu:%llu:"			/* roll: ok,no */
 		"\n"
 	;
 
@@ -1437,45 +1447,43 @@ gyr_rrd()
 	if (io_close(fd))
 		panic2("close(rrd) failed", strerror(errno));
 
-	fd = io_open_trunc(gyr_path);
-	if (fd < 0)
-		panic2("open(rrd) failed", strerror(errno));
+	u8 green_count = success_count - (no2_count+no3_count)+ eat_no_count;
+	u8 recent_green_count = green_count - green_count_prev;
 
-	u8 chat_no2_count = 0;
-	u8 chat_no3_count = 0;
-	u8 boot_green_count = success_count -
-			      (chat_no2_count+chat_no3_count)+
-			      eat_no_count
-	;
-	u8 recent_green_count = boot_green_count - boot_green_count_prev;
+	u8 yellow_count = (no2_count+no3_count) +
+			   error_count + timeout_count +
+			   wrap_no_count + roll_no_count;
+	u8 recent_yellow_count = yellow_count - yellow_count_prev;
 
-	u8 boot_yellow_count = error_count + timeout_count +
-			       (chat_no2_count+chat_no3_count)+
-			       get_no_count
-	;
-	u8 recent_yellow_count = boot_yellow_count - boot_yellow_count_prev;
+	u8 red_count = signal_count + fault_count;
+	u8 recent_red_count = 0;
 
-	u8 boot_red_count = fault_count + signal_count;
-	u8 recent_red_count = recent_red_count - recent_red_count_prev;
+	//  only update run/biod4.gyr when stats change, so file mtime
+	//  measures recent activity
+	if (recent_green_count || recent_yellow_count || recent_red_count) {
 
-	static char gyr_format[] =
-		"boot	%llu	%lld	%lld	%lld\n"
-		"recent	%llu	%lld	%lld	%lld\n"
-	;
-	snprintf(buf, sizeof buf, gyr_format,
-		start_time,
-		boot_green_count,
-		boot_yellow_count,
-		boot_red_count,
-		now,
-		recent_green_count,
-		recent_yellow_count,
-		recent_red_count
-	);
-	if (io_write(fd, buf, strlen(buf)) < 0)
-		panic2("write(rrd) failed", strerror(errno));
-	if (io_close(fd))
-		panic2("close(rrd) failed", strerror(errno));
+		fd = io_open_trunc(gyr_path);
+		if (fd < 0)
+			panic2("open(gyr) failed", strerror(errno));
+		static char gyr_format[] =
+			"boot	%llu	%lld	%lld	%lld\n"
+			"recent	%llu	%lld	%lld	%lld\n"
+		;
+		snprintf(buf, sizeof buf, gyr_format,
+			start_time,
+			green_count,
+			yellow_count,
+			red_count,
+			now,
+			recent_green_count,
+			recent_yellow_count,
+			recent_red_count
+		);
+		if (io_write(fd, buf, strlen(buf)) < 0)
+			panic2("write(gyr) failed", strerror(errno));
+		if (io_close(fd))
+			panic2("close(byr) failed", strerror(errno));
+	}
 
 	//  reset the samples
 	rrd_now_prev = now;
@@ -1485,11 +1493,6 @@ gyr_rrd()
 	timeout_count_prev = timeout_count;
 	signal_count_prev = signal_count;
 	fault_count_prev = fault_count;
-
-	chat_ok_count_prev = chat_ok_count;
-	chat_no_count_prev = chat_no_count;
-	chat_no2_count_prev = chat_no2_count;
-	chat_no3_count_prev = chat_no3_count;
 
 	eat_count_prev = eat_count;
 	eat_no_count_prev = eat_no_count;
@@ -1516,6 +1519,57 @@ gyr_rrd()
 
 	roll_count_prev = roll_count;
 	roll_no_count_prev = roll_no_count;
+
+	green_count_prev = green_count;
+	yellow_count_prev = yellow_count;
+	red_count_prev = red_count;
+}
+
+static void
+gyr_rrd_empty()
+{
+	char buf[512];		/* <= PIPE_MAX */
+
+	static char rrd_format[] =
+		"%llu:"			/* time epoch */
+
+		"0:0:0:0:0:"		/* process exit class*/
+		"0:0:"			/* eat: ok,no */
+		"0:0:"			/* get: ok,no */
+		"0:0:0:"		/* put: ok,no,no2 */
+		"0:0:0:0:"		/* give: ok,no,no[23]*/
+		"0:0:0:0:"		/* take: ok,no,no[23]*/
+		"0:0:"			/* wrap: ok,no */
+		"0:0:"			/* roll: ok,no */
+		"\n"
+	;
+
+	int fd = io_open_append(rrd_path);
+	if (fd < 0)
+		panic2("open(rrd empty) failed", strerror(errno));
+
+	snprintf(buf, sizeof buf, rrd_format, start_time);
+	if (io_write(fd, buf, strlen(buf)) < 0)
+		panic2("write(rrd empty) failed", strerror(errno));
+	if (io_close(fd))
+		panic2("close(rrd empty) failed", strerror(errno));
+
+	fd = io_open_trunc(gyr_path);
+	if (fd < 0)
+		panic2("open(gyr empty) failed", strerror(errno));
+
+	static char gyr_format[] =
+		"boot	%llu	0	0	0\n"
+		"recent	%llu	0	0	0\n"
+	;
+	snprintf(buf, sizeof buf, gyr_format,
+		start_time,
+		start_time
+	);
+	if (io_write(fd, buf, strlen(buf)) < 0)
+		panic2("write(gyr empty) failed", strerror(errno));
+	if (io_close(fd))
+		panic2("close(byr empty) failed", strerror(errno));
 }
 
 //  Note: not sure if CHLD signal is queued during handler!
@@ -2074,6 +2128,8 @@ main(int argc, char **argv, char **env)
 		panic2("signal(HUP, SIG_IGN) failed", strerror(errno));
 
 	ps_title_set("bio4d-listen", (char *)0, (char *)0);
+	gyr_rrd_empty();
+
 	/*
 	 *  Open the socket to listen for requests.
 	 */

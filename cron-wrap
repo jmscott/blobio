@@ -1,7 +1,7 @@
 #!/bin/bash
 #
 #  Synopsis:
-#	Wrap blobs when flowd is "quiet", based upon mtime of run/flowd.stat
+#	Wrap blobs when flowd is "quiet", based upon mtime of run/flowd.gyr
 #  Usage:
 #	cron-wrap 60
 #
@@ -62,19 +62,19 @@ log "BLOBIO_SERVICE=$BLOBIO_SERVICE"
 test -n "$BLOBIO_ALGORITHM" || die 'env not defined: BLOBIO_ALGORITHM'
 log "BLOBIO_ALGORITHM=$BLOBIO_ALGORITHM"
 
-STAT=run/flowd.stat
+STAT=run/flowd.gyr
 stale-mtime $STALE_MTIME $STAT
 STATUS=$?
 case $STATUS in
 0)
-	log 'run/flowd.stat is stale'
+	log 'run/flowd.gyr is stale'
 	;;
 1)
-	log 'run/flowd.stat is fresh, no wrap'
+	log 'run/flowd.gyr is fresh, no wrap'
 	exit 0
 	;;
 2)
-	die "run/flowd.stat disappeared"
+	die "run/flowd.gyr disappeared"
 	;;
 *)
 	die "stale-mtime failed: exit status=$?"

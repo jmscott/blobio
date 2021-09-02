@@ -1,44 +1,51 @@
 #
 #  Synopsis:
-#	Summarize stats and duration in run/{flowd,bio4d}.{pid,stat} files.
+#	Summarize stats and duration in run/{flowd,bio4d}.{pid,gyr} files.
 #  Description:
 #	Summarize the overall message flow by converting the contents of
-#	status files in the directory
+#	various files in the run directory
 #
-#		run/{flowd,bio4d}.{pid,stat}
+#		run/{flowd,bio4d}.{pid,gyr}
 #
 #	to tab separated rows, suitable for parsing by shell scripts.  The
 #	processes summarized are "bio4d" and "flowd", typically in either
 #	directories ${BLOBIO_ROOT, SETSPACE_ROOT}/<schema>/*/run or
 #	$BLOBIO_ROOT/sync/root/<remote-name>/run.
 #
-#	run-stat writes tab separated rows to standard out.
+#	run-stat-tuple writes tab separated rows to standard out.
 #
-#		[bio4d|flowd]	[UP|DOWN|ZOMBI]				\
-#			<boot-epoch>	<boot-ok>	<boot-fail>	\
-#			<sample-epoch>	<sample-ok>	<sample-fail>	\
+#		[bio4d|flowd|flowd>remote][UP|DOWN|ZOMBI]		\
+#		<boot-epoch>						\
+#			<boot-green>	<boot-yellow>	<boot-red>	\
+#		<recent-epoch>						\
+#			<recent-green>	<recent-yellow>	<recent-red>	\
 #
-#	<boot> stats are since process start and <sample> is the most recent
-#	non-zero sample stat.
+#	<boot> stats are since process start and <recent> is the most recent
+#	non-zero stat.
 #
-#	<ok> is the total number correct requests, <fail> is the total number of
-#	requests, possibly needing attention.
+#	<green> is the count of correct requests, <yellow> the count
+#	of worrisome requests and <red> is the count of	requests, probably
+#	needing mmediate attention, for either since <boot-epoch> or the
+#	most recent non-zero sample.
 #
-#	For bio4d, <fail> sums mundane client errors, timeouts, signals and
-#	server-side panics. <ok> sums all syntactally correct requests by
-#	clients, including requests for non-existant blobs.
+#	For bio4d, <red> sums mundane client errors, timeouts, signals and
+#	server-side panics. <green> sums all "ok" replies and "no" replies
+#	for "eat" and "get".  <yellow> tallies client side errors (no brr),
+#	network timeouts (not file system) and "ok,no" and "ok,ok,no"
+#	brr requests.
 #
-#	For flowd, the stats sum the columns in the *.fdr records.  <ok>
+#	For flowd, the stats sum the columns in the *.fdr records.  <green>
 #	is the sum of both process (exit code) and query execution (SQLSTATE)
-#	status codes.  Typically, <ok> for a process (*.xdr) is the exit status
-#	0, although the meaning of "OK" can be overridden in the etc/*.flow
-#	file. Similary for sql queries, "OK" can be extened from "00000" to
-#	other codes.  The <fail> counts are the complement of "OK" counts.
+#	status codes.  Typically, <green> counts for a process (*.xdr) or
+#	query (*.qdr) are the status tagged as "OK" in the *.flow file.
+#	other codes.  The <red> counts are the complement of "OK" counts.
 #	A common example of a failed SQL code would "23503" foreign key
-#	violation, indicated a bug in the etc/*.flow file.
+#	violation, indicated a bug in the etc/*.flow file. <yellow> counts
+#	are always zero.
 #
 #  Usage:
-#	run-stat | ... sort | ... column
+#	export BLOBIO_ROOT=$HOME/opt/blobio
+#	run-stat-tuple | ... sort | ... column
 #
 #	while sleep 60;  do
 #		run-stat | put-to-db
@@ -46,11 +53,15 @@
 #  See:
 #	run-stat-report
 #  Note:
+#	Consider a process state OFF for disabled sync remote services,
+#	by checking for existence of sync/root/<remote>/etc/sync-<remote>.flow.
+#
+#	Consider a process state HOST, which means missing run/*.pid but
+#	but process appears to be running, since fuser says log/*.log
+#	are opened by SOMETHING.
+#
 #	Really, really, really need to move the files in log/*.{qdr,xdr,fdr}
 #	to directory data/ or spool/!
-#
-#	Probing process existence with pgrep might be useful.
-#	Not clear if another script should do this.
 #
 
 STALE_AFTER=120		#  need to derive heartbeat values in etc/profile
@@ -61,99 +72,95 @@ die()
 	exit 1
 }
 
-_cat_flowd()
-{
-	STAT_PATH=$1
-	if [ -e $STAT_PATH ];  then
-		BOOT=$(grep '^boot	' $STAT_PATH | cut -f2-4)
-		SAMPLE=$(grep '^sample	' $STAT_PATH | cut -f2-4)
-	else
-		BOOT=""
-		SAMPLE=""
-	fi
-	echo "$WHAT	$STATE	$SINCE	$BOOT	$SAMPLE"
-}
-
-#
-#  Stats for bio4d are written every $BLOBIO_BIO4D_RRD_DURATION seconds.
-#  Typically stats are written every 10 seconds, which code assumes.
-#  Eventually we will consult Z$BLOBIO_BIO4D_RRD_DURATION defined in
-#  etc/profile.
-#
-_cat_bio4d()
-{
-	STAT_PATH=run/bio4d.stat
-	if [ -e $STAT_PATH ];  then
-		BOOT=$(
-			run-stat-bio4d $STAT_PATH			|
-			grep '^boot	'				|
-			sed 's/.....//'
-		)
-		SAMPLE=$(
-			run-stat-tuple-bio4d $STAT_PATH			|
-			grep '^sample	' 				|
-			sed 's/.......//'
-		)
-	else
-		BOOT=""
-		SAMPLE=""
-	fi
-	echo "$WHAT	$STATE	$SINCE	$BOOT	$SAMPLE"
-}
-
-_cat_run()
+_cat_gyr()
 {
 	WHAT=$1
-	PID_PATH=$2
-	SINCE=UNKNOWN
+	RUN_PATH=$2
+	PID_PATH=
 
-	stale-mtime $STALE_AFTER $PID_PATH
-	STATUS=$?
-	case $STATUS in
-	0)
-		SINCE=$(perl -e "print((stat('$PID_PATH'))[9]);")
-		STATE=ZOMBIE
-		;;
-	1)
-		STATE=UP
-		SINCE=$(head -2 $PID_PATH | tail -1)
-		;;
-	2)
-		STATE=DOWN
-		;;
-	*)
-		die "stale-mtime failed: exit status=$?"
-		;;
-	esac
-
+	#
+	#  check status of process by checking $RUN_PATH/$WHAT.pid
+	#
+	#	UP 		=> now - mtime < STALE_DURATION
+	#	DOWN		=> WHAT.pid does not exist
+	#	ZOMBI		=> WHAT.pid exists but no process
+	#	YETI		=> WHAT.pid exists but process frozen
+	#
 	case $WHAT in
-	bio4d)
-		_cat_bio4d
-		;;
-	flowd)
-		_cat_flowd run/flowd.stat
+	bio4d|flowd)
+		PID_PATH=$RUN_PATH/$WHAT.pid
 		;;
 	flowd/[a-z0-9]*)
-		HOST=$(echo "$WHAT" | sed 's/......//')
-		_cat_flowd sync/root/$HOST/run/flowd.stat 
+		_REMOTE=$(echo "$WHAT" | sed 's/......//')
+		_cat_gyr sync/root/$_REMOTE/run/flowd.stat 
 		;;
 	*)
 		die "impossible what: $WHAT"
 		;;
 	esac
+	if [ -s $PID_PATH ];  then
+		test -r $PID_PATH || die "can not read pid file: $PID_PATH"
+		EXISTS=$(pgrep --pidfile $PID_PATH >/dev/null)
+		_STATUS=$?
+		case $_STATUS in
+		0)
+			stale-mtime $PID_PATH
+			_STATUS2=$?
+			case $_STATUS2 in
+			0)
+				STATE=UP
+				;;
+			1)
+				STATE=YETI		#  up but frozen
+				;;
+			*)
+				die "stale-mtime failed: exit status=$_STATUS2"
+				;;
+			esac
+			;;
+	elif [ -e $PID_PATH ];  then
+		STATE=ZOMBI
+	else
+		STATE=DOWN
+	fi
+	if [ ! -s $GYR_PATH ];  then
+		case $STATE in
+		UP)
+			STATE=YETI
+			;;
+		DOWN|YETI)
+			STATE=ZOMBI
+			;;
+
+
+	
+	case $STATE in
+	DOWN|YETI|ZOMBI)
+		cat <<END
+$WHAT	$STATE	
+END
+
+	if [ -e $GYR_PATH ];  then
+		BOOT=$(grep '^boot	' $GYR_PATH | cut -f2-5)
+		RECENT=$(grep '^recent	' $GYR_PATH | cut -f2-5)
+	else
+		BOOT=""
+		RECENT=""
+	fi
+	echo "$WHAT	$STATE	$BOOT	$RECENT"
 }
 
 test $# = 0 || die "wrong number cli arguments: got $#, expected 0"
 
-test -n "$BLOBIO_ROOT" || die "environment not defined: BLOBIO_ROOT"
+test -n "$BLOBIO_ROOT" || die "env not defined: BLOBIO_ROOT"
 cd $BLOBIO_ROOT || die "cd $BLOBIO_ROOT: exit status=$?"
 
-_cat_run bio4d run/bio4d.pid
-_cat_run flowd run/flowd.pid
+_cat_gyr bio4d run
+_cat_gyr flowd run
 
 #  check sync flowd process
 
 find sync/root -name run -type d | while read RUN_DIR;  do
-	HOST=$(basename $(dirname $RUN_DIR))
-	_cat_run flowd/$HOST $RUN_DIR/flowd.pid 
+	REMOTE=$(basename $(dirname $RUN_DIR))
+	_cat_gyr flowd $RUN_DIR
 done

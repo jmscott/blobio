@@ -38,14 +38,14 @@ END
 		           FDR OK FLT 					\
 		           sFDR sOK sFLT				\
 			   ;  do
-			SP=run/$PROC.stat
+			SP=run/$PROC.gyr
 			case $PROC in
 			bio4d|flowd)
-				SP=run/$PROC.stat
+				SP=run/$PROC.gyr
 				;;
 			flowd/*)
 				HOST=$(echo $PROC | sed 's/......//')
-				SP="sync/root/$HOST/run/flowd.stat"
+				SP="sync/root/$HOST/run/flowd.gyr"
 				;;
 			*)
 				die "unknown process: $PROC"
