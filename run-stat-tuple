@@ -89,10 +89,13 @@ _cat_gyr()
 	case $WHAT in
 	bio4d|flowd)
 		PID_PATH=$RUN_PATH/$WHAT.pid
+		GYR_PATH=$RUN_PATH/$WHAT.gyr
 		;;
 	flowd/[a-z0-9]*)
+		WHAT=$(echo "$WHAT" | sed 's@/@>@')
 		_REMOTE=$(echo "$WHAT" | sed 's/......//')
-		_cat_gyr sync/root/$_REMOTE/run/flowd.stat 
+		PID_PATH=$RUN_PATH/$WHAT.pid
+		GYR_PATH=$RUN_PATH/$WHAT.gyr
 		;;
 	*)
 		die "impossible what: $WHAT"
@@ -100,11 +103,12 @@ _cat_gyr()
 	esac
 	if [ -s $PID_PATH ];  then
 		test -r $PID_PATH || die "can not read pid file: $PID_PATH"
-		EXISTS=$(pgrep --pidfile $PID_PATH >/dev/null)
+
+		EXISTS=$(pgrep -F $PID_PATH)
 		_STATUS=$?
 		case $_STATUS in
 		0)
-			stale-mtime $PID_PATH
+			stale-mtime $STALE_AFTER $PID_PATH
 			_STATUS2=$?
 			case $_STATUS2 in
 			0)
@@ -118,6 +122,16 @@ _cat_gyr()
 				;;
 			esac
 			;;
+		1)
+			if [ -n "$EXISTS" ];  then
+				die "pgrep failed: $EXISTS"
+			fi
+			STATUS=ZOMBI
+			;;
+		*)
+			die "pgrep failed: exit status=$?"
+			;;
+		esac
 	elif [ -e $PID_PATH ];  then
 		STATE=ZOMBI
 	else
@@ -131,16 +145,10 @@ _cat_gyr()
 		DOWN|YETI)
 			STATE=ZOMBI
 			;;
-
-
+		esac
+	fi
 	
-	case $STATE in
-	DOWN|YETI|ZOMBI)
-		cat <<END
-$WHAT	$STATE	
-END
-
-	if [ -e $GYR_PATH ];  then
+	if [ -e "$GYR_PATH" ];  then
 		BOOT=$(grep '^boot	' $GYR_PATH | cut -f2-5)
 		RECENT=$(grep '^recent	' $GYR_PATH | cut -f2-5)
 	else
@@ -162,5 +170,5 @@ _cat_gyr flowd run
 
 find sync/root -name run -type d | while read RUN_DIR;  do
 	REMOTE=$(basename $(dirname $RUN_DIR))
-	_cat_gyr flowd $RUN_DIR
+	_cat_gyr flowd>$REMOTE $RUN_DIR
 done
