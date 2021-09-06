@@ -64,12 +64,100 @@
 #	to directory data/ or spool/!
 #
 
-STALE_AFTER=120		#  need to derive heartbeat values in etc/profile
+STALE_AFTER=61		#  need to derive heartbeat values in etc/profile
 
 die()
 {
 	echo "$(basename $0): ERROR: $@" >&2
 	exit 1
+}
+
+_cat_flowd()
+{
+	local WHAT=$1		#  process name (flowd or flowd>tag)
+	local RUN_PATH=$2	#  run path
+	local FLOW_PATH=	#  path to *.flow file, in root or sync/peer
+
+	local PID_PATH=		#  path to $RUN_PATH/flowd.pid
+	local PID_MTIME=null	#  most recent write to $RUN_PATH/flowd.pid
+
+	local BOOT_EPOCH=null	#  tail -1 $RUN_PATH/flowd.pid
+				#  can be overriden by value in "run/flowd.gyr"
+
+	local GYR_PATH=$RUN_PATH/flowd.gyr
+	local GYR_MTIME=null	#  most recent write to RUN_PATH/flowd.gyr
+	local RECENT_EPOCH=null	#  epoch of most recent GYR sample
+
+	case $WHAT in
+	flowd)
+		FLOW_PATH=$RUN_PATH/etc/blobio.flow
+		;;
+	'flowd>'*)
+		FLOW_PATH=$RUN_PATH/etc/sync-$(echo $WHAT  | sed @/.*@@).flow
+	1	;;
+	*)
+		die "_cat_chaotic_flowd: impossible what: $1"
+		;;
+	esac
+
+	if [ -s $PID_PATH ];  then
+		PID_MTIME=$(stat-mtime $PID_PATH)
+		BOOT_EPOCH=$(tail -1 $PID_PATH)
+	fi
+
+	if [ -s $GYR_PATH ];  then
+		GYR_MTIME=$(stat-mtime $PID_PATH)
+		BOOT_EPOCH=$(grep '^boot	' $GYR_PATH | cut -f2)
+		RECENT_EPOCH=$(grep '^recent	' $GYR_PATH | cut -f2)
+	fi
+
+	if [ ! -e $FLOW_PATH ];  then
+
+	#  should the service be running?
+	if [ -e $FLOW_PATH ];  then
+		test -e $PID_PATH
+		if [ -e $PID_PATH ];  then
+		if -a ! -e $PID_PATH -a ! -e $GYR_PATH ];  then
+			cat <<END
+$WHAT	DOWN	null	null	null	null	null	null	null	null
+END
+		return 1
+		fi
+	fi
+
+	#  is flowd OFFLINE, cleanly
+	if [ -e $FLOW_PATH ]; then
+		if [ -e $PID_PATH ];  then
+			if stale-mtime $STALE_AFTER $PID_PATH;  then
+				STATE=YETI
+			else
+			$(PID_MTIME
+		cat <<END
+$WHAT	OFFLINE	null	null	null	null	null	null	null	null
+END
+	fi
+
+	if [ -e $PID_PATH ];  then
+		
+		if [ -e $P
+		stale-mtime $STALE_AFTER $PID_PATH
+		STATUS=$?
+		case $STATUS in
+		0)
+			STATE=ZOMBIE
+			;;
+		1)
+			STATE=YETI
+			;;
+		*)
+			die "stale-mtime pid failed: exit status=$?"
+			;;
+		esac
+		BOOT_PID=$(head
+	cat <<END
+$WHAT	
+END
+	return 0
 }
 
 _cat_gyr()
@@ -87,12 +175,16 @@ _cat_gyr()
 	#	YETI		=> WHAT.pid exists but process frozen
 	#
 	case $WHAT in
-	bio4d|flowd)
+	bio4d)
 		PID_PATH=$RUN_PATH/$WHAT.pid
 		GYR_PATH=$RUN_PATH/$WHAT.gyr
 		;;
-	flowd/[a-z0-9]*)
-		WHAT=$(echo "$WHAT" | sed 's@/@>@')
+	flowd)
+		_is_flowd_DOWN $WHAT $RUN_PATH && return
+		PID_PATH=$RUN_PATH/$WHAT.pid
+		GYR_PATH=$RUN_PATH/$WHAT.gyr
+		;;
+	flowd>[a-z0-9]*)
 		_REMOTE=$(echo "$WHAT" | sed 's/......//')
 		PID_PATH=$RUN_PATH/$WHAT.pid
 		GYR_PATH=$RUN_PATH/$WHAT.gyr
@@ -112,10 +204,10 @@ _cat_gyr()
 			_STATUS2=$?
 			case $_STATUS2 in
 			0)
-				STATE=UP
+				STATE=YETI
 				;;
 			1)
-				STATE=YETI		#  up but frozen
+				STATE=UP		#  up but frozen
 				;;
 			*)
 				die "stale-mtime failed: exit status=$_STATUS2"
@@ -170,5 +262,5 @@ _cat_gyr flowd run
 
 find sync/root -name run -type d | while read RUN_DIR;  do
 	REMOTE=$(basename $(dirname $RUN_DIR))
-	_cat_gyr flowd>$REMOTE $RUN_DIR
+	_cat_gyr "flowd>$REMOTE" $RUN_DIR
 done

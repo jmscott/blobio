@@ -29,12 +29,13 @@ cd $BLOBIO_ROOT || die "cd BLOBIO_ROOT failed: exit status=$?"
 
 (
 	cat <<END
-Process	State	UpTim	Request, Success, Fail	Recent 10s Sample	When
+Process	State	UpTim	Green,Yellow,Red	Recent 10s GYR	When
 -------	-----	-----	---------------------	-----------------	----
 END
 	run-stat-tuple							|
 		sort --key=2 --key=1 --field-separator=$'\t'		|
-		while read PROC STATUS START_EPOCH			\
+		while read PROC STATUS
+			START_EPOCH					\
 		           FDR OK FLT 					\
 		           sFDR sOK sFLT				\
 			   ;  do
