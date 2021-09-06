@@ -6,6 +6,8 @@
 #	make-sync-root <remote name> <remote blobio service>
 #
 #	make-sync-root lct bio4:10.187.1.2:1797
+#  Note:
+#	Consider renaming dir "root" to "mirror" or "peer".
 #
 
 die()
