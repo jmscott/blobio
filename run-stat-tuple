@@ -2,31 +2,40 @@
 #  Synopsis:
 #	Summarize stats and duration in run/{flowd,bio4d}.{pid,gyr} files.
 #  Description:
-#	Summarize the overall message flow by converting the contents of
-#	various files in the run directory
+#  	Flowd|bio4d processes can be in one of five states:
 #
-#		run/{flowd,bio4d}.{pid,gyr}
+#		UP 	=> running as expected.
+#		DOWN	=> is not running but is expected to be online (OK)
+#		ZOMBI	=> process is supposed be dead but appears alive
+#		YETI	=> process is supposed to be alive but no updates
+#		OFFL	=> process is intentionally off line (cleanly)
 #
-#	to tab separated rows, suitable for parsing by shell scripts.  The
-#	processes summarized are "bio4d" and "flowd", typically in either
-#	directories ${BLOBIO_ROOT, SETSPACE_ROOT}/<schema>/*/run or
-#	$BLOBIO_ROOT/sync/root/<remote-name>/run.
+#	The stats accumulated are since boot and the most recent sample.
+#	Typically samples are every 10 seconds.  Green/Yellow/Red exist
+#	for both the boot and recent samples.
 #
-#	run-stat-tuple writes tab separated rows to standard out.
+#	This script folds the above values into a single, tab-separated tuple.
+#	suitable for easy parsing by shell scripts and what-not.
 #
-#		[bio4d|flowd|flowd>remote][UP|DOWN|ZOMBI]		\
+#		[bio4d|flowd|flowd>remote]				\
+#		[UP|DOWN|ZOMBI|YETI|OFFL]]				\
 #		<boot-epoch>						\
 #			<boot-green>	<boot-yellow>	<boot-red>	\
 #		<recent-epoch>						\
 #			<recent-green>	<recent-yellow>	<recent-red>	\
 #
-#	<boot> stats are since process start and <recent> is the most recent
-#	non-zero stat.
+#	Here is an example tuple for the flowd process
+#
+#		flowd\tUP\1630547570\t1080\t0\t01630884910t275\t0\t0
 #
 #	<green> is the count of correct requests, <yellow> the count
-#	of worrisome requests and <red> is the count of	requests, probably
-#	needing mmediate attention, for either since <boot-epoch> or the
-#	most recent non-zero sample.
+#	of worrisome requests which may impact service and <red> is the
+#	count of requests which do impact service.
+#
+#	See the individual processes for the meaning of green,yellow,red.
+#
+#		sbin/gyr-flowd-tuple
+#		sbin/gyr-bio4-tuple
 #
 #	For bio4d, <red> sums mundane client errors, timeouts, signals and
 #	server-side panics. <green> sums all "ok" replies and "no" replies
@@ -70,184 +79,6 @@ die()
 {
 	echo "$(basename $0): ERROR: $@" >&2
 	exit 1
-}
-
-_cat_flowd()
-{
-	local WHAT=$1		#  process name (flowd or flowd>tag)
-	local RUN_PATH=$2	#  run path
-	local FLOW_PATH=	#  path to *.flow file, in root or sync/peer
-
-	local PID_PATH=		#  path to $RUN_PATH/flowd.pid
-	local PID_MTIME=null	#  most recent write to $RUN_PATH/flowd.pid
-
-	local BOOT_EPOCH=null	#  tail -1 $RUN_PATH/flowd.pid
-				#  can be overriden by value in "run/flowd.gyr"
-
-	local GYR_PATH=$RUN_PATH/flowd.gyr
-	local GYR_MTIME=null	#  most recent write to RUN_PATH/flowd.gyr
-	local RECENT_EPOCH=null	#  epoch of most recent GYR sample
-
-	case $WHAT in
-	flowd)
-		FLOW_PATH=$RUN_PATH/etc/blobio.flow
-		;;
-	'flowd>'*)
-		FLOW_PATH=$RUN_PATH/etc/sync-$(echo $WHAT  | sed @/.*@@).flow
-	1	;;
-	*)
-		die "_cat_chaotic_flowd: impossible what: $1"
-		;;
-	esac
-
-	if [ -s $PID_PATH ];  then
-		PID_MTIME=$(stat-mtime $PID_PATH)
-		BOOT_EPOCH=$(tail -1 $PID_PATH)
-	fi
-
-	if [ -s $GYR_PATH ];  then
-		GYR_MTIME=$(stat-mtime $PID_PATH)
-		BOOT_EPOCH=$(grep '^boot	' $GYR_PATH | cut -f2)
-		RECENT_EPOCH=$(grep '^recent	' $GYR_PATH | cut -f2)
-	fi
-
-	if [ ! -e $FLOW_PATH ];  then
-
-	#  should the service be running?
-	if [ -e $FLOW_PATH ];  then
-		test -e $PID_PATH
-		if [ -e $PID_PATH ];  then
-		if -a ! -e $PID_PATH -a ! -e $GYR_PATH ];  then
-			cat <<END
-$WHAT	DOWN	null	null	null	null	null	null	null	null
-END
-		return 1
-		fi
-	fi
-
-	#  is flowd OFFLINE, cleanly
-	if [ -e $FLOW_PATH ]; then
-		if [ -e $PID_PATH ];  then
-			if stale-mtime $STALE_AFTER $PID_PATH;  then
-				STATE=YETI
-			else
-			$(PID_MTIME
-		cat <<END
-$WHAT	OFFLINE	null	null	null	null	null	null	null	null
-END
-	fi
-
-	if [ -e $PID_PATH ];  then
-		
-		if [ -e $P
-		stale-mtime $STALE_AFTER $PID_PATH
-		STATUS=$?
-		case $STATUS in
-		0)
-			STATE=ZOMBIE
-			;;
-		1)
-			STATE=YETI
-			;;
-		*)
-			die "stale-mtime pid failed: exit status=$?"
-			;;
-		esac
-		BOOT_PID=$(head
-	cat <<END
-$WHAT	
-END
-	return 0
-}
-
-_cat_gyr()
-{
-	WHAT=$1
-	RUN_PATH=$2
-	PID_PATH=
-
-	#
-	#  check status of process by checking $RUN_PATH/$WHAT.pid
-	#
-	#	UP 		=> now - mtime < STALE_DURATION
-	#	DOWN		=> WHAT.pid does not exist
-	#	ZOMBI		=> WHAT.pid exists but no process
-	#	YETI		=> WHAT.pid exists but process frozen
-	#
-	case $WHAT in
-	bio4d)
-		PID_PATH=$RUN_PATH/$WHAT.pid
-		GYR_PATH=$RUN_PATH/$WHAT.gyr
-		;;
-	flowd)
-		_is_flowd_DOWN $WHAT $RUN_PATH && return
-		PID_PATH=$RUN_PATH/$WHAT.pid
-		GYR_PATH=$RUN_PATH/$WHAT.gyr
-		;;
-	flowd>[a-z0-9]*)
-		_REMOTE=$(echo "$WHAT" | sed 's/......//')
-		PID_PATH=$RUN_PATH/$WHAT.pid
-		GYR_PATH=$RUN_PATH/$WHAT.gyr
-		;;
-	*)
-		die "impossible what: $WHAT"
-		;;
-	esac
-	if [ -s $PID_PATH ];  then
-		test -r $PID_PATH || die "can not read pid file: $PID_PATH"
-
-		EXISTS=$(pgrep -F $PID_PATH)
-		_STATUS=$?
-		case $_STATUS in
-		0)
-			stale-mtime $STALE_AFTER $PID_PATH
-			_STATUS2=$?
-			case $_STATUS2 in
-			0)
-				STATE=YETI
-				;;
-			1)
-				STATE=UP		#  up but frozen
-				;;
-			*)
-				die "stale-mtime failed: exit status=$_STATUS2"
-				;;
-			esac
-			;;
-		1)
-			if [ -n "$EXISTS" ];  then
-				die "pgrep failed: $EXISTS"
-			fi
-			STATUS=ZOMBI
-			;;
-		*)
-			die "pgrep failed: exit status=$?"
-			;;
-		esac
-	elif [ -e $PID_PATH ];  then
-		STATE=ZOMBI
-	else
-		STATE=DOWN
-	fi
-	if [ ! -s $GYR_PATH ];  then
-		case $STATE in
-		UP)
-			STATE=YETI
-			;;
-		DOWN|YETI)
-			STATE=ZOMBI
-			;;
-		esac
-	fi
-	
-	if [ -e "$GYR_PATH" ];  then
-		BOOT=$(grep '^boot	' $GYR_PATH | cut -f2-5)
-		RECENT=$(grep '^recent	' $GYR_PATH | cut -f2-5)
-	else
-		BOOT=""
-		RECENT=""
-	fi
-	echo "$WHAT	$STATE	$BOOT	$RECENT"
 }
 
 test $# = 0 || die "wrong number cli arguments: got $#, expected 0"

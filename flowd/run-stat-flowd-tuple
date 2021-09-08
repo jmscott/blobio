@@ -1,0 +1,107 @@
+#
+#  Synopsis:
+#	Generate a run-stat tuple for flowd processes.
+#  Description:
+#	For flowd, the stats sum the columns in the *.fdr records.
+#
+#	<green>	is the sum of all *.fdr records with both processes and
+#	queries in an OK state.  <yellow> is currently 0 and <red> is the
+#	sum of flows with at least 1 query of process not OK.
+#
+#	See the particular etc/*.flow file for what is OK or not OK.
+#  Usage:
+#	sbin/run-stat-flowd-tuple run/
+#	sbin/run-stat-flowd-tuple sync/root/wework/run
+#  See:
+#	#  for meaning of process states (green|yello|red) for boot
+#	#  both boot and recent statistics
+#
+#		sbin/run-stat-tuple	#  for meaning of process state
+#
+
+STALE_AFTER=61		#  need to derive heartbeat values in etc/profile
+
+die()
+{
+	echo "$(basename $0): ERROR: $@" >&2
+	exit 1
+}
+
+test $# = 2 || die "wrong number of arguments: got $#, expected 2"
+
+WHAT=$1		#  process name (flowd or flowd>tag)
+RUN_PATH=$2	#  run path
+
+FLOW_PATH=	#  path to *.flow file, in root or sync/peer
+
+PID_PATH=		#  path to $RUN_PATH/flowd.pid
+PID_MTIME=null	#  most recent write to $RUN_PATH/flowd.pid
+
+BOOT_EPOCH=null	#  tail -1 $RUN_PATH/flowd.pid
+			#  can be overriden by value in "run/flowd.gyr"
+BOOT_GYR='null	null	null'
+
+GYR_PATH=$RUN_PATH/flowd.gyr
+
+RECENT_EPOCH=null	#  epoch of most recent GYR sample
+RECENT_GYR='null	null	null'
+
+PID_PATH=$RUN_PATH/flowd.pid
+case $WHAT in
+flowd)
+	FLOW_PATH=$RUN_PATH/etc/blobio.flow
+	;;
+'flowd>'*)
+	FLOW_PATH=$RUN_PATH/etc/sync-$(echo $WHAT  | sed @/.*@@).flow
+	;;
+*)
+	die "_cat_flowd: impossible what: $1"
+	;;
+esac
+
+#
+#  The service is enabled if etc/*.flow exists. The state
+#  (UP,DOWN,ZOMBI,YETI) of the flowd process is determined by the
+#  existence, values in, or modify time of the files
+#  run/flowd.{pid,gyr}.
+#
+if [ -e $FLOW_PATH ]; then
+	if [ -e $PID_PATH ];  then
+		if stale-mtime $STALE_AFTER $PID_PATH;  then
+			STATE=YETI
+		else
+			STATE=UP
+		fi
+	else
+		STATE=DOWN
+		if [ -e $GYR_PATH ];  then
+			STATE=ZOMBI
+		fi
+	fi
+else
+	STATE=OFFL
+	if [ -e $PID_PATH -o -e $GYR_PATH ];  then
+		STATE=ZOMBI
+	fi
+fi
+if [ -e $PID_PATH ];  then
+	if [ -s $PID_PATH ];  then
+		BOOT_EPOCH=$(tail -1 $PID_PATH)
+	fi
+fi
+
+if [ -s $PID_PATH ];  then
+	PID_MTIME=$(stat-mtime $PID_PATH)
+	BOOT_EPOCH=$(tail -1 $PID_PATH)
+fi
+
+if [ -s $GYR_PATH ];  then
+	BOOT_EPOCH=$(grep '^boot	' $GYR_PATH | cut -f2)
+	BOOT_GYR=$(grep '^boot	' $GYR_PATH | cut -f3-5)
+	RECENT_EPOCH=$(grep '^recent	' $GYR_PATH | cut -f2)
+	RECENT_GYR=$(grep '^recent	' $GYR_PATH | cut -f3-5)
+fi
+cat <<END
+$WHAT	$BOOT_EPOCH	$BOOT_GYR	$RECENT_EPOCH	$RECENT_GYR
+END
+return 0
