@@ -1,6 +1,8 @@
 //Synopsis:
 //	Server action for flowd.
 //  Note:
+//	race conditon getting boot/recent when writing run/flowd.gyr
+//
 //	race condition removing file run/flowd.pid during panic.
 //
 //	Clear out the run/* on startup.  Also, think about a subdir run/flowd/
