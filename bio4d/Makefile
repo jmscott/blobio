@@ -56,6 +56,7 @@ SBINs=									\
 	graph-rrd							\
 	gyr-run-tuple-bio4d						\
 	kill-bio4d							\
+	run-stat-bio4d-tuple						\
 	tcp4-stat							\
 	update-rrd							\
 

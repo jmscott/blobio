@@ -1,19 +1,17 @@
 #!/bin/bash
 #
 #  Synospsis:
-#	Report of running bio4d & flowd processes.
+#	Report of GREEN/YELLOW/RED stats for bio4d & flowd processes.
 #  Usage:
 #	run-stat-report
 #  See:
-#	/usr/local/jmscottsbin/run-stat
 #	https://github.com/jmscott/work
+#	/usr/local/jmscott/bin/duration-english
 #  Exit Status:
 #	0	ok
 #	1	error
 #  Note:
 #	On gnu/linux sort is ignoring the second key.  The pain never ends.
-#
-#	Rename this script to run-pid-report?
 #
 NOW=$(date +'%s')
 
@@ -29,59 +27,41 @@ cd $BLOBIO_ROOT || die "cd BLOBIO_ROOT failed: exit status=$?"
 
 (
 	cat <<END
-Process	State	UpTim	Green,Yellow,Red	Recent 10s GYR	When
--------	-----	-----	---------------------	-----------------	----
+Process	State	Boot	Green,Yellow,Red	Recent	Green,Yellow,Red
+-------	-----	-----	----------------	------	----------------
 END
 	run-stat-tuple							|
 		sort --key=2 --key=1 --field-separator=$'\t'		|
-		while read PROC STATUS
-			START_EPOCH					\
-		           FDR OK FLT 					\
-		           sFDR sOK sFLT				\
-			   ;  do
-			SP=run/$PROC.gyr
-			case $PROC in
-			bio4d|flowd)
-				SP=run/$PROC.gyr
-				;;
-			flowd/*)
-				HOST=$(echo $PROC | sed 's/......//')
-				SP="sync/root/$HOST/run/flowd.gyr"
-				;;
-			*)
-				die "unknown process: $PROC"
-				;;
-			esac
+		while read PROC STATE					\
+			BOOT_EPOCH BOOT_GREEN BOOT_YELLOW BOOT_RED	\
+			REC_EPOCH REC_GREEN REC_YELLOW REC_RED;  do
 
-			if [ -e $SP ];  then
-				AGO="$(duration-english $(
-					duration-mtime $SP
-				))"
+			#  collapse the green/yellow/red tuple to single 
+			#  G,Y,R value
+			if [ $BOOT_GREEN != null ];  then
+				BOOT_GYR="$BOOT_GREEN,$BOOT_YELLOW,$BOOT_RED"
 			else
-				if [ "$STATUS" = UP ];  then
-					AGO='!!!'
-				else
-					AGO=n/a
-				fi
+				BOOT_GYR=null
+			fi
+			if [ $REC_GREEN != null ];  then
+				REC_GYR="$REC_GREEN,$REC_YELLOW,$REC_RED"
+			else
+				REC_GYR=null
+			fi
+
+			#  convert boot and recent sample epochs to
+			#  readable english
+			if [ $BOOT_EPOCH != null ];  then
+				BOOT_AGO=$(elapsed-english $BOOT_EPOCH)
+			fi
+			if [ $REC_EPOCH != null ];  then
+				REC_AGO=$(elapsed-english $REC_EPOCH)
 			fi
 					
-			case "$START_EPOCH" in
-			[0-9]*)
-				DURATION=$(duration-english $(
-					expr $NOW - $START_EPOCH
-				))
-				;;
-			UNKNOWN)
-				DURATION=UNKNOWN
-				;;
-			esac
-			PROC=$(echo $PROC | sed 's/\//>/')
 			cat <<END
-$PROC	$STATUS	$DURATION	$FDR,$OK,$FLT	$sFDR,$sOK,$sFLT	$AGO
+$PROC	$STATE	$BOOT_AGO	$BOOT_GYR	$REC_AGO	$REC_GYR
 END
 		done
-		
 )									|
-	sed 's/,,/?/g'							|
 	column -s '	' -t						|
 	sed 's/ *	//'

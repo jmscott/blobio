@@ -1,0 +1,73 @@
+#
+#  Synopsis:
+#	Generate a run-stat green/yellow/red tuple for the bio4d processes.
+#  Description:
+#	<green> stats sums all "ok" replies and "no" replies for
+#	"eat" and "get".
+#
+#	<yellow> tallies client side errors (no brr written), network timeouts
+#	(not file system) and "ok,no" and "ok,ok,no" brr requests.  <yellow>
+#	indicates odd behaviour from clients.
+#
+#	<red> sums signals and server-side panics.  <red> indicates
+#	possibly failure of service.
+#  Usage:
+#	sbin/run-stat-bio4d-tuple run/
+#  See:
+#	run-stat-tuple
+#  Exit Status:
+#	0	tuple written
+#	1	unexpected error, no tuple written
+#
+
+STALE_AFTER=61		#  need to derive heartbeat values in etc/profile
+
+die()
+{
+	echo "$(basename $0): ERROR: $@" >&2
+	exit 1
+}
+
+test $# = 0 || die "wrong number of arguments: got $#, expected 0"
+
+PID_PATH=run/bio4d.pid	#  path to run/bio4d.pid
+PID_MTIME=null		#  most recent write to run/bio4d.pid
+
+BOOT_EPOCH=null		#  tail -1 run/bio4d.pid
+			#  can be overriden by value in "run/bio4d.gyr"
+BOOT_GYR='null	null	null'
+
+GYR_PATH=run//bio4d.gyr
+
+RECENT_EPOCH=null			#  epoch of most recent GYR sample
+RECENT_GYR='null	null	null'
+
+if [ -e $PID_PATH ];  then
+	STATE=UP
+	if [ -s $PID_PATH ];  then
+		BOOT_EPOCH=$(tail -1 $PID_PATH)
+	else
+		STATE=YETI
+	fi
+else
+	STATE=DOWN
+fi
+
+if [ -e $GYR_PATH ];  then
+	if [ -s $GYR_PATH ];  then
+		BOOT_EPOCH=$(grep '^boot	' $GYR_PATH | cut -f2)
+		BOOT_GYR=$(grep '^boot	' $GYR_PATH | cut -f3-5)
+		RECENT_EPOCH=$(grep '^recent	' $GYR_PATH | cut -f2)
+		RECENT_GYR=$(grep '^recent	' $GYR_PATH | cut -f3-5)
+	elif [ $STATE = UP ];  then
+		STATE=YETI
+	elif [ $STATE = DOWN ];  then
+		STATE=ZOMBI
+	fi
+elif [ $STATE = UP ];  then
+	STATE=YETI
+fi
+
+cat <<END
+bio4d	$STATE	$BOOT_EPOCH	$BOOT_GYR	$RECENT_EPOCH	$RECENT_GYR
+END

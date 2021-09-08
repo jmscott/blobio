@@ -37,21 +37,6 @@
 #		sbin/gyr-flowd-tuple
 #		sbin/gyr-bio4-tuple
 #
-#	For bio4d, <red> sums mundane client errors, timeouts, signals and
-#	server-side panics. <green> sums all "ok" replies and "no" replies
-#	for "eat" and "get".  <yellow> tallies client side errors (no brr),
-#	network timeouts (not file system) and "ok,no" and "ok,ok,no"
-#	brr requests.
-#
-#	For flowd, the stats sum the columns in the *.fdr records.  <green>
-#	is the sum of both process (exit code) and query execution (SQLSTATE)
-#	status codes.  Typically, <green> counts for a process (*.xdr) or
-#	query (*.qdr) are the status tagged as "OK" in the *.flow file.
-#	other codes.  The <red> counts are the complement of "OK" counts.
-#	A common example of a failed SQL code would "23503" foreign key
-#	violation, indicated a bug in the etc/*.flow file. <yellow> counts
-#	are always zero.
-#
 #  Usage:
 #	export BLOBIO_ROOT=$HOME/opt/blobio
 #	run-stat-tuple | ... sort | ... column
@@ -62,12 +47,8 @@
 #  See:
 #	run-stat-report
 #  Note:
-#	Consider a process state OFF for disabled sync remote services,
+#	Consider a process state OFFLINE for disabled sync remote services,
 #	by checking for existence of sync/root/<remote>/etc/sync-<remote>.flow.
-#
-#	Consider a process state HOST, which means missing run/*.pid but
-#	but process appears to be running, since fuser says log/*.log
-#	are opened by SOMETHING.
 #
 #	Really, really, really need to move the files in log/*.{qdr,xdr,fdr}
 #	to directory data/ or spool/!
@@ -86,12 +67,11 @@ test $# = 0 || die "wrong number cli arguments: got $#, expected 0"
 test -n "$BLOBIO_ROOT" || die "env not defined: BLOBIO_ROOT"
 cd $BLOBIO_ROOT || die "cd $BLOBIO_ROOT: exit status=$?"
 
-_cat_gyr bio4d run
-_cat_gyr flowd run
+run-stat-bio4d-tuple
+run-stat-flowd-tuple flowd
 
 #  check sync flowd process
 
-find sync/root -name run -type d | while read RUN_DIR;  do
-	REMOTE=$(basename $(dirname $RUN_DIR))
-	_cat_gyr "flowd>$REMOTE" $RUN_DIR
+find sync/root -maxdepth 2 -name run -type d | while read RUN_DIR;  do
+	run-stat-flowd-tuple "flowd>$(basename $(dirname $RUN_DIR))"
 done
