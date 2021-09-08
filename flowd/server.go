@@ -120,7 +120,7 @@ func put_stat(boot, recent flow_worker_sample) {
 		"recent\t%d\t%d\t0\t%d\n",
 			boot.epoch,
 			boot.success_count,
-			recent.fail_count,
+			boot.fail_count,
 
 			recent.epoch,
 			recent.success_count,
