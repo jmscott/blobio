@@ -928,6 +928,7 @@ bump_no(unsigned char exit_status, u8 *v_no, u8 *v_no2, u8 *v_no3) {
 	switch ((exit_status & 0x60) >> 5) {
 	case REQUEST_EXIT_STATUS_CHAT_OK:
 		ok_count++;
+		break;
 	case REQUEST_EXIT_STATUS_CHAT_NO:
 		no_count++;
 		*v_no += 1;
@@ -1287,17 +1288,17 @@ heartbeat()
 }
 
 /*
- *  Write out a green/yellow/red tuples to run/bio4d.gyr and
- *  round robin database sample to run/bio4d.rrd
+ *  Write out a green/yellow/red summary tuples to run/bio4d.gyr and
+ *  detailed, round robin database sample to run/bio4d.rrd
  *
- *  The GYR file is two, tab separated lines like.
+ *  The file run/bio4d.gyr is two, tab separated lines like.
  *
  *	boot	<epoch>	<green-count>	<yellow-count>	<red-count>
  *	recent	<epoch>	<green-count>	<yellow-count>	<red-count>
  *
  *  <green-count> are all requests where chat history "(ok,){0,2}ok" or
- *  "no".  <yellow-count> are all "(ok,){1,2}no", timeouts, signal and
- *  general client side errors.  <red-count> are server side errors needing
+ *  "no".  <yellow-count> are all "(ok,){1,2}no", timeouts, and general
+ *  client side errors.  <red-count> are signals, server side errors needing
  *  immediate attention, like core dumps and corrupted file system, etc.
  *
  *  Each line sample in run/bio4d.rrd is suitable as an argument to cron
@@ -1335,10 +1336,6 @@ heartbeat()
  *		wrap_no_count:
  *		roll_count:
  *		roll_no_count:
- *
- *		//  chat history summaries
- *
- *		chat_ok_count:
  */
 static void
 gyr_rrd()
@@ -1405,7 +1402,7 @@ gyr_rrd()
 		"%llu:%llu:%llu:%llu:"		/* give: ok,no,no[23]*/
 		"%llu:%llu:%llu:%llu:"		/* take: ok,no,no[23]*/
 		"%llu:%llu:"			/* wrap: ok,no */
-		"%llu:%llu:"			/* roll: ok,no */
+		"%llu:%llu"			/* roll: ok,no */
 		"\n"
 	;
 
@@ -1422,11 +1419,15 @@ gyr_rrd()
 		signal_count - signal_count_prev,
 		fault_count - fault_count_prev,
 
+		eat_count - eat_count_prev,
+		eat_no_count - eat_no_count_prev,
+
 		get_count - get_count_prev,
 		get_no_count - get_no_count_prev,
 
 		put_count - put_count_prev,
 		put_no_count - put_no_count_prev,
+		put_no2_count - put_no2_count_prev,
 
 		give_count - give_count_prev,
 		give_no2_count - give_no2_count_prev,
@@ -1458,8 +1459,8 @@ gyr_rrd()
 	u8 red_count = signal_count + fault_count;
 	u8 recent_red_count = 0;
 
-	//  only update run/biod4.gyr when stats change, so file mtime
-	//  measures recent activity
+	//  only update run/biod4.gyr when stats change.
+
 	if (recent_green_count || recent_yellow_count || recent_red_count) {
 
 		fd = io_open_trunc(gyr_path);
@@ -1540,7 +1541,7 @@ gyr_rrd_empty()
 		"0:0:0:0:"		/* give: ok,no,no[23]*/
 		"0:0:0:0:"		/* take: ok,no,no[23]*/
 		"0:0:"			/* wrap: ok,no */
-		"0:0:"			/* roll: ok,no */
+		"0:0"			/* roll: ok,no */
 		"\n"
 	;
 
