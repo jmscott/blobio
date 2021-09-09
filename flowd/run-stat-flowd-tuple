@@ -27,7 +27,7 @@ die()
 
 test $# = 1 || die "wrong number of arguments: got $#, expected 1"
 
-WHAT=$1		#  process name (flowd or flowd>tag)
+PROCESS=$1		#  process name (flowd or flowd>tag)
 FLOW_PATH=	#  path to *.flow file, in root or sync/peer
 
 PID_PATH=	#  path to $RUN_PATH/flowd.pid
@@ -40,15 +40,14 @@ BOOT_GYR='null	null	null'
 RECENT_EPOCH=null	#  epoch of most recent GYR sample
 RECENT_GYR='null	null	null'
 
-PID_PATH=$RUN_PATH/flowd.pid
-case $WHAT in
+case $PROCESS in
 flowd)
 	GYR_PATH=run/flowd.gyr
 	PID_PATH=run/flowd.pid
 	FLOW_PATH=etc/blobio.flow
 	;;
 'flowd>'*)
-	TAG=$(echo $WHAT  | sed 's/......//')
+	TAG=$(echo $PROCESS  | sed 's/......//')
 	SYNC_ROOT=sync/root/$TAG/
 
 	GYR_PATH=$SYNC_ROOT/run/flowd.gyr
@@ -56,7 +55,7 @@ flowd)
 	FLOW_PATH=sync/root/$TAG/etc/sync-$TAG.flow
 	;;
 *)
-	die "_cat_flowd: impossible what: $1"
+	die "impossible what: $1"
 	;;
 esac
 
@@ -116,5 +115,5 @@ elif [ $STATE = UP ];  then
 fi
 
 cat <<END
-$WHAT	$STATE	$BOOT_EPOCH	$BOOT_GYR	$RECENT_EPOCH	$RECENT_GYR
+$PROCESS	$STATE	$BOOT_EPOCH	$BOOT_GYR	$RECENT_EPOCH	$RECENT_GYR
 END
