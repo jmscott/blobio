@@ -100,7 +100,7 @@ if [ -s $PID_PATH ];  then
 	BOOT_EPOCH=$(tail -1 $PID_PATH)
 fi
 
-if [ -e $GYT_PATH ];  then
+if [ -e $GYR_PATH ];  then
 	if [ -s $GYR_PATH ];  then
 		BOOT_EPOCH=$(grep '^boot	' $GYR_PATH | cut -f2)
 		BOOT_GYR=$(grep '^boot	' $GYR_PATH | cut -f3-5)
