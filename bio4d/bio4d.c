@@ -1457,7 +1457,7 @@ gyr_rrd()
 	u8 recent_yellow_count = yellow_count - yellow_count_prev;
 
 	u8 red_count = signal_count + fault_count;
-	u8 recent_red_count = 0;
+	u8 recent_red_count = red_count - red_count_prev;
 
 	//  only update run/biod4.gyr when stats change.
 
