@@ -61,9 +61,8 @@ esac
 
 #
 #  The service is enabled if etc/*.flow exists. The state
-#  (UP,DOWN,ZOMBI,YETI) of the flowd process is determined by the
-#  existence, values in, or modify time of the files
-#  run/flowd.{pid,gyr}.
+#  (UP,DOWN,ZOMBI,YETI) of the flowd process is determined by the existence,
+#  values in, or modify time of the files run/flowd.{pid,gyr}.
 #
 if [ -e $FLOW_PATH ]; then
 	if [ -e $PID_PATH ];  then
