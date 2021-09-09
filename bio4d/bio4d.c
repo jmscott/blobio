@@ -1435,7 +1435,7 @@ gyr_rrd()
 		give_no3_count - give_no3_count_prev,
 
 		take_count - take_count_prev,
-		take_no_count - take_count_prev,
+		take_no_count - take_no_count_prev,
 		take_no2_count - take_no2_count_prev,
 		take_no3_count - take_no3_count_prev,
 
