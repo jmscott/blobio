@@ -16,6 +16,7 @@ OBJs=									\
 	fs.o								\
 	service.o							\
 	sha.o								\
+	sha512t.o							\
 	trace.o								\
 	uni.o
 SRCs=									\
@@ -29,6 +30,7 @@ SRCs=									\
 	fs.c								\
 	service.c							\
 	sha.c								\
+	sha512t.c							\
 	trace.c								\
 	uni.c								\
 
@@ -70,6 +72,8 @@ fs.o: fs.c blobio.h
 	$(CC) $(CFLAGS) -c fs.c
 sha.o: sha.c blobio.h
 	$(CC) $(CFLAGS) $(OPENSSL_INC) -c sha.c
+sha512t.o: sha512t.c blobio.h
+	$(CC) $(CFLAGS) $(OPENSSL_INC) -c sha512t.c
 bc160.o: bc160.c blobio.h
 	$(CC) $(CFLAGS) $(OPENSSL_INC) -c bc160.c
 service.o: service.c blobio.h
