@@ -45,7 +45,7 @@
 #		run-stat | put-to-db
 #	done
 #  See:
-#	run-stat-report
+#	run-stat-tuple
 #  Note:
 #	Consider a process state OFFLINE for disabled sync remote services,
 #	by checking for existence of sync/root/<remote>/etc/sync-<remote>.flow.
