@@ -96,6 +96,7 @@ install: all
 		$(DIST_ROOT)/bin
 	install -g $(DIST_GROUP) -o $(DIST_USER) -m u=rx,go=		\
 		boot-flowd						\
+		fdr2rrd-minute						\
 		kill-flowd						\
 		launchd-flowd						\
 		run-stat-flowd-tuple					\

@@ -1,0 +1,56 @@
+#!/usr/bin/env perl
+#
+#  Synopsis:
+#	Convert flow description records to round-robin database minute samples
+#  Usage:
+#	fdr2rrd-minute <path/to/flowd-fdr >>path/to/rrd-sample
+#	fdr2rrd-minute <log/flowd-1629235532.fdr >spool/flowd-1629235532.rrd
+#  Exit Status:
+#	0	no error
+#	1	unexpected error
+#
+
+my $fdr_re = qr{
+	#  start time of request: YYYY-MM-DDThh:mm:ss.ns[+-]HH:MM
+	(2\d\d\d-				#  year
+		(?:(?:0[0-9])|10|11|12)-	#  month
+		(?:(?:[012][0-9])|30|31)T	#  day followed by T
+		(?:[0-2]\d):			#  hour
+		(?:[0-5]\d):			#  minute
+		(?:[0-5]\d)\.			#  second
+		(?:\d{1,9})			#  nanoseconds
+		[+-]\d\d:\d\d			#  time zone offset
+	)					\t
+
+	#  udig of blob being processed
+	([a-z][a-z0-9]{0,7}:[a-f0-9]{32,128})	\t
+
+	#  ok count
+	([0-9]{0,9})				\t
+
+	#  fault count
+	([0-9]{0,9})				\t
+
+	#  wall duration in secs
+	([0-9]{0,9}\.\d{0,9})			\t
+
+	#  flow sequence number (unique)
+	(\d{1,19})
+}sx;
+
+die 'wrong arguments count: got ' . @ARGV . ', expected 0'
+	unless @ARGV == 0
+;
+
+while (<STDIN>) {
+	chomp;
+	die "unknown fdr record: $_" unless m/^${fdr_re}$/;
+	my (
+		$start_time,	#  RFC3339Nano:YYYY-MM-DDThh:mm:ss.ns9[+-]ZZ:ZZ
+		$blob,		#  udig of the blob
+		$ok_count,	#  count of ok process exits <=2^63-1
+		$fault_count,	#  count of process faults <=2^63-1
+		$wall_duration,	#  wall clock duration seconds.nsec
+		$log_sequence	#  unique log sequence
+	) = ($1, $2, $3, $4, $5, $6);
+}
