@@ -1,7 +1,7 @@
 #!/usr/bin/env perl
 #
 #  Synopsis:
-#	Convert flow description records to round-robin database minute samples
+#	Convert flow descrip records to round-robin database minute samples
 #  Usage:
 #	fdr2rrd-minute <path/to/flowd-fdr >>path/to/rrd-sample
 #	fdr2rrd-minute <log/flowd-1629235532.fdr >spool/flowd-1629235532.rrd
@@ -9,6 +9,12 @@
 #	0	no error
 #	1	unexpected error
 #
+use Date::Parse;
+
+my %BLOB;
+my $fdr_count;
+
+my $blob_count = 0;
 
 my $fdr_re = qr{
 	#  start time of request: YYYY-MM-DDThh:mm:ss.ns[+-]HH:MM
@@ -38,19 +44,55 @@ my $fdr_re = qr{
 	(\d{1,19})
 }sx;
 
+flush_rrd
+{
+	my $distinct_blob_count = scalar(%BLOB);
+
+	print <<END;
+$_[0]:$blob_count:$distinct_blob_count
+END
+	
+	$blob_count = 0;
+	undef %BLOB;
+}
+
 die 'wrong arguments count: got ' . @ARGV . ', expected 0'
 	unless @ARGV == 0
 ;
 
+my $active_minute;
 while (<STDIN>) {
 	chomp;
 	die "unknown fdr record: $_" unless m/^${fdr_re}$/;
 	my (
-		$start_time,	#  RFC3339Nano:YYYY-MM-DDThh:mm:ss.ns9[+-]ZZ:ZZ
+		$start_time,	#  RFC3339nan:YYYY-MM-DDThh:mm:ss.ns9[+-]ZZ:ZZ
 		$blob,		#  udig of the blob
 		$ok_count,	#  count of ok process exits <=2^63-1
 		$fault_count,	#  count of process faults <=2^63-1
 		$wall_duration,	#  wall clock duration seconds.nsec
 		$log_sequence	#  unique log sequence
 	) = ($1, $2, $3, $4, $5, $6);
+
+	my $rrd_sample_min = $start_time;
+	#  round all samples to minute
+	$rrd_sample_min =~ s/:\d\d([+-])/:00$1/;
+
+	if ($active_minute) {
+		if ($active_minute ne $rrd_sample_min) {
+			flush_rrd($active_minute);
+			$active_minute = $rrd_sample_min;
+		}
+	} else {
+		$active_minute = $rrd_sample_min;
+	}
+		
+	my $start_epoch = str2time($start_time);
+	my $end_epoch = $start_epoch + $wall_duration;
+
+	if ($BLOB{$blob}) {
+		$BLOB{$blob}++;
+	} else {
+		$BLOB{$blob} = 1;
+	}
+	$fdr_count++;
 }
