@@ -36,8 +36,6 @@ my $fdr_re = qr{
 	(\d{1,19})
 }sx;
 
-my ($first_start_time, $end_time);
-
 print <<END;
 \\timing on
 \\set ON_ERROR_STOP on
@@ -72,18 +70,7 @@ while (<STDIN>) {
 	print <<END;
 $1\t$2\t$3\t$4\t$5\t$6\tNew
 END
-	$first_start_time = $1 unless $first_start_time;
-	$end_time = $1;
-
 	$count++;
-}
-
-unless ($first_start_time) {
-	print <<END;
-\\echo no flow records scanned
-\\quit
-END
-	exit 0;
 }
 
 print <<END;
@@ -172,14 +159,11 @@ INSERT INTO blobio.fdr_stage(
 ;
 
 \\x on
-\\echo summarize all staged fdr from $end_time to $first_start_time
+\\echo summarize all staged fdr records
 SELECT
-	to_char('$first_start_time'::timestamptz, 'YYYY/MM/DD HH24:MI:SS TZ')
-		AS "Start Time",
-	to_char('$end_time'::timestamptz, 'YYYY/MM/DD HH24:MI:SS TZ')
-		AS "End Time",
-	('$end_time'::timestamptz - '$first_start_time'::timestamptz)
-		AS "Request Duration",
+	to_char(min(start_time), 'YYYY/MM/DD HH24:MI:SS TZ') as "Start Time",
+	to_char(max(start_time), 'YYYY/MM/DD HH24:MI:SS TZ') as "End Time",
+	max(start_time) - min(start_time) AS "Request Duration",
 	avg(wall_duration) AS "Average Wall Duration",
 	count(*) AS "Total Flow Count",
 	count(distinct blob) AS "Total Distinct Blob Count",
@@ -187,10 +171,6 @@ SELECT
 	sum(fault_count) AS "Total Fault Count"
   FROM
   	blobio.fdr_stage
-  WHERE
-	start_time >= '$first_start_time'
-	AND
-	start_time <= '$end_time'
   ORDER BY
   	2 desc
 ;
