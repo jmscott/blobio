@@ -8,12 +8,33 @@
 #  	Rename to bio-fdr2psql?
 #
 
-#
-#  Simple sanity parse of a superset of go's duration values.
-#
-my $float_re = '(?:\d{0,9}(?:\.\d{0,9})?)';
-my $duration_unit = '(?:' . $float_re . '(?:(us|ms|s|m|h)))';
-my $duration_re = '^(?:(?:' . $duration_unit . '){1,4})|0$';
+my $fdr_re = qr{
+	#  start time of request: YYYY-MM-DDThh:mm:ss.ns[+-]HH:MM
+	(2\d\d\d-				#  year
+		(?:(?:0[0-9])|10|11|12)-	#  month
+		(?:(?:[012][0-9])|30|31)T	#  day followed by T
+		(?:[0-2]\d):			#  hour
+		(?:[0-5]\d):			#  minute
+		(?:[0-5]\d)\.			#  second
+		(?:\d{1,9})			#  nanoseconds
+		[+-]\d\d:\d\d			#  time zone offset
+	)					\t
+
+	#  udig of blob being processed
+	([a-z][a-z0-9]{0,7}:[a-f0-9]{32,128})	\t
+
+	#  ok count
+	([0-9]{0,9})				\t
+
+	#  fault count
+	([0-9]{0,9})				\t
+
+	#  wall duration in secs
+	([0-9]{0,9}\.\d{0,9})			\t
+
+	#  flow sequence number (unique)
+	(\d{1,19})
+}sx;
 
 my ($first_start_time, $end_time);
 
@@ -22,18 +43,18 @@ print <<END;
 \\set ON_ERROR_STOP on
 
 \\echo create temp table sync_fdr
-create temp table sync_fdr as
+CREATE TEMP TABLE sync_fdr AS
   select
 	*,
 	'New'::text as syncability
-    from
-    	blobio.fdr
-    where
+    FROM
+    	blobio.fdr_stage
+    WHERE
 	false
 ;
 
 \\echo copy into pg_temp.sync_fdr
-copy pg_temp.sync_fdr (
+COPY pg_temp.sync_fdr (
 	start_time,
 	blob,
 	ok_count,
@@ -41,36 +62,18 @@ copy pg_temp.sync_fdr (
 	wall_duration,
 	sequence,
 	syncability
-) from stdin;
+) FROM stdin;
 END
+
 my $count = 0;
 while (<STDIN>) {
 	chomp;
-	my (
-		$start_time,
-		$blob,
-		$ok_count,
-		$fault_count,
-		$wall_duration,
-		$sequence
-	) = split("\t");
-
-	die "unexpected start time: $start_time" unless $start_time =~
-			/\d{4}\/\d\d\/\d\d \d\d:\d\d:\d\d(?:\.\d{1,9})?/;
-	die "unexpected blob udig: $blob" unless $blob =~
-			/^[[:alpha:]][[:alnum:]]{0,14}:[[:graph:]]{1,256}$/;
-	die "unexpected ok count: $ok_count" unless $ok_count =~ /^\d{1,5}/;
-	die "unexpected fault count: $fault_count" unless
-			$fault_count =~ /^\d{1,5}/;
-	die "unexpected wall duration: $wall_duration" unless
-		$wall_duration =~ /$duration_re/ || $wall_duration eq '0'
-	;
-	die "unexpected sequence: $sequence" unless $sequence =~ /^\d{1,20}/;
+	die "unknown fdr record: $_" unless m/^${fdr_re}$/;
 	print <<END;
-$start_time\t$blob\t$ok_count\t$fault_count\t$wall_duration\t$sequence\tNew
+$1\t$2\t$3\t$4\t$5\t$6\tNew
 END
-	$first_start_time = $start_time unless $first_start_time;
-	$end_time = $start_time;
+	$first_start_time = $1 unless $first_start_time;
+	$end_time = $1;
 
 	$count++;
 }
@@ -89,48 +92,48 @@ print <<END;
 \\echo copied in $count flow records
 
 \\echo creating unique index on (start_time, sequence)
-create unique index sync_fdr_bss
-  on pg_temp.sync_fdr(start_time, sequence)
+CREATE UNIQUE INDEX idx_sync_fdr
+  ON pg_temp.sync_fdr(start_time, sequence)
 ;
 
 \\echo vacuum/analyze pg_temp.sync_fdr
-vacuum analyze pg_temp.sync_fdr;
+VACUUM ANALYZE pg_temp.sync_fdr;
 
 \\echo tagging existing fdr records
-update pg_temp.sync_fdr s
-  set
+UPDATE pg_temp.sync_fdr s
+  SET
   	syncability = 'Existing'
-  where
-  	exists (
-	  select
+  WHERE
+  	EXISTS (
+	  SELECT
 	  	*
-	    from
-	    	blobio.fdr fdr
-	    where
+	    FROM
+	    	blobio.fdr_stage fdr
+	    WHERE
 		fdr.start_time = s.start_time
-		and
+		AND
 		fdr.sequence = s.sequence
 	)
 ;
 
 \\echo creating index on sync_fdr(syncability)
-create index sync_fdr_sync
-  on
+CREATE INDEX idx_sync_fdr_sync
+  ON
   	pg_temp.sync_fdr(syncability)
 ;
 
 \\echo creating index on sync_fdr(start_time)
-create index sync_fdr_start_time
-  on
+CREATE INDEX sync_fdr_start_time
+  ON
   	pg_temp.sync_fdr(start_time)
 ;
 
 \\echo revacuum/analyze pg_temp.sync_fdr after update
-vacuum analyze pg_temp.sync_fdr;
+VACUUM ANALYZE pg_temp.sync_fdr;
 
 \\x on
 \\echo summarizing only New flow detail records
-select
+SELECT
 	to_char(min(start_time), 'YYYY/MM/DD HH24:MI:SS TZ') as "Start Time",
 	to_char(max(start_time), 'YYYY/MM/DD HH24:MI:SS TZ') as "End Time",
 	(max(start_time) - min(start_time)) as "Request Duration",
@@ -139,56 +142,56 @@ select
 	count(distinct blob) as "Distinct Blob Count",
 	sum(ok_count) as "Ok Count",
 	sum(fault_count) as "Fault Count"
-  from
+  FROM
   	pg_temp.sync_fdr
-  where
+  WHERE
 	syncability = 'New'
-  order by
+  ORDER BY
   	2 desc
 ;
 
 \\echo inserting new flow records ...
-insert into blobio.fdr(
+INSERT INTO blobio.fdr_stage(
 	start_time,
 	blob,
 	ok_count,
 	fault_count,
 	wall_duration,
 	sequence
-) select
+) SELECT
 	start_time,
 	blob,
 	ok_count,
 	fault_count,
 	wall_duration,
 	sequence
-    from
+    FROM
     	pg_temp.sync_fdr
-    where
+    WHERE
     	syncability = 'New'
 ;
 
 \\x on
-\\echo summarize all fdr from $end_time to $first_start_time
-select
-	to_char('$first_start_time'::timestamptz, 'YYYY/MM/DD HH24:MI:SS TZ') as
-		"Start Time",
-	to_char('$end_time'::timestamptz, 'YYYY/MM/DD HH24:MI:SS TZ') as
-		"End Time",
-	('$end_time'::timestamptz - '$first_start_time'::timestamptz) as
-		"Request Duration",
-	avg(wall_duration) as "Average Wall Duration",
-	count(*) as "Total Flow Count",
-	count(distinct blob) as "Total Distinct Blob Count",
-	sum(ok_count) as "Total Ok Count",
-	sum(fault_count) as "Total Fault Count"
-  from
-  	blobio.fdr
-  where
+\\echo summarize all staged fdr from $end_time to $first_start_time
+SELECT
+	to_char('$first_start_time'::timestamptz, 'YYYY/MM/DD HH24:MI:SS TZ')
+		AS "Start Time",
+	to_char('$end_time'::timestamptz, 'YYYY/MM/DD HH24:MI:SS TZ')
+		AS "End Time",
+	('$end_time'::timestamptz - '$first_start_time'::timestamptz)
+		AS "Request Duration",
+	avg(wall_duration) AS "Average Wall Duration",
+	count(*) AS "Total Flow Count",
+	count(distinct blob) AS "Total Distinct Blob Count",
+	sum(ok_count) AS "Total Ok Count",
+	sum(fault_count) AS "Total Fault Count"
+  FROM
+  	blobio.fdr_stage
+  WHERE
 	start_time >= '$first_start_time'
-	and
+	AND
 	start_time <= '$end_time'
-  order by
+  ORDER BY
   	2 desc
 ;
 END

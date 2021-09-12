@@ -104,6 +104,7 @@ install: all
 	install -g $(DIST_GROUP) -o $(DIST_USER) -m ugo=r		\
 		blobio.flowd.plist.example				\
 		blobio.flowd.service.example				\
+		schema-flowd.sql					\
 		$(DIST_ROOT)/lib
 
 clean:
