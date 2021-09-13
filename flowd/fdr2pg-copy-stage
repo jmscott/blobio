@@ -1,0 +1,190 @@
+#!/usr/bin/perl
+#
+#  Synopsis:
+#	Idempotent transform of flow desc records to COPY IN ->  rrd_stage_fdr.
+#  Usage:
+#	cat spool/*.fdr | fdr2pg-copy-stage | psql
+#
+
+my $fdr_re = qr{
+	#  start time of request: YYYY-MM-DDThh:mm:ss.ns[+-]HH:MM
+	(2\d\d\d-				#  year
+		(?:(?:0[0-9])|10|11|12)-	#  month
+		(?:(?:[012][0-9])|30|31)T	#  day followed by T
+		(?:[0-2]\d):			#  hour
+		(?:[0-5]\d):			#  minute
+		(?:[0-5]\d)\.			#  second
+		(?:\d{1,9})			#  nanoseconds
+		[+-]\d\d:\d\d			#  time zone offset
+	)					\t
+
+	#  udig of blob being processed
+	([a-z][a-z0-9]{0,7}:[a-f0-9]{32,128})	\t
+
+	#  ok count
+	([0-9]{0,9})				\t
+
+	#  fault count
+	([0-9]{0,9})				\t
+
+	#  wall duration in secs
+	([0-9]{0,9}\.\d{0,9})			\t
+
+	#  flow sequence number (unique)
+	(\d{1,19})
+}sx;
+
+print <<END;
+\\timing on
+\\set ON_ERROR_STOP on
+
+\\echo create temp table sync_fdr
+CREATE TEMP TABLE sync_fdr AS
+  SELECT
+	*,
+	'New'::text AS syncability
+    FROM
+    	blobio.rrd_stage_fdr
+    WHERE
+	false
+;
+
+\\echo copy into sync_fdr
+COPY sync_fdr (
+	start_time,
+	blob,
+	ok_count,
+	fault_count,
+	wall_duration,
+	sequence,
+	syncability
+) FROM stdin;
+END
+
+my $count = 0;
+while (<STDIN>) {
+	chomp;
+	die "unknown fdr record: $_" unless m/^${fdr_re}$/;
+	print <<END;
+$1\t$2\t$3\t$4\t$5\t$6\tNew
+END
+	$count++;
+}
+
+print <<END;
+\\.
+
+\\echo copied in $count flow records
+
+\\echo creating unique index on (start_time, sequence)
+CREATE UNIQUE INDEX idx_sync_fdr
+  ON sync_fdr(start_time, sequence)
+;
+
+\\echo vacuum/analyze sync_fdr
+VACUUM ANALYZE sync_fdr;
+
+\\echo tagging existing fdr records
+UPDATE sync_fdr s
+  SET
+  	syncability = 'Existing'
+  WHERE
+  	EXISTS (
+	  SELECT
+	  	*
+	    FROM
+	    	blobio.rrd_stage_fdr fdr
+	    WHERE
+		fdr.start_time = s.start_time
+		AND
+		fdr.sequence = s.sequence
+	)
+;
+
+\\echo creating index on sync_fdr(syncability)
+CREATE INDEX idx_sync_fdr_sync
+  ON
+  	sync_fdr(syncability)
+;
+
+\\echo creating index on sync_fdr(start_time)
+CREATE INDEX sync_fdr_start_time
+  ON
+  	sync_fdr(start_time)
+;
+
+\\echo revacuum/analyze sync_fdr after update
+VACUUM ANALYZE sync_fdr;
+
+\\x on
+\\echo summarizing unstaged flow description records by syncability
+SELECT
+	syncability
+		AS "Syncability",
+	count(*)
+		AS "Flow Count",
+	'+' || round(100 * ((count(*)::numeric/count(distinct blob)) - 1.00), 1)
+	        || '%'
+		AS "Flow Redundancy",
+	to_char(min(start_time), 'YYYY/MM/DD HH24:MI:SS TZ') AS "Start Time",
+	to_char(max(start_time), 'YYYY/MM/DD HH24:MI:SS TZ') AS "End Time",
+	(max(start_time) - min(start_time)) AS "Request Duration",
+	avg(wall_duration) AS "Average Wall Duration",
+	count(distinct blob) AS "Distinct Blob Count",
+	sum(ok_count) AS "Ok Count",
+	sum(fault_count) AS "Fault Count"
+  FROM
+  	sync_fdr
+  GROUP BY
+  	syncability
+  ORDER BY
+  	"Start Time" DESC
+;
+
+\\echo inserting new flow records ...
+INSERT INTO blobio.rrd_stage_fdr(
+	start_time,
+	sequence,
+	blob,
+	ok_count,
+	fault_count,
+	wall_duration
+) SELECT
+	start_time,
+	sequence,
+	blob,
+	ok_count,
+	fault_count,
+	wall_duration
+    FROM
+    	sync_fdr
+    WHERE
+    	syncability = 'New'
+;
+
+\\x on
+\\echo summarize all staged flow descr records records
+SELECT
+	count(*)
+		AS "Flow Count",
+	count(distinct blob)
+		AS "Distinct Blob Count",
+	'+' || round(100 * ((count(*)::numeric/count(distinct blob)) - 1.), 1)
+		|| '%'
+		AS "Flow Redundancy",
+	to_char(min(start_time), 'YYYY/MM/DD HH24:MI:SS TZ')
+		AS "Start Time",
+	to_char(max(start_time), 'YYYY/MM/DD HH24:MI:SS TZ')
+		AS "End Time",
+	max(start_time) - min(start_time)
+		AS "Request Duration",
+	avg(wall_duration)
+		AS "Average Wall Duration",
+	sum(ok_count)
+		AS "Ok Count",
+	sum(fault_count)
+		AS "Fault Count"
+  FROM
+  	blobio.rrd_stage_fdr
+;
+END

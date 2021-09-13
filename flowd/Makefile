@@ -96,6 +96,7 @@ install: all
 		$(DIST_ROOT)/bin
 	install -g $(DIST_GROUP) -o $(DIST_USER) -m u=rx,go=		\
 		boot-flowd						\
+		fdr2pg-copy-stage
 		fdr2rrd-minute						\
 		kill-flowd						\
 		launchd-flowd						\
@@ -104,7 +105,7 @@ install: all
 	install -g $(DIST_GROUP) -o $(DIST_USER) -m ugo=r		\
 		blobio.flowd.plist.example				\
 		blobio.flowd.service.example				\
-		schema-flowd.sql					\
+		schema-rrd-stage.sql					\
 		$(DIST_ROOT)/lib
 
 clean:

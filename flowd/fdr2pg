@@ -124,7 +124,7 @@ ls $LOG_DIR | grep '^flowd-[1-9][0-9]*\.fdr$' | while read FDR; do
 		;;
 	esac
 	blobio get --udig $FDR_LOG_UDIG --service $BLOBIO_SERVICE	|
-		fdr2psql						|
+		fdr2pg-copy-in						|
 		psql
 	STATUS=${PIPESTATUS[*]}
 	test "$STATUS" = '0 0 0' ||
