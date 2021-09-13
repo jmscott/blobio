@@ -132,9 +132,22 @@ SELECT
 	avg(wall_duration) AS "Average Wall Duration",
 	count(distinct blob) AS "Distinct Blob Count",
 	sum(ok_count) AS "Ok Count",
-	sum(fault_count) AS "Fault Count"
+	sum(fault_count) AS "Fault Count",
+	(SELECT
+		COUNT(*) AS "Null Flow Count"
+  	  FROM
+  		sync_fdr
+  	  WHERE
+		ok_count = 0
+		AND
+		fault_count = 0
+	) AS "Null Flow Count"
   FROM
   	sync_fdr
+  WHERE
+  	ok_count > 0
+	OR
+	fault_count > 0
   GROUP BY
   	syncability
   ORDER BY
@@ -183,7 +196,16 @@ SELECT
 	sum(ok_count)
 		AS "Ok Count",
 	sum(fault_count)
-		AS "Fault Count"
+		AS "Fault Count",
+	(SELECT
+		COUNT(*) AS "Null Flow Count"
+  	  FROM
+  		blobio.rrd_stage_fdr
+  	  WHERE
+		ok_count = 0
+		AND
+		fault_count = 0
+	) AS "Null Flow Count"
   FROM
   	blobio.rrd_stage_fdr
 ;
