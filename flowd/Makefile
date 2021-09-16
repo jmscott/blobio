@@ -96,10 +96,12 @@ install: all
 		$(DIST_ROOT)/bin
 	install -g $(DIST_GROUP) -o $(DIST_USER) -m u=rx,go=		\
 		boot-flowd						\
-		fdr2pg-copy-stage
+		fdr2pg-copy-stage					\
 		fdr2rrd-minute						\
 		kill-flowd						\
 		launchd-flowd						\
+		rrd-create-fdr						\
+		rrd-graph-fdr						\
 		run-stat-flowd-tuple					\
 		$(DIST_ROOT)/sbin
 	install -g $(DIST_GROUP) -o $(DIST_USER) -m ugo=r		\
@@ -133,13 +135,15 @@ flowd-execv: flowd-execv.c
 	cc $(CFLAGS) -o flowd-execv flowd-execv.c
 
 dev-links:
-	test -e lib || ln -s . lib
+	test -e data || ln -s . data
 	test -e etc || ln -s . etc
+	test -e lib || ln -s . lib
 	test -e log || ln -s . log
+	test -e profile || ln -s ../profile.example profile
+	test -e rrd || ln -s . rrd
 	test -e run || ln -s . run
 	test -e sbin || ln -s . sbin
 	test -e spool || ln -s . spool
-	test -e profile || ln -s ../profile.example profile
 env:
 	env
 goenv:

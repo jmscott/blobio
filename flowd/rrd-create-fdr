@@ -1,0 +1,59 @@
+#!/bin/sh
+#
+#  Synopsis:
+#	Create the round robin database for tracking fdr records.
+#  Description:
+#	Input tuples for round robin database, sampled per minute:
+#
+#		epoch:			#  rounded to a minute
+#		fdr_count:		#  number of flow desc records/min
+#		blob_count:		#  distinct number of blobs/min
+#		fdr_blob_size:		#  sum of byte count for fdr blobs/min
+#		ok_count:		#  total number of ok countd/min
+#		fault_count:		#  total number of faults countd/min
+#		wall_duration_sec:	#  sec rounded sum of wall durations
+#		zero_fdr_count:		#  number of zero flow records
+#		zero_blob_count:	#  distinct number of blobs zero fdr
+#
+#	The "fdr_blob_size" is the byte count of logically processed blobs,
+#	so duplicates count multiple times.
+#  See:
+#	lib/stage-fdr2rrd.sql
+#
+
+PROG=$(basename $0)
+RRD=data/rrd/fdr.rrd
+START=1627776000
+STEP=60
+HBEAT=120
+MAX16=65535
+MAX32=2147483647
+MAX64=9223372036854775807
+
+die()
+{
+	echo "$PROG: ERROR: $@" >&2
+	exit 1
+}
+
+test "$BLOBIO_ROOT" || die 'env variable not defined: BLOBIO_ROOT'
+cd $BLOBIO_ROOT || die "cd $BLOBIO failed"
+
+test -f $RRD && die "refused to overwrite rrd file: $RRD"
+
+mkdir -p data/rrd || die "mkdir data/rrd failed: exit status=$?"
+
+rrdtool create $RRD                                     		\
+        --step $STEP                                       		\
+        --start $START                                  		\
+	DS:fdr_count:ABSOLUTE:$HBEAT:0:$MAX32				\
+	DS:blob_count:ABSOLUTE:$HBEAT:0:$MAX32				\
+	DS:fdr_blob_size:ABSOLUTE:$HBEAT:0:$MAX64			\
+	DS:ok_count:ABSOLUTE:$HBEAT:0:$MAX32				\
+	DS:fault_count:ABSOLUTE:$HBEAT:0:$MAX32				\
+	DS:wall_duration:ABSOLUTE:$HBEAT:0:$MAX32			\
+	DS:zero_fdr_count:ABSOLUTE:$HBEAT:0:$MAX32			\
+	DS:zero_blob_count:ABSOLUTE:$HBEAT:0:$MAX32			\
+	RRA:LAST:0.5:1:10080						\
+	RRA:MAX:0.5:1:10080						\
+	RRA:MAX:0.5:60:2160						\

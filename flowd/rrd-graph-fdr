@@ -1,0 +1,14 @@
+#
+#  Synopsis:
+#	Generate and graph of flow traffic for previous week.
+#
+rrdtool graph fdr.png 							\
+	--height 350 --width 720					\
+	--start -604800							\
+	--title 'Flows Green/Yellow/Red Stats'				\
+	DEF:fc=fdr.rrd:fdr_count:MAX					\
+	'LINE1:fc#000000:Flow Count'					\
+	DEF:g=fdr.rrd:ok_count:LAST	 				\
+	'LINE2:g#00FF00:MAX green/sec'					\
+	DEF:r=fdr.rrd:fault_count:MAX	 				\
+	'LINE2:r#FF0000:WTF red/sec'					\
