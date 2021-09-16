@@ -1,9 +1,11 @@
+data
 etc
 flowd
 flowd-execv
 lib
 log
 profile
+rrd
 run
 sbin
 spool
