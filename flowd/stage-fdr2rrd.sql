@@ -9,27 +9,32 @@
  *		epoch:			#  rounded to a minute
  *		fdr_count:		#  number of flow desc records/min
  *		blob_count:		#  distinct number of blobs/min
- *		blob_size:		#  sum of byte count for fdr blobs
+ *		fdr_blob_size:		#  sum of byte count for fdr blobs
  *		ok_count:		#  total number of ok countd/min
  *		fault_count:		#  total number of faults countd/min
  *		wall_duration_sec:	#  sec rounded sum of wall durations
  *		zero_fdr_count:		#  number of zero flow records
  *		zero_blob_count:	#  distinct number of blobs zero fdr
+ *  Note:
+ *	Eventually replace this sql script with perl code.  Silly using
+ *	expensive SQL server for data transformation.
  */
 SET search_path TO blobio,public;
 
-\x
+\pset tuples_only
+\pset format unaligned
+\pset fieldsep ':'
+
 SELECT
 	extract('epoch' from
 		date_trunc('minute', st.start_time + st.wall_duration))
 		AS start_minute,
 	count(*)
 		AS fdr_count,
-	sum(bs.byte_count)
-		FILTER(WHERE st.ok_count > 0 OR st.fault_count > 0)
-		AS fdr_blob_size,
 	count(DISTINCT st.blob)
 		AS blob_count,
+	sum(bs.byte_count)
+		AS fdr_blob_size,
 	sum(st.ok_count)
 		AS ok_count,
 	sum(st.fault_count)
