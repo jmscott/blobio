@@ -175,6 +175,8 @@ INSERT INTO blobio.rrd_stage_fdr(
     	syncability = 'New'
 ;
 
+VACUUM ANALYZE blobio.rrd_stage_fdr;
+
 \\x on
 \\echo summarize all staged flow descr records records
 SELECT
@@ -209,4 +211,5 @@ SELECT
   FROM
   	blobio.rrd_stage_fdr
 ;
+
 END
