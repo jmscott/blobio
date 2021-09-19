@@ -88,7 +88,6 @@ install: all
 		$(DIST_ROOT)/src/flowd
 	install -g $(DIST_GROUP) -o $(DIST_USER) -m ugo=rx		\
 		fdr2pg							\
-		fdr2psql						\
 		flowd							\
 		flowd-execv						\
 		xdr2pg							\
