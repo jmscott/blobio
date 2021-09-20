@@ -28,7 +28,6 @@ log()
 	echo "$(date +'%Y/%m/%d %H:%M:%S'): $PROG: $@"
 }
 
-
 leave()
 {
 	STATUS=$?
@@ -87,6 +86,13 @@ LAST_EPOCH=$(rrdtool lastupdate $RRD|tail -1|sed 's/:.*//')
 log "last update: $(date -d @$LAST_EPOCH)"
 log "last since: $(elapsed-english $LAST_EPOCH) ago"
 
-log "moving $FDR_COUNT fdr files to attic ..."
+log "rsync/rm $FDR_COUNT fdr files to attic ..."
+rsync 									\
+	--files-from=$TMP_FDR						\
+	--remove-source-files						\
+	--archive							\
+	--verbose							\
+	. attic/rrd
+test $? = 0 || die "rsync fdr->attic failed: exit status=$?"
 
 exit 0

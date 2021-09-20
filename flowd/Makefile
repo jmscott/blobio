@@ -81,6 +81,10 @@ install: all
 		-d $(DIST_ROOT)/bin
 	install -g $(DIST_GROUP) -o $(DIST_USER) -m u=rwx,go=		\
 		-d $(DIST_ROOT)/sbin
+	install -g $(DIST_GROUP) -o $(DIST_USER) -m u=rwx,go=		\
+		-d $(DIST_ROOT)/attic
+	install -g $(DIST_GROUP) -o $(DIST_USER) -m u=rwx,go=		\
+		-d $(DIST_ROOT)/attic/rrd
 	install -g $(DIST_GROUP) -o $(DIST_USER) -m ug=r,o=		\
 		flowd-execv.c						\
 		parser.y						\
@@ -136,6 +140,8 @@ flowd-execv: flowd-execv.c
 	cc $(CFLAGS) -o flowd-execv flowd-execv.c
 
 dev-links:
+	mkdir -p attic
+	test -e attic/rrd || mkdir attic/rrd
 	test -e data || ln -s . data
 	test -e etc || ln -s . etc
 	test -e lib || ln -s . lib
