@@ -17,7 +17,7 @@ PROG=$(basename $0)
 
 log()
 {
-	echo "$(date +'%Y/%m/%d %H:%M:%S'): $PROG: $@"
+	echo "$(date +'%Y/%m/%d %H:%M:%S'): $PROG#$$: $@"
 }
 
 leave()
