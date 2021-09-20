@@ -55,6 +55,13 @@ SELECT
 	  LEFT OUTER JOIN brr_blob_size bs ON (
 	  	bs.blob = st.blob
 	  )
+  WHERE
+  	--  only put tuples 2+ minutes stale
+  	(
+		date_trunc('minute', now())
+		-
+		date_trunc('minute', st.start_time + st.wall_duration)
+	) >= '2 minute'
   GROUP BY
   	start_minute
   ORDER BY
