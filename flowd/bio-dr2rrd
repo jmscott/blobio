@@ -92,7 +92,7 @@ rsync 									\
 	--remove-source-files						\
 	--archive							\
 	--verbose							\
-	. attic/rrd
-test $? = 0 || die "rsync fdr->attic failed: exit status=$?"
+	. attic/
+test $? = 0 || die "rsync log/*.fdr->attic failed: exit status=$?"
 
 exit 0
