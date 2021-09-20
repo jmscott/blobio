@@ -8,6 +8,8 @@
 #  Exit Status:
 #	0	ok
 #	1	unexpected error
+#  Note:
+#	Need to add test to insure this jobs runs under a minute!
 #
 
 START_EPOCH=$(date +%s)
