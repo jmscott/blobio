@@ -12,7 +12,7 @@ CREATE UNLOGGED TABLE rrd_stage_fdr
 (
 	start_time	timestamptz CHECK (
 				--  epoch for RRD graphs.
-				start_time >= '2021-08-01'
+				start_time >= '2021-07-04'
 			) NOT NULL,
 	sequence	bigint CHECK (
 				sequence > 0
