@@ -87,6 +87,7 @@ install: all
 		$(GOSRC)						\
 		$(DIST_ROOT)/src/flowd
 	install -g $(DIST_GROUP) -o $(DIST_USER) -m ugo=rx		\
+		bio-dr2rrd						\
 		flowd							\
 		flowd-execv						\
 		xdr2pg							\
@@ -94,6 +95,7 @@ install: all
 		$(DIST_ROOT)/bin
 	install -g $(DIST_GROUP) -o $(DIST_USER) -m u=rx,go=		\
 		boot-flowd						\
+		cron-dr2rrd						\
 		fdr2pg-copy-stage					\
 		fdr2rrd-minute						\
 		kill-flowd						\
@@ -106,6 +108,7 @@ install: all
 		blobio.flowd.plist.example				\
 		blobio.flowd.service.example				\
 		schema-rrd-stage.sql					\
+		stage-fdr2rrd.sql					\
 		$(DIST_ROOT)/lib
 
 clean:

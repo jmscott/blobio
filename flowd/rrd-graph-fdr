@@ -1,6 +1,8 @@
 #
 #  Synopsis:
 #	Generate and graph of flow traffic for previous week.
+#  Note:
+#	Consider locating rrd file in cache/rrd instead of data/rrd!
 #
 rrdtool graph fdr.png 							\
 	--height 350 --width 720					\

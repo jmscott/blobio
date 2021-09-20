@@ -17,13 +17,16 @@
  *		zero_blob_count:	#  distinct number of blobs zero fdr
  *  Note:
  *	Eventually replace this sql script with perl code.  Silly using
- *	expensive SQL server for data transformation.
+ *	expensive SQL server for simple, pure transformation.  Perhaps
+ *	a job for sqllight.
  */
-SET search_path TO blobio,public;
 
+\pset null U
 \pset tuples_only
 \pset format unaligned
 \pset fieldsep ':'
+
+SET search_path TO blobio,public;
 
 SELECT
 	extract('epoch' from

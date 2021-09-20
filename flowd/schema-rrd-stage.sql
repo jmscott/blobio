@@ -16,14 +16,14 @@ CREATE UNLOGGED TABLE rrd_stage_fdr
 			) NOT NULL,
 	sequence	bigint CHECK (
 				sequence > 0
-			),
+			) NOT NULL,
 	blob		udig NOT NULL,
 	ok_count	smallint CHECK (
 				ok_count >= 0
 			) NOT NULL,
 	fault_count	smallint CHECK (
 				fault_count >= 0
-			),
+			) NOT NULL,
 	wall_duration	interval CHECK (
 				wall_duration >= '0 sec'
 			)NOT NULL,

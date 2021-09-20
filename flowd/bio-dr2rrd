@@ -1,0 +1,92 @@
+#!/bin/bash
+#
+#  Synopsis:
+#	Roll flow, query, execute description records into round robin db.
+#  Usage:
+#	cd $SETSPACE_ROOT/schema/setcore
+#	bio-dr2rdd
+#  Exit Status:
+#	0	rolled, no error
+#	1	unknown error
+#  Note:
+#	Consider locating rrd file in cache/rrd instead of data/rrd!
+#
+#	Script is intended to be run by any user with write access to
+#	data/rrd/fdr.rrd.  Therefore, the script lives in $BLOBIO_ROOT/bin.
+#	However, creation scripts for data/rrd/fdr.rrd live in
+#	$BLOBIO_ROOT/sbin, which existance of the data/rrd files, setup
+#	as part of intial root setup.
+#
+PROG=$(basename $0)
+DR_DIR=log/
+TMP_FDR=${TMPDIR:=/tmp}/$PROG-fdr.$$
+PSQL='psql --quiet --no-psqlrc'
+RRD=data/rrd/fdr.rrd
+
+log()
+{
+	echo "$(date +'%Y/%m/%d %H:%M:%S'): $PROG: $@"
+}
+
+
+leave()
+{
+	STATUS=$?
+	rm -f $TMP_FDR_LIST || log "WARN: rm cleanup failed" >&2
+	log 'good bye, cruel world'
+	exit $STATUS
+}
+
+die()
+{
+	log "ERROR: $@" >&2
+	exit 1
+}
+
+log 'hello, world'
+trap leave EXIT
+log "data record dir: $DR_DIR"
+
+test $# = 0 || die "wrong number of arguments: got $#, expected 0"
+
+test -n "$BLOBIO_ROOT" || die 'env not defined: BLOBIO_ROOT'
+MERGE_SQL=$BLOBIO_ROOT/lib/stage-fdr2rrd.sql
+test -r $MERGE_SQL || die "can not read sql: $MERGE_SQL"
+
+RRD=data/rrd/fdr.rrd
+log "rrd file: $RRD"
+
+#  test for rrd file.  must be created by setup script
+test -w $RRD || die "rrd is not writable: $RRD"
+
+#  build the list of fdr files to push to rrd
+
+log 'finding *.fdr files to push to rrd ...'
+find $DR_DIR -maxdepth 1 -follow -name '*-1*.fdr' | sort >$TMP_FDR
+STATUS=${PIPESTATUS[*]}
+test "$STATUS" = '0 0' || die "find dr failed: exit status=$STATUS"
+FDR_COUNT=$(wc -l $TMP_FDR | cut -d' ' -f1)
+log "fdr log count: $FDR_COUNT files"
+
+log 'copy/merge fdr records into unlogged table rrd_stage_fdr ...'
+xargs cat <$TMP_FDR | fdr2pg-copy-stage | psql
+STATUS=${PIPESTATUS[*]}
+test "$STATUS" = '0 0 0' || die "fdr | psql failed: exit status=$?"
+log 'copy/merge succeeded'
+
+log 'merging staged sql tuples into round robin database ...'
+$PSQL --file $MERGE_SQL							|
+	xargs --max-lines=1 rrdtool update --skip-past-updates $RRD
+STATUS=${PIPESTATUS[*]}
+test "$STATUS" = '0 0' || die "psql | rrdupdate failed: exit status=$STATUS"
+
+log 'fetching rrd lastupdate tuple ...'
+rrdtool lastupdate $RRD || die "rrd lastupdate failed: exit status=$?"
+
+LAST_EPOCH=$(rrdtool lastupdate $RRD|tail -1|sed 's/:.*//')
+log "last update: $(date -d @$LAST_EPOCH)"
+log "last since: $(elapsed-english $LAST_EPOCH) ago"
+
+log "moving $FDR_COUNT fdr files to attic ..."
+
+exit 0

@@ -1,0 +1,43 @@
+#!/bin/bash
+#
+#  Synopsis:
+#	Roll flowd desc logs (*.[fqx]dr) to round robin db in data/rrd/flowd.rrd
+#  Usage:
+#	export BLOBIO_ROOT=/opt/jmscott/jmsdesk/blobio
+#	* * * * * cron-dr2rdd
+#  Exit Status:
+#	0	ok
+#	1	unexpected error
+#
+
+START_EPOCH=$(date +%s)
+PROG=$(basename $0)
+
+log()
+{
+	echo "$(date +'%Y/%m/%d %H:%M:%S'): $PROG: $@"
+}
+
+leave()
+{
+	log "good bye, cruel world: elapsed $(elapsed-english $START_EPOCH)"
+}
+
+die()
+{
+	log "ERROR: $@" >&2
+	exit 1
+}
+
+log 'hello, world'
+trap leave EXIT
+
+test $# = 0 || die "wrong number of arguments: got $#, expected 0"
+
+test -n "$BLOBIO_ROOT" || die "env not defined: BLOBIO_ROOT"
+log "BLOBIO_ROOT=$BLOBIO_ROOT"
+cd $BLOBIO_ROOT || die "cd BLOBIO_ROOT failed: exit status=$?"
+
+. etc/profile
+
+bio-dr2rrd

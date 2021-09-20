@@ -18,7 +18,13 @@
 #	The "fdr_blob_size" is the byte count of logically processed blobs,
 #	so duplicates count multiple times.
 #  See:
-#	lib/stage-fdr2rrd.sql
+#	$BLOBIO_ROOT/bin/bio-dr2rrd
+#	$BLOBIO_ROOT/lib/stage-fdr2rrd.sql
+#  Note:
+#	Consider locating rrd file in cache/rrd instead of data/rrd!
+#
+#	Must be run as part of setup for BLOBIO_ROOT & SETSPACE_ROOT,
+#	since script lives in sbin/rrd-create-fdr.
 #
 
 PROG=$(basename $0)
@@ -35,9 +41,6 @@ die()
 	echo "$PROG: ERROR: $@" >&2
 	exit 1
 }
-
-test "$BLOBIO_ROOT" || die 'env variable not defined: BLOBIO_ROOT'
-cd $BLOBIO_ROOT || die "cd $BLOBIO failed"
 
 test -f $RRD && die "refused to overwrite rrd file: $RRD"
 
