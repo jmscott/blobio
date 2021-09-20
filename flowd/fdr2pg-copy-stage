@@ -1,20 +1,22 @@
 #!/usr/bin/perl
 #
 #  Synopsis:
-#	Idempotent transform of flow desc records to COPY IN ->  rrd_stage_fdr.
+#	Pure transform of flow desc records to COPY IN ->  rrd_stage_fdr.
 #  Usage:
 #	cat spool/*.fdr | fdr2pg-copy-stage | psql
 #
 
-my $fdr_re = qr{
+my $FDR_RE = qr{
+
 	#  start time of request: YYYY-MM-DDThh:mm:ss.ns[+-]HH:MM
 	(2\d\d\d-				#  year
-		(?:(?:0[0-9])|10|11|12)-	#  month
-		(?:(?:[012][0-9])|30|31)T	#  day followed by T
+		(?:(?:0[1-9])|10|11|12)-	#  month
+		(?:(?:[012][0-9])|30|31)	#  day followed by T
+		T				#  Time
 		(?:[0-2]\d):			#  hour
 		(?:[0-5]\d):			#  minute
-		(?:[0-5]\d)\.			#  second
-		(?:\d{1,9})			#  nanoseconds
+		(?:[0-5]\d)			#  second
+		(?:\.\d{1,9})?			#  optional nanoseconds
 		[+-]\d\d:\d\d			#  time zone offset
 	)					\t
 
@@ -64,7 +66,7 @@ END
 my $count = 0;
 while (<STDIN>) {
 	chomp;
-	die "unknown fdr record: $_" unless m/^${fdr_re}$/;
+	die "unknown fdr record: $_" unless m/^${FDR_RE}$/;
 	print <<END;
 $1\t$2\t$3\t$4\t$5\t$6\tNew
 END
