@@ -42,4 +42,17 @@ cd $BLOBIO_ROOT || die "cd BLOBIO_ROOT failed: exit status=$?"
 
 . etc/profile
 
-bio-dr2rrd
+log 'pushing all dr records to rrd ...'
+bio-dr2rrd || die "bio-dr2rrd failed: exit status=$?"
+
+
+log "deleting stage records older than 3 days"
+psql <<END || die "psql delete failed: exit status=$?"
+DELETE FROM rrd_stage_fdr
+  WHERE
+  	(
+		date_trunc('minute', now())
+		-
+		date_trunc('minute', start_time + wall_duration)
+	) > '3 days'
+END
