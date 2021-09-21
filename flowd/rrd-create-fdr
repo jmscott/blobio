@@ -1,7 +1,17 @@
 #!/bin/sh
 #
 #  Synopsis:
-#	Create the round robin database for tracking fdr records.
+#	Create the for fd recored a round robin database file.
+#  Usage:
+#	mkdir -p cache/rrd
+#	cd cache/rrd
+#	rrd-create-fdr fdr.rrd
+#
+#	#  or, for a template
+#	rrd-create-fdr rrd-template-fdr.rrd
+#
+#	rrdtool create --template=rrd-template-fdr.rrd
+#
 #  Description:
 #	Input tuples for round robin database, sampled per minute:
 #
@@ -20,15 +30,10 @@
 #  See:
 #	$BLOBIO_ROOT/bin/bio-dr2rrd
 #	$BLOBIO_ROOT/lib/stage-fdr2rrd.sql
-#  Note:
-#	Consider locating rrd file in cache/rrd instead of data/rrd!
-#
-#	Must be run as part of setup for BLOBIO_ROOT & SETSPACE_ROOT,
-#	since script lives in sbin/rrd-create-fdr.
 #
 
 PROG=$(basename $0)
-RRD=data/rrd/fdr.rrd
+RRD=
 START=1627776000
 STEP=60
 HBEAT=120
@@ -42,9 +47,10 @@ die()
 	exit 1
 }
 
-test -f $RRD && die "refused to overwrite rrd file: $RRD"
+test $# = 1 || die "wrong number of arguments: got $#, expected 1"
+RRD=$1
 
-mkdir -p data/rrd || die "mkdir data/rrd failed: exit status=$?"
+test -f $RRD && die "refused to overwrite rrd file: $RRD"
 
 rrdtool create $RRD                                     		\
         --step $STEP                                       		\

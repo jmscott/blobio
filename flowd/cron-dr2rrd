@@ -1,7 +1,7 @@
 #!/bin/bash
 #
 #  Synopsis:
-#	Roll flowd desc logs (*.[fqx]dr) to round robin db in data/rrd/flowd.rrd
+#	Roll various desc logs (*.[fqx]dr) to round robin db in cache/rrd/*.rrd
 #  Usage:
 #	export BLOBIO_ROOT=/opt/jmscott/jmsdesk/blobio
 #	* * * * * cron-dr2rdd
@@ -45,8 +45,7 @@ cd $BLOBIO_ROOT || die "cd BLOBIO_ROOT failed: exit status=$?"
 log 'pushing all dr records to rrd ...'
 bio-dr2rrd || die "bio-dr2rrd failed: exit status=$?"
 
-
-log "deleting stage records older than 3 days"
+log "deleting stage fdr tuples older than 3 days"
 psql <<END || die "psql delete failed: exit status=$?"
 DELETE FROM rrd_stage_fdr
   WHERE

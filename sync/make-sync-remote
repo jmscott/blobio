@@ -57,6 +57,7 @@ test -d $SYNC_ROOT && die "refuse to overwrite remote dir: $SYNC_ROOT"
 _mkdir $SYNC_ROOT
 
 cd $SYNC_ROOT || die "cd $SYNC_ROOT failed: exit status=$?"
+_mkdir attic
 _mkdir cache
 _mkdir etc
 _mkdir log

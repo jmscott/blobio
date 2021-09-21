@@ -1,44 +1,53 @@
 #!/bin/bash
 #
 #  Synopsis:
-#	Roll flow, query, execute description records into round robin db.
+#	Push flow, query, execute description records into round robin db.
 #  Usage:
 #	cd $SETSPACE_ROOT/schema/setcore
+#	export BLOBIO_ROOT=/usr/local/blobio
 #	bio-dr2rdd
 #  Exit Status:
 #	0	rolled, no error
 #	1	unknown error
 #  Note:
-#	Consider locating rrd file in cache/rrd instead of data/rrd!
-#
-#	Script is intended to be run by any user with write access to
-#	data/rrd/fdr.rrd.  Therefore, the script lives in $BLOBIO_ROOT/bin.
-#	However, creation scripts for data/rrd/fdr.rrd live in
-#	$BLOBIO_ROOT/sbin, which existance of the data/rrd files, setup
-#	as part of intial root setup.
+#	Really, really really need to move files flowd.{fdr,qdr,xdr} to spool.
 #
 PROG=$(basename $0)
 DR_DIR=log/
 TMP_FDR=${TMPDIR:=/tmp}/$PROG-fdr.$$
 PSQL='psql --quiet --no-psqlrc'
-RRD=data/rrd/fdr.rrd
+RRD=cache/rrd/fdr.rrd
+
+now()
+{
+	date +'%Y/%m/%d %H:%M:%S'
+}
 
 log()
 {
-	echo "$(date +'%Y/%m/%d %H:%M:%S'): $PROG: $@"
+	echo "$(now): $PROG: $@"
+}
+
+WARN()
+{
+	log "WARN (ok): $@" >&2
 }
 
 leave()
 {
 	STATUS=$?
-	rm -f $TMP_FDR_LIST || log "WARN: rm cleanup failed" >&2
+	rm -f $TMP_FDR_LIST || WARN "rm cleanup failed"
 	log 'good bye, cruel world'
 	exit $STATUS
 }
 
 die()
 {
-	log "ERROR: $@" >&2
+	FAULT=run/$PROG.fault
+	MSG="ERROR: $@"
+	echo "$(now): $MSG" >>$FAULT ||
+		WARN "echo >>$FAULT failed: exit status=$?"
+	log $MSG >&2
 	exit 1
 }
 
@@ -52,20 +61,35 @@ test -n "$BLOBIO_ROOT" || die 'env not defined: BLOBIO_ROOT'
 MERGE_SQL=$BLOBIO_ROOT/lib/stage-fdr2rrd.sql
 test -r $MERGE_SQL || die "can not read sql: $MERGE_SQL"
 
-RRD=data/rrd/fdr.rrd
-log "rrd file: $RRD"
+RRD=cache/rrd/fdr.rrd
+if [ -e $RRD ];  then
+	log "rrd file: $RRD"
+else
+	WARN "no rrd file: $RRD"
+	log "creating rrd file: $RRD"
+	mkdir -p cache/rrd || die "mkdir cache/rrd failed: exit status=$?"
+	rrdcreate --template $BLOBIO_ROOT/lib/fdr-template.rrd $RRD ||
+		die "rrdcreate failed: exit status=$?"
+fi
 
-#  test for rrd file.  must be created by setup script
 test -w $RRD || die "rrd is not writable: $RRD"
 
 #  build the list of fdr files to push to rrd
 
 log 'finding *.fdr files to push to rrd ...'
-find $DR_DIR -maxdepth 1 -follow -name '*-1*.fdr' | sort >$TMP_FDR
+find $DR_DIR								\
+	-maxdepth 1							\
+	-follow								\
+	\( -name '*.fdr' -a ! -name flowd.fdr \)			|
+	sort >$TMP_FDR
 STATUS=${PIPESTATUS[*]}
 test "$STATUS" = '0 0' || die "find dr failed: exit status=$STATUS"
 FDR_COUNT=$(wc -l $TMP_FDR | cut -d' ' -f1)
 log "fdr log count: $FDR_COUNT files"
+if [ -z $TMP_FDR ];  then
+	WARN "no fdr files in $DR_DIR (ok)"
+	exit 0
+fi
 
 log 'copy/merge fdr records into unlogged table rrd_stage_fdr ...'
 xargs cat <$TMP_FDR | fdr2pg-copy-stage | psql

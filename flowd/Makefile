@@ -111,6 +111,7 @@ install: all
 	install -g $(DIST_GROUP) -o $(DIST_USER) -m ugo=r		\
 		blobio.flowd.plist.example				\
 		blobio.flowd.service.example				\
+		fdr-template.rrd					\
 		schema-rrd-stage.sql					\
 		stage-fdr2rrd.sql					\
 		$(DIST_ROOT)/lib
@@ -151,6 +152,8 @@ dev-links:
 	test -e run || ln -s . run
 	test -e sbin || ln -s . sbin
 	test -e spool || ln -s . spool
+clean-links:
+	rm -rf attic data etc lib log profile rrd run sbin spool
 env:
 	env
 goenv:
