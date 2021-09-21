@@ -23,18 +23,8 @@
 
   <key>EnvironmentVariables</key>
   <dict>
-  	<key>PATH</key>
-	<string>sbin:bin:/usr/local/pgsql/bin:/usr/local/jmscott/bin:/usr/bin:/bin</string>
-
 	<key>BLOBIO_ROOT</key>
-	<string>/usr/local/blobio/sync/root/remote</string>
-
-	<key>BLOBIO_ALGORITHM</key>
-	<string>bc160</string>
-
-	<key>BLOBIO_SERVICE</key>
-	<string>bio4:localhost:1797</string>
-
+	<string>/usr/local/blobio/sync/remote/remote</string>
   </dict>
 
   <key>ProgramArguments</key>
@@ -54,7 +44,7 @@
   <string>staff</string>
 
   <key>WorkingDirectory</key>
-  <string>/usr/local/blobio/sync/root/remote</string>
+  <string>/usr/local/blobio/sync/remote/remote</string>
 
   <key>StandardErrorPath</key>
   <string>/Users/blobio/log/launchd-sync-remote-flowd.log</string>

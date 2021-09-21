@@ -7,9 +7,16 @@
 #	Only gocode/libpq croaks on defined PGSYSCONFDIR, so we can
 #	not put 'unset PGSYSCONFDIR' in etc/profile.
 #
-#		BLOBIO_ROOT=/usr/local/blobio/sync/root/wework
+#		BLOBIO_ROOT=/usr/local/blobio/sync/remote/wework
 #		cd $BLOBIO_ROOT
 #		sbin/boot-flowd etc/wework.flow
+#  Note:
+#	Change explicit dependence on
+#
+#		etc/sync-<remote-tag>.flow
+#
+#	to
+#		etc/<remote-tag>.flow
 #
 
 PROG=$(basename $0)

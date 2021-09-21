@@ -21,7 +21,7 @@
 #
 #	Can the variable EXISTS_COUNT be replaced with global bash variable?
 #
-#	Need to run sync process in $BLOBIO_ROOT/sync/root/$SYNC_NAME.
+#	Need to run sync process in $BLOBIO_ROOT/sync/remote/$SYNC_NAME.
 #
 #	Does cache need to remove taken blobs?
 #
@@ -88,7 +88,7 @@ LOCAL_GET_SERVICE=${BLOBIO_GET_SERVICE:=$BLOBIO_SERVICE}
 log "local blobio get service: $LOCAL_GET_SERVICE"
 
 #  Get the remote service from $SYNC_ROOT/etc/profile
-SYNC_ROOT=$BLOBIO_ROOT/sync/root/$SYNC_NAME
+SYNC_ROOT=$BLOBIO_ROOT/sync/remote/$SYNC_NAME
 log "sync root: $SYNC_ROOT"
 test -d $SYNC_ROOT || die "sync root dir does not exist: $SYNC_ROOT"
 SYNC_PROFILE=$SYNC_ROOT/etc/profile

@@ -10,7 +10,7 @@ SRCs=jaccard.go jaccard-tip.go
 SBINs=									\
 	jaccard								\
 	jaccard-tip							\
-	make-sync-root							\
+	make-sync-remote						\
 	purge-sync-cache						\
 	reboot-sync							\
 	rummy-chain							\
@@ -47,7 +47,7 @@ install: all
 	install -g $(DIST_GROUP) -o $(DIST_USER)			\
 		-m u=rwx,go= -d $(DIST_ROOT)/sync
 	install -g $(DIST_GROUP) -o $(DIST_USER)			\
-		-m u=rwx,go= -d $(DIST_ROOT)/sync/root
+		-m u=rwx,go= -d $(DIST_ROOT)/sync/remote
 	install -g $(DIST_GROUP) -o $(DIST_USER) -m u=rx,go=		\
 		$(SBINs)						\
 		$(DIST_ROOT)/sbin

@@ -38,7 +38,7 @@ info "stale days: $STALE_DAYS days"
 
 SYNC_ROOT="$2"
 info "sync root: $SYNC_ROOT"
-SYNC_ROOT=$BLOBIO_ROOT/sync/root/$SYNC_ROOT
+SYNC_ROOT=$BLOBIO_ROOT/sync/remote/$SYNC_ROOT
 info "sync root path: $SYNC_ROOT"
 cd $SYNC_ROOT || die "cd $SYNC_ROOT failed: exit status=$?"
 

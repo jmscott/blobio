@@ -48,11 +48,11 @@ flowd)
 	;;
 'flowd>'*)
 	TAG=$(echo $PROCESS  | sed 's/......//')
-	SYNC_ROOT=sync/root/$TAG/
+	SYNC_ROOT=sync/remote/$TAG/
 
 	GYR_PATH=$SYNC_ROOT/run/flowd.gyr
 	PID_PATH=$SYNC_ROOT/run/flowd.pid
-	FLOW_PATH=sync/root/$TAG/etc/sync-$TAG.flow
+	FLOW_PATH=sync/remote/$TAG/etc/sync-$TAG.flow
 	;;
 *)
 	die "impossible what: $1"

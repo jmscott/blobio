@@ -8,6 +8,8 @@
 #  Exit Status:
 #	0	no error
 #	1	unexpected error
+#  Note:
+#	Is this script obsolete?
 #
 use Date::Parse;
 

@@ -2,7 +2,7 @@
 #  Synopsis:
 #	Profile for sync processes, dotted in after $BLOBIO_ROOT/etc/profile.
 #  Usage:
-#	SYNC_ROOT=$BLOBIO_ROOT/sync/root/condor.setspace.com
+#	SYNC_ROOT=$BLOBIO_ROOT/sync/remote/condor.setspace.com
 #	cp $BLOBIO_ROOT/etc/profile-sync.example $SYNC_ROOT/etc/profile
 #  Note:
 #	Be wary of relative PATH entries, like
@@ -11,4 +11,4 @@
 #
 
 #  For work directory
-export TMPDIR=$BLOBIO_ROOT/sync/root/wework/tmp
+export TMPDIR=$BLOBIO_ROOT/sync/remote/wework/tmp

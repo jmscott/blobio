@@ -1,17 +1,14 @@
 #
 #  Synopsis:
 #	Start flowd process from MAC OS launchd, consulting run/flowd.pid
-#  Usage:
-#	Ponder moving 'unset PGSYSCONFDIR' somewhere else.
-#	Only gocode/libpq croaks on defined PGSYSCONFDIR, so we can
-#	not put 'unset PGSYSCONFDIR' in etc/profile.
-#
-#		sbin/launchd-flowd etc/blobio.flow
-#
-#	BLOBIO_ROOT=/usr/local/blobio/sync/root/wework
-#	cd $BLOBIO_ROOT
-#	sbin/launchd-flowd etc/wework.flow
 #  Note:
+#       Change explicit dependence on
+#
+#               etc/sync-<remote-tag>.flow
+#
+#       to
+#               etc/<remote-tag>.flow
+#
 #	Merge launchd-flowd and systemd-flowd into boot-flowd.
 #
 

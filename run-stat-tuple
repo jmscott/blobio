@@ -47,9 +47,6 @@
 #  See:
 #	run-stat-tuple
 #  Note:
-#	Consider a process state OFFLINE for disabled sync remote services,
-#	by checking for existence of sync/root/<remote>/etc/sync-<remote>.flow.
-#
 #	Really, really, really need to move the files in log/*.{qdr,xdr,fdr}
 #	to directory data/ or spool/!
 #
@@ -72,6 +69,6 @@ run-stat-flowd-tuple flowd
 
 #  check sync flowd process
 
-find sync/root -maxdepth 2 -name run -type d | while read RUN_DIR;  do
+find sync/remote -maxdepth 2 -name run -type d | while read RUN_DIR;  do
 	run-stat-flowd-tuple "flowd>$(basename $(dirname $RUN_DIR))"
 done
