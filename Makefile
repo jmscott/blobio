@@ -75,10 +75,6 @@ install: all
 	install -g $(DIST_GROUP) -o $(DIST_USER)			\
 		-m u=rwx,g=rx,o= -d $(DIST_ROOT)/cache
 	install -g $(DIST_GROUP) -o $(DIST_USER)			\
-		-m u=rwx,g=rx,o= -d $(DIST_ROOT)/cache/tmp
-	install -g $(DIST_GROUP) -o $(DIST_USER)			\
-		-m u=rwx,g=rx,o= -d $(DIST_ROOT)/cache/data
-	install -g $(DIST_GROUP) -o $(DIST_USER)			\
 		-m u=rwx,go= -d $(DIST_ROOT)/spool/wrap
 	install -g $(DIST_GROUP) -o $(DIST_USER)			\
 		-m u=rwx,g=rx,o= -d $(DIST_ROOT)/log
