@@ -47,7 +47,7 @@ bio-dr2rrd || die "bio-dr2rrd failed: exit status=$?"
 
 log "deleting stage fdr tuples older than 3 days"
 psql <<END || die "psql delete failed: exit status=$?"
-DELETE FROM rrd_stage_fdr
+DELETE FROM blobio.rrd_stage_fdr
   WHERE
   	(
 		date_trunc('minute', now())
