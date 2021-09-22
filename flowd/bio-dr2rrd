@@ -3,13 +3,16 @@
 #  Synopsis:
 #	Push flow, query, execute description records into round robin db.
 #  Usage:
+#	export BLOBIO_ROOT=/opt/jmscot/jmsdesk/blobio
 #	cd $SETSPACE_ROOT/schema/setcore
-#	export BLOBIO_ROOT=/usr/local/blobio
-#	bio-dr2rdd
+#	bio-dr2rdd setcore
 #  Exit Status:
 #	0	rolled, no error
 #	1	unknown error
 #  Note:
+#	Script MUST be invoked on root dir containing the fdr log files
+#	in log/ and cache/rrd.
+#
 #	Really, really really need to move files flowd.{fdr,qdr,xdr} to spool.
 #
 PROG=$(basename $0)
@@ -55,9 +58,13 @@ log 'hello, world'
 trap leave EXIT
 log "data record dir: $DR_DIR"
 
-test $# = 0 || die "wrong number of arguments: got $#, expected 0"
+test $# = 1 || die "wrong number of arguments: got $#, expected 1"
+SOURCE=$1
+log "source tag: $SOURCE"
+[[ "$SOURCE" =~ ^[a-z][a-z0-9_]{0,15}$ ]] || die "source is not a tag: $SOURCE"
 
 test -n "$BLOBIO_ROOT" || die 'env not defined: BLOBIO_ROOT'
+
 MERGE_SQL=$BLOBIO_ROOT/lib/stage-fdr2rrd.sql
 test -r $MERGE_SQL || die "can not read sql: $MERGE_SQL"
 
@@ -92,14 +99,19 @@ if [ -z $TMP_FDR ];  then
 fi
 
 log 'copy/merge fdr records into unlogged table rrd_stage_fdr ...'
-xargs cat <$TMP_FDR | fdr2pg-copy-stage | psql
+xargs cat <$TMP_FDR | fdr2pg-copy-stage $SOURCE | psql
 STATUS=${PIPESTATUS[*]}
 test "$STATUS" = '0 0 0' || die "fdr | psql failed: exit status=$?"
 log 'copy/merge succeeded'
 
 log 'merging staged sql tuples into round robin database ...'
-$PSQL --file $MERGE_SQL							|
-	xargs --max-lines=1 rrdtool update --skip-past-updates $RRD
+$PSQL --file $MERGE_SQL --var source=$SOURCE				|
+	xargs								\
+		--max-lines=1						\
+		--no-run-if-empty					\
+			rrdtool update					\
+				--skip-past-updates			\
+				$RRD
 STATUS=${PIPESTATUS[*]}
 test "$STATUS" = '0 0' || die "psql | rrdupdate failed: exit status=$STATUS"
 

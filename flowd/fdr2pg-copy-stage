@@ -36,11 +36,15 @@ my $FDR_RE = qr{
 	(\d{1,19})
 }sx;
 
+my $ARGC = scalar(@ARGV);
+die "wrong argument count: got $ARGC, expected 1" unless $ARGC == 1;
+my $source = $ARGV[0];
+
 print <<END;
 \\timing on
 \\set ON_ERROR_STOP on
 
-\\echo create temp table sync_fdr
+\\echo create temp table sync_fdr for source $source
 CREATE TEMP TABLE sync_fdr AS
   SELECT
 	*,
@@ -100,6 +104,8 @@ UPDATE sync_fdr s
 		fdr.start_time = s.start_time
 		AND
 		fdr.sequence = s.sequence
+		AND
+		fdr.source = '$source'
 	)
 ;
 
@@ -158,6 +164,7 @@ SELECT
 
 \\echo inserting new flow records ...
 INSERT INTO blobio.rrd_stage_fdr(
+	source,
 	start_time,
 	sequence,
 	blob,
@@ -165,6 +172,7 @@ INSERT INTO blobio.rrd_stage_fdr(
 	fault_count,
 	wall_duration
 ) SELECT
+	'$source',
 	start_time,
 	sequence,
 	blob,
@@ -180,15 +188,19 @@ INSERT INTO blobio.rrd_stage_fdr(
 VACUUM ANALYZE blobio.rrd_stage_fdr;
 
 \\x on
-\\echo summarize all staged flow descr records records
+\\echo summarize source $source all staged flow descr records
 SELECT
 	count(*)
 		AS "Flow Count",
 	count(distinct blob)
 		AS "Distinct Blob Count",
-	'+' || round(100 * ((count(*)::numeric/count(distinct blob)) - 1.), 1)
+	/*
+	 *  Note:
+	 *	We have a divide by zero error!
+	'+' || round(100 * ((count(*)::numeric/count(DISTINCT blob)) - 1.), 1)
 		|| '%'
 		AS "Flow Redundancy",
+	*/
 	to_char(min(start_time), 'YYYY/MM/DD HH24:MI:SS TZ')
 		AS "Start Time",
 	to_char(max(start_time), 'YYYY/MM/DD HH24:MI:SS TZ')
@@ -209,9 +221,13 @@ SELECT
 		ok_count = 0
 		AND
 		fault_count = 0
+		AND
+		source = '$source'
 	) AS "Null Flow Count"
   FROM
   	blobio.rrd_stage_fdr
+  WHERE
+  	source = '$source'
 ;
 
 END

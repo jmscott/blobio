@@ -1,6 +1,8 @@
 /*
  *  Synopsis:
  *	Generate Round Robin Database update samples on standard output.
+ *  Usage:
+ *	psql --var source=hp13 -f stage-fdr2rrd.sql
  *  Description:
  *	Looking back two minutes, write a minute stepped set of tuples
  *	suitable for rrdupdate. A "zero" fdr record means both ok_count
@@ -56,6 +58,8 @@ SELECT
 	  	bs.blob = st.blob
 	  )
   WHERE
+  	source = :'source'
+	AND
   	--  only put tuples 2+ minutes stale
   	(
 		date_trunc('minute', now())

@@ -4,7 +4,7 @@
 #	Roll various desc logs (*.[fqx]dr) to round robin db in cache/rrd/*.rrd
 #  Usage:
 #	export BLOBIO_ROOT=/opt/jmscott/jmsdesk/blobio
-#	* * * * * cron-dr2rdd
+#	* * * * * cron-dr2rdd blobio
 #  Exit Status:
 #	0	ok
 #	1	unexpected error
@@ -34,7 +34,9 @@ die()
 log 'hello, world'
 trap leave EXIT
 
-test $# = 0 || die "wrong number of arguments: got $#, expected 0"
+test $# = 1 || die "wrong number of arguments: got $#, expected 1"
+SOURCE=$1
+log "source: $SOURCE"
 
 test -n "$BLOBIO_ROOT" || die "env not defined: BLOBIO_ROOT"
 log "BLOBIO_ROOT=$BLOBIO_ROOT"
@@ -43,7 +45,7 @@ cd $BLOBIO_ROOT || die "cd BLOBIO_ROOT failed: exit status=$?"
 . etc/profile
 
 log 'pushing all dr records to rrd ...'
-bio-dr2rrd || die "bio-dr2rrd failed: exit status=$?"
+bio-dr2rrd $SOURCE || die "bio-dr2rrd failed: exit status=$?"
 
 log "deleting stage fdr tuples older than 3 days"
 psql <<END || die "psql delete failed: exit status=$?"

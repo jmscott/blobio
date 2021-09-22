@@ -15,7 +15,6 @@ COMMENT ON SCHEMA blobio IS
   'blobs in service and brr history'
 ;
 
-
 DROP DOMAIN IF EXISTS brr_duration CASCADE;
 CREATE DOMAIN brr_duration AS interval
   CHECK (
@@ -46,7 +45,51 @@ CREATE DOMAIN ui63 AS bigint
   NOT NULL
 ;
 COMMENT ON DOMAIN ui63 IS
-  'integer in range 0 <= 2^63 - 1'
+  'non null integer in range 0 <= 2^63 - 1'
+;
+
+DROP DOMAIN IF EXISTS ui32 CASCADE;
+CREATE DOMAIN ui32 AS int
+  CHECK (
+	value >= 0
+  )
+  NOT NULL
+;
+COMMENT ON DOMAIN ui32 IS
+  'non null integer in range 0 <= 2^31 - 1'
+;
+
+DROP DOMAIN IF EXISTS ui16 CASCADE;
+CREATE DOMAIN ui16 AS smallint
+  CHECK (
+	value >= 0
+  )
+  NOT NULL
+;
+COMMENT ON DOMAIN ui16 IS
+  'non null integer in range 0 <= 2^15 - 1'
+;
+
+DROP DOMAIN IF EXISTS ui8 CASCADE;
+CREATE DOMAIN ui8 AS smallint
+  CHECK (
+	value >= 0
+  )
+  NOT NULL
+;
+COMMENT ON DOMAIN ui8 IS
+  'non null integer in range 0 <= 2^8 - 1'
+;
+
+DROP DOMAIN IF EXISTS tag CASCADE;
+CREATE DOMAIN tag AS text
+  CHECK (
+  	value ~ '^[a-z][a-z0-9_]{0,15}$'
+  )
+  NOT NULL
+;
+COMMENT ON DOMAIN tag IS
+  'no null, up to 16 ascii tag matching [a-z][a-z0-9_]{0,15}'
 ;
 
 /*
