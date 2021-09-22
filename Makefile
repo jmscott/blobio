@@ -68,6 +68,8 @@ install: all
 	install -g $(DIST_GROUP) -o $(DIST_USER)			\
 		-m u=rwx,go= -d $(DIST_ROOT)/sbin
 	install -g $(DIST_GROUP) -o $(DIST_USER)			\
+		-m u=rwx,go= -d $(DIST_ROOT)/attic
+	install -g $(DIST_GROUP) -o $(DIST_USER)			\
 		-m u=rwx,g=x,o= -d $(DIST_ROOT)/etc
 	#  need group read for possible other services
 	install -g $(DIST_GROUP) -o $(DIST_USER)			\
