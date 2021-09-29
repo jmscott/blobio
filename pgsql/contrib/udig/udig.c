@@ -577,7 +577,7 @@ udig_in(PG_FUNCTION_ARGS)
 			(errcode(ERRCODE_INVALID_TEXT_REPRESENTATION),
 			errmsg(empty_udig, udig)));
 	if (a8[8] == ':') {
-		if (u_end - u <= 8)
+		if (u_end == u)
 			ereport(ERROR,
 				(errcode(ERRCODE_INVALID_TEXT_REPRESENTATION),
 					errmsg(no_colon, udig),
