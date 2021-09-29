@@ -256,6 +256,7 @@ tmp_open()
 	if (BLOBIO_TMPDIR == NULL) {
 		_info("env BLOBIO_TMPDIR: not defined");
 		default_path = "tmp";
+		_info2("path is default", default_path);
 	} else {
 		default_path = BLOBIO_TMPDIR;
 		_info2("BLOBIO_TMPDIR", BLOBIO_TMPDIR);
