@@ -103,7 +103,6 @@ install: all
 		fdr2pg-copy-stage					\
 		fdr2rrd-minute						\
 		kill-flowd						\
-		launchd-flowd						\
 		rrd-create-fdr						\
 		rrd-graph-fdr						\
 		run-stat-flowd-tuple					\
@@ -124,7 +123,7 @@ distclean:
 		$(DIST_ROOT)/src/flowd	 				\
 		$(DIST_ROOT)/bin/flowd					\
 		$(DIST_ROOT)/bin/flowd-execv				\
-		$(DIST_ROOT)/sbin/launchd-flowd
+		$(DIST_ROOT)/sbin/boot-flowd
 
 
 fmt: $(GOSRC)
