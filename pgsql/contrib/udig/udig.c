@@ -540,6 +540,7 @@ udig_in(PG_FUNCTION_ARGS)
 	Size size = 0;
 
 	static char no_algo[] = "unknown algorithm in udig: \"%s\"";
+	static char no_colon[] = "no colon in udig: \"%s\"";
 	static char bad_dig[] =
 		"invalid input syntax for udig %s digest: \"%s\"";
 
@@ -575,12 +576,20 @@ udig_in(PG_FUNCTION_ARGS)
 		ereport(ERROR,
 			(errcode(ERRCODE_INVALID_TEXT_REPRESENTATION),
 			errmsg(empty_udig, udig)));
-	if (a8[8] == ':')
-		ereport(ERROR,
-			(errcode(ERRCODE_INVALID_TEXT_REPRESENTATION),
-				errmsg(big_algo, udig),
-				errhint(ALGO_HINT)
-			));
+	if (a8[8] == ':') {
+		if (u < u_end)
+			ereport(ERROR,
+				(errcode(ERRCODE_INVALID_TEXT_REPRESENTATION),
+					errmsg(no_colon, udig),
+					errhint(ALGO_HINT)
+				));
+		else
+			ereport(ERROR,
+				(errcode(ERRCODE_INVALID_TEXT_REPRESENTATION),
+					errmsg(big_algo, udig),
+					errhint(ALGO_HINT)
+				));
+	}
 	/*
 	 *  Store SHA or BC160 digests in binary form.
 	 */
