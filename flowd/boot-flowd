@@ -11,6 +11,8 @@
 #		cd $BLOBIO_ROOT
 #		sbin/boot-flowd etc/wework.flow
 #  Note:
+#	Need to log when removing stale files in run/flowd.*
+#
 #	Change explicit dependence on
 #
 #		etc/sync-<remote-tag>.flow

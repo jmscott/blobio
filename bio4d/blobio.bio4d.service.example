@@ -13,14 +13,14 @@ After=network-online.target
 Type=simple
 User=blobio
 WorkingDirectory=/usr/local/blobio
-ExecStart=/usr/local/blobio/sbin/bio4d --ps-title-XXXXXXXXXXXXXXXXXX --port 1797 --in-foreground --root /usr/local/blobio
+ExecStart=/usr/local/blobio/sbin/boot-bio4d /usr/local/blobio
 KillMode=mixed
 KillSignal=SIGTERM
 TimeoutSec=20
 RestartSec=20
 Restart=always
-StandardOutput=file:/home/blobio/log/systemd-blobio.bio4d.log
-StandardError=file:/home/blobio/log/systemd-blobio.bio4d.log
+StandardOutput=file:/home/blobio/log/systemd-bio4d.log
+StandardError=file:/home/blobio/log/systemd-bio4d.log
 
 [Install]
 WantedBy=multi-user.target

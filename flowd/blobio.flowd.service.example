@@ -16,18 +16,10 @@ User=blobio
 
 WorkingDirectory=/usr/local/blobio
 
-Environment=BLOBIO_ROOT=/usr/local/blobio
-Environment=PGHOST=/tmp
-Environment=PGPORT=5432
-Environment=PGUSER=postgres
-Environment=PGPASSWORD=
-Environment=PGDATABASE=blobio
-Environment=PATH=/usr/local/pgsql/bin:/usr/local/blobio/sbin:/usr/local/blobio/bin:/usr/local/bin:/usr/bin:/bin
 StandardOutput=file:/home/blobio/log/systemd-blobio.flowd.log
 StandardError=file:/home/blobio/log/systemd-blobio.flowd.log
 
-ExecStart=/usr/local/blobio/bin/flowd server etc/blobio.flow
-PIDFile=/usr/local/blobio/run/flowd.pid
+ExecStart=/usr/local/blobio/bin/boot-flowd /usr/local/blobio
 KillMode=control-group
 KillSignal=SIGTERM
 TimeoutSec=20
