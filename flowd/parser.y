@@ -230,6 +230,7 @@ const (
 %token	CHAT_HISTORY
 %token	COMMAND
 %token	COMMAND_REF
+%token	CONCAT
 %token	DATABASE
 %token	DATA_SOURCE_NAME
 %token	DRIVER_NAME
@@ -302,25 +303,26 @@ const (
 %token  QUERY
 %token  yy_BOOL
 
-%type	<uint64>	UINT64
-%type	<string>	STRING
-%type	<string>	NAME
-%type	<ast>		statement_list  statement
-%type	<string>	boot_capacity  boot_duration
-%type	<string_list>	string_list
-%type	<ast>		constant  rel_op
-%type	<ast>		tail_project  projection  tail_rel
 %type	<ast>		arg arg_list
-%type	<ast>		qualify
-%type	<sql_database>	SQL_DATABASE_REF
-%type	<sql_query_row>	SQL_QUERY_ROW_REF
-%type	<sql_exec>	SQL_EXEC_REF
-%type	<command>	COMMAND_REF
-%type	<tail>		TAIL_REF
 %type	<ast>		call  query
 %type	<ast>		call_project  query_project
+%type	<ast>		concat
+%type	<ast>		constant  rel_op
+%type	<ast>		qualify
+%type	<ast>		statement_list  statement
+%type	<ast>		tail_project  projection  tail_rel
 %type	<brr_field>	brr_field
+%type	<command>	COMMAND_REF
 %type	<go_kind>	sql_result_type
+%type	<sql_database>	SQL_DATABASE_REF
+%type	<sql_exec>	SQL_EXEC_REF
+%type	<sql_query_row>	SQL_QUERY_ROW_REF
+%type	<string>	NAME
+%type	<string>	STRING
+%type	<string>	boot_capacity  boot_duration
+%type	<string_list>	string_list
+%type	<tail>		TAIL_REF
+%type	<uint64>	UINT64
 
 %%
 
@@ -1157,10 +1159,22 @@ qualify:
 	  }
 	;
 
+concat:
+	CONCAT  '('  arg_list  ')'
+	{
+		$$ = &ast {
+			yy_tok: CONCAT,
+			left: $3,
+		}
+	}
+;
+
 arg:
 	  projection
 	|
 	  constant
+	|
+	  concat
 	;
 
 arg_list:
@@ -2095,6 +2109,7 @@ var keyword = map[string]int{
 	"call":			CALL,
 	"chat_history":		CHAT_HISTORY,
 	"command":		COMMAND,
+	"concat":		CONCAT,
 	"data_source_name":	DATA_SOURCE_NAME,
 	"database":		DATABASE,
 	"driver_name":		DRIVER_NAME,
