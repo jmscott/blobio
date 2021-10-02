@@ -230,7 +230,6 @@ const (
 %token	CHAT_HISTORY
 %token	COMMAND
 %token	COMMAND_REF
-%token	CONCAT
 %token	DATABASE
 %token	DATA_SOURCE_NAME
 %token	DRIVER_NAME
@@ -306,7 +305,6 @@ const (
 %type	<ast>		arg arg_list
 %type	<ast>		call  query
 %type	<ast>		call_project  query_project
-%type	<ast>		concat
 %type	<ast>		constant  rel_op
 %type	<ast>		qualify
 %type	<ast>		statement_list  statement
@@ -1159,22 +1157,10 @@ qualify:
 	  }
 	;
 
-concat:
-	CONCAT  '('  arg_list  ')'
-	{
-		$$ = &ast {
-			yy_tok: CONCAT,
-			left: $3,
-		}
-	}
-;
-
 arg:
 	  projection
 	|
 	  constant
-	|
-	  concat
 	;
 
 arg_list:
@@ -2109,7 +2095,6 @@ var keyword = map[string]int{
 	"call":			CALL,
 	"chat_history":		CHAT_HISTORY,
 	"command":		COMMAND,
-	"concat":		CONCAT,
 	"data_source_name":	DATA_SOURCE_NAME,
 	"database":		DATABASE,
 	"driver_name":		DRIVER_NAME,
