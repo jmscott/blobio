@@ -111,10 +111,12 @@ install: all
 		cron-reboot						\
 		cron-wrap						\
 		dev-reboot						\
+		lock-flow-udig						\
 		ls-service						\
 		run-stat-report						\
 		run-stat-tuple						\
 		tail-log						\
+		unlock-flow-udig					\
 		$(DIST_ROOT)/sbin
 
 	install -g $(DIST_GROUP) -o $(DIST_USER) -m ug=r,o=		\
