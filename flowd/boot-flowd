@@ -73,7 +73,7 @@ if [ -e $RUN_PID ];  then
 else
 	log 'no run/flowd.pid (good)'
 fi
-rm -f run/flowd.* || die "pre: rm run/flowd.* failed: exit status=$?"
+rm -f run/flowd* || die "pre: rm run/flowd.* failed: exit status=$?"
 
 test -r etc/profile || die "can not read $(pwd)/etc/profile"
 . etc/profile
