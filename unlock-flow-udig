@@ -4,7 +4,8 @@
 #	Lock a udig in a flow particular flow.
 #  Usage:
 #	#  invoked in etc/blobio.flow
-#	lock-flow-udig <udig>
+#	unlock-flow-udig <name> <udig>
+#	unlock-flow-udig pdinformation 
 #  Exit Status:
 #      0  -  no lock exists, so create lock file in run/flowd-<udig>.lock
 #      1  -  lock already exists
@@ -13,6 +14,6 @@
 #	https://github.com/jmscott/work/blob/master/tas-unlock-fs.c
 #
 
-test $# = 0 && exec tas-unlock-fs "run/flowd-$1.lock"
-echo "$(basename $0): ERROR: wrong number of args: got $#, expected 1" >&2
+test $# = 2 && exec tas-unlock-fs "run/flowd-$1-$2.lock"
+echo "$(basename $0): ERROR: wrong number of args: got $#, expected 2" >&2
 exit 2
