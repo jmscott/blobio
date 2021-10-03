@@ -138,10 +138,11 @@ install: all
 	cd sync;	$(MAKE) $(MFLAGS) install
 
 dev-links:
-	test -e log || ln -s . log
-	test -e htdocs || ln -s . htdocs
 	test -e cgi-bin || ln -s . cgi-bin
+	test -e htdocs || ln -s . htdocs
 	test -e lib || ln -s . lib
+	test -e log || ln -s . log
+	test -e run || ln -s . run
 
 world:
 	$(MAKE) $(MFLAGS) clean
