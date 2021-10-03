@@ -46,6 +46,22 @@ command sync_put
 	exit_status is OK when in {0, 1};
 }
 
+command lock_put
+{
+	path = "lock-flow-udig";
+	argv = (
+		"put"
+	);
+}
+
+command unlock_put
+{
+	path = "lock-flow-udig";
+	argv = (
+		"put"
+	);
+}
+
 #  sync wrapped blobs to remote blobio bio4d server.
 #  typically ssh tunnel to remote bio4d server.
 
@@ -169,13 +185,34 @@ call eat_remote(brr.udig)
 	brr_blob_taken.exit_status == 0
 ;
 
-call sync_put(brr.udig)
+call lock_put(brr.udig)
   when
   	brr_blob_existed.exit_status ==	0	#  brr proves exists
 	and
 	eat_local.exit_status == 0		#  exists locally
 	and
 	eat_remote.exit_status == 1		#  does not exist remotely
+;
+call sync_put(brr.udig)
+  when
+  	lock_put.exit_status == 0
+;
+
+call unlock_put(brr.udig)
+  when
+  	lock_put.exit_status == 0	#  this flow doing the "put"
+	and
+	(
+		sync_put.exit_status == 0
+		or
+		sync_put.exit_status == 1
+		or
+		sync_put.exit_status == 2
+		or
+		sync_put.exit_status == 3
+		or
+		sync_put.exit_status == 32
+	)
 ;
 
 #  only zap the blob when it does not exist locally but does exist remotely
