@@ -12,7 +12,7 @@
 #	1	local blob does not exist
 #	2	remote put failed
 #	3	blobio get | put failed
-#	255	unknown error
+#	32	unknown error
 #  Note:
 #	Need to trap SIGPIPE.
 #
@@ -27,9 +27,9 @@ die()
 
 trap '' SIGPIPE
 
-test -n "$BLOBIO_SERVICE" || die 255 'env variable not defined: BLOBIO_SERVICE'
+test -n "$BLOBIO_SERVICE" || die 32 'env variable not defined: BLOBIO_SERVICE'
 
-test $# = 2 || die 255 "wrong number of arguments: got $#, expected 2"
+test $# = 2 || die 32 "wrong number of arguments: got $#, expected 2"
 REMOTE_SERVICE=$1
 UDIG=$2
 GET_SERVICE=${BLOBIO_GET_SERVICE:=$BLOBIO_SERVICE}
