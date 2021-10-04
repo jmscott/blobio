@@ -276,9 +276,9 @@ SELECT
   	pg_control_system(),
 	pg_database db
   WHERE
-  	db.datname = 'jmsdesk'
+  	db.datname = $1
 ;
-	`).Scan(&pg.SystemIdentifier)
+	`, pg.PGDATABASE).Scan(&pg.SystemIdentifier)
 	if err != nil {
 		pg.die("db.Query(system_identifier) failed: %s", err)
 	}
