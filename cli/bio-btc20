@@ -1,0 +1,31 @@
+#!/bin/bash
+#
+#  Synopsis:
+#	Calculate digest RIPEMD160(SHA256(SHA256)), the bitcoin wallet digest
+#  Usage:
+#	echo hello, world | bc160
+#	bio-btc20 *.c
+#  Exit Status:
+#	0	no errors
+#	1	errors occured, failing on first error
+#
+
+case $# in
+0)
+	openssl dgst -binary -sha256					|
+		openssl dgst -binary -sha256				|
+		openssl dgst -ripemd160 -r				|
+		sed 's/ \*stdin$/  -/'
+	test "${PIPESTATUS[*]}" = '0 0 0' || exit 1
+	;;
+*)
+	for F in $@;  do
+		openssl dgst -binary -sha256 "$F"			|
+			openssl dgst -binary -sha256			|
+			openssl dgst -ripemd160 -r			|
+			sed "s# \*stdin\$#	$F#"
+		test "${PIPESTATUS[*]}" = '0 0 0' || exit 1
+	done
+esac
+
+exit 0
