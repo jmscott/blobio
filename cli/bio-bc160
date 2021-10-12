@@ -3,13 +3,13 @@
 #  Synopsis:
 #	Calculate digest RIPEMD160(SHA256) of standard input or list of files.
 #  Usage:
-#	echo hello, world | bc160
+#	echo hello, world | bio-bc160
 #	bio-bc160 *.c
 #  Exit Status:
 #	0	no errors
 #	1	errors occured, failing on first error
 #  Note:
-#	This hash is deprecated.  See hash btc20.
+#	This hash is deprecated.  See script bin/bio-btc20.
 #
 
 case $# in
