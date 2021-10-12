@@ -20,13 +20,13 @@ extern struct digest	sha_digest;
 extern struct digest	bc160_digest;
 #endif
 
-#ifdef BTC20_MODULE
+#ifdef FS_BTC20_MODULE
 extern struct digest	btc20_digest;
 #endif
 
 struct digest *digests[] =
 {
-#ifdef BTC20_MODULE
+#ifdef FS_BTC20_MODULE
 	&btc20_digest,
 #endif
 

@@ -2,7 +2,7 @@
  *  Synopsis:
  *	20 byte Bitcoin Wallet Hash RIPEMD160(SHA256(SHA256(blob)))
  */
-#ifdef BTC20_MODULE    
+#ifdef FS_BTC20_MODULE    
 
 #include <sys/stat.h>
 #include <string.h>
