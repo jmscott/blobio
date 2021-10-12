@@ -1,6 +1,9 @@
 /*
  *  Synopsis:
  *	Hooks for all Hash Digest Modules
+ *  Note:
+ *	Why are the digest #defines prefixed with FS_ ?
+ *	What about network access?
  */
 #include <string.h>
 #include <errno.h>
@@ -17,9 +20,13 @@ extern struct digest	sha_digest;
 extern struct digest	bc160_digest;
 #endif
 
+#ifdef BTC20_MODULE
+extern struct digest	btc20_digest;
+#endif
+
 struct digest *digests[] =
 {
-#ifdef FS_BTC20_MODULE
+#ifdef BTC20_MODULE
 	&btc20_digest,
 #endif
 

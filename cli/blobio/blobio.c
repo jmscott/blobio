@@ -222,8 +222,19 @@ Examples:\n\
 \n\
 	UDIG=$(blobio eat --algorithm sha --input-path resume.pdf)\n\
 	blobio put --udig $UD --input-path resume.pdf --service $S\n\
+Digests:\n\
 ";
 	write(1, blurb, strlen(blurb));
+
+	//  write digest algorithms
+	for (int j = 0;  digests[j];  j++) {
+		if (j == 0)
+			write(1, "\t", 1);
+		else
+			write(1, ", ", 2);
+		write(1, digests[j]->algorithm, strlen(digests[j]->algorithm));
+	}
+	write(1, "\n", 1);
 	leave(0);
 }
 

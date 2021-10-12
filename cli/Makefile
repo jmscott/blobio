@@ -17,6 +17,7 @@ install: all
 	install -g $(DIST_GROUP) -o $(DIST_USER) -m ugo=rx		\
 		bio-bc160						\
 		bio-blob_size						\
+		bio-btc20						\
 		bio-cat							\
 		bio-eat							\
 		bio-file 						\

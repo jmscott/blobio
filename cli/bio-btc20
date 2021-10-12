@@ -1,9 +1,9 @@
 #!/bin/bash
 #
 #  Synopsis:
-#	Calculate digest RIPEMD160(SHA256(SHA256)), the bitcoin wallet digest
+#	Calculate digest RIPEMD160(SHA256(SHA256)), inspired by bitcoin digest
 #  Usage:
-#	echo hello, world | bc160
+#	echo hello, world | bio-btc20
 #	bio-btc20 *.c
 #  Exit Status:
 #	0	no errors

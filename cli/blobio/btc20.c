@@ -2,7 +2,7 @@
  *  Synopsis:
  *	20 byte Bitcoin Wallet Hash RIPEMD160(SHA256(SHA256(blob)))
  */
-#ifdef FS_BTC20_MODULE    
+#ifdef BTC20_MODULE    
 
 #include <sys/stat.h>
 #include <string.h>
@@ -131,7 +131,7 @@ chew(unsigned char *chunk, int size)
 	unsigned char tmp_sha_sha_digest[32];
 	if (!SHA256_Init(&tmp_sha_sha_ctx))
 		return "SHA256_Init(sha256) failed";
-	if (!SHA256_Update(&tmp_sha_sha_ctx, tmp_sha_sha_digest, 32))
+	if (!SHA256_Update(&tmp_sha_sha_ctx, tmp_sha_digest, 32))
 		return "SHA256_Update(sha256) failed";
 	if (!SHA256_Final(tmp_sha_digest, &tmp_sha_sha_ctx))
 		return "SHA256_Final(sha256) failed";
@@ -278,7 +278,6 @@ btc20_eat_input()
 	unsigned char buf[PIPE_MAX], *q, *q_end;
 	char *p;
 	int nread;
-	unsigned char sha_digest[32];
 
 	_TRACE("request to btc20_eat_input()");
 
@@ -287,17 +286,30 @@ btc20_eat_input()
 			return "SHA256_Update(chunk) failed";
 	if (nread < 0)
 		return strerror(errno);
+
+	unsigned char sha_digest[32];
 	if (!SHA256_Final(sha_digest, &btc20_ctx.sha256))
 		return "SHA256_Final(blob) failed";
 
+	//  take the sha256 of the 32 byte sha256 of the entire blob
+	if (!SHA256_Update(&btc20_ctx.sha256_sha256, sha_digest, 32))
+		return "SHA256_Update(sha256) failed";
 
-	if (!RIPEMD160_Update(&btc20_ctx.ripemd160, sha_digest, 32))
+	unsigned char sha_sha_digest[32];
+	if (!SHA256_Final(sha_sha_digest, &btc20_ctx.sha256_sha256))
+		return "SHA256_Final(sha256) failed";
+
+	//  calculate the 20 byte ripemd of the composed sha256(sha256(blob))
+	if (!RIPEMD160_Update(&btc20_ctx.ripemd160, sha_sha_digest, 32))
 		return "RIPEMD160_Update(SHA256) failed";
-	if (!RIPEMD160_Final(bin_digest, &btc20_ctx.ripemd160))
+	unsigned char ripe_digest[32];
+	if (!RIPEMD160_Final(ripe_digest, &btc20_ctx.ripemd160))
 		return "RIPEMD160_Final(SHA256) failed";
 
+	//  convert the ripemd 20 byte to 40 byte ascii
+
 	p = ascii_digest;
-	q = bin_digest;
+	q = ripe_digest;
 	q_end = q + 20;
 
 	while (q < q_end) {
