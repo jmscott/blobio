@@ -10,7 +10,7 @@ UNAME=$(shell uname)
 
 #  Most extreme compilation flags
 
-CFLAGS?=-Wall -Wextra -Werror -DFS_SHA_MODULE -DFS_BC160_MODULE -DBTC20_MODULE
+CFLAGS?=-Wall -Wextra -Werror -DFS_SHA_MODULE -DFS_BC160_MODULE -DFS_BTC20_MODULE
 export GO111MODULE?=off
 
 ifeq "$(UNAME)" "Linux"

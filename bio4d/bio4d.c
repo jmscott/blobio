@@ -5,7 +5,7 @@
  *	cd /usr/local/blobio
  *	sbin/bio4d
  *  Note:
- *	{wrap,roll}->no are considered green, not yellow!
+ *	Should {wrap,roll}->no be considered green, not yellow!
  *
  *	Need to count distinct blobs as part of stats!
  *
@@ -69,7 +69,7 @@
 #define BIO4D_PORT		1797
 
 #define MAX_VERB_SIZE		5
-#define DEFAULT_WRAP_DIGEST_ALGORITHM	"bc160"
+#define DEFAULT_WRAP_DIGEST_ALGORITHM	"btc20"
 
 /*
  *  States of lexical parser for incoming client requests.

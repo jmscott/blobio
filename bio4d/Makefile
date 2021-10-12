@@ -11,10 +11,12 @@ LIB=$(DIST_ROOT)/lib
 
 OBJS=									\
 	arbor.o								\
-	fs_bc160.o							\
 	bio4d.o								\
 	blob_set.o							\
 	brr.o								\
+	fs_bc160.o							\
+	fs_btc20.o							\
+	fs_sha.o							\
 	io.o								\
 	log.o								\
 	macosx.o							\
@@ -22,9 +24,9 @@ OBJS=									\
 	net.o								\
 	ps_title.o							\
 	req.o								\
-	fs_sha.o							\
 	signal.o							\
-	tmp.o
+	tmp.o								\
+
 CSRC=									\
 	append-brr.c							\
 	arbor.c								\
@@ -33,6 +35,7 @@ CSRC=									\
 	blob_set.c							\
 	brr.c								\
 	fs_bc160.c							\
+	fs_btc20.c							\
 	fs_sha.c							\
 	io.c								\
 	log.c								\
@@ -43,7 +46,7 @@ CSRC=									\
 	ps_title.c							\
 	req.c								\
 	signal.c							\
-	tmp.c
+	tmp.c								\
 
 SBINs=									\
 	append-brr							\
@@ -129,6 +132,9 @@ fs_sha.o: fs_sha.c bio4d.h
 fs_bc160.o: fs_bc160.c bio4d.h
 	$(CC) $(CFLAGS) $(OPENSSL_INC) -c fs_bc160.c
 
+fs_btc20.o: fs_btc20.c bio4d.h
+	$(CC) $(CFLAGS) $(OPENSSL_INC) -c fs_btc20.c
+
 io.o: io.c bio4d.h bio4d.h
 	$(CC) $(CFLAGS) -c io.c
 
@@ -160,6 +166,7 @@ dev-links:
 	test -e bin || ln -s . bin
 	test -e data || mkdir data
 	test -e data/fs_bc160 || mkdir -p data/fs_bc160
+	test -e data/fs_btc20 || mkdir -p data/fs_btc20
 	test -e data/fs_sha || mkdir -p data/fs_sha
 	test -e htdocs || ln -s . htdocs
 	test -e lib || ln -s . lib
@@ -171,8 +178,8 @@ dev-links:
 	test -e tmp || ln -s . tmp
 
 clean-dev-links:
-	rm -rf htdocs log run bin sbin lib tmp data fs_sha fs_bc160 spool
-
+	rm -rf htdocs log run bin sbin lib tmp data spool		\
+		fs_sha fs_btc20 fs_bc160
 clean:
 	rm -f $(OBJS) bio4d append-brr
 
