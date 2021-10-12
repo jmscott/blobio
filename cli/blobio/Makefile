@@ -10,17 +10,18 @@ include ../../blobio.mk
 OBJs=									\
 	bc160.o								\
 	bio4.o								\
+	btc20.o								\
 	buf.o								\
 	cache4.o							\
 	digest.o 							\
 	fs.o								\
 	service.o							\
 	sha.o								\
-	sha512t.o							\
 	trace.o								\
 	uni.o
 SRCs=									\
 	bc160.c								\
+	btc20.c								\
 	bio4.c								\
 	blobio.c							\
 	blobio.h							\
@@ -30,7 +31,6 @@ SRCs=									\
 	fs.c								\
 	service.c							\
 	sha.c								\
-	sha512t.c							\
 	trace.c								\
 	uni.c								\
 
@@ -61,7 +61,6 @@ bio4.o: bio4.c blobio.h
 
 cache4.o: cache4.c blobio.h
 	$(CC) $(CFLAGS) -c cache4.c
-
 buf.o: buf.c
 	$(CC) $(CFLAGS) -c buf.c
 blobio.o: blobio.c blobio.h
@@ -72,10 +71,10 @@ fs.o: fs.c blobio.h
 	$(CC) $(CFLAGS) -c fs.c
 sha.o: sha.c blobio.h
 	$(CC) $(CFLAGS) $(OPENSSL_INC) -c sha.c
-sha512t.o: sha512t.c blobio.h
-	$(CC) $(CFLAGS) $(OPENSSL_INC) -c sha512t.c
 bc160.o: bc160.c blobio.h
 	$(CC) $(CFLAGS) $(OPENSSL_INC) -c bc160.c
+btc20.o: btc20.c blobio.h
+	$(CC) $(CFLAGS) $(OPENSSL_INC) -c btc20.c
 service.o: service.c blobio.h
 	$(CC) $(CFLAGS) -c service.c
 trace.o: trace.c blobio.h

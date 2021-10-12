@@ -19,6 +19,10 @@ extern struct digest	bc160_digest;
 
 struct digest *digests[] =
 {
+#ifdef FS_BTC20_MODULE
+	&btc20_digest,
+#endif
+
 #ifdef FS_SHA_MODULE
 	&sha_digest,
 #endif
@@ -26,7 +30,6 @@ struct digest *digests[] =
 #ifdef FS_BC160_MODULE
 	&bc160_digest,
 #endif
-
 	(struct digest *)0
 };
 
