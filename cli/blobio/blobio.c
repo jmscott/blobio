@@ -17,6 +17,8 @@
  *	--brr-path path/to/fs.brr
  *	--help
  *  Note:
+ *	Should option --algorithm be replaced with --digest?
+ *
  *	When --input-path does not exist, then exit status should indicate
  *	specifically.  such a code help sctip frisk-fs with rare race
  *	condition.  thinking exit=3 does the trick.
