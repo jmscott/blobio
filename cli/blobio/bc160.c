@@ -1,11 +1,6 @@
 /*
  *  Synopsis:
- *	Bitcoin Hash RIPEMD160(SHA256(blob))
- *  Note:
- *	Thinks about a version of bc160 named bc20 which uses base64 encoding.
- *	Important that openssl be able to encode in base58
- *
- *  	Not a timed read() since assumed to be local file.
+ *	Deprecated hash similar to bitcoin wallet hash.
  */
 #ifdef FS_BC160_MODULE    
 
@@ -115,7 +110,7 @@ chew(unsigned char *chunk, int size)
 		return "SHA256_Update(chunk) failed";
 
 	/*
-	 *  Finalize a temporay copy of sha256.
+	 *  Finalize a temporary copy of sha256.
 	 */
 	SHA256_CTX tmp_sha_ctx;
 	unsigned char tmp_sha_digest[32];
