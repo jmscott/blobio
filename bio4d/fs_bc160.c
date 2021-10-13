@@ -1,17 +1,14 @@
 #ifdef FS_BC160_MODULE
 /*
  *  Synopsis:
- *	Module of bitcoin ripemd160(sha256) digested blobs in POSIX file system.
+ *	Module of ripemd160(sha256) digested blobs in POSIX file system.
  *  Description:
- *	Implement the bitcoin 160 bit public hash algorithm.  In openssl
- *	the 20byte/40char digest can be calculated in the shell using openssl
+ *	Implement a sha256 truncated via ripemd:
  *
  * 		openssl dgst -binary -sha256 |
  *				openssl dgst -ripemd160 -r | cut -c 1-40
  *
  *  Note:
- *  	Is logging the the digest during an error a security hole?
- *
  *	The tmp file path does not include the digest.  Not a serious problem
  *	since the odds of two different blobs having the same digest
  *	for two different algorithms is slim.  Still needs to be addressed.
@@ -1138,9 +1135,9 @@ static int
 fs_bc160_boot()
 {
 	binfo("starting");
-	binfo("storage is file system");
+	binfo("storage is posix file system system");
 	binfo2("openssl algorithm", OPENSSL_VERSION_TEXT);
-	binfo("bitcoin ripemd160(sha256) hash");
+	binfo("ripemd160(sha256) hash");
 
 	strcpy(boot_data.root_dir_path, fs_bc160_root);
 	binfo2("fs root directory", boot_data.root_dir_path);
