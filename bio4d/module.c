@@ -14,12 +14,20 @@ extern struct digest_module		fs_sha_module;
 extern struct digest_module		fs_bc160_module;
 #endif
 
+#ifdef FS_BTC20_MODULE
+extern struct digest_module		fs_btc20_module;
+#endif
+
 /*
  *  List of all digest modules.  Must be in alphabetical order.
  *  The module list should really be in a separate file, not here.
  */
 static struct digest_module		*modules[] =
 {
+#ifdef FS_BTC20_MODULE
+	&fs_btc20_module,
+#endif
+
 #ifdef FS_BC160_MODULE
 	&fs_bc160_module,
 #endif
@@ -53,7 +61,7 @@ module_boot()
 	for (i = 0;  i < module_count;  i++) {
 		struct digest_module *mp = modules[i];
 
-		info2("booting signature digest module", mp->name);
+		info2("booting digest module", mp->name);
 		if (mp->boot) {
 			int status;
 

@@ -88,6 +88,20 @@ install: all
 		-m u=rwx,go= -d $(DIST_ROOT)/sbin
 	install -g $(DIST_GROUP) -o $(DIST_USER)			\
 		-d $(DIST_ROOT)/lib
+	install -g $(DIST_GROUP) -o $(DIST_USER)			\
+		-m u=rwx,g=x,o= -d $(DIST_ROOT)/data
+	install -g $(DIST_GROUP) -o $(DIST_USER) 			\
+		-m u=rwx,g=x,o= -d $(DIST_ROOT)/data/fs_sha
+	install -g $(DIST_GROUP) -o $(DIST_USER) 			\
+		-m u=rwx,go= -d $(DIST_ROOT)/data/fs_sha/tmp
+	install -g $(DIST_GROUP) -o $(DIST_USER) 			\
+		-m u=rwx,g=x,o= -d $(DIST_ROOT)/data/fs_bc160
+	install -g $(DIST_GROUP) -o $(DIST_USER) 			\
+		-m u=rwx,go= -d $(DIST_ROOT)/data/fs_bc160/tmp
+	install -g $(DIST_GROUP) -o $(DIST_USER) 			\
+		-m u=rwx,g=x,o= -d $(DIST_ROOT)/data/fs_btc20
+	install -g $(DIST_GROUP) -o $(DIST_USER) 			\
+		-m u=rwx,go= -d $(DIST_ROOT)/data/fs_btc20/tmp
 
 	install -g $(DIST_GROUP) -o $(DIST_USER) -m ugo=rx		\
 		bio-udig2fs						\

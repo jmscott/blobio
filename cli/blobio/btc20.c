@@ -42,7 +42,7 @@ typedef struct
 
 static BTC20_CTX	btc20_ctx;
 
-static char	empty[]		= "b472a266d0bd89c13706a4132ccfb16f7c3b9fcb";
+static char	empty[]		= "fd7b15dc5dc2039556693555c2b81b36c8deec15";
 
 static char *
 btc20_init()

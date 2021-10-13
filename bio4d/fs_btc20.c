@@ -1,20 +1,20 @@
 #ifdef FS_BTC20_MODULE
 /*
  *  Synopsis:
- *	Module of bitcoin ripemd160(sha256) digested blobs in POSIX file system.
+ *	Module of bitcoin nspired ripemd160(sha256(sha256(blob)) in POSIX files.
  *  Description:
- *	Implement the bitcoin 160 bit public hash algorithm.  In openssl
- *	the 20byte/40char digest can be calculated in the shell using openssl
+ *	Implement a digest inspired by bitcoin wallet:
  *
  * 		openssl dgst -binary -sha256 |
- *				openssl dgst -ripemd160 -r | cut -c 1-40
+ * 			openssl dgst -binary -sha256 |
+ *			openssl dgst -ripemd160 -r | cut -c 1-40
  *
  *  Note:
- *  	Is logging the the digest during an error a security hole?
+ *	Code needs to refactoring for common posix functions, like hex
+ *	string manipulation.
  *
- *	The tmp file path does not include the digest.  Not a serious problem
- *	since the odds of two different blobs having the same digest
- *	for two different algorithms is slim.  Still needs to be addressed.
+ *	In boot up, verify dir data/fs_btc20/tmp is on the same device as dir
+ *	data/fs_btc20.
  */
 
 #include <sys/types.h>
@@ -33,12 +33,13 @@
 #define CHUNK_SIZE		(4 * 1024)
 
 static char	fs_btc20_root[]	= "data/fs_btc20";
-static char	empty[]	= "b472a266d0bd89c13706a4132ccfb16f7c3b9fcb";
+static char	empty[]	= "fd7b15dc5dc2039556693555c2b81b36c8deec15";
 
 typedef struct
 {
-	RIPEMD160_CTX	ripemd160;
 	SHA256_CTX	sha256;
+	SHA256_CTX	sha256_sha256;
+	RIPEMD160_CTX	ripemd160;
 } BTC20_CTX;
 
 struct fs_btc20_request
@@ -492,17 +493,25 @@ fs_btc20_get_bytes(struct request *r)
 	if (nread < 0)
 		_panic(r, "_read(blob) failed");
 	/*
-	 *  Finalize the SHA256 digest.
+	 *  Finalize the SHA256 digest of the entire blob.
 	 */
 	if (!SHA256_Final(sha_digest, &ctx.sha256))
 		_panic(r, "SHA256_Final() failed");
 
 	/*
-	 *  Calulate RIPEMD160(sha_digest)
+	 *  Take the sha256 of the 32 byte sha256 of the entire blob
 	 */
+	unsigned char sha_sha_digest[32];
+	if (!SHA256_Init(&ctx.sha256_sha256))
+		_panic(r, "SHA256_Init(sha256) failed");
+	if (!SHA256_Update(&ctx.sha256_sha256, sha_digest, 32))
+		_panic(r, "SHA256_Update(sha256) failed");
+	if (!SHA256_Final(sha_sha_digest, &ctx.sha256_sha256))
+		_panic(r, "SHA256_Final(sha256) failed");
+
 	if (!RIPEMD160_Init(&ctx.ripemd160))
 		_panic(r, "RIPEMD160_Init() failed");
-	if (!RIPEMD160_Update(&ctx.ripemd160, sha_digest, 32))
+	if (!RIPEMD160_Update(&ctx.ripemd160, sha_sha_digest, 32))
 		_panic(r, "RIPEMD160_Update(SHA256) failed");
 	if (!RIPEMD160_Final(digest, &ctx.ripemd160))
 		_panic(r, "RIPEMD160_Final(SHA256) failed");
@@ -589,6 +598,7 @@ fs_btc20_copy(struct request *r, int out_fd)
 	int status = 0;
 	BTC20_CTX ctx;
 	unsigned char sha_digest[32];
+	unsigned char sha_sha_digest[32];
 	unsigned char digest[20];
 	unsigned char chunk[CHUNK_SIZE];
 	int nread;
@@ -629,15 +639,22 @@ fs_btc20_copy(struct request *r, int out_fd)
 	if (!SHA256_Final(sha_digest, &ctx.sha256))
 		_panic2(r, n, "SHA256_Final() failed");
 
+	if (!SHA256_Init(&ctx.sha256_sha256))
+		_panic2(r, n, "SHA256_Init(sha256) failed");
+	if (!SHA256_Update(&ctx.sha256_sha256, sha_digest, 32))
+		_panic2(r, n, "SHA256_Update(sha256) failed");
+	if (!SHA256_Final(sha_sha_digest, &ctx.sha256_sha256))
+		_panic2(r, n, "SHA256_Final(sha256) failed");
+
 	/*
 	 *  Calulate RIPEMD160(SHA256)
 	 */
 	if (!RIPEMD160_Init(&ctx.ripemd160))
 		_panic2(r, n, "RIPEMD160_Init() failed");
-	if (!RIPEMD160_Update(&ctx.ripemd160, sha_digest, 32))
-		_panic2(r, n, "RIPEMD160_Update(SHA256) failed");
+	if (!RIPEMD160_Update(&ctx.ripemd160, sha_sha_digest, 32))
+		_panic2(r, n, "RIPEMD160_Update(sha256) failed");
 	if (!RIPEMD160_Final(digest, &ctx.ripemd160))
-		_panic2(r, n, "RIPEMD160_Final(SHA256) failed");
+		_panic2(r, n, "RIPEMD160_Final(sha256) failed");
 
 	/*
 	 *  If the calculated digest does NOT match the stored digest,
@@ -679,6 +696,7 @@ fs_btc20_eat(struct request *r)
 	BTC20_CTX ctx;
 	unsigned char digest[20];
 	unsigned char sha_digest[20];
+	unsigned char sha_sha_digest[20];
 	unsigned char chunk[CHUNK_SIZE];
 	int nread;
 
@@ -707,12 +725,19 @@ fs_btc20_eat(struct request *r)
 	if (!SHA256_Final(sha_digest, &ctx.sha256))
 		_panic(r, "SHA256_Final() failed");
 
+	if (!SHA256_Init(&ctx.sha256_sha256))
+		_panic(r, "SHA256_Init(sha256) failed");
+	if (!SHA256_Update(&ctx.sha256_sha256, sha_digest, 32))
+		_panic(r, "SHA256_Update(sha256) failed");
+	if (!SHA256_Final(sha_sha_digest, &ctx.sha256_sha256))
+		_panic(r, "SHA256_Final(sha256) failed");
+
 	/*
 	 *  Calulate RIPEMD160(SHA256)
 	 */
 	if (!RIPEMD160_Init(&ctx.ripemd160))
 		_panic(r, "RIPEMD160_Init() failed");
-	if (!RIPEMD160_Update(&ctx.ripemd160, sha_digest, 32))
+	if (!RIPEMD160_Update(&ctx.ripemd160, sha_sha_digest, 32))
 		_panic(r, "RIPEMD160_Update(SHA256) failed");
 	if (!RIPEMD160_Final(digest, &ctx.ripemd160))
 		_panic(r, "RIPEMD160_Final(SHA256) failed");
@@ -725,7 +750,7 @@ fs_btc20_eat(struct request *r)
 	 *  Note: unfortunately we've already deceived the client
 	 *        by sending "ok".  Probably need to improve for
 	 *	  the special case when the entire blob is read
-	 *        in first chunk.
+	 *        in first chunk.  is this still true?
 	 */
 	if (memcmp(s->digest, digest, 20))
 		_panic2(r, "stored blob doesn't match digest", r->digest);
@@ -743,9 +768,10 @@ eat_chunk(struct request *r, SHA256_CTX *sha_ctx, int fd, unsigned char *buf,
 	  int buf_size)
 {
 	struct fs_btc20_request *s = (struct fs_btc20_request *)r->open_data;
-	SHA256_CTX tmp_sha;
-	RIPEMD160_CTX tmp_ripe;
+
+	BTC20_CTX ctx;
 	unsigned char sha_digest[32];
+	unsigned char sha_sha_digest[32];
 	unsigned char digest[20];
 	char n[] = "eat_chunk";
 
@@ -765,19 +791,29 @@ eat_chunk(struct request *r, SHA256_CTX *sha_ctx, int fd, unsigned char *buf,
 	 *  by copying the incremental digest, finalizing it,
 	 *  then comparing to the expected blob.
 	 */
-	tmp_sha = *sha_ctx;
-	if (!SHA256_Final(sha_digest, &tmp_sha))
-		_panic3(r, n, "SHA256_Final(tmp) failed", strerror(errno));
+	ctx.sha256 = *sha_ctx;
+	if (!SHA256_Final(sha_digest, &ctx.sha256))
+		_panic2(r, n, "SHA256_Final() failed");
+
+	/*
+	 *  Take the sha256(sha25).
+	 */
+	if (!SHA256_Init(&ctx.sha256_sha256))
+		_panic2(r, n, "SHA256_Init(sha256) failed");
+	if (!SHA256_Update(&ctx.sha256_sha256, sha_digest, 32))
+		_panic2(r, n, "SHA256_Update(sha256) failed");
+	if (!SHA256_Final(sha_digest, &ctx.sha256_sha256))
+		_panic2(r, n, "SHA256_Final(sha256) failed");
 
 	/*
 	 *  Calulate RIPEMD160(SHA256) of incremental digest.
 	 */
-	if (!RIPEMD160_Init(&tmp_ripe))
-		_panic2(r, n, "RIPEMD160_Init(tmp) failed");
-	if (!RIPEMD160_Update(&tmp_ripe, sha_digest, 32))
-		_panic2(r, n, "RIPEMD160_Update(SHA256) failed");
-	if (!RIPEMD160_Final(digest, &tmp_ripe))
-		_panic2(r, n, "RIPEMD160_Final(SHA256) failed");
+	if (!RIPEMD160_Init(&ctx.ripemd160))
+		_panic2(r, n, "RIPEMD160_Init() failed");
+	if (!RIPEMD160_Update(&ctx.ripemd160, sha_sha_digest, 32))
+		_panic2(r, n, "RIPEMD160_Update(sha256) failed");
+	if (!RIPEMD160_Final(digest, &ctx.ripemd160))
+		_panic2(r, n, "RIPEMD160_Final(sha256) failed");
 
 	return memcmp(s->digest, digest, 20) == 0 ? 1 : 0;
 }
@@ -816,10 +852,6 @@ fs_btc20_put_bytes(struct request *r)
 					(int)time((time_t *)0),
 					getpid(),
 					r->digest);
-	/*
-	 *  Open the file ... need O_LARGEFILE support!!
-	 *  Need to catch EINTR!!!!
-	 */
 	s->blob_fd = io_open(
 			tmp_path,
 			O_CREAT|O_EXCL|O_WRONLY|O_APPEND, S_IRUSR
@@ -1008,8 +1040,7 @@ fs_btc20_digest(struct request *r, int fd, char *hex_digest)
 {
 	char unsigned buf[4096], digest[20], *d, *d_end;
 	char *h;
-	SHA256_CTX sha_ctx;
-	RIPEMD160_CTX ripemd_ctx;
+	BTC20_CTX ctx;
 	int nread;
 	int tmp_fd = -1;
 	char tmp_path[MAX_FILE_PATH_LEN];
@@ -1017,6 +1048,7 @@ fs_btc20_digest(struct request *r, int fd, char *hex_digest)
 	static int drift = 0;
 	static char n[] = "digest";
 	unsigned char sha_digest[32];
+	unsigned char sha_sha_digest[32];
 
 	tmp_path[0] = 0;
 
@@ -1047,11 +1079,11 @@ fs_btc20_digest(struct request *r, int fd, char *hex_digest)
 		_error3(r, n, "open(tmp) failed", tmp_path);
 		_panic3(r, n, "open(tmp) failed", strerror(errno));
 	}
-	if (!SHA256_Init(&sha_ctx))
-		_panic(r, "SHA256_Init() failed");
+	if (!SHA256_Init(&ctx.sha256))
+		_panic2(r, n, "SHA256_Init() failed");
 	while ((nread = io_read(fd, buf, sizeof buf)) > 0) {
-		if (!SHA256_Update(&sha_ctx, buf, nread))
-			_panic(r, "SHA256_Update(read) failed");
+		if (!SHA256_Update(&ctx.sha256, buf, nread))
+			_panic2(r, n, "SHA256_Update(read) failed");
 		if (io_write_buf(tmp_fd, buf, nread) != 0)
 			_panic3(r, n, "write_buf(tmp) failed", strerror(errno));
 	}
@@ -1059,7 +1091,7 @@ fs_btc20_digest(struct request *r, int fd, char *hex_digest)
 		_error2(r, n, "read() failed");
 		goto croak;
 	}
-	if (!SHA256_Final(sha_digest, &sha_ctx))
+	if (!SHA256_Final(sha_digest, &ctx.sha256))
 		_panic2(r, n, "SHA256_Final() failed");
 
 	status = io_close(tmp_fd);
@@ -1068,17 +1100,28 @@ fs_btc20_digest(struct request *r, int fd, char *hex_digest)
 		_panic3(r, n, "close(tmp) failed", strerror(errno));
 
 	/*
+	 *  Take the sha256(sha256)
+	 */
+	if (!SHA256_Init(&ctx.sha256_sha256))
+		_panic2(r, n, "SHA256_Init(sha256) failed");
+	if (!SHA256_Update(&ctx.sha256_sha256, sha_digest, 32))
+		_panic2(r, n, "SHA256_Update(sha256) failed");
+	if (!SHA256_Final(sha_sha_digest, &ctx.sha256_sha256))
+		_panic2(r, n, "SHA256_Final(sha256) failed");
+
+	/*
 	 *  Calulate RIPEMD160(sha_digest)
 	 */
-	if (!RIPEMD160_Init(&ripemd_ctx))
+	if (!RIPEMD160_Init(&ctx.ripemd160))
 		_panic2(r, n, "RIPEMD160_Init() failed");
-	if (!RIPEMD160_Update(&ripemd_ctx, sha_digest, 32))
-		_panic2(r, n, "RIPEMD160_Update(SHA256) failed");
-	if (!RIPEMD160_Final(digest, &ripemd_ctx))
+	if (!RIPEMD160_Update(&ctx.ripemd160, sha_sha_digest, 32))
+		_panic2(r, n, "RIPEMD160_Update(sha256) failed");
+	if (!RIPEMD160_Final(digest, &ctx.ripemd160))
 		_panic2(r, n, "RIPEMD160_Final() failed");
 
 	/*
-	 *  Convert the binary btc20=ripemd160(sha256) digest to text.
+	 *  Convert the binary btc20=ripemd160(sha256(sha256(blob))) digest
+	 *  to asci hex text.
 	 */
 	h = hex_digest;
 	d = digest;

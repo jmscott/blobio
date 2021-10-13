@@ -5,6 +5,14 @@
 #ifndef BIO4D_H
 #define BIO4D_H
 
+/*
+ *  See:
+ *	https://stackoverflow.com/questions/2888425/
+ *		is-o-largefile-needed-just-to-write-a-large-file
+ */
+#define _LARGEFILE_SOURCE
+#define _FILE_OFFSET_BITS 64
+
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <sys/types.h>
