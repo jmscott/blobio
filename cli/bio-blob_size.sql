@@ -3,7 +3,7 @@
  *	SQL to calculate size of set of udigs read from stdin input.
  *  Usage:
  *	bio-blob_size <<END
- *	bc160:a8affdfc1058fe9191b7730aaa0e1b6765d12f05
+ *	btc20:a8affdfc1058fe9191b7730aaa0e1b6765d12f05
  *	sha:8e8475241113dcdb461873a329748c8ec9f50363
  *	sha:18f74f6332e37185b2216c646d3617de4427fadc
  *	END

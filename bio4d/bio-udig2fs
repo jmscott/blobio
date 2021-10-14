@@ -1,7 +1,10 @@
 #!/usr/bin/perl
 #
 #  Synopsis:
-#	Map bc160 or sha udigs onto the path to the blob file.
+#	Map bt20, sha, or bc160 onto the path to the blob file.
+#  Note:
+#	Need to remove test for explicit algo.  Instead, just match
+#	regex /^[a-z][a-z0-9]{0,7}$/.
 #
 
 my $PROG = 'bio-udig2fs';
@@ -17,7 +20,8 @@ sub udig2fs
 	my ($algo, $digest) = ($1, $2);
 
 	die "unknown algorithm: $algo"
-				unless $algo eq 'sha' || $algo eq 'bc160';
+		unless $algo eq 'btc20' || $algo eq 'sha' || $algo eq 'bc160'
+	;
 
 	die "unexpected $algo digest: $digest"
 				unless $digest =~ /^[0-9a-f]{40}$/;

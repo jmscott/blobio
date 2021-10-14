@@ -12,13 +12,15 @@ Description:
 
 		sha:bb37250a701a6b8ed28cbc0868ece2e07919a711
 
-	and the bitcoin digest is tagged as
+	and a bitcoin inspired digest is tagged as
 
-		bc160:c61f7c22a6d42bb84a5f43dd2b44a366d7d79bc7
+		btc20:c61f7c22a6d42bb84a5f43dd2b44a366d7d79bc7
 
-	The bc160 can be generated with the following openssl pipeline
+	The btc20 can be generated with the following openssl pipeline
 	
-		openssl dgst -binary -sha256 | openssl dgst -ripemd160 -r
+		openssl dgst -binary -sha256 |
+			openssl dgst -binary -sha256 |				
+			openssl dgst -ripemd160 -r
 
 Usage:
 	make USE_PGXS=1 install

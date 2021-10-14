@@ -29,7 +29,7 @@
  *	A broken get request still generates a partial and incorrect brr
  *	record.  For example, see get requests for (or any big blob)
  *
- *		bc160:22572c9bf76e5bd879d5ce800ba6889d50e62ff7
+ *		btc20:22572c9bf76e5bd879d5ce800ba6889d50e62ff7
  *
  *	Document command line options in Usage:
  *

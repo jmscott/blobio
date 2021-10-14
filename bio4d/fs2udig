@@ -1,7 +1,7 @@
 #!/bin/bash
 #
 #  Synopsis:
-#	Convert file system paths into udigs
+#	Convert file system paths in dirs data/fs_[a-z]* into udigs
 #  Usage:
 #	fs2udig | xargs bio-eat		#  touch every blob
 #  Note:
@@ -20,10 +20,10 @@ die()
 }
 
 #
-#  Find blob files in directories data/<algorithm>_fs/[0-9a-f]{3}.
+#  Find blob files in directories data/fs_<algorithm>/[0-9a-f]{3}.
 #
 find_blob() {(
-	FS=$1
+	local FS=$1
 	test -d $FS || exit 0
 
 	ALGORITHM=$(echo $FS | sed 's/fs_//')
@@ -35,14 +35,12 @@ find_blob() {(
 	find [0-9a-f][0-9a-f][0-9a-f] -type f | sed "s/......../$ALGORITHM:/"
 )}
 
-case "$BLOBIO_ROOT" in
-'')
-	die 'environment variable BLOBIO_ROOT not defined'
-	;;
-*)
-	test -d $BLOBIO_ROOT || die "no data directory: $BLOBIO_ROOT/data"
-	cd $BLOBIO_ROOT/data || die "cd $BLOBIO_ROOT/data failed"
-	;;
-esac
+test -n "$BLOBIO_ROOT" || die 'environment variable BLOBIO_ROOT not defined'
+test -d $BLOBIO_ROOT || die "no data directory: $BLOBIO_ROOT/data"
+cd $BLOBIO_ROOT/data || die "cd $BLOBIO_ROOT/data failed"
 
-find_blob fs_bc160 && find_blob fs_sha
+find . -maxdepth 1 -type d -name 'fs_[a-z]*'				|
+	sed 's/..//'							|
+	while read FS;  do
+		find_blob $FS
+	done

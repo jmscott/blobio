@@ -3,7 +3,7 @@
 #  Synospsis:
 #	Stat the file of a blob stored in $BLOBIO_ROOT/data.
 #  Usage:
-#	bio-fs-stat bc160:1726c3eac51dda6e3b6c99a490948db77a0b85e3
+#	bio-fs-stat btc20:1726c3eac51dda6e3b6c99a490948db77a0b85e3
 #  Exit Status:
 #	0	all UDIGs valid
 #	1	error occured

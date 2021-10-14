@@ -2,6 +2,7 @@ bc160.o
 bio4.o
 blobio
 blobio.o
+btc20.o
 buf.o
 cache
 cache4.o

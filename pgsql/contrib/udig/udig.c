@@ -32,6 +32,7 @@
  */
 #define UDIG_SHA	1
 #define UDIG_BC160	2
+#define UDIG_BTC20	3
 
 PG_MODULE_MAGIC;
 
