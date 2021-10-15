@@ -5,7 +5,7 @@
 #  Usage:
 #	sync-put <remote-service> <udig>
 #
-#	UDIG=bc160:a8affdfc1058fe9191b7730aaa0e1b6765d12f05
+#	UDIG=bct20:a8affdfc1058fe9191b7730aaa0e1b6765d12f05
 #	sync-put bio4:10.187.1.2:1797 $UDIG
 #  Exit Status:
 #	0	get(local) -> put(remote) ok

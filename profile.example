@@ -19,12 +19,14 @@
 export BLOBIO_ROOT=${BLOBIO_ROOT:=/usr/local/blobio}
 export BLOBIO_BIO4D_PORT=${BLOBIO_BIO4D_PORT:1797}
 export BLOBIO_SERVICE=${BLOBIO_SERVICE:=bio4:127.0.0.1:$BLOBIO_BIO4D_PORT}
-export BLOBIO_ALGORITHM=${BLOBIO_ALGORITHM:=bc160}
+
+#  RIP, sha1
+export BLOBIO_ALGORITHM=${BLOBIO_ALGORITHM:=btc20}
 
 PATH=$BLOBIO_ROOT/sbin:$BLOBIO_ROOT/bin:$PATH
 
 #
-#  Can we trust that the blobs in $BLOBIO_ROOT/data/fs_bc160 have
+#  Do we trust that the blobs in $BLOBIO_ROOT/data/fs_btc20 have
 #  correct digests?  set BLOBIO_TRUST_FS=true for speedier requests.
 #
 export BLOBIO_TRUST_FS=${BLOBIO_TRUST_FS:=false}

@@ -275,7 +275,7 @@ To Do:
 
 	- move pgsql data type public.udig to schema blobio.udig?!
 
-	- rename fs_sha and fs_bc160 to posix_sha and posix_bc160?
+	- rename fs_sha and fs_btc20 to posix_sha and posix_btc20?
 
 	- follow project for atomic write in linux
 		https://lwn.net/Articles/789600/

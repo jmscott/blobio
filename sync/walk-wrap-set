@@ -16,8 +16,8 @@
 #
 #	#  See stats bounded by two inclusive wrap sets
 #
-#	START_WRAP=bc160:983bb9f30c935600135c002e1974cf27fcf15cd8
-#	STOP_WRAP=bc160:ee0fad120ce49e34b8d2c72c160c1a948c27d526
+#	START_WRAP=bct20:983bb9f30c935600135c002e1974cf27fcf15cd8
+#	STOP_WRAP=bct20:ee0fad120ce49e34b8d2c72c160c1a948c27d526
 #	walk-wrap-set --start-wrap $START_WRAP --stop-wrap-set $STOP_WRAP
 #
 #	#  See blobs in service, according to the chain

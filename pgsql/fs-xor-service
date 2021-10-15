@@ -6,12 +6,6 @@
 #	fs-xor-service >fs-xor-service.log 2>&1 &
 #	32 4 * * Sun sbin/fs-xor-service >>support/fs-xor-service/fxs.out 2>&1
 #  Note:
-#	- The scan of file system kind of assumes either sha or bc160 digests.
-#	  In particular, to constuct the udig from the file path, we strip off
-#	  the two directories by zapping the first eight chars in the file path:
-#
-#		fs_sha/797/d4b/797d4b6ca43b699fd27f1b55fca62b50e72db0f5
-#
 #	- Would be nice display timestamps blobs, to quickly identify
 #	  blobs that arrived during scan.
 #
