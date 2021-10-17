@@ -32,6 +32,7 @@
  */
 #define UDIG_SHA	1
 #define UDIG_BC160	2
+#define UDIG_BTC20	3
 
 PG_MODULE_MAGIC;
 
@@ -40,6 +41,9 @@ Datum	udig_sha_out(PG_FUNCTION_ARGS);
 
 Datum	udig_bc160_in(PG_FUNCTION_ARGS);
 Datum	udig_bc160_out(PG_FUNCTION_ARGS);
+
+Datum	udig_btc20_in(PG_FUNCTION_ARGS);
+Datum	udig_btc20_out(PG_FUNCTION_ARGS);
 
 /*
  *  Core SHA1.
@@ -55,7 +59,7 @@ Datum	udig_sha_hash(PG_FUNCTION_ARGS);
 Datum	udig_sha_digest(PG_FUNCTION_ARGS);
 
 /*
- *  Core BitCoin RIPEMD160(SHA256)
+ *  Experimental digest RIPEMD160(SHA256)
  */
 Datum	udig_bc160_eq(PG_FUNCTION_ARGS);
 Datum	udig_bc160_ne(PG_FUNCTION_ARGS);
@@ -66,6 +70,19 @@ Datum	udig_bc160_le(PG_FUNCTION_ARGS);
 Datum	udig_bc160_cmp(PG_FUNCTION_ARGS);
 Datum	udig_bc160_hash(PG_FUNCTION_ARGS);
 Datum	udig_bc160_digest(PG_FUNCTION_ARGS);
+
+/*
+ *  BitCoin Inspired digest RIPEMD160(SHA256(SHA256))
+ */
+Datum	udig_btc20_eq(PG_FUNCTION_ARGS);
+Datum	udig_btc20_ne(PG_FUNCTION_ARGS);
+Datum	udig_btc20_gt(PG_FUNCTION_ARGS);
+Datum	udig_btc20_ge(PG_FUNCTION_ARGS);
+Datum	udig_btc20_lt(PG_FUNCTION_ARGS);
+Datum	udig_btc20_le(PG_FUNCTION_ARGS);
+Datum	udig_btc20_cmp(PG_FUNCTION_ARGS);
+Datum	udig_btc20_hash(PG_FUNCTION_ARGS);
+Datum	udig_btc20_digest(PG_FUNCTION_ARGS);
 
 /*
  *  Cross type SHA -> UDIG
@@ -80,7 +97,7 @@ Datum	udig_sha_cmp_udig(PG_FUNCTION_ARGS);
 Datum	udig_sha_cast(PG_FUNCTION_ARGS);
 
 /*
- *  Cross type BitCoin RIPEMD160(SHA256) -> UDIG
+ *  Experimental (deprecated) RIPEMD160(SHA256) -> UDIG
  */
 Datum	udig_bc160_eq_udig(PG_FUNCTION_ARGS);
 Datum	udig_bc160_ne_udig(PG_FUNCTION_ARGS);
@@ -90,6 +107,18 @@ Datum	udig_bc160_lt_udig(PG_FUNCTION_ARGS);
 Datum	udig_bc160_le_udig(PG_FUNCTION_ARGS);
 Datum	udig_bc160_cmp_udig(PG_FUNCTION_ARGS);
 Datum	udig_bc160_cast(PG_FUNCTION_ARGS);
+
+/*
+ *  BitCoin Inspired Digest RIPEMD160(SHA256(SHA256)) -> UDIG
+ */
+Datum	udig_btc20_eq_udig(PG_FUNCTION_ARGS);
+Datum	udig_btc20_ne_udig(PG_FUNCTION_ARGS);
+Datum	udig_btc20_gt_udig(PG_FUNCTION_ARGS);
+Datum	udig_btc20_ge_udig(PG_FUNCTION_ARGS);
+Datum	udig_btc20_lt_udig(PG_FUNCTION_ARGS);
+Datum	udig_btc20_le_udig(PG_FUNCTION_ARGS);
+Datum	udig_btc20_cmp_udig(PG_FUNCTION_ARGS);
+Datum	udig_btc20_cast(PG_FUNCTION_ARGS);
 
 /*
  *  Core generic/text udig type.
@@ -130,10 +159,21 @@ Datum	udig_lt_bc160(PG_FUNCTION_ARGS);
 Datum	udig_le_bc160(PG_FUNCTION_ARGS);
 Datum	udig_cmp_bc160(PG_FUNCTION_ARGS);
 
+/*
+ *  Cross Type UDIG,BTC20
+ */
+Datum	udig_eq_btc20(PG_FUNCTION_ARGS);
+Datum	udig_ne_btc20(PG_FUNCTION_ARGS);
+Datum	udig_gt_btc20(PG_FUNCTION_ARGS);
+Datum	udig_ge_btc20(PG_FUNCTION_ARGS);
+Datum	udig_lt_btc20(PG_FUNCTION_ARGS);
+Datum	udig_le_btc20(PG_FUNCTION_ARGS);
+Datum	udig_cmp_btc20(PG_FUNCTION_ARGS);
+
 static char empty_udig[] = "empty udig";
 static char big_algo[] = "algorithm > 8 characters: \"%s\"";
 static char no_aprint[] = "unprintable character in algorithm name: 0x%x";
-#define ALGO_HINT "did you mean sha or bc160"
+#define ALGO_HINT "did you mean sha, btc20 or bc160"
 
 /*
  *  Transform 40 char hex string to 20 byte sha binary.
@@ -413,7 +453,7 @@ udig_sha_cmp(PG_FUNCTION_ARGS)
  *  Compare udig_sha=a versus generic udig=b.
  *  Udigs with differing algorithms are compared lexically:
  *
- *	sha > bc160
+ *	sha > btc20 > bc160
  */
 static int32
 _udig_sha_cmp_udig(unsigned char *a_operand, unsigned char *b_operand)
@@ -424,7 +464,7 @@ _udig_sha_cmp_udig(unsigned char *a_operand, unsigned char *b_operand)
 
 	if (b[0] == UDIG_SHA)
 		return memcmp(a_operand, &b[1], 20);	// sha versus sha
-	if (b[0] == UDIG_BC160)
+	if (b[0] == UDIG_BTC20 || b[0] == UDIG_BC160)
 		return 1;
 	ereport(PANIC, (errcode(ERRCODE_DATA_CORRUPTED),
 		errmsg("_udig_sha_cmp_udig: corrupted udig internal type")));
@@ -534,7 +574,7 @@ udig_sha_cast(PG_FUNCTION_ARGS)
 /*
  *  Convert text udig in the format
  *
- *	{sha,bc160}:[a-f0-9]{40}
+ *	{sha,btc20,bc160}:[a-f0-9]{40}
  *
  *  to variable length
  *
@@ -815,7 +855,7 @@ udig_cmp(PG_FUNCTION_ARGS)
  *  Udigs with equal digest algorithms order lexicaly by
  *  algo tag:
  *
- *		"sha" > "bc160"
+ *		"sha" > "btc20" > "bc160"
  */
 static int32
 _udig_cmp_sha(unsigned char *a_operand, unsigned char *b_operand)
@@ -824,10 +864,10 @@ _udig_cmp_sha(unsigned char *a_operand, unsigned char *b_operand)
 
 	a = UDIG_VARDATA(a_operand);
 
-	if (a[0] == UDIG_BC160)		//  UDIG_BC160 
-		return -1;
 	if (a[0] == UDIG_SHA)
 		return memcmp(&a[1], b_operand, 20);
+	if (a[0] == UDIG_BTC20 || a[0] == UDIG_BC160)
+		return -1;
 	ereport(PANIC, (errcode(ERRCODE_INVALID_TEXT_REPRESENTATION),
 		errmsg("_udig_cmp_sha: corrupted udig internal type byte")));
 	return -1;
@@ -920,10 +960,12 @@ udig_algorithm(PG_FUNCTION_ARGS)
 {
 	unsigned char *a = (unsigned char *)UDIG_VARDATA(PG_GETARG_POINTER(0));
 
-	if (a[0] == UDIG_BC160)
-		PG_RETURN_CSTRING("bc160");
+	if (a[0] == UDIG_BTC20)
+		PG_RETURN_CSTRING("btc20");
 	if (a[0] == UDIG_SHA)
 		PG_RETURN_CSTRING("sha");
+	if (a[0] == UDIG_BC160)
+		PG_RETURN_CSTRING("bc160");
 	ereport(PANIC,
 		(errcode(ERRCODE_INVALID_TEXT_REPRESENTATION),
 		errmsg("udig_algorithm: corrupted udig internal type byte"
@@ -936,7 +978,7 @@ udig_algorithm(PG_FUNCTION_ARGS)
  *  Is the text string a recognized udig.  In other words,  the text string 
  *  matches the regex:
  *
- *	^(sha|bc160):[a-f0-9]{40}$
+ *	^(btc20|sha|bc160):[a-f0-9]{40}$
  */
 PG_FUNCTION_INFO_V1(udig_can_cast);
 
@@ -977,7 +1019,8 @@ udig_can_cast(PG_FUNCTION_ARGS)
 			(errcode(ERRCODE_INVALID_TEXT_REPRESENTATION),
 			errmsg(empty_udig, udig)));
 		
-	if (strcmp("sha", a8) == 0 || strcmp("bc160", a8) == 0){
+	if (strcmp("btc20", a8) || strcmp("sha", a8) == 0 ||
+	    strcmp("bc160", a8) == 0) {
 		unsigned char d20[20];
 
 		if (hex2dig20(u, d20) == 0)
@@ -987,7 +1030,7 @@ udig_can_cast(PG_FUNCTION_ARGS)
 }
 
 /*
- *  Core bc160 RIPEMD160(SHA256) Operators
+ *  Experimental RIPEMD160(SHA256) Operators
  *
  *	=		equal
  *	!=		not rqual
@@ -1088,7 +1131,7 @@ udig_bc160_cmp(PG_FUNCTION_ARGS)
  *  Compare udig_bc160=a versus generic udig=b.
  *  Unequal algorithms order lexically by digest tag:
  *
- *	"sha" > "bc160"
+ *	"sha" > "btc20" > "bc160"
  */
 static int32
 _udig_bc160_cmp_udig(unsigned char *a_operand, unsigned char *b_operand)
@@ -1097,10 +1140,10 @@ _udig_bc160_cmp_udig(unsigned char *a_operand, unsigned char *b_operand)
 
 	b = UDIG_VARDATA(b_operand);
 
+	if (b[0] == UDIG_SHA || b[0] == UDIG_BTC20)
+		return -1;
 	if (b[0] == UDIG_BC160)
 		return memcmp(a_operand, &b[1], 20);	// bc160 versus bc160
-	if (b[0] == UDIG_SHA)
-		return -1;
 
 	ereport(PANIC, (errcode(ERRCODE_DATA_CORRUPTED),
 		errmsg("_udig_bc160_cmp_udig: corrupted udig internal type")));
@@ -1229,10 +1272,10 @@ _udig_cmp_bc160(unsigned char *a_operand, unsigned char *b_operand)
 
 	a = UDIG_VARDATA(a_operand);
 
+	if (a[0] == UDIG_BTC20 || a[0] == UDIG_SHA)
+		return -1;
 	if (a[0] == UDIG_BC160)
 		return memcmp(&a[1], b_operand, 20);
-	if (a[0] == UDIG_SHA)				//  all sha1 > all bc160
-		return 1;
 	ereport(PANIC, (errcode(ERRCODE_INVALID_TEXT_REPRESENTATION),
 		errmsg("_udig_cmp_bc160: corrupted udig internal type byte")));
 
@@ -1401,11 +1444,19 @@ udig_is_empty(PG_FUNCTION_ARGS)
 		a[13]==0x2c && a[14]==0xcf && a[15]==0xb1 && a[16]==0x6f &&
 		a[17]==0x7c && a[18]==0x3b && a[19]==0x9f && a[20]==0xcb
 		);
-	}
+	case UDIG_BTC20:
+		PG_RETURN_BOOL(
+		a[1]==0xfd && a[2]==0x7b && a[3]==0x15 && a[4]==0xdc &&
+		a[5]==0x5d && a[6]==0xc2 && a[7]==0x03 && a[8]==0x95 &&
+		a[9]==0x56 && a[10]==0x69 && a[11]==0x35 && a[12]==0x55 &&
+		a[13]==0xc2 && a[14]==0xb8 && a[15]==0x1b && a[16]==0x36 &&
+		a[17]==0xc8 && a[18]==0xde && a[19]==0xec && a[20]==0x15
+		);
 	ereport(PANIC,
 		(errcode(ERRCODE_INVALID_TEXT_REPRESENTATION),
 		errmsg("udig_is_empty: corrupted udig internal type byte"
 		)));
+	}
 	/*NOTREACHED*/
 	PG_RETURN_CSTRING("corrupted udig");
 }
@@ -1434,4 +1485,411 @@ udig_is_bc160(PG_FUNCTION_ARGS)
 	unsigned char *a = UDIG_VARDATA(PG_GETARG_POINTER(0));
 
 	PG_RETURN_BOOL(*a == UDIG_BC160);
+}
+
+/*
+ *  Convert btc20 text digest in common hex format into binary 20 bytes.
+ */
+PG_FUNCTION_INFO_V1(udig_btc20_in);
+
+Datum
+udig_btc20_in(PG_FUNCTION_ARGS)
+{
+	char *hex40 = PG_GETARG_CSTRING(0);
+	unsigned char *d20;
+
+	d20 = (unsigned char *)palloc(20);
+	if (hex2dig20(hex40, d20)) {
+		pfree(d20);
+		ereport(ERROR,
+			(errcode(ERRCODE_INVALID_TEXT_REPRESENTATION),
+				errmsg("invalid btc20 digest: \"%s\"", hex40)));
+	}
+	PG_RETURN_POINTER(d20);
+}
+
+/*
+ *  Convert binary, 20 byte btc20 digest into common, 40 character 
+ *  text hex format.
+ */
+PG_FUNCTION_INFO_V1(udig_btc20_out);
+
+Datum
+udig_btc20_out(PG_FUNCTION_ARGS)
+{
+	unsigned char *d20 = (unsigned char *)PG_GETARG_POINTER(0);
+	char *hex40;
+
+	hex40 = (char *)palloc(41);
+	dig2hex40(d20, hex40);
+	PG_RETURN_CSTRING(hex40);
+}
+
+PG_FUNCTION_INFO_V1(udig_btc20_digest);
+
+/*
+ *  User function to extract the digest from an explict btc20 udig.
+ */
+Datum
+udig_btc20_digest(PG_FUNCTION_ARGS)
+{
+	unsigned char *d20 = (unsigned char *)PG_GETARG_POINTER(0);
+	bytea *digest;
+	Size size;
+
+	size = VARHDRSZ + 20;
+
+	digest = (bytea *)palloc(size);
+	SET_VARSIZE(digest, size);
+	memcpy(VARDATA(digest), d20, 20); 
+	PG_RETURN_BYTEA_P(digest);
+}
+
+/*
+ *  Bitcoin Inspired digest RIPEMD160(SHA256(SHA256)) Operators
+ *
+ *	=		equal
+ *	!=		not rqual
+ *	>		greater than
+ *	>=		greater than or equal
+ *	<		less than
+ *	<=		less than or equal
+ */
+PG_FUNCTION_INFO_V1(udig_btc20_eq);
+
+Datum
+udig_btc20_eq(PG_FUNCTION_ARGS)
+{
+	unsigned char *a = (unsigned char *)PG_GETARG_POINTER(0);
+	unsigned char *b = (unsigned char *)PG_GETARG_POINTER(1);
+
+	PG_RETURN_BOOL(memcmp(a, b, 20) == 0);
+}
+
+PG_FUNCTION_INFO_V1(udig_btc20_ne);
+
+Datum
+udig_btc20_ne(PG_FUNCTION_ARGS)
+{
+	unsigned char *a = (unsigned char *)PG_GETARG_POINTER(0);
+	unsigned char *b = (unsigned char *)PG_GETARG_POINTER(1);
+
+	PG_RETURN_BOOL(memcmp(a, b, 20) != 0);
+}
+
+PG_FUNCTION_INFO_V1(udig_btc20_gt);
+
+Datum
+udig_btc20_gt(PG_FUNCTION_ARGS)
+{
+	unsigned char *a = (unsigned char *)PG_GETARG_POINTER(0);
+	unsigned char *b = (unsigned char *)PG_GETARG_POINTER(1);
+
+	PG_RETURN_BOOL(memcmp(a, b, 20) > 0);
+}
+
+PG_FUNCTION_INFO_V1(udig_btc20_ge);
+
+Datum
+udig_btc20_ge(PG_FUNCTION_ARGS)
+{
+	unsigned char *a = (unsigned char *)PG_GETARG_POINTER(0);
+	unsigned char *b = (unsigned char *)PG_GETARG_POINTER(1);
+
+	PG_RETURN_BOOL(memcmp(a, b, 20) >= 0);
+}
+
+PG_FUNCTION_INFO_V1(udig_btc20_lt);
+
+Datum
+udig_btc20_lt(PG_FUNCTION_ARGS)
+{
+	unsigned char *a = (unsigned char *)PG_GETARG_POINTER(0);
+	unsigned char *b = (unsigned char *)PG_GETARG_POINTER(1);
+
+	PG_RETURN_BOOL(memcmp(a, b, 20) < 0);
+}
+
+PG_FUNCTION_INFO_V1(udig_btc20_le);
+
+Datum
+udig_btc20_le(PG_FUNCTION_ARGS)
+{
+	unsigned char *a = (unsigned char *)PG_GETARG_POINTER(0);
+	unsigned char *b = (unsigned char *)PG_GETARG_POINTER(1);
+
+	PG_RETURN_BOOL(memcmp(a, b, 20) <= 0);
+}
+
+PG_FUNCTION_INFO_V1(udig_btc20_cmp);
+
+Datum
+udig_btc20_cmp(PG_FUNCTION_ARGS)
+{
+	unsigned char *a = (unsigned char *)PG_GETARG_POINTER(0);
+	unsigned char *b = (unsigned char *)PG_GETARG_POINTER(1);
+
+	PG_RETURN_INT32(memcmp(a, b, 20));
+}
+
+/*
+ *  Compare udig_btc20=a versus generic udig=b.
+ *  Unequal algorithms order lexically by digest tag:
+ *
+ *	"sha" > "btc20" > "bc160"
+ */
+static int32
+_udig_btc20_cmp_udig(unsigned char *a_operand, unsigned char *b_operand)
+{
+	unsigned char *b;
+
+	b = UDIG_VARDATA(b_operand);
+
+	if (b[0] == UDIG_BTC20)
+		return memcmp(a_operand, &b[1], 20);	// btc20 versus btc20
+	if (b[0] == UDIG_SHA)
+		return -1;
+	if (b[0] == UDIG_BC160)
+		return 1;
+
+	ereport(PANIC, (errcode(ERRCODE_DATA_CORRUPTED),
+		errmsg("_udig_btc20_cmp_udig: corrupted udig internal type")));
+	/*NOTREACHED*/
+	return -1;
+}
+
+/*
+ *  Boolean operators for cross type btc20 -> UDIG
+ */
+PG_FUNCTION_INFO_V1(udig_btc20_eq_udig);
+
+Datum
+udig_btc20_eq_udig(PG_FUNCTION_ARGS)
+{
+	unsigned char *a = (unsigned char *)PG_GETARG_POINTER(0);
+	unsigned char *b = (unsigned char *)PG_GETARG_POINTER(1);
+
+	PG_RETURN_BOOL(_udig_btc20_cmp_udig(a, b) == 0);
+}
+
+PG_FUNCTION_INFO_V1(udig_btc20_ne_udig);
+
+Datum
+udig_btc20_ne_udig(PG_FUNCTION_ARGS)
+{
+	unsigned char *a = (unsigned char *)PG_GETARG_POINTER(0);
+	unsigned char *b = (unsigned char *)PG_GETARG_POINTER(1);
+
+	PG_RETURN_BOOL(_udig_btc20_cmp_udig(a, b) != 0);
+}
+
+PG_FUNCTION_INFO_V1(udig_btc20_gt_udig);
+
+Datum
+udig_btc20_gt_udig(PG_FUNCTION_ARGS)
+{
+	unsigned char *a = (unsigned char *)PG_GETARG_POINTER(0);
+	unsigned char *b = (unsigned char *)PG_GETARG_POINTER(1);
+
+	PG_RETURN_BOOL(_udig_btc20_cmp_udig(a, b) > 0);
+}
+
+PG_FUNCTION_INFO_V1(udig_btc20_ge_udig);
+
+Datum
+udig_btc20_ge_udig(PG_FUNCTION_ARGS)
+{
+	unsigned char *a = (unsigned char *)PG_GETARG_POINTER(0);
+	unsigned char *b = (unsigned char *)PG_GETARG_POINTER(1);
+
+	PG_RETURN_BOOL(_udig_btc20_cmp_udig(a, b) >= 0);
+}
+
+PG_FUNCTION_INFO_V1(udig_btc20_lt_udig);
+
+Datum
+udig_btc20_lt_udig(PG_FUNCTION_ARGS)
+{
+	unsigned char *a = (unsigned char *)PG_GETARG_POINTER(0);
+	unsigned char *b = (unsigned char *)PG_GETARG_POINTER(1);
+
+	PG_RETURN_BOOL(_udig_btc20_cmp_udig(a, b) < 0);
+}
+
+PG_FUNCTION_INFO_V1(udig_btc20_le_udig);
+
+Datum
+udig_btc20_le_udig(PG_FUNCTION_ARGS)
+{
+	unsigned char *a = (unsigned char *)PG_GETARG_POINTER(0);
+	unsigned char *b = (unsigned char *)PG_GETARG_POINTER(1);
+
+	PG_RETURN_BOOL(_udig_btc20_cmp_udig(a, b) <= 0);
+}
+
+PG_FUNCTION_INFO_V1(udig_btc20_cmp_udig);
+
+Datum
+udig_btc20_cmp_udig(PG_FUNCTION_ARGS)
+{
+	unsigned char *a = (unsigned char *)PG_GETARG_POINTER(0);
+	unsigned char *b = (unsigned char *)PG_GETARG_POINTER(1);
+
+	PG_RETURN_INT32(_udig_btc20_cmp_udig(a, b));
+}
+
+/*
+ *  Cast a udig_btc20 to generic udig.
+ */
+PG_FUNCTION_INFO_V1(udig_btc20_cast);
+
+Datum
+udig_btc20_cast(PG_FUNCTION_ARGS)
+{
+	unsigned char *src = (unsigned char *)PG_GETARG_POINTER(0);
+	Size size;
+	unsigned char *udig;
+
+	size = VARHDRSZ + 21;		// size bytes + udig type byte + data
+	udig = palloc(size);
+	udig[4] = UDIG_BTC20;		// btc20 type
+	memcpy(udig + 5, src, 20);
+	SET_VARSIZE(udig, size);
+	PG_RETURN_POINTER(udig);
+}
+
+/*
+ *  Cross Type UDIG, RIPEMD(SHA256(SHA256)) Functions
+ *
+ *	=		equal
+ *	!=		not rqual
+ *	>		greater than
+ *	>=		greater than or equal
+ *	<		less than
+ *	<=		less than or equal
+ */
+
+
+/*
+ *  Compare generic udig and RIPEMD160(SHA256).
+ */
+static int32
+_udig_cmp_btc20(unsigned char *a_operand, unsigned char *b_operand)
+{
+	unsigned char *a;
+
+	a = UDIG_VARDATA(a_operand);
+
+	if (a[0] == UDIG_BTC20)
+		return memcmp(&a[1], b_operand, 20);
+	if (a[0] == UDIG_SHA)
+		return 1;
+	if (a[0] == UDIG_BC160)
+		return -1;
+	ereport(PANIC, (errcode(ERRCODE_INVALID_TEXT_REPRESENTATION),
+		errmsg("_udig_cmp_btc20: corrupted udig internal type byte")));
+
+	/*NOTREACHED*/
+	return -1;
+}
+
+PG_FUNCTION_INFO_V1(udig_eq_btc20);
+
+Datum
+udig_eq_btc20(PG_FUNCTION_ARGS)
+{
+	unsigned char *a = (unsigned char *)PG_GETARG_POINTER(0);
+	unsigned char *b = (unsigned char *)PG_GETARG_POINTER(1);
+
+	PG_RETURN_BOOL(_udig_cmp_btc20(a, b) == 0);
+}
+
+PG_FUNCTION_INFO_V1(udig_ne_btc20);
+
+Datum
+udig_ne_btc20(PG_FUNCTION_ARGS)
+{
+	unsigned char *a = (unsigned char *)PG_GETARG_POINTER(0);
+	unsigned char *b = (unsigned char *)PG_GETARG_POINTER(1);
+
+	PG_RETURN_BOOL(_udig_cmp_btc20(a, b) != 0);
+}
+
+PG_FUNCTION_INFO_V1(udig_gt_btc20);
+
+Datum
+udig_gt_btc20(PG_FUNCTION_ARGS)
+{
+	unsigned char *a = (unsigned char *)PG_GETARG_POINTER(0);
+	unsigned char *b = (unsigned char *)PG_GETARG_POINTER(1);
+
+	PG_RETURN_BOOL(_udig_cmp_btc20(a, b) > 0);
+}
+
+PG_FUNCTION_INFO_V1(udig_ge_btc20);
+
+Datum
+udig_ge_btc20(PG_FUNCTION_ARGS)
+{
+	unsigned char *a = (unsigned char *)PG_GETARG_POINTER(0);
+	unsigned char *b = (unsigned char *)PG_GETARG_POINTER(1);
+
+	PG_RETURN_BOOL(_udig_cmp_btc20(a, b) >= 0);
+}
+
+PG_FUNCTION_INFO_V1(udig_lt_btc20);
+
+Datum
+udig_lt_btc20(PG_FUNCTION_ARGS)
+{
+	unsigned char *a = (unsigned char *)PG_GETARG_POINTER(0);
+	unsigned char *b = (unsigned char *)PG_GETARG_POINTER(1);
+
+	PG_RETURN_BOOL(_udig_cmp_btc20(a, b) < 0);
+}
+
+PG_FUNCTION_INFO_V1(udig_le_btc20);
+
+Datum
+udig_le_btc20(PG_FUNCTION_ARGS)
+{
+	unsigned char *a = (unsigned char *)PG_GETARG_POINTER(0);
+	unsigned char *b = (unsigned char *)PG_GETARG_POINTER(1);
+
+	PG_RETURN_BOOL(_udig_cmp_btc20(a, b) <= 0);
+}
+
+PG_FUNCTION_INFO_V1(udig_cmp_btc20);
+
+Datum
+udig_cmp_btc20(PG_FUNCTION_ARGS)
+{
+	unsigned char *a = (unsigned char *)PG_GETARG_POINTER(0);
+	unsigned char *b = (unsigned char *)PG_GETARG_POINTER(1);
+
+	PG_RETURN_INT32(_udig_cmp_btc20(a, b));
+}
+PG_FUNCTION_INFO_V1(udig_btc20_hash);
+
+Datum
+udig_btc20_hash(PG_FUNCTION_ARGS)
+{
+	register uint32 h;
+
+	unsigned char *a = (unsigned char *)PG_GETARG_POINTER(0);
+	h = hash_any(a, 20);
+	return UInt32GetDatum(h);	
+}
+
+PG_FUNCTION_INFO_V1(udig_is_btc20);
+
+/*
+ *  Is the udig a btc20 (ripemd160(sha256))?
+ */
+Datum
+udig_is_btc20(PG_FUNCTION_ARGS)
+{
+	unsigned char *a = UDIG_VARDATA(PG_GETARG_POINTER(0));
+
+	PG_RETURN_BOOL(*a == UDIG_BTC20);
 }
