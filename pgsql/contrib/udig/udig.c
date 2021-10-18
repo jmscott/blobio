@@ -643,21 +643,20 @@ udig_in(PG_FUNCTION_ARGS)
 				));
 	}
 	/*
-	 *  Store SHA or BC160 digests in binary form.
+	 *  Store BTC20, SHA or BC160 digests in binary form.
 	 */
 
 	size = VARHDRSZ + 1 + 20;
 
 	d = palloc(size);
 
-	//  quick test for "bc160" or "sha"
-	if (a8[0] == 'b' && a8[1] == 'c' &&
-	         a8[2] == '1' && a8[3] == '6' && a8[4] == '0' &&
-		 a8[5] == 0
-	)
-		d[4] = UDIG_BC160;
-	else if (a8[0] == 's' && a8[1] == 'h' && a8[2] == 'a' && a8[3] == 0)
+	//  most common digest is btc20
+	if (a8[0]=='b' && a8[1]=='t' && a8[2]=='c' && a8[3]=='2' && a8[4]=='0')
+		d[4] = UDIG_BTC20;
+	else if (a8[0]=='s' && a8[1]=='h' && a8[2]=='a')
 		d[4] = UDIG_SHA;
+	else if (a8[0]=='b' && a8[1]=='c' && a8[2]=='1'&&a8[3]=='6'&&a8[4]=='0')
+		d[4] = UDIG_BC160;
 	else {
 		pfree(d);
 		ereport(ERROR,
@@ -707,6 +706,12 @@ udig_out(PG_FUNCTION_ARGS)
 	case UDIG_BC160:
 		udig[0] = 'b';  udig[1] = 'c'; 
 			udig[2] = '1';  udig[3] = '6';  udig[4] = '0';
+			udig[5] = 0;
+		colon = 5;
+		break;
+	case UDIG_BTC20:
+		udig[0] = 'b';  udig[1] = 't'; 
+			udig[2] = 'c';  udig[3] = '2';  udig[4] = '0';
 			udig[5] = 0;
 		colon = 5;
 		break;
@@ -1429,6 +1434,7 @@ udig_is_empty(PG_FUNCTION_ARGS)
 
 	switch (a[0]) {
 	case UDIG_SHA:
+		//  da39a3ee5e6b4b0d3255bfef95601890afd80709
 		PG_RETURN_BOOL(
 		a[1]==0xda && a[2]==0x39 && a[3]==0xa3 && a[4]==0xee &&
 		a[5]==0x5e && a[6]==0x6b && a[7]==0x4b && a[8]==0x0d &&
@@ -1437,6 +1443,7 @@ udig_is_empty(PG_FUNCTION_ARGS)
 		a[17]==0xaf && a[18]==0xd8 && a[19]==0x07 && a[20]==0x09
 		);
 	case UDIG_BC160:
+		//  b472a266d0bd89c13706a4132ccfb16f7c3b9fcb
 		PG_RETURN_BOOL(
 		a[1]==0xb4 && a[2]==0x72 && a[3]==0xa2 && a[4]==0x66 &&
 		a[5]==0xd0 && a[6]==0xbd && a[7]==0x89 && a[8]==0xc1 &&
@@ -1445,6 +1452,7 @@ udig_is_empty(PG_FUNCTION_ARGS)
 		a[17]==0x7c && a[18]==0x3b && a[19]==0x9f && a[20]==0xcb
 		);
 	case UDIG_BTC20:
+		//  fd7b15dc5dc2039556693555c2b81b36c8deec15
 		PG_RETURN_BOOL(
 		a[1]==0xfd && a[2]==0x7b && a[3]==0x15 && a[4]==0xdc &&
 		a[5]==0x5d && a[6]==0xc2 && a[7]==0x03 && a[8]==0x95 &&
