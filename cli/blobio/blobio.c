@@ -17,6 +17,8 @@
  *	--brr-path path/to/fs.brr
  *	--help
  *  Note:
+ *	--help should enumerate installed digest algorithms.
+ *
  *	Should option --algorithm be replaced with --digest?
  *
  *	When --input-path does not exist, then exit status should indicate
