@@ -24,12 +24,12 @@ extern struct digest_module		fs_btc20_module;
  */
 static struct digest_module		*modules[] =
 {
-#ifdef FS_BTC20_MODULE
-	&fs_btc20_module,
-#endif
-
 #ifdef FS_BC160_MODULE
 	&fs_bc160_module,
+#endif
+
+#ifdef FS_BTC20_MODULE
+	&fs_btc20_module,
 #endif
 
 #ifdef FS_SHA_MODULE 
