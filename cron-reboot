@@ -83,6 +83,8 @@ test -e run/flowd.pid || die "flowd failed to start in background"
 log "flowd pid: $(cat run/flowd.pid)"
 
 log 'reboot sync flowd processes'
-reboot-sync $NO_ZAP_FLOWD_ARG || die "reboot-sync failed: exit status=$?"
+test $NO_ZAP_FLOWD_ARG = yes && (
+	reboot-sync || die "reboot-sync failed: exit status=$?"
+)
 
 run-stat-report
