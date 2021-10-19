@@ -27,7 +27,7 @@ die()
 	exit 1
 }
 
-test $# = 0 || die 'wrong number of arguments'
+test $# = 0 || die "wrong number of arguments: got $#, expected 0"
 
 log 'hello, world'
 trap 'log good bye, cruel world' EXIT
