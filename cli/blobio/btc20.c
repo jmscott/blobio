@@ -133,7 +133,7 @@ chew(unsigned char *chunk, int size)
 		return "SHA256_Init(sha256) failed";
 	if (!SHA256_Update(&tmp_sha_sha_ctx, tmp_sha_digest, 32))
 		return "SHA256_Update(sha256) failed";
-	if (!SHA256_Final(tmp_sha_digest, &tmp_sha_sha_ctx))
+	if (!SHA256_Final(tmp_sha_sha_digest, &tmp_sha_sha_ctx))
 		return "SHA256_Final(sha256) failed";
 
 	/*
@@ -143,11 +143,11 @@ chew(unsigned char *chunk, int size)
 	RIPEMD160_CTX tmp_ripemd_ctx;
 
 	if (!RIPEMD160_Init(&tmp_ripemd_ctx))
-		return "RIPEMD160_Init(tmp sha256) failed";
+		return "RIPEMD160_Init(tmp sha256 sha256) failed";
 	if (!RIPEMD160_Update(&tmp_ripemd_ctx, tmp_sha_sha_digest, 32))
-		return "RIPEMD160_Update(tmp sha256) failed";
+		return "RIPEMD160_Update(tmp sha256 sha256) failed";
 	if (!RIPEMD160_Final(tmp_ripemd_digest, &tmp_ripemd_ctx))
-		return "RIPEMD160_Final(tmp sha256) failed";
+		return "RIPEMD160_Final(tmp sha256 sha256) failed";
 #ifdef COMPILE_TRACE
 	if (tracing) {
 		trace2(n, "hex dump of 20 byte RIPEMD160 follows ...");
