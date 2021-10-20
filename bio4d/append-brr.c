@@ -349,8 +349,8 @@ is_udig(char *arg, char **brr)
 
 	a++;
 	len = strlen(a);
-	if (len < 28)
-		die3(EXIT_BAD_BRR, nm, "digest: length < 28", arg);
+	if (len < 32)
+		die3(EXIT_BAD_BRR, nm, "digest: length < 32", arg);
 	if (len > 128)
 		die3(EXIT_BAD_BRR, nm, "digest: length > 128", arg);
 
