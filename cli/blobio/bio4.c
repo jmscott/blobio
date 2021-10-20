@@ -2,6 +2,8 @@
  *  Synopsis:
  *	A client driver semi-paranoid blobio service 'bio4' over TCP/IP4
  *  Note:
+ *	Need to replace most tracing with i/o tracing in {_read,_write}().
+ *
  *	Timeout not active when waiting for for the reply from a blob with
  *	incorrect digest.  The remote times out, but the client "blobio"
  *	does not!
@@ -498,6 +500,12 @@ _write(int fd, unsigned char *buf, int buf_size)
 			return strerror(errno);
 		alarm((unsigned int)timeout);
 	}
+#ifdef COMPILE_TRACE
+	if (tracing) {
+		_TRACE("_write(): ");
+		hexdump((unsigned char *)buf, buf_size, '>');
+	}
+#endif
 	if (uni_write_buf(fd, (unsigned char *)buf, buf_size))
 		err = strerror(errno);
 	if (timeout > 0) {
@@ -762,7 +770,6 @@ _put_untrusted()
 			_trace("write ok");
 			if (more)
 				_TRACE("more data to digest");
-			hexdump((unsigned char *)buf, nread, '<');
 		}
 #endif
 	}
