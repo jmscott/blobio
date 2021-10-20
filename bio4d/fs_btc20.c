@@ -802,7 +802,7 @@ eat_chunk(struct request *r, SHA256_CTX *sha_ctx, int fd, unsigned char *buf,
 		_panic2(r, n, "SHA256_Init(sha256) failed");
 	if (!SHA256_Update(&ctx.sha256_sha256, sha_digest, 32))
 		_panic2(r, n, "SHA256_Update(sha256) failed");
-	if (!SHA256_Final(sha_digest, &ctx.sha256_sha256))
+	if (!SHA256_Final(sha_sha_digest, &ctx.sha256_sha256))
 		_panic2(r, n, "SHA256_Final(sha256) failed");
 
 	/*
