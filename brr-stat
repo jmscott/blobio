@@ -18,4 +18,7 @@ cd $BLOBIO_ROOT || die "cd $BLOBIO_ROOT failed: exit status=$?"
 test -r spool || die "can not read directory: $(pwd)/spool: exit status=$?"
 BRR=spool/bio4d.brr
 test -r $BRR || die "can not read brr log: $(pwd)/$BRR"
-exec wc -l $BRR
+wc -l $BRR
+find sync/remote/*/spool -maxdepth 1 -type f -name '*.brr' | while read BRR;  do
+	wc -l $BRR
+done
