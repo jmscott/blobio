@@ -10,5 +10,9 @@
 #		PATH=bin:sbin:/usr/local/bin:/usr/bin:/bin
 #
 
+../../../etc/profile
+
+export PATH=${JMSCOTT_ROOT:=/usr/local/jmscott}/bin:$PATH
+
 #  For work directory
 export TMPDIR=$BLOBIO_ROOT/sync/remote/wework/tmp
