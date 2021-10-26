@@ -463,7 +463,7 @@ _udig_sha_cmp_udig(unsigned char *a_operand, unsigned char *b_operand)
 	b = UDIG_VARDATA(b_operand);
 
 	if (b[0] == UDIG_SHA)
-		return memcmp(a_operand, &b[1], 20);	// sha versus sha
+		return memcmp(a_operand, &b[1], 20);
 	if (b[0] == UDIG_BTC20 || b[0] == UDIG_BC160)
 		return 1;
 	ereport(PANIC, (errcode(ERRCODE_DATA_CORRUPTED),
@@ -651,11 +651,12 @@ udig_in(PG_FUNCTION_ARGS)
 	d = palloc(size);
 
 	//  most common digest is btc20
-	if (a8[0]=='b' && a8[1]=='t' && a8[2]=='c' && a8[3]=='2' && a8[4]=='0')
+	if (a8[0]=='b'&&a8[1]=='t'&&a8[2]=='c'&&a8[3]=='2'&&a8[4]=='0'&& !a8[5])
 		d[4] = UDIG_BTC20;
-	else if (a8[0]=='s' && a8[1]=='h' && a8[2]=='a')
+	else if (a8[0]=='s' && a8[1]=='h' && a8[2]=='a' && !a[3])
 		d[4] = UDIG_SHA;
-	else if (a8[0]=='b' && a8[1]=='c' && a8[2]=='1'&&a8[3]=='6'&&a8[4]=='0')
+	else if (a8[0]=='b'&&a8[1]=='c'&&a8[2]=='1'&&a8[3]=='6'&&a8[4]=='0'&&
+	         !a8[5])
 		d[4] = UDIG_BC160;
 	else {
 		pfree(d);
@@ -697,22 +698,23 @@ udig_out(PG_FUNCTION_ARGS)
 
 	d = UDIG_VARDATA(p);
 
-	udig = palloc(3 + 1 + 40 + 1);
+	/*
+	 *  UDIG is <= 8 ascii chars + ':' + 40 hex chars of digest + null
+	 */
+	udig = palloc(8 + 1 + 40 + 1);	// algo<=8
 	switch (*d) {
 	case UDIG_SHA:
-		udig[0] = 's';  udig[1] = 'h';  udig[2] = 'a';  udig[3] = 0;
+		udig[0] = 's';  udig[1] = 'h';  udig[2] = 'a';
 		colon = 3;
 		break;
 	case UDIG_BC160:
 		udig[0] = 'b';  udig[1] = 'c'; 
 			udig[2] = '1';  udig[3] = '6';  udig[4] = '0';
-			udig[5] = 0;
 		colon = 5;
 		break;
 	case UDIG_BTC20:
 		udig[0] = 'b';  udig[1] = 't'; 
 			udig[2] = 'c';  udig[3] = '2';  udig[4] = '0';
-			udig[5] = 0;
 		colon = 5;
 		break;
 	default:
@@ -749,6 +751,12 @@ _udig_cmp(unsigned char *a_operand, unsigned char *b_operand)
 	 */
 	if (a[0] == b[0])
 		return memcmp(&a[1], &b[1], 20);
+	if (a[0] == UDIG_BTC20) {
+		if (b[0] == UDIG_SHA)
+			return -1;
+		if (b[0] == UDIG_BC160)
+			return 1;
+	}
 	if (a[0] == UDIG_SHA)
 		return 1;
 	if (a[0] == UDIG_BC160)
