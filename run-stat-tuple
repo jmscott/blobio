@@ -47,6 +47,10 @@
 #  See:
 #	run-stat-tuple
 #  Note:
+#	triple check that all run-stat-*-tuple do not return empty fields.
+#	From time to time, i see errors that appear to be due to an empty
+#	string, especially after a reboot.
+#
 #	Really, really, really need to move the files in log/*.{qdr,xdr,fdr}
 #	to directory data/ or spool/!
 #
