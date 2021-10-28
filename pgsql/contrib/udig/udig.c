@@ -657,14 +657,14 @@ udig_in(PG_FUNCTION_ARGS)
 		a8[2]=='c' &&
 		a8[3]=='2' &&
 		a8[4]=='0' &&
-		a8[5]==':'
+		a8[5]==0
 	)
 		d[4] = UDIG_BTC20;
 	else if (
 		a8[0] == 's' &&
 		a8[1] == 'h' &&
 		a8[2] == 'a' &&
-		a[3] == ':'
+		a8[3] == 0
 	)
 		d[4] = UDIG_SHA;
 	else if (
@@ -673,7 +673,7 @@ udig_in(PG_FUNCTION_ARGS)
 		a8[2]=='1' &&
 		a8[3]=='6' &&
 		a8[4]=='0' &&
-	        a8[5]==':'
+	        a8[5]==0
 	)
 		d[4] = UDIG_BC160;
 	else {
