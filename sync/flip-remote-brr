@@ -1,0 +1,55 @@
+#!/bin/bash
+#
+#  Synopsis:
+#	Flip all blob request record files in spool to spool/<file>-<epoch>.brr
+#  Usage:
+#	flip-remote-brr <remote-tag>
+#	flip-remote-brr wework >>log/flip-remote-brr-wework.log 2>&1
+#  Exit Status:
+#	0	ok or no file to flip
+#	1	error
+#
+
+now()
+{
+	date +'%Y/%m/%d %H:%M:%S'
+}
+
+log()
+{
+	echo "$(now): $@"
+}
+
+die()
+{
+	MSG="ERROR: $@"
+	test -d run/ && echo "$(now): $MSG" >>run/$(basename $0).fault
+	log "$MSG" >&2
+	exit 2
+}
+
+test $# = 1 || die "wrong number of arguments: got $#, expected 1"
+REMOTE=$1
+
+log hello, world
+trap 'log good bye, cruel world' EXIT
+
+test -n "$BLOBIO_ROOT" || die 'env not defined: BLOBIO_ROOT'
+log "BLOBIO_ROOT=$BLOBIO_ROOT"
+cd $BLOBIO_ROOT || die "cd BLOBIO_ROOT failed: exit status=$?"
+
+. etc/profile
+log "PATH=$PATH"
+
+log "remote: $REMOTE"
+SPOOL=sync/remote/$REMOTE/spool
+log "spool dir: $SPOOL"
+cd $SPOOL || die "cd remote spool failed: exit status=$?"
+
+find . -maxdepth 1 -regextype posix-extended 				\
+	-regex '^\./[a-z][a-z0-9]{0,7}\.brr$'				|
+	while read BRR;  do
+		MV_BRR=$(basename $BRR .brr)-$(date +%s).brr
+		log "$BRR -> $MV_BRR"
+		mv $BRR $MV_BRR || die "mv brr failed: exit status=$?"
+	done

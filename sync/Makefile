@@ -8,6 +8,7 @@ include ../blobio.mk
 
 SRCs=jaccard.go jaccard-tip.go
 SBINs=									\
+	flip-remote-brr							\
 	jaccard								\
 	jaccard-tip							\
 	make-sync-remote						\
@@ -68,6 +69,7 @@ clean:
 	rm -f jaccard-tip
 
 dev-links:
-	test -e sbin || ln -s . sbin
-	test -e lib || ln -s . lib
 	test -e etc || ln -s . etc
+	test -e lib || ln -s . lib
+	test -e run || ln -s . run
+	test -e sbin || ln -s . sbin
