@@ -1,0 +1,183 @@
+#
+#  Synopsis:
+#       Template apache2 vhost config for {www,dash,noc}.blobio...
+#  Note:
+#	Perl needs DBD/Pg.pm in path.  Add /opt/local/bin for perl managed
+#	by mac ports or /usr/local/bin for homebrew.
+#
+
+#  See https://github.com/jmscott/blobio
+Define BLOBIO_ROOT /usr/local/blobio
+
+#  The "home" service.
+Define BLOBIO_ROOT /usr/local/blobio
+Define BLOBIO_SERVICE bio4:127.0.0.1:1797
+Define BLOBIO_ALGORITHM btc20
+Define BLOBIO_GET_SERVICE fs:${SETSPACE_BLOBIO_ROOT}
+
+#  See https://github.com/jmscott/work
+Define BLOBIO_JMSCOTT_ROOT /usr/local/jmscott
+
+#
+#  APACHE_SERVER_NAME and dns/ssl host is built as
+#
+#	${SETSPACE_DNS_VHOST_PREFIX}.setspace.${SETSPACE_DNS_VHOST_SUFFIX}
+#
+#  Current values of PREFIX can be "www", "dash", or "noc".
+#
+Define BLOBIO_DNS_VHOST_PREFIX www
+Define BLOBIO_DNS_VHOST_SUFFIX com
+
+Define BLOBIO_PGHOME /usr/local/pgsql
+#  Note: golang pg has issues with unix sockets as /tmp
+Define BLOBIO_PGHOST /tmp
+Define BLOBIO_PGPORT 5432
+Define BLOBIO_PGUSER postgres
+Define BLOBIO_PGDATABASE blobio 
+
+#  Perl needs DBD/Pg.pm in path.  Add /opt/local/bin for perl managed
+#  by mac ports or /usr/local/bin for homebrew.
+
+Define BLOBIO_PATH ${BLOBIO_ROOT}/bin:${BLOBIO_ROOT}/www/bin:${BLOBIO_PGHOME}/bin:${BLOBIO_JMSCOTT_ROOT}/bin:/usr/bin:/bin
+
+#  probably no need to change remaining variables
+
+Define BLOBIO_APACHE2_SERVER_NAME ${BLOBIO_DNS_VHOST_PREFIX}.blobio.${BLOBIO_DNS_VHOST_SUFFIX}
+Define BLOBIO_WWW_ROOT ${BLOBIO_ROOT}/www
+Define BLOBIO_VHOST_ROOT ${BLOBIO_ROOT}/www/vhost/${BLOBIO_APACHE2_SERVER_NAME}
+Define BLOBIO_PERL5LIB ${BLOBIO_VHOST_ROOT}/lib:${BLOBIO_WWW_ROOT}/lib:${BLOBIO_JMSCOTT_ROOT}/www/lib
+
+Define BLOBIO_APACHE2_SERVER_PORT 443
+
+#  Define on Mac OS/X under ports distro, which does not define
+<IfDefine !APACHE_LOG_DIR>
+	Define APACHE_LOG_DIR /opt/local/log
+</IfDefine>
+
+#
+#  Synopsis:
+#	Example development Apache2 configuration for setspace web gui.
+#  Note:
+#	See toolkit at https://github.com/jmscott/work/tree/master/httpd2
+#	for reference in PERL5LIB to /usr/local/jmscott/httpd2/lib
+#
+#	Remember, VirtualHost directive is really
+#
+#		<virtualHost network-interface:port>
+#
+#	and not related to the server name seen by the public.
+#
+<VirtualHost ${BLOBIO_APACHE2_SERVER_NAME}:443>
+        ServerName ${BLOBIO_APACHE2_SERVER_NAME}
+
+	CustomLog ${APACHE_LOG_DIR}/${BLOBIO_APACHE2_SERVER_NAME}-access.log common
+	ErrorLog ${APACHE_LOG_DIR}/${BLOBIO_APACHE2_SERVER_NAME}-error.log
+
+	SetEnv BLOBIO_ROOT ${BLOBIO_ROOT}
+	SetEnv SERVER_ROOT ${BLOBIO_VHOST_ROOT}
+	<IfDefine !TMPDIR>
+		SetEnv TMPDIR ${BLOBIO_VHOST_ROOT}/tmp
+	</IfDefine>
+
+	#  the "home" database
+	SetEnv PGHOST ${BLOBIO_PGHOST}
+	SetEnv PGPORT ${BLOBIO_PGPORT}
+	SetEnv PGUSER ${BLOBIO_PGUSER}
+	<IfDefine BLOBIO_PGPASSWORD>
+		SetEnv PGPASSWORD ${BLOBIO_PGPASSWORD}
+	</IfDefine>
+	SetEnv PGDATABASE ${BLOBIO_PGDATABASE}
+
+	SetEnv BLOBIO_SERVICE ${BLOBIO_SERVICE}
+	SetEnv BLOBIO_GET_SERVICE ${BLOBIO_GET_SERVICE}
+	SetEnv BLOBIO_ALGORITHM ${BLOBIO_ALGORITHM}
+
+	SetEnv JMSCOTT_ROOT ${BLOBIO_JMSCOTT_ROOT}
+
+	SetEnv PATH ${BLOBIO_PATH}
+	SetEnv LD_LIBRARY_PATH /usr/local/pgsql/lib
+
+	#  Note:See https://github.com/jmscott/work/tree/master/httpd2
+	#
+	SetEnv PERL5LIB ${BLOBIO_PERL5LIB}
+
+	DocumentRoot "${BLOBIO_VHOST_ROOT}/htdocs"
+
+	<Directory />
+            AllowOverride all
+            Require all granted
+        </Directory>
+
+	<Directory "${BLOBIO_VHOST_ROOT}">
+		Options Indexes FollowSymLinks
+		AllowOverride None
+		Require all granted
+	</Directory>
+
+	DirectoryIndex index.shtml
+
+	<Directory "${BLOBIO_VHOST_ROOT}/htdocs">
+                Options +ExecCGI +Includes +FollowSymLinks
+
+                AddType text/html .shtml
+                AddOutputFilter INCLUDES .shtml
+
+		AuthType Basic
+		AuthName "${BLOBIO_APACHE2_SERVER_NAME}"
+		AuthUserFile ${BLOBIO_VHOST_ROOT}/etc/passwd
+		Require valid-user
+	</Directory>
+
+	ScriptAlias /cgi-bin/jmscott/ "${BLOBIO_JMSCOTT_ROOT}/www/cgi-bin/"
+	ScriptAlias /cgi-bin/ "${BLOBIO_VHOST_ROOT}/cgi-bin/"
+
+	<Directory "${BLOBIO_VHOST_ROOT}/cgi-bin">
+                AllowOverride all
+                Allow from all
+
+                Options None +ExecCGI +Includes +FollowSymLinks
+
+                AuthType Basic
+                AuthName "Login ${BLOBIO_APACHE2_SERVER_NAME}"
+                AuthBasicProvider file
+		AuthUserFile ${BLOBIO_VHOST_ROOT}/etc/passwd
+                Require valid-user
+        </Directory>
+
+	<Directory "${BLOBIO_JMSCOTT_ROOT}/www/cgi-bin">
+                AllowOverride all
+                Allow from all
+
+                Options None +ExecCGI +Includes +FollowSymLinks
+
+                AuthType Basic
+                AuthName "Login ${BLOBIO_APACHE2_SERVER_NAME}"
+                AuthBasicProvider file
+		AuthUserFile ${BLOBIO_VHOST_ROOT}/etc/passwd
+                Require valid-user
+        </Directory>
+
+	#  openssl genrsa -out ca.key 2048
+	#  openssl req -new -key ca.key -out ca.csr
+	#  openssl x509 -req -days 365 -in ca.csr -signkey ca.key -out ca.crt
+
+	SSLEngine on
+	SSLCertificateFile etc/apache2/extra/${BLOBIO_APACHE2_SERVER_NAME}.crt
+	SSLCertificateKeyFile etc/apache2/extra/${BLOBIO_APACHE2_SERVER_NAME}.key
+
+</VirtualHost>
+
+#
+#  To automatically redirect port 80 to the https version of website
+#  add
+#
+#	Define SETSPACE_REDIRECT_PORT80_TO_HTTPS 1
+#
+
+#<IfDefine SETSPACE_REDIRECT_PORT80_TO_HTTPS>
+#Listen ${SETSPACE_APACHE2_SERVER_NAME}:80
+#<VirtualHost ${SETSPACE_APACHE2_SERVER_NAME}:80>
+        #ServerName ${SETSPACE_APACHE2_SERVER_NAME}
+        #Redirect permanent / https://${SETSPACE_APACHE2_SERVER_NAME}
+#</VirtualHost>
+#</IfDefine>

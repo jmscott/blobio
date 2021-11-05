@@ -24,14 +24,23 @@ all:
 	cd cli;		$(MAKE) $(MFLAGS) all
 	cd flowd;	$(MAKE) $(MFLAGS) all
 	cd sync;	$(MAKE) $(MFLAGS) all
+ifdef DASH_DNS_VHOST_SUFFIX
+	cd www && $(MAKE) $(MFLAGS) all
+endif
 
 clean:
+ifdef DASH_DNS_VHOST_SUFFIX
+	cd www && $(MAKE) $(MFLAGS) clean
+endif
 	cd bio4d;	$(MAKE) $(MFLAGS) clean
 	cd cli;		$(MAKE) $(MFLAGS) clean
 	cd flowd;	$(MAKE) $(MFLAGS) clean
 	cd sync;	$(MAKE) $(MFLAGS) clean
 
 distclean:
+ifdef DASH_DNS_VHOST_SUFFIX
+	cd www && $(MAKE) $(MFLAGS) distclean
+endif
 	cd bio4d;	$(MAKE) $(MFLAGS) distclean
 
 ifeq "$(DIST_ROOT)" "/usr"
@@ -45,7 +54,6 @@ ifeq "$(DIST_ROOT)" "/usr/local"
 endif
 
 	cd flowd;	$(MAKE) $(MFLAGS) distclean
-	#cd www;		$(MAKE) $(MFLAGS) distclean
 	rm -rf $(DIST_ROOT)/bin
 	rm -rf $(DIST_ROOT)/lib
 	rm -rf $(DIST_ROOT)/sbin
@@ -140,6 +148,9 @@ install: all
 	cd flowd;	$(MAKE) $(MFLAGS) install
 	#cd www;		$(MAKE) $(MFLAGS) install
 	cd sync;	$(MAKE) $(MFLAGS) install
+ifdef DASH_DNS_VHOST_SUFFIX
+	cd www && $(MAKE) $(MFLAGS) install
+endif
 
 dev-links:
 	test -e cgi-bin || ln -s . cgi-bin

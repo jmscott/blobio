@@ -1,6 +1,9 @@
 #
 #  Synopsis:
 #	Static make rules for blobio.
+#  Note:
+#	Need to eliminate vars BLOBIO_{GROUP,USER,PREFIX} and replace with
+#	DIST_{GROUP,USER,PREFIX}.  github.com/setspace has same problem.
 #
 ifndef DIST_ROOT
 $(error var DIST_ROOT is not set)
@@ -28,3 +31,7 @@ ifeq "$(UNAME)" "Darwin"
 else
 	DIST_GROUP?=$(USER)
 endif
+
+BLOBIO_PREFIX=$(DIST_ROOT)
+BLOBIO_GROUP=$(DIST_ROOT)
+BLOBIO_USER=$(DIST_ROOT)
