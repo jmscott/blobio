@@ -148,7 +148,7 @@ install: all
 	cd flowd;	$(MAKE) $(MFLAGS) install
 	#cd www;		$(MAKE) $(MFLAGS) install
 	cd sync;	$(MAKE) $(MFLAGS) install
-ifdef DASH_DNS_VHOST_SUFFIX
+ifdef NOC_DNS_VHOST_SUFFIX
 	cd www && $(MAKE) $(MFLAGS) install
 endif
 

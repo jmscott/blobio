@@ -42,3 +42,11 @@ OPENSSL_LIB=-L/opt/local/lib -lssl -lcrypto
 
 #  where golang distribution is installed
 GODIST=/usr/local/go
+
+#
+#  Undefine to build web gui
+#
+#	$BLOBIO_ROOT/www/vhost/noc.blobio.com
+#
+#NOC_DNS_VHOST_SUFFIX=blob.io
+#NOC_DNS_VHOST_PREFIX=noc

@@ -37,3 +37,7 @@ OPENSSL_LIB=-lssl -lcrypto
 
 #  where golang distribution installed
 GODIST=/usr/local/go
+
+#  Undefine to generate www/noc web site
+#NOC_DNS_VHOST_SUFFIX=blob.io
+#NOC_DNS_VHOST_PREFIX=noc
