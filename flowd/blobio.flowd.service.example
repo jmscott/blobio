@@ -8,7 +8,7 @@
 [Unit]
 Description=BlobIO Flowd Server to sync PostgreSQL
 BindsTo=blobio.bio4d.service postgresql.service
-After=network-online.target blobio.bio4d.service postgresql.service
+After=network-online.target blobio.bio4d.service org.postgresql.service
 
 [Service]
 Type=simple
@@ -19,7 +19,7 @@ WorkingDirectory=/usr/local/blobio
 StandardOutput=file:/home/blobio/log/systemd-blobio.flowd.log
 StandardError=file:/home/blobio/log/systemd-blobio.flowd.log
 
-ExecStart=/usr/local/blobio/bin/boot-flowd /usr/local/blobio
+ExecStart=/usr/local/blobio/sbin/boot-flowd /usr/local/blobio
 KillMode=control-group
 KillSignal=SIGTERM
 TimeoutSec=20
