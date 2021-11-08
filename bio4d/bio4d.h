@@ -289,7 +289,7 @@ char	*net_32addr2text(u_long addr);
 
 char	*sig_name(int sig);
 
-int	trust_fs;
+extern int	trust_fs;
 
 /*
  *  Wrappers around various interuptable unix system calls
