@@ -8,7 +8,7 @@
 #	unlock-flow-udig pdinformation 
 #  Exit Status:
 #      0  -  no lock exists, so create lock file in run/flowd-<udig>.lock
-#      1  -  lock already exists
+#      1  -  lock does not exist
 #      2  -  unexpected error
 #  See:
 #	https://github.com/jmscott/work/blob/master/tas-unlock-fs.c
