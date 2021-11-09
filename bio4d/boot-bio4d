@@ -19,15 +19,23 @@ die()
 	exit 1
 }
 
+zap_run()
+{
+	test -z "$BLOBIO_ROOT" -o ! -d $BLOBIO_ROOT && return
+
+	log 'removing stale files in run/bio4d*'
+	find run/ -type f -name 'bio4d*' | xargs --no-run-if-empty rm -v
+	local STATUS="${PIPESTATUS[*]}"
+	test "$STATUS" = '0 0'					||
+		log "WARN: rm run/stale failed: exit status=$STATUS" >&2
+}
+
 leave()
 {
 	STATUS=$?
-	if [ -n "$BLOBIO_ROOT" ];  then
-		log 'removing stale files in run/'
-		rm -f run/*						||
-			log "WARN: rm stale run/* failed: exit status=$?"
-	fi
+	zap_run
 	log 'good bye, cruel world'
+	exit $STATUS
 }
 
 test $# = 1 || die "wrong number of arguments: got $#, expected 1"
@@ -90,6 +98,7 @@ log "net timeout: ${BLOBIO_BIO4D_NET_TIMEOUT}s"
 BLOBIO_BIO4D_RRD_DURATION=${BLOBIO_BIO4D_RRD_DURATION:=0}
 log "rrd duration: ${BLOBIO_BIO4D_NET_TIMEOUT}s"
 
+zap_run
 log 'invoking sbin/bio4d ...'
 sbin/bio4d								\
 	--trust-fs $BLOBIO_TRUST_FS					\

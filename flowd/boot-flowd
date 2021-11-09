@@ -23,7 +23,7 @@
 
 PROG=$(basename $0)
 
-unset PGSYSCONFDIR
+unset PGSYSCONFDIR			#  PGSYSCONFDIR busts golang libpq
 
 log()
 {
@@ -36,11 +36,30 @@ die()
 	exit 1
 }
 
+zap_run()
+{
+	test -z "$BLOBIO_ROOT" -o ! -d $BLOBIO_ROOT && return
+
+	log 'removing stale files in run/flowd*'
+	find run/ -type f -name 'flowd*' | xargs --no-run-if-empty rm -v
+	local STATUS="${PIPESTATUS[*]}"
+	test "$STATUS" = '0 0'					||
+		log "WARN: rm run/stale failed: exit status=$STATUS" >&2
+}
+
+leave()
+{
+	STATUS=$?
+	zap_run
+	log 'good bye, cruel world'
+	exit $STATUS
+}
+
 test $# = 1 || die "wrong number of command arguments: got $#, expected 1"
 FLOW_CONF=$1
 
 log 'hello, world'
-trap 'log good bye, cruel world' EXIT
+trap leave EXIT
 
 log "BLOBIO_ROOT=$BLOBIO_ROOT"
 log "PATH=$PATH"
@@ -73,7 +92,8 @@ if [ -e $RUN_PID ];  then
 else
 	log 'no run/flowd.pid (good)'
 fi
-rm -f run/flowd* || die "pre: rm run/flowd.* failed: exit status=$?"
+
+zap_run
 
 test -r etc/profile || die "can not read $(pwd)/etc/profile"
 . etc/profile
@@ -81,5 +101,4 @@ log "invoking flowd server: $FLOW_CONF"
 bin/flowd server $FLOW_CONF
 STATUS=$?
 log "flowd exit status: $STATUS"
-rm -vf run/flowd* || die "post: rm run/flowd failed: exit status=$?"
 exit $STATUS
