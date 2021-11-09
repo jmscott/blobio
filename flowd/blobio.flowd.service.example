@@ -19,7 +19,7 @@ WorkingDirectory=/usr/local/blobio
 StandardOutput=file:/home/blobio/log/systemd-blobio.flowd.log
 StandardError=file:/home/blobio/log/systemd-blobio.flowd.log
 
-ExecStart=/usr/local/blobio/sbin/boot-flowd /usr/local/blobio
+ExecStart=/usr/local/blobio/sbin/boot-flowd etc/blobio.flow
 KillMode=control-group
 KillSignal=SIGTERM
 TimeoutSec=20
