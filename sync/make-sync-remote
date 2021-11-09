@@ -5,6 +5,8 @@
 #  Usage:
 #	make-sync-remote <remote tag> <remote blobio service>
 #	make-sync-remote lct bio4:10.187.1.2:1797
+#  Note:
+#	The links back to $BLOBIO_ROOT/{bin,sbin,lib} should relative!
 #
 
 die()
