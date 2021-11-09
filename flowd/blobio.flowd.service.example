@@ -7,7 +7,7 @@
 #
 [Unit]
 Description=BlobIO Flowd Server to sync PostgreSQL
-BindsTo=blobio.bio4d.service postgresql.service
+BindsTo=blobio.bio4d.service org.postgresql.service
 After=network-online.target blobio.bio4d.service org.postgresql.service
 
 [Service]
