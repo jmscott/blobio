@@ -52,6 +52,7 @@ command lock_put
 	argv = (
 		"put"
 	);
+	exit_status is OK when in {0, 1};
 }
 
 command unlock_put
