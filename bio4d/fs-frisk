@@ -58,6 +58,7 @@ log "data dir: $DATA"
 test -d $DATA || die "cannot verify blob data dir: $DATA"
 
 log 'snapshot fs blobs ...'
+
 fs2udig | bio-udig2fs >FS
 STATUS=${PIPESTATUS[*]}
 test "$STATUS" = '0 0' || die "fs2udig failed: exit status=$STATUS"
