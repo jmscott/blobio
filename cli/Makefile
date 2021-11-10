@@ -32,6 +32,7 @@ install: all
 		bio-put-file						\
 		bio-put-stdin						\
 		bio-take						\
+		bio-udig2fs						\
 		bio-unroll						\
 		bio-wrap						\
 		bio-wrap-roll						\
