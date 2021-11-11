@@ -10,9 +10,9 @@
 #	#  duplicate in set, generates error!
 #	echo btc20:dd049c347d7b936dda490efad963d1aee87b0b89 >>x
 #
-#	bio-sizeof-stdin <x		#  generates sql error
+#	bio-blob_size-stdin <x		#  generates sql error
 #
-#	sort -u x | bio-sizeof-stdin	#  correct
+#	sort -u x | bio-blob_size	#  correct
 #
 #  Exit Status
 #	0	output byte count of entire set
