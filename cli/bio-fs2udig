@@ -1,0 +1,49 @@
+#!/usr/bin/env perl
+#
+#  Synopsis:
+#	Map paths of blobs in data/fs_* to their equivalent udigs.
+#  Usage:
+#	cd $BLOBIO_ROOT/data
+#	find fs_*/[0-9][0-9][0-9] -type f ! -name | bio-fs2udig
+#
+#	bio-fs2udig fs_btc20/0b1/2bd/0b12bd74f3082785436183e8d88f2cd895c419be
+#  Note:
+#	Hexidecimal is the assumed encoding for digests, which NOT in the
+#	spec for a udig!  Perhaps sha3 will use base58.
+#
+
+my $PROG = 'bio-fs2udig';
+my $fs_regex = 'fs_([a-z][a-z0-9]{0,7})/[a-f0-9]{3}/[a-f0-9]{3}/([a-f0-9]{40})';
+
+sub fs2udig
+{
+	my $path = $_[0];
+
+	die "not a blob path: $path" unless $path =~ m@$fs_regex@;
+	print $1, ':', $2, "\t", $path, "\n";
+}
+
+my $line_count = 0;
+
+$SIG{__DIE__} = sub
+{
+	my $lc;
+	my $msg = join(':', @_);
+
+	$lc = ": near line $line_count" if $line_count > 0;
+	printf STDERR "$PROG: ERROR$lc: $msg ";
+	exit 1;
+};
+
+#  udigs on the command line
+
+if (@ARGV > 0) {
+	fs2udig $_ for (@ARGV) ;
+	exit 0;
+}
+
+while (my $fs_path = <STDIN>) {
+	$line_count++;
+	chop $fs_path;
+	fs2udig $fs_path;
+}
