@@ -22,6 +22,7 @@ install: all
 		bio-eat							\
 		bio-file 						\
 		bio-fs-stat						\
+		bio-fs2udig						\
 		bio-get							\
 		bio-get-null						\
 		bio-give						\
