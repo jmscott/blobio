@@ -2,6 +2,15 @@
 #
 #  Synopsis:
 #	Map btc20, sha, or bc160 onto the path to the blob file.
+#  Usage:
+#	ls-service | bio-udig2fs
+#	bio-udig2fs btc20:0b12bd74f3082785436183e8d88f2cd895c419be
+#  Exit Status:
+#	0	ok
+#	1	errors
+#  Note:
+#	Hexidecimal is the assumed encoding for digests, which NOT in the
+#	spec for a udig!  Perhaps a sha3 will use 58char, like wireguard.
 #
 
 my $PROG = 'bio-udig2fs';
@@ -17,7 +26,8 @@ sub udig2fs
 	my ($algo, $digest) = ($1, $2);
 
 	die "unexpected $algo digest: $digest"
-				unless $digest =~ /^[0-9a-f]{40}$/;
+				unless $digest =~ /^[0-9a-f]{40}$/
+	;
 
 	#
 	# map udig to 32bit path using hex characters.
