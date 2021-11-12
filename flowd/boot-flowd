@@ -66,6 +66,9 @@ log "PATH=$PATH"
 log "flow conf: $FLOW_CONF"
 log "current directory: $(pwd)"
 
+test -r etc/profile || die "can not read $(pwd)/etc/profile"
+. etc/profile
+
 #  Note: need flowd to be smarter about missing brr file!
 touch spool/bio4d.brr || die "touch bio4d.brr failed: exit status=$?"
 
@@ -95,8 +98,6 @@ fi
 
 zap_run
 
-test -r etc/profile || die "can not read $(pwd)/etc/profile"
-. etc/profile
 log "invoking flowd server: $FLOW_CONF"
 bin/flowd server $FLOW_CONF
 STATUS=$?
