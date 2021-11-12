@@ -32,7 +32,7 @@
 DIST_ROOT=$(HOME)/opt/blobio
 
 #  openssl 1+ installed by standard distro package
-OPENSSL_INC=
+OPENSSL_INC=-DOPENSSL_API_COMPAT=0x10100000L
 OPENSSL_LIB=-lssl -lcrypto
 
 #  where golang distribution installed

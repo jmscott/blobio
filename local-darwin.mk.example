@@ -37,7 +37,7 @@
 DIST_ROOT=$(HOME)/opt/blobio
 
 #  openssl install by port package manager.
-OPENSSL_INC=-I/opt/local/include
+OPENSSL_INC=-I/opt/local/include -DOPENSSL_API_COMPAT=0x10100000L
 OPENSSL_LIB=-L/opt/local/lib -lssl -lcrypto
 
 #  where golang distribution is installed
