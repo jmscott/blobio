@@ -30,19 +30,19 @@ install:
 	install -g $(BLOBIO_GROUP) -o $(BLOBIO_USER) -m ug=r,o=	\
 		apache2-vhost.conf.example				\
 		$(WWW_ROOT)/lib
-ifdef DASH_DNS_VHOST_SUFFIX
+ifdef NOC_DNS_VHOST_SUFFIX
 	cd noc && $(MAKE) $(MFLAGS) install
 endif
 
 distclean:
-ifdef DASH_DNS_VHOST_SUFFIX
+ifdef NOC_DNS_VHOST_SUFFIX
 	cd noc && $(MAKE) $(MFLAGS) distclean
 endif
 	rm -rf $(WWW_ROOT)/htdocs
 	rm -rf $(WWW_ROOT)/lib
 
 clean:
-ifdef DASH_DNS_VHOST_SUFFIX
+ifdef NOC_DNS_VHOST_SUFFIX
 	cd noc && $(MAKE) $(MFLAGS) clean
 endif
 

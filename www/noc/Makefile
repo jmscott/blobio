@@ -6,7 +6,7 @@
 #	cgi-bin/
 #
 include ../../local.mk
-include ../jmscott.mk
+include ../../jmscott.mk
 include ../../blobio.mk
 include noc.mk
 
