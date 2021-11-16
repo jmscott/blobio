@@ -1,11 +1,12 @@
 #
 #  Synopsis:
-#	Development/Install Makefile for noc.blobio.$(DASH_DNS_VHOST_SUFFIX)
-#  Usage:
-#	export DASH_DNS_VHOST_SUFFIX=noc
-#	make clean all install
+#	Development/Install Makefile for noc.blob.$(NOC_DNS_VHOST_SUFFIX)
+#  Note:
+#	Need to add permissions to install invocation, in particular,
+#	cgi-bin/
 #
 include ../../local.mk
+include ../jmscott.mk
 include ../../blobio.mk
 include noc.mk
 
@@ -20,39 +21,32 @@ clean:
 
 install: all
 
-	install -d $(NOC_PREFIX)/etc
-	test -e $(NOC_PREFIX)/etc/passwd				||\
+	install -d $(WWW_PREFIX)/etc
+	test -e $(WWW_PREFIX)/etc/passwd				||\
 		install -m u=rw,g=r,o=					\
 			../apache2-passwd.example 			\
-			$(NOC_PREFIX)/etc/passwd
-	install -d $(NOC_PREFIX)/lib
-	install -d -m u=rwx,g=x,o= $(NOC_PREFIX)/cgi-bin
-	install -d $(NOC_PREFIX)/htdocs
-	install -m a=rwx -d $(NOC_PREFIX)/tmp
+			$(WWW_PREFIX)/etc/passwd
+	install -d $(WWW_PREFIX)/lib
+	install -d -m u=rwx,g=x,o= $(WWW_PREFIX)/cgi-bin
+	install -d $(WWW_PREFIX)/htdocs
+	install -m a=rwx -d $(WWW_PREFIX)/tmp
 
 	install 							\
+		env.shtml						\
+		footer.shtml						\
+		header.shtml						\
 		index.shtml						\
+		nav.shtml						\
+		screen.css						\
 		$(WWW_PREFIX)/htdocs
 
 	#  set up symbolic links to $(JMSCOTT_ROOT) tools
-	test -e $(NOC_PREFIX)/cgi-bin/jmscott				||\
-		ln -s $(JMSCOTT_ROOT)/www/cgi-bin $(NOC_PREFIX)/cgi-bin/jmscott
-	test -e $(NOC_PREFIX)/lib/jmscott				||\
-		ln -s $(JMSCOTT_ROOT)/www/lib $(NOC_PREFIX)/lib/jmscott
-
-	#  set symbolic link to $(SETSPACE_ROOT)/www/htdocs/icon
-	test -e $(WWW_PREFIX)/htdocs/icon				||\
-		ln -s $(SETSPACE_PREFIX)/www/htdocs/icon		\
-		      $(WWW_PREFIX)/htdocs/icon
-
-	cd schema && $(MAKE) $(MFLAGS) install
-	cd gw && $(MAKE) $(MFLAGS) install
-	cd tag-http && $(MAKE) $(MFLAGS) install
+	test -e $(WWW_PREFIX)/cgi-bin/jmscott				||\
+		ln -s $(JMSCOTT_ROOT)/www/cgi-bin $(WWW_PREFIX)/cgi-bin/jmscott
+	test -e $(WWW_PREFIX)/lib/jmscott				||\
+		ln -s $(JMSCOTT_ROOT)/www/lib $(WWW_PREFIX)/lib/jmscott
 
 distclean:
-	cd schema && $(MAKE) $(MFLAGS) distclean
-	cd gw && $(MAKE) $(MFLAGS) distclean
-	cd tag-http && $(MAKE) $(MFLAGS) distclean
 	rm -rf $(WWW_PREFIX)/lib
 	rm -rf $(WWW_PREFIX)/cgi-bin
 	rm -rf $(WWW_PREFIX)/htdocs
