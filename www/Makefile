@@ -15,20 +15,21 @@ ifdef NOC_DNS_VHOST_SUFFIX
 endif
 
 install:
-	install -g $(BLOBIO_GROUP) -o $(BLOBIO_USER) 		\
+	install -g $(BLOBIO_GROUP) -o $(BLOBIO_USER) 			\
 		-d $(BLOBIO_PREFIX)
-	install -g $(BLOBIO_GROUP) -o $(BLOBIO_USER) 		\
+	install -g $(BLOBIO_GROUP) -o $(BLOBIO_USER) 			\
 		-d $(WWW_ROOT)
-	install -g $(BLOBIO_GROUP) -o $(BLOBIO_USER) 		\
+	install -g $(BLOBIO_GROUP) -o $(BLOBIO_USER) 			\
 		-d $(WWW_ROOT)/lib
-	install -g $(BLOBIO_GROUP) -o $(BLOBIO_USER) 		\
+	install -g $(BLOBIO_GROUP) -o $(BLOBIO_USER) 			\
 		-m a+wrx						\
 		-d $(WWW_ROOT)/tmp
-	install -g $(BLOBIO_GROUP) -o $(BLOBIO_USER) 		\
+	install -g $(BLOBIO_GROUP) -o $(BLOBIO_USER) 			\
 		-d $(WWW_ROOT)/htdocs
 
-	install -g $(BLOBIO_GROUP) -o $(BLOBIO_USER) -m ug=r,o=	\
+	install -g $(BLOBIO_GROUP) -o $(BLOBIO_USER) -m ug=r,o=		\
 		apache2-vhost.conf.example				\
+		schema.sql						\
 		$(WWW_ROOT)/lib
 ifdef NOC_DNS_VHOST_SUFFIX
 	cd noc && $(MAKE) $(MFLAGS) install
