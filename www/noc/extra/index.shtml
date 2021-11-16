@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
  <head>
-  <title>Template - EDIT ME</title>
+  <title>Extra @ Blob.IO</title>
   <meta charset="UTF-8" />
   <link
     href="/screen.css"
@@ -15,10 +15,13 @@
    <!--#include virtual="/header.shtml" -->
    <!--#include virtual="/nav.shtml" -->
    <div id="content">
-    <h1>Primary Header - EDIT ME</h1>
-    <p>
-     Content goes here.
-    </p>
+    <h1>Extra for Network Operations</h1>
+    <ul>
+     <li>
+      <a href="env.shtml">Apache Process Environment</a>
+     </li>
+    </ul>
+
    </div>
    <!--#include virtual="/footer.shtml" -->
   </div>

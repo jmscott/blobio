@@ -15,12 +15,11 @@ $(error NOC_DNS_VHOST_SUFFIX is not set)
 endif
 
 all:
-	true
+	cd extra && $(MAKE) $(MFLAGS) all
 clean:
-	true
+	cd extra && $(MAKE) $(MFLAGS) clean
 
 install: all
-
 	install -d $(WWW_PREFIX)/etc
 	#  install bootstrap password noc from generic www
 	test -e $(WWW_PREFIX)/etc/passwd				||\
@@ -33,10 +32,10 @@ install: all
 		$(WWW_PREFIX)/lib
 	install -d -m u=rwx,g=x,o= $(WWW_PREFIX)/cgi-bin
 	install -d $(WWW_PREFIX)/htdocs
+	install -d $(WWW_PREFIX)/htdocs/extra
 	install -m a=rwx -d $(WWW_PREFIX)/tmp
 
 	install 							\
-		env.shtml						\
 		footer.shtml						\
 		header.shtml						\
 		index.shtml						\
@@ -49,8 +48,10 @@ install: all
 		ln -s $(JMSCOTT_ROOT)/www/cgi-bin $(WWW_PREFIX)/cgi-bin/jmscott
 	test -e $(WWW_PREFIX)/lib/jmscott				||\
 		ln -s $(JMSCOTT_ROOT)/www/lib $(WWW_PREFIX)/lib/jmscott
+	cd extra && $(MAKE) $(MFLAGS) install
 
 distclean:
+	cd extra && $(MAKE) $(MFLAGS) distclean
 	rm -rf $(WWW_PREFIX)/lib
 	rm -rf $(WWW_PREFIX)/cgi-bin
 	rm -rf $(WWW_PREFIX)/htdocs
