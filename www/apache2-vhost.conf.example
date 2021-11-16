@@ -1,19 +1,21 @@
 #
 #  Synopsis:
-#       Template apache2 vhost config for {www,dash,noc}.blobio...
+#       Template apache2 vhost config for {www,dash,noc}.blob...
 #  Note:
+#	Prefix variables as BLOBIO_NOC instead of BLOBIO?
+#
+#	Need to add variable for SSL_CERT_PATH.  The current path values
+#	are for mac ports apache, which requires rewriting on various
+#	linuces.
+#
 #	Perl needs DBD/Pg.pm in path.  Add /opt/local/bin for perl managed
 #	by mac ports or /usr/local/bin for homebrew.
 #
 
-#  See https://github.com/jmscott/blobio
-Define BLOBIO_ROOT /usr/local/blobio
-
-#  The "home" service.
-Define BLOBIO_ROOT /usr/local/blobio
-Define BLOBIO_SERVICE bio4:127.0.0.1:1797
+Define BLOBIO_ROOT /Users/jmscott/opt/blobio
+Define BLOBIO_SERVICE bio4:10.187.1.5:1797
+Define BLOBIO_GET_SERVICE bio4:10.187.1.5:1797
 Define BLOBIO_ALGORITHM btc20
-Define BLOBIO_GET_SERVICE fs:${SETSPACE_BLOBIO_ROOT}
 
 #  See https://github.com/jmscott/work
 Define BLOBIO_JMSCOTT_ROOT /usr/local/jmscott
@@ -21,33 +23,34 @@ Define BLOBIO_JMSCOTT_ROOT /usr/local/jmscott
 #
 #  APACHE_SERVER_NAME and dns/ssl host is built as
 #
-#	${SETSPACE_DNS_VHOST_PREFIX}.setspace.${SETSPACE_DNS_VHOST_SUFFIX}
+#	${BLOBIO_NOC_DNS_VHOST_PREFIX}.blob.${BLOBIO_NOC_DNS_VHOST_SUFFIX}
 #
 #  Current values of PREFIX can be "www", "dash", or "noc".
 #
-Define BLOBIO_DNS_VHOST_PREFIX www
-Define BLOBIO_DNS_VHOST_SUFFIX com
+Define BLOBIO_DNS_VHOST_PREFIX noc
+Define BLOBIO_DNS_VHOST_SUFFIX jmscott
 
 Define BLOBIO_PGHOME /usr/local/pgsql
 #  Note: golang pg has issues with unix sockets as /tmp
-Define BLOBIO_PGHOST /tmp
+Define BLOBIO_PGHOST 10.187.1.5
 Define BLOBIO_PGPORT 5432
 Define BLOBIO_PGUSER postgres
-Define BLOBIO_PGDATABASE blobio 
+Define BLOBIO_PGDATABASE jmsdesk 
 
 #  Perl needs DBD/Pg.pm in path.  Add /opt/local/bin for perl managed
 #  by mac ports or /usr/local/bin for homebrew.
 
-Define BLOBIO_PATH ${BLOBIO_ROOT}/bin:${BLOBIO_ROOT}/www/bin:${BLOBIO_PGHOME}/bin:${BLOBIO_JMSCOTT_ROOT}/bin:/usr/bin:/bin
+Define BLOBIO_PATH /opt/local/libexec/gnubin:/opt/local/bin:${BLOBIO_ROOT}/bin:${BLOBIO_ROOT}/www/bin:${BLOBIO_PGHOME}/bin:${BLOBIO_ROOT}/bin:${BLOBIO_JMSCOTT_ROOT}/bin:/usr/bin:/bin
 
 #  probably no need to change remaining variables
 
-Define BLOBIO_APACHE2_SERVER_NAME ${BLOBIO_DNS_VHOST_PREFIX}.blobio.${BLOBIO_DNS_VHOST_SUFFIX}
+Define BLOBIO_APACHE2_SERVER_NAME ${BLOBIO_DNS_VHOST_PREFIX}.blob.${BLOBIO_DNS_VHOST_SUFFIX}
 Define BLOBIO_WWW_ROOT ${BLOBIO_ROOT}/www
 Define BLOBIO_VHOST_ROOT ${BLOBIO_ROOT}/www/vhost/${BLOBIO_APACHE2_SERVER_NAME}
 Define BLOBIO_PERL5LIB ${BLOBIO_VHOST_ROOT}/lib:${BLOBIO_WWW_ROOT}/lib:${BLOBIO_JMSCOTT_ROOT}/www/lib
 
-Define BLOBIO_APACHE2_SERVER_PORT 443
+#  always encrypted
+Define BLOBIO_APACHE2_SERVER_PORT 80
 
 #  Define on Mac OS/X under ports distro, which does not define
 <IfDefine !APACHE_LOG_DIR>
@@ -56,7 +59,7 @@ Define BLOBIO_APACHE2_SERVER_PORT 443
 
 #
 #  Synopsis:
-#	Example development Apache2 configuration for setspace web gui.
+#	Example development Apache2 configuration for noc.blob.io web gui.
 #  Note:
 #	See toolkit at https://github.com/jmscott/work/tree/master/httpd2
 #	for reference in PERL5LIB to /usr/local/jmscott/httpd2/lib
@@ -67,7 +70,7 @@ Define BLOBIO_APACHE2_SERVER_PORT 443
 #
 #	and not related to the server name seen by the public.
 #
-<VirtualHost ${BLOBIO_APACHE2_SERVER_NAME}:443>
+<VirtualHost ${BLOBIO_APACHE2_SERVER_NAME}>
         ServerName ${BLOBIO_APACHE2_SERVER_NAME}
 
 	CustomLog ${APACHE_LOG_DIR}/${BLOBIO_APACHE2_SERVER_NAME}-access.log common
@@ -79,7 +82,6 @@ Define BLOBIO_APACHE2_SERVER_PORT 443
 		SetEnv TMPDIR ${BLOBIO_VHOST_ROOT}/tmp
 	</IfDefine>
 
-	#  the "home" database
 	SetEnv PGHOST ${BLOBIO_PGHOST}
 	SetEnv PGPORT ${BLOBIO_PGPORT}
 	SetEnv PGUSER ${BLOBIO_PGUSER}
@@ -95,7 +97,6 @@ Define BLOBIO_APACHE2_SERVER_PORT 443
 	SetEnv JMSCOTT_ROOT ${BLOBIO_JMSCOTT_ROOT}
 
 	SetEnv PATH ${BLOBIO_PATH}
-	SetEnv LD_LIBRARY_PATH /usr/local/pgsql/lib
 
 	#  Note:See https://github.com/jmscott/work/tree/master/httpd2
 	#
@@ -144,6 +145,7 @@ Define BLOBIO_APACHE2_SERVER_PORT 443
                 Require valid-user
         </Directory>
 
+	#  Pull in $JMSCOTT_ROOT/www scripts
 	<Directory "${BLOBIO_JMSCOTT_ROOT}/www/cgi-bin">
                 AllowOverride all
                 Allow from all
@@ -161,9 +163,9 @@ Define BLOBIO_APACHE2_SERVER_PORT 443
 	#  openssl req -new -key ca.key -out ca.csr
 	#  openssl x509 -req -days 365 -in ca.csr -signkey ca.key -out ca.crt
 
-	SSLEngine on
-	SSLCertificateFile etc/apache2/extra/${BLOBIO_APACHE2_SERVER_NAME}.crt
-	SSLCertificateKeyFile etc/apache2/extra/${BLOBIO_APACHE2_SERVER_NAME}.key
+	#SSLEngine on
+	#SSLCertificateFile etc/apache2/extra/${BLOBIO_APACHE2_SERVER_NAME}.crt
+	#SSLCertificateKeyFile etc/apache2/extra/${BLOBIO_APACHE2_SERVER_NAME}.key
 
 </VirtualHost>
 
@@ -171,13 +173,13 @@ Define BLOBIO_APACHE2_SERVER_PORT 443
 #  To automatically redirect port 80 to the https version of website
 #  add
 #
-#	Define SETSPACE_REDIRECT_PORT80_TO_HTTPS 1
+#	Define BLOBIO_REDIRECT_PORT80_TO_HTTPS 1
 #
 
-#<IfDefine SETSPACE_REDIRECT_PORT80_TO_HTTPS>
-#Listen ${SETSPACE_APACHE2_SERVER_NAME}:80
-#<VirtualHost ${SETSPACE_APACHE2_SERVER_NAME}:80>
-        #ServerName ${SETSPACE_APACHE2_SERVER_NAME}
-        #Redirect permanent / https://${SETSPACE_APACHE2_SERVER_NAME}
+#<IfDefine BLOBIO_REDIRECT_PORT80_TO_HTTPS>
+#Listen ${BLOBIO_APACHE2_SERVER_NAME}:80
+#<VirtualHost ${BLOBIO_APACHE2_SERVER_NAME}:80>
+        #ServerName ${BLOBIO_APACHE2_SERVER_NAME}
+        #Redirect permanent / https://${BLOBIO_APACHE2_SERVER_NAME}
 #</VirtualHost>
 #</IfDefine>
