@@ -29,7 +29,6 @@ install:
 
 	install -g $(BLOBIO_GROUP) -o $(BLOBIO_USER) -m ug=r,o=		\
 		apache2-vhost.conf.example				\
-		schema.sql						\
 		$(WWW_ROOT)/lib
 ifdef NOC_DNS_VHOST_SUFFIX
 	cd noc && $(MAKE) $(MFLAGS) install

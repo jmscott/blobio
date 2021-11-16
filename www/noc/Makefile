@@ -22,11 +22,15 @@ clean:
 install: all
 
 	install -d $(WWW_PREFIX)/etc
+	#  install bootstrap password noc from generic www
 	test -e $(WWW_PREFIX)/etc/passwd				||\
 		install -m u=rw,g=r,o=					\
 			../apache2-passwd.example 			\
 			$(WWW_PREFIX)/etc/passwd
 	install -d $(WWW_PREFIX)/lib
+	install								\
+		schema.sql						\
+		$(WWW_PREFIX)/lib
 	install -d -m u=rwx,g=x,o= $(WWW_PREFIX)/cgi-bin
 	install -d $(WWW_PREFIX)/htdocs
 	install -m a=rwx -d $(WWW_PREFIX)/tmp
