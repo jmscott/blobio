@@ -49,12 +49,45 @@ CREATE TABLE www_state (
 				REFERENCES www_secret(secret_blob)
 				ON DELETE CASCADE,
 	key		noctag,	
-	value		jsonb,
+	value		jsonb NOT NULL,
 
 	PRIMARY KEY	(secret_blob, key)
 );
 COMMENT ON TABLE www_state
   IS 'Keyed States Associated with a WWW Login Session'
 ;
+
+/*
+ *  Note:
+ *	Need to add rule to insure rolname exists on PG database.
+ *	Really wish PG allowed foreign key to pg_catalog.
+ */
+DROP TABLE IF EXISTS www_login CASCADE;
+CREATE TABLE www_login (
+	rolname	pg_catalog.name
+			PRIMARY KEY
+);
+COMMENT ON TABLE www_login IS 'Users for noc.blob.io';
+
+DROP TABLE IF EXISTS www_pgdatabase CASCADE;
+CREATE TABLE www_service (
+	rolname	pg_catalog.name
+			REFERENCES www_login(rolname),
+	service_tag	noctag,
+
+	pghost		inet NOT NULL,
+	pgport		int CHECK (
+				pgport > 0
+				AND
+				pgport < 65536
+			) NOT NULL,
+	pguser		name NOT NULL,
+	pgpasswd	text,
+	pgdatabase	name,
+
+	blobio_service	text CHECK
+				blobio_service ~ '^
+			)
+);
 
 COMMIT;
