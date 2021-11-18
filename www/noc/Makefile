@@ -15,8 +15,10 @@ $(error NOC_DNS_VHOST_SUFFIX is not set)
 endif
 
 all:
+	cd service && $(MAKE) $(MFLAGS) all
 	cd extra && $(MAKE) $(MFLAGS) all
 clean:
+	cd service && $(MAKE) $(MFLAGS) clean
 	cd extra && $(MAKE) $(MFLAGS) clean
 
 install: all
@@ -48,9 +50,11 @@ install: all
 		ln -s $(JMSCOTT_ROOT)/www/cgi-bin $(WWW_PREFIX)/cgi-bin/jmscott
 	test -e $(WWW_PREFIX)/lib/jmscott				||\
 		ln -s $(JMSCOTT_ROOT)/www/lib $(WWW_PREFIX)/lib/jmscott
+	cd service && $(MAKE) $(MFLAGS) install
 	cd extra && $(MAKE) $(MFLAGS) install
 
 distclean:
+	cd service && $(MAKE) $(MFLAGS) distclean
 	cd extra && $(MAKE) $(MFLAGS) distclean
 	rm -rf $(WWW_PREFIX)/lib
 	rm -rf $(WWW_PREFIX)/cgi-bin

@@ -4,7 +4,7 @@
  */
 
 \set ON_ERROR_STOP 1
-\set search_path to blobnoc,public;
+set search_path to blobnoc,public;
 
 BEGIN;
 DROP SCHEMA IF EXISTS blobnoc CASCADE;
@@ -97,13 +97,31 @@ CREATE TABLE www_service (
 	 */
 	blobio_service	text CHECK (
 				blobio_service ~
-					'^[a-z][a-z0-9]{0,8}:[[:graph:]{1,128}$'
+				      '^[a-z][a-z0-9]{0,8}:[[:graph:]]{1,128}$'
 			) NOT NULL,
 	/*
 	 *  Where to fetch the round robin database graphs.
 	 */
 	rrd_host	inet NOT NULL,
-	rrd_port	noc_port
+	rrd_port	noc_port NOT NULL
 );
+
+INSERT INTO www_service VALUES
+	('jmscott', 'jmsdesk-ess',
+		'10.187.1.5', 5432, 'postgres', '', 'jmsdesk',
+		'bio4:10.187.1.5:1797',
+		'10.187.1.5', 2324
+	),
+	('jmscott', 'jmsdesk-wework',
+		'10.187.1.3', 5432, 'postgres', '', 'jmsdesk',
+		'bio4:10.187.1.3:1797',
+		'10.187.1.3', 2324
+	),
+	('jmscott', 'jmsdesk-lct',
+		'10.187.1.2', 5432, 'postgres', '', 'jmsdesk',
+		'bio4:10.187.1.2:1797',
+		'10.187.1.2', 2324
+	)
+;
 
 COMMIT;
