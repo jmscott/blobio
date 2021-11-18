@@ -583,8 +583,8 @@ parse_argv(int argc, char **argv)
 			 *  End point > 0 and < 256 characters
 			 */
 			p++;
-			if (strlen(p) > 255)
-				eservice("end point > 255 characters", s);
+			if (strlen(p) > 128)
+				eservice("end point > 128 characters", s);
 			if (!*p)
 				eservice("missing <end point>", s);
 			endp = p;
