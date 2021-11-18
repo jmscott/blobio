@@ -30,6 +30,7 @@ install: all
 			$(WWW_PREFIX)/etc/passwd
 	install -d $(WWW_PREFIX)/lib
 	install								\
+		psqlrc.example						\
 		schema.sql						\
 		$(WWW_PREFIX)/lib
 	install -d -m u=rwx,g=x,o= $(WWW_PREFIX)/cgi-bin
