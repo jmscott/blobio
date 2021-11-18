@@ -11,15 +11,22 @@ DROP SCHEMA IF EXISTS blobnoc CASCADE;
 CREATE SCHEMA blobnoc;
 COMMENT ON SCHEMA blobnoc IS 'Public BlobIO Network Operations';
 
-DROP DOMAIN IF EXISTS noctime CASCADE;
-CREATE DOMAIN noctime AS timestamptz
+DROP DOMAIN IF EXISTS noc_time CASCADE;
+CREATE DOMAIN noc_time AS timestamptz
   CHECK (
   	value BETWEEN '2021/01/01' AND '2121/01/01'
   ) NOT NULL
 ;
 
-DROP DOMAIN IF EXISTS noctag CASCADE;
-CREATE DOMAIN noctag AS text
+DROP DOMAIN IF EXISTS noc_port CASCADE;
+CREATE DOMAIN noc_port AS INTEGER
+  CHECK (
+  	value BETWEEN 0 AND 65535
+  ) NOT NULL
+;
+
+DROP DOMAIN IF EXISTS noc_tag CASCADE;
+CREATE DOMAIN noc_tag AS text
   CHECK (
   	value ~ '^[a-z][a-z0-9_-]{0,63}'
   ) NOT NULL
@@ -29,7 +36,7 @@ DROP TABLE IF EXISTS www_secret CASCADE;
 CREATE TABLE www_secret (
 	secret_blob	udig
 				PRIMARY KEY,
-	create_time	noctime
+	create_time	noc_time
 			DEFAULT now()
 );
 COMMENT ON TABLE www_secret IS 'Public WWW Login Secret';
@@ -39,7 +46,7 @@ CREATE TABLE www_secret_recent (
 	secret_blob	udig
 				REFERENCES www_secret(secret_blob)
 				ON DELETE CASCADE,
-	recent_time	noctime
+	recent_time	noc_time
 );
 COMMENT ON TABLE www_secret_recent IS 'Recent Read Access of Public WWW Secret';
 
@@ -48,7 +55,7 @@ CREATE TABLE www_state (
 	secret_blob	udig
 				REFERENCES www_secret(secret_blob)
 				ON DELETE CASCADE,
-	key		noctag,	
+	key		noc_tag,	
 	value		jsonb NOT NULL,
 
 	PRIMARY KEY	(secret_blob, key)
@@ -64,30 +71,39 @@ COMMENT ON TABLE www_state
  */
 DROP TABLE IF EXISTS www_login CASCADE;
 CREATE TABLE www_login (
-	rolname	pg_catalog.name
-			PRIMARY KEY
+	login_id	pg_catalog.name
+				PRIMARY KEY
 );
 COMMENT ON TABLE www_login IS 'Users for noc.blob.io';
+INSERT INTO www_login VALUES ('jmscott');
 
-DROP TABLE IF EXISTS www_pgdatabase CASCADE;
+DROP TABLE IF EXISTS www_service CASCADE;
 CREATE TABLE www_service (
-	rolname	pg_catalog.name
-			REFERENCES www_login(rolname),
-	service_tag	noctag,
+	login_id	pg_catalog.name
+				REFERENCES www_login(login_id),
+	service_tag	noc_tag,
 
+	/*
+	 *  PostgreSQL Database with the blobio schema.
+	 */
 	pghost		inet NOT NULL,
-	pgport		int CHECK (
-				pgport > 0
-				AND
-				pgport < 65536
-			) NOT NULL,
+	pgport		noc_port,
 	pguser		name NOT NULL,
 	pgpasswd	text,
 	pgdatabase	name,
 
-	blobio_service	text CHECK
-				blobio_service ~ '^
-			)
+	/*
+	 *  Where to fetch immutable blobs.
+	 */
+	blobio_service	text CHECK (
+				blobio_service ~
+					'^[a-z][a-z0-9]{0,8}:[[:graph:]{1,128}$'
+			) NOT NULL,
+	/*
+	 *  Where to fetch the round robin database graphs.
+	 */
+	rrd_host	inet NOT NULL,
+	rrd_port	noc_port
 );
 
 COMMIT;
