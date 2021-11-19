@@ -10,6 +10,13 @@
 
 #define COMPILE_TRACE
 
+#define EXIT_OK		0	//  request satisfied
+#define EXIT_NO		1	//  request not satisfied
+#define EXIT_BAD_ARG	2	//  missing or invalid command line argument
+#define EXIT_BAD_DIG	16	//  unexpetced error in digest
+#define EXIT_BAD_SRV	17	//  unexpected error in blob service
+#define EXIT_BAD_UNI	18	//  unexpected error in unix system call
+
 #ifndef PIPE_MAX
 #define PIPE_MAX		4096
 #endif
@@ -174,6 +181,7 @@ extern char	*buf4cat(char *tgt, int tgtsize,
 			const char *src3, const char *src4);
 
 extern void	die(int status, char *msg);
+extern void	die2(int status, char *msg1, char *msg2);
 extern int	tracing;
 extern void	trace(char *);
 extern void	trace2(char *, char *);

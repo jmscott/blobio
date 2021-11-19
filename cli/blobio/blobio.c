@@ -84,13 +84,6 @@
 
 #include "blobio.h"
 
-#define EXIT_OK		0	//  request satisfied
-#define EXIT_NO		1	//  request not satisfied
-#define EXIT_BAD_ARG	2	//  missing or invalid command line argument
-#define EXIT_BAD_DIG	16	//  unexpetced error in digest
-#define EXIT_BAD_SRV	17	//  unexpected error in blob service
-#define EXIT_BAD_UNI	18	//  unexpected error in unix system call
-
 #define BRR_SIZE		370		//  terminating null NOT counted
 
 static char	*progname = "blobio";
@@ -258,7 +251,7 @@ die(int status, char *msg)
 	leave(status);
 }
 
-static void
+void
 die2(int status, char *msg1, char *msg2)
 {
 	char buf[PIPE_MAX];
