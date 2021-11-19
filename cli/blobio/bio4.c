@@ -208,7 +208,7 @@ bio4_end_point_syntax(char *endp)
 	while ((c = *ep++) && c != ':') {
 		if (!isascii(c))
 			return "non ascii character in host";
-		if (!isalnum(c) && c != '.')
+		if (!isalnum(c) && c != '.' && c != '-')
 			return "non alpha numeric or . char in host";
 	}
 	if (c != ':')
