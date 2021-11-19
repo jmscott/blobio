@@ -29,6 +29,7 @@ install: all
 		service.d/help.pl					\
 		$(WWW_PREFIX)/lib/service.d
 	install								\
+		add.shtml						\
 		index.shtml						\
 		nav.shtml						\
 		$(WWW_PREFIX)/htdocs/service

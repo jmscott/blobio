@@ -287,7 +287,7 @@ span.warn
 
 span.err
 {
-	background-color:	pink;
+	background-color:	red;
 	color:			black;
 }
 
@@ -400,4 +400,10 @@ dl.query span.detail
 span.note
 {
 	font-size:	x-small;
+}
+
+form > dl > dt
+{
+	font-size:	150%;
+	font-weight:	bold;
 }

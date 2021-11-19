@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html>
+ <head>
+  <title>Add Service @noc.blob.io</title>
+  <meta charset="UTF-8" />
+  <link
+    href="/screen.css"
+    rel="stylesheet"
+    type="text/css"
+  />
+ </head>
+
+ <body>
+  <div id="container">
+   <!--#include virtual="/header.shtml" -->
+   <!--#include virtual="nav.shtml" -->
+   <div id="content">
+    <h1>Add Service</h1>
+    <form
+      id="service-add"
+      method="POST"
+      action="/cgi-bin/service"
+    >
+     <input
+       name="in"
+       type="hidden"
+       value="post.add"
+     />
+     <dl>
+
+      <dt>Service Tag</dt>
+      <dd>
+       <input
+         name="tag"
+	 type="text"
+	 size="64"
+       />
+      </dd>
+
+      <dt>PostgreSQL</dt>
+      <dd>
+       <dl>
+        <dt>PGHOST</dt>
+	<dd>
+         <input
+           name="pghost"
+	   type="text"
+	   size="15"
+	   value="127.0.0.1"
+         />
+	</dd>
+
+        <dt>PGPORT</dt>
+	<dd>
+         <input
+           name="pgport"
+	   type="text"
+	   size="5"
+	   value="5432"
+         />
+	</dd>
+
+        <dt>PGUSER</dt>
+	<dd>
+         <input
+           name="pguser"
+	   type="text"
+	   size="64"
+	   value="postgres"
+         />
+	</dd>
+
+        <dt>PGDATABASE</dt>
+	<dd>
+         <input
+           name="pgdatabase"
+	   type="text"
+	   size="64"
+         />
+	</dd>
+
+       </dl>
+      </dd>
+      <dt>BlobIO Service</dt>
+      <dd>
+       <input
+         name="bsrv"
+	 type="text"
+	 size="64"
+	 value="bio4:127.0.0.1:1797"
+       />
+      </dd>
+      <dt>Round Robin Database</dt>
+      <dd>
+       <dl>
+        <dt>Host</dt>
+	<dd>
+         <input
+           name="rrdhost"
+	   type="text"
+	   size="15"
+	   value="127.0.0.1"
+         />
+	</dd>
+
+        <dt>Port</dt>
+	<dd>
+         <input
+           name="pgport"
+	   type="text"
+	   size="5"
+	   value="2324"
+         />
+	</dd>
+       </dl>
+      </dd>
+     </dl>
+     <input
+       value="Add Service"
+       type="submit"
+     />
+    </form>
+   </div>
+   <!--#include virtual="/footer.shtml" -->
+  </div>
+ </body>
+</html>
