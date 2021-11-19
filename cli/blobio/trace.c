@@ -6,6 +6,7 @@
  */
 #include <errno.h>
 #include <string.h>
+#include <time.h>
 #include <ctype.h>
 #include <unistd.h>
 #include <stdio.h>
@@ -17,6 +18,41 @@ int		tracing = 0;
 
 static int	trace_fd = 2;
 
+static char *
+RFC3339Nano_time()
+{
+	static char buf[80];
+	struct tm *t;
+	struct timespec	now;
+
+	/*
+	 *  Record start time.
+	 */
+	if (clock_gettime(CLOCK_REALTIME, &now) < 0)
+		die2(
+			EXIT_BAD_UNI,
+			"TRACE: clock_gettime(end REALTIME) failed",
+			strerror(errno)
+		);
+	t = gmtime(&now.tv_sec);
+	if (!t)
+		die2(EXIT_BAD_UNI, "TRACE: gmtime() failed", strerror(errno));
+	/*
+	 *  Format the record buffer.
+	 */
+	snprintf(buf, sizeof buf,
+		"%04d-%02d-%02dT%02d:%02d:%02d.%09ld+00:00",
+		t->tm_year + 1900,
+		t->tm_mon + 1,
+		t->tm_mday,
+		t->tm_hour,
+		t->tm_min,
+		t->tm_sec,
+		now.tv_nsec
+	);
+	return buf;
+}
+
 void
 trace(char *msg)
 {
@@ -25,6 +61,8 @@ trace(char *msg)
 	buf[0] = 0;
 
 	bufcat(buf, sizeof buf, "TRACE: ");
+	bufcat(buf, sizeof buf, RFC3339Nano_time());
+	bufcat(buf, sizeof buf, ": ");
 	if (verb)
 		buf2cat(buf, sizeof buf, verb, ": ");
 	if (msg)
@@ -37,7 +75,6 @@ trace(char *msg)
 void
 trace2(char *msg1, char *msg2)
 {
-
 	if (msg1) {
 		char buf[PIPE_MAX];
 
