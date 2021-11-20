@@ -31,7 +31,7 @@
       <dt>Service Tag</dt>
       <dd>
        <input
-         name="tag"
+         name="srvtag"
 	 type="text"
 	 size="64"
        />
@@ -106,7 +106,7 @@
         <dt>Port</dt>
 	<dd>
          <input
-           name="pgport"
+           name="rrdport"
 	   type="text"
 	   size="5"
 	   value="2324"

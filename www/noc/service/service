@@ -56,6 +56,43 @@ $CGI{GET}->{out}->{putter}->{'table'}->{name} = 'table';
 #  END: /cgi/GET/out/putter[@name='table']
 #
 
+
+#
+#  BEGIN: /cgi/POST/in/putter[@name='post.add']
+#
+$CGI{POST}->{in}->{putter}->{'post.add'}->{name} = 'post.add';
+$CGI{POST}->{in}->{putter}->{'post.add'}->{vars}->{var}->{srvtag} = {
+	perl5_re	=>	'[a-z][a-z0-9_-]{0,32}',
+};
+$CGI{POST}->{in}->{putter}->{'post.add'}->{vars}->{var}->{pghost} = {
+	perl5_re	=>	'[a-z0-9][a-z0-9_.-]{0,63}',
+};
+$CGI{POST}->{in}->{putter}->{'post.add'}->{vars}->{var}->{pgport} = {
+	perl5_re	=>	'[0-9]{1,5}',
+};
+$CGI{POST}->{in}->{putter}->{'post.add'}->{vars}->{var}->{pguser} = {
+	perl5_re	=>	'[a-z0-9][a-z0-9_@-]{0,63}',
+};
+$CGI{POST}->{in}->{putter}->{'post.add'}->{vars}->{var}->{pgdatabase} = {
+	perl5_re	=>	'[a-z0-9][a-z0-9_-]{0,63}',
+};
+$CGI{POST}->{in}->{putter}->{'post.add'}->{vars}->{var}->{blobsrv} = {
+	perl5_re	=>	'[a-z0-9][a-z0-9]{0,7}:[[:graph:]]{1,127}',
+};
+$CGI{POST}->{in}->{putter}->{'post.add'}->{vars}->{var}->{rrdhost} = {
+	perl5_re	=>	'[a-z0-9][a-z0-9_.-]{0,63}',
+};
+$CGI{POST}->{in}->{putter}->{'post.add'}->{vars}->{var}->{rrdport} = {
+	perl5_re	=>	'[0-9]{1,5}',
+};
+#
+#  END: /cgi/POST/in/putter[@name=post.add]/vars
+#
+
+#
+#  END: /cgi/POST/in/putter[@name='post.add']
+#
+
 $CGI{GET}->{out}->{putter}->{help}->{name} = 'help';
 $CGI{GET}->{out}->{putter}->{help}->{'content-type'} = 'text/html';
 
