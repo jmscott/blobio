@@ -32,6 +32,10 @@ CREATE DOMAIN noc_tag AS text
   ) NOT NULL
 ;
 
+/*
+ *  Note:
+ *	"secret_blob" ought to be "session_blob".
+ */
 DROP TABLE IF EXISTS www_secret CASCADE;
 CREATE TABLE www_secret (
 	secret_blob	udig
@@ -41,6 +45,10 @@ CREATE TABLE www_secret (
 );
 COMMENT ON TABLE www_secret IS 'Public WWW Login Secret';
 
+/*
+ *  Note:
+ *	"secret_blob" ought to be "session_blob".
+ */
 DROP TABLE IF EXISTS www_secret_recent CASCADE;
 CREATE TABLE www_secret_recent (
 	secret_blob	udig
@@ -51,6 +59,10 @@ CREATE TABLE www_secret_recent (
 COMMENT ON TABLE www_secret_recent IS 'Recent Read Access of Public WWW Secret';
 
 DROP TABLE IF EXISTS www_state CASCADE;
+/*
+ *  Note:
+ *	"secret_blob" ought to be "session_blob".
+ */
 CREATE TABLE www_state (
 	secret_blob	udig
 				REFERENCES www_secret(secret_blob)
@@ -103,7 +115,9 @@ CREATE TABLE www_service (
 	 *  Where to fetch the round robin database graphs.
 	 */
 	rrd_host	inet NOT NULL,
-	rrd_port	noc_port NOT NULL
+	rrd_port	noc_port NOT NULL,
+
+	PRIMARY KEY	(login_id, service_tag)
 );
 
 INSERT INTO www_service VALUES
