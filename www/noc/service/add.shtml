@@ -84,7 +84,7 @@
       <dt>BlobIO Service</dt>
       <dd>
        <input
-         name="bsrv"
+         name="blobsrv"
 	 type="text"
 	 size="64"
 	 value="bio4:127.0.0.1:1797"
