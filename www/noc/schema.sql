@@ -90,7 +90,7 @@ CREATE TABLE www_service (
 	pgport		noc_port,
 	pguser		name NOT NULL,
 	pgpasswd	text,
-	pgdatabase	name,
+	pgdatabase	name NOT NULL,
 
 	/*
 	 *  Where to fetch immutable blobs.
