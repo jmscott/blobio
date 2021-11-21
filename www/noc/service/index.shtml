@@ -8,6 +8,16 @@
     rel="stylesheet"
     type="text/css"
   />
+  <style type="text/css">
+  /* <![CDATA[ */
+
+  table.query > tbody > tr > td:first-child
+  {
+  	font-weight:	bold;
+  	font-size:	120%;
+  }
+  * ]]> */
+  </style>
  </head>
 
  <body>

@@ -170,7 +170,7 @@ while (my (
 print <<END;
   <tr>
    <td>$service_tag</td>
-   <td>$pg_span_status $PGUSER\@$PGDATABASE/$PGHOST:$PGPORT</a></td>
+   <td>$pg_span_status $PGUSER\@$PGDATABASE/$PGHOST:$PGPORT</td>
    <td>$blob_span_status $BLOBIO_SERVICE</td>
    <td>$rrd_span_status $rrd_host:$rrd_port</td>
   </tr>
