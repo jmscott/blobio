@@ -11,18 +11,21 @@
 #		require 'common-json.pl';
 #
 
+require 'dbi-pg.pl';
 require 'common-json.pl';
 require 'utf82blob.pl';
 
 our %POST_VAR;
 
-my $srvtag = $POST_VAR{srvtag};
-my $pghost = $POST_VAR{pghost};
-my $pgport = $POST_VAR{pgport};
-my $pguser = $POST_VAR{pguser};
-my $pgdatabase = $POST_VAR{pgdatabase};
-my $rrdhost = $POST_VAR{rrdhost};
-my $rrdport = $POST_VAR{rrdport};
+my $BLOBIO_NOC_LOGIN = $ENV{BLOBIO_NOC_LOGIN};
+my $service_tag = $POST_VAR{srvtag};
+my $PGHOST = $POST_VAR{pghost};
+my $PGPORT = $POST_VAR{pgport};
+my $PGUSER = $POST_VAR{pguser};
+my $PGDATABASE = $POST_VAR{pgdatabase};
+my $BLOBIO_SERVICE = $POST_VAR{blobsrv};
+my $rrd_host = $POST_VAR{rrdhost};
+my $rrd_port = $POST_VAR{rrdport};
 
 my $now = `RFC3339Nano`;
 chomp $now;
@@ -33,13 +36,15 @@ my $env = env2json(1);
 my $request_blob = utf82blob(<<END);
 {
 	"noc.blob.io": {
-		"srvtag":  "$srvtag",
-		"pghost":  "$pghost",
-		"pgport":  $pgport,
-		"pguser":  "$pguser",
-		"pgdatabase":  "$pgdatabase",
-		"rrdhost":  "$rrdhost",
-		"rrdport":  $rrdport
+		"login_id":		"$BLOBIO_NOC_LOGIN",
+		"service_tag":		"$service_tag",
+		"PGHOST":  		"$PGHOST",
+		"PGPORT":  		$PGPORT,
+		"PGUSER":  		"$PGUSER",
+		"PGDATABASE":		"$PGDATABASE",
+		"BLOBIO_SERVICE":	"$BLOBIO_SERVICE",
+		"rrd_host":		"$rrd_host",
+		"rrd_port":		$rrd_port
 	},
 	"now": "$now",
 	"cgi-bin-environment": $env
@@ -48,8 +53,52 @@ END
 
 print STDERR "service/post.add: request blob: $request_blob";
 
+#
+#  Note:
+#	Eventually, needs to be handled by flowd form blobnoc space
+#
+my $q = dbi_pg_exec(
+	db =>	dbi_pg_connect(),
+	tag =>	'service-add-insert',
+	argv => [
+			$BLOBIO_NOC_LOGIN,
+			$service_tag,
+			$PGHOST,
+			$PGPORT,
+			$PGUSER,
+			$PGDATABASE,
+			$BLOBIO_SERVICE,
+			$rrd_host,
+			$rrd_port,
+		],
+	sql =>	q(
+INSERT INTO blobnoc.www_service(
+	login_id,
+	service_tag,
+	pghost,
+	pgport,
+	pguser,
+	pgdatabase,
+	blobio_service,
+	rrd_host,
+	rrd_port
+) VALUES (
+	$1,
+	$2,
+	$3,
+	$4,
+	$5,
+	$6,
+	$7,
+	$8,
+	$9
+);
+));
+
 print <<END;
 Status: 303
-Location: $ENV{HTTP_REFERER}
+Location: /service
 
 END
+
+1;
