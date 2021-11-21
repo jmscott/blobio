@@ -25,9 +25,11 @@ install: all
 	install service $(WWW_PREFIX)/cgi-bin
 
 	install								\
+		service.d/common.pl					\
 		service.d/help.pl					\
 		service.d/post.add.pl					\
 		service.d/table.pl					\
+		service.d/table.del.pl					\
 		$(WWW_PREFIX)/lib/service.d
 	install								\
 		add.shtml						\
