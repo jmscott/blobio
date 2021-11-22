@@ -97,19 +97,19 @@ while (my (
 
 	my $pg_span_status = '<span class="ok">✓</span>';
 	$pg_span_status = '<span class="err">✗</span>'
-			unless probe_port($PGHOST, $PGPORT, 1)
+			unless probe_ip_port($PGHOST, $PGPORT, 1)
 	;
 
 	my $blob_span_status = '<span class="ok">✓</span>';
 	if ($BLOBIO_SERVICE =~ m/^bio4:(.*):(\d{1,5})$/) {
 		$blob_span_status = '<span class="err">✗</span>'
-			unless probe_port($1, $2, 1)
+			unless probe_ip_port($1, $2, 1)
 		;
 	}
 
 	my $rrd_span_status = '<span class="ok">✓</span>';
 	$rrd_span_status = '<span class="err">✗</span>'
-			unless probe_port($rrd_host, $rrd_port, 1)
+			unless probe_ip_port($rrd_host, $rrd_port, 1)
 	;
 print <<END;
   <tr>
