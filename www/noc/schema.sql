@@ -117,6 +117,10 @@ CREATE TABLE www_service (
 	rrd_host	inet NOT NULL,
 	rrd_port	noc_port NOT NULL,
 
+	insert_time	timestamptz
+				DEFAULT now()	
+				NOT NULL,
+
 	PRIMARY KEY	(login_id, service_tag)
 );
 

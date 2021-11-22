@@ -28,11 +28,13 @@ install: all
 		service.d/common.pl					\
 		service.d/help.pl					\
 		service.d/post.add.pl					\
+		service.d/post.del.pl					\
 		service.d/table.pl					\
 		service.d/table.del.pl					\
 		$(WWW_PREFIX)/lib/service.d
 	install								\
 		add.shtml						\
+		delete.shtml						\
 		index.shtml						\
 		nav.shtml						\
 		$(WWW_PREFIX)/htdocs/service
@@ -47,7 +49,7 @@ distclean:
 service service.d/help.pl: service.cgi
 	cgi2perl5 --source-path service.cgi
 	chmod a+rx service
-world:
+world: all
 	$(MAKE) $(MFLAGS) clean
 	$(MAKE) $(MFLAGS) all
 	$(MAKE) $(MFLAGS) distclean

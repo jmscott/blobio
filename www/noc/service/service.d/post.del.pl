@@ -19,13 +19,6 @@ our %POST_VAR;
 
 my $BLOBIO_NOC_LOGIN = $ENV{BLOBIO_NOC_LOGIN};
 my $service_tag = $POST_VAR{srvtag};
-my $PGHOST = $POST_VAR{pghost};
-my $PGPORT = $POST_VAR{pgport};
-my $PGUSER = $POST_VAR{pguser};
-my $PGDATABASE = $POST_VAR{pgdatabase};
-my $BLOBIO_SERVICE = $POST_VAR{blobsrv};
-my $rrd_host = $POST_VAR{rrdhost};
-my $rrd_port = $POST_VAR{rrdport};
 
 my $now = `RFC3339Nano`;
 chomp $now;
@@ -37,17 +30,9 @@ my $request_blob = utf82blob(<<END);
 {
 	"noc.blob.io": {
 		"blobnoc.www_service": {
-			"insert": {
+			"delete": {
 				"login_id":		"$BLOBIO_NOC_LOGIN",
-				"service_tag":		"$service_tag",
-				"PGHOST":  		"$PGHOST",
-				"PGPORT":  		$PGPORT,
-				"PGUSER":  		"$PGUSER",
-				"PGDATABASE":		"$PGDATABASE",
-				"BLOBIO_SERVICE":	"$BLOBIO_SERVICE",
-				"rrd_host":		"$rrd_host",
-				"rrd_port":		$rrd_port,
-				"insert_time":		"$now"
+				"service_tag":		"$service_tag"
 			}
 		}
 	},
@@ -56,7 +41,7 @@ my $request_blob = utf82blob(<<END);
 }
 END
 
-print STDERR "service/post.add: request blob: $request_blob";
+print STDERR "service/post.del: request blob: $request_blob";
 
 #
 #  Note:
@@ -64,43 +49,18 @@ print STDERR "service/post.add: request blob: $request_blob";
 #
 my $q = dbi_pg_exec(
 	db =>	dbi_pg_connect(),
-	tag =>	'service-add-insert',
+	tag =>	'service-del-insert',
 	argv => [
 			$BLOBIO_NOC_LOGIN,
 			$service_tag,
-			$PGHOST,
-			$PGPORT,
-			$PGUSER,
-			$PGDATABASE,
-			$BLOBIO_SERVICE,
-			$rrd_host,
-			$rrd_port,
-			$now
 		],
 	sql =>	q(
-INSERT INTO blobnoc.www_service(
-	login_id,
-	service_tag,
-	pghost,
-	pgport,
-	pguser,
-	pgdatabase,
-	blobio_service,
-	rrd_host,
-	rrd_port,
-	insert_time
-) VALUES (
-	$1,
-	$2,
-	$3,
-	$4,
-	$5,
-	$6,
-	$7,
-	$8,
-	$9,
-	$10
-);
+DELETE FROM blobnoc.www_service
+  WHERE
+  	login_id = $1
+	AND
+	service_tag = $2
+;
 ));
 
 print <<END;

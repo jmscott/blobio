@@ -41,7 +41,7 @@ $CGI{GET}->{out}->{'query-args'}->{arg}->{class} = {
 #  'out' query argument must match one of the out putter names.
 #
 $CGI{GET}->{out}->{'query-args'}->{arg}->{out} = {
-	perl5_re	=> 	'table|help',
+	perl5_re	=> 	'table|(?:table[.]del)|help',
 	default		=>	'help',
 };
 #
@@ -56,6 +56,18 @@ $CGI{GET}->{out}->{putter}->{'table'}->{name} = 'table';
 #  END: /cgi/GET/out/putter[@name='table']
 #
 
+#
+#  BEGIN: /cgi/GET/out/putter[@name='table.del']
+#
+$CGI{GET}->{out}->{putter}->{'table.del'}->{name} = 'table.del';
+
+#
+#  BEGIN: /cgi/GET/out/putter[@name=table.del]/query-args
+#
+#
+#  END: /cgi/GET/out/putter[@name='table.del']
+#
+
 
 #
 #  BEGIN: /cgi/POST/in/putter[@name='post.add']
@@ -63,27 +75,35 @@ $CGI{GET}->{out}->{putter}->{'table'}->{name} = 'table';
 $CGI{POST}->{in}->{putter}->{'post.add'}->{name} = 'post.add';
 $CGI{POST}->{in}->{putter}->{'post.add'}->{vars}->{var}->{srvtag} = {
 	perl5_re	=>	'[a-z][a-z0-9_-]{0,32}',
+	required	=>	'yes',
 };
 $CGI{POST}->{in}->{putter}->{'post.add'}->{vars}->{var}->{pghost} = {
 	perl5_re	=>	'[a-z0-9][a-z0-9_.-]{0,63}',
+	required	=>	'yes',
 };
 $CGI{POST}->{in}->{putter}->{'post.add'}->{vars}->{var}->{pgport} = {
 	perl5_re	=>	'[0-9]{1,5}',
+	required	=>	'yes',
 };
 $CGI{POST}->{in}->{putter}->{'post.add'}->{vars}->{var}->{pguser} = {
 	perl5_re	=>	'[a-z0-9][a-z0-9_@-]{0,63}',
+	required	=>	'yes',
 };
 $CGI{POST}->{in}->{putter}->{'post.add'}->{vars}->{var}->{pgdatabase} = {
 	perl5_re	=>	'[a-z0-9][a-z0-9_-]{0,63}',
+	required	=>	'yes',
 };
 $CGI{POST}->{in}->{putter}->{'post.add'}->{vars}->{var}->{blobsrv} = {
 	perl5_re	=>	'[a-z0-9][a-z0-9]{0,7}:[[:graph:]]{1,127}',
+	required	=>	'yes',
 };
 $CGI{POST}->{in}->{putter}->{'post.add'}->{vars}->{var}->{rrdhost} = {
 	perl5_re	=>	'[a-z0-9][a-z0-9_.-]{0,63}',
+	required	=>	'yes',
 };
 $CGI{POST}->{in}->{putter}->{'post.add'}->{vars}->{var}->{rrdport} = {
 	perl5_re	=>	'[0-9]{1,5}',
+	required	=>	'yes',
 };
 #
 #  END: /cgi/POST/in/putter[@name=post.add]/vars
@@ -91,6 +111,23 @@ $CGI{POST}->{in}->{putter}->{'post.add'}->{vars}->{var}->{rrdport} = {
 
 #
 #  END: /cgi/POST/in/putter[@name='post.add']
+#
+
+
+#
+#  BEGIN: /cgi/POST/in/putter[@name='post.del']
+#
+$CGI{POST}->{in}->{putter}->{'post.del'}->{name} = 'post.del';
+$CGI{POST}->{in}->{putter}->{'post.del'}->{vars}->{var}->{srvtag} = {
+	perl5_re	=>	'[a-z][a-z0-9_-]{0,32}',
+	required	=>	'yes',
+};
+#
+#  END: /cgi/POST/in/putter[@name=post.del]/vars
+#
+
+#
+#  END: /cgi/POST/in/putter[@name='post.del']
 #
 
 $CGI{GET}->{out}->{putter}->{help}->{name} = 'help';

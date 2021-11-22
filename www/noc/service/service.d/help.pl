@@ -38,6 +38,9 @@ print <<'END';
      <dt>table</dt>
      <dd>
      </dd>
+     <dt>table.del</dt>
+     <dd>
+     </dd>
   </dl>
  </div>
 </div>

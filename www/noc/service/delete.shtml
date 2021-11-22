@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html>
+ <head>
+  <title>Delete Service @noc.blob.io</title>
+  <meta charset="UTF-8" />
+  <link
+    href="/screen.css"
+    rel="stylesheet"
+    type="text/css"
+  />
+  <script type="text/javascript">/*  <![CDATA[  */
+    function post_delete(f) {
+  	return confirm(f);
+    }
+    /*  ]]>  */ </script>
+   
+ </head>
+
+ <body>
+  <div id="container">
+   <!--#include virtual="/header.shtml" -->
+   <!--#include virtual="nav.shtml" -->
+   <div id="content">
+    <h1>Delete Service</h1>
+    <form
+      id="service_del"
+      method="POST"
+      onSubmit="return post_delete(this);"
+      action="/cgi-bin/service"
+    >
+     <!--#include
+       virtual="/cgi-bin/service?out=table.del&class=query&${QUERY_STRING}"
+     -->
+     <input
+       name="in"
+       type="hidden"
+       value="post.del"
+     />
+     <input
+       name="srvtag"
+       type="hidden"
+     />
+    </form>
+   </div>
+   <!--#include virtual="/footer.shtml" -->
+  </div>
+ </body>
+</html>
