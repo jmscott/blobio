@@ -1,0 +1,26 @@
+service rrd-jmscott-jmsdesk
+{
+	disable		= no
+
+	protocol	= tcp
+	port		= 2324
+	socket_type     = stream
+	wait            = no
+	user            = jmscott
+	server          = /opt/local/bin/rrdtool
+	server_args     = - /opt/jmscott/jmsdesk/blobio
+	log_on_failure  += USERID
+
+	#
+	#  Unlimited incoming requests.
+	#  The RedHat/Centos default seems to be low.
+	#
+	per_source      = UNLIMITED
+	instances       = UNLIMITED
+	#
+	#  Connections per second:
+	#	Number of incoming connections/second: 1000
+	#	Number of seconds to wait before reanabling service: 5 seconds
+	#
+	cps		= 1000 2
+}

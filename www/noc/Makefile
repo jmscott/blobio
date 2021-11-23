@@ -32,6 +32,7 @@ install: all
 	install								\
 		psqlrc.example						\
 		schema.sql						\
+		xinetd-rrdtool.example					\
 		$(WWW_PREFIX)/lib
 	install -d -m u=rwx,g=x,o= $(WWW_PREFIX)/cgi-bin
 	install -d $(WWW_PREFIX)/htdocs
