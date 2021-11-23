@@ -95,27 +95,37 @@ while (my (
 	$rrd_port
 	) = $q->fetchrow()) {
 
+print <<END;
+  <tr>
+   <td>$service_tag</td>
+END
+
+	#  PGHOST/PORT/USER/DATABASE
 	my $pg_span_status = '<span class="ok">✓</span>';
 	$pg_span_status = '<span class="err">✗</span>'
-			unless probe_ip_port($PGHOST, $PGPORT, 1)
+				unless probe_ip_port($PGHOST, $PGPORT, 1)
 	;
+print <<END;
+   <td>$pg_span_status $PGUSER\@$PGDATABASE/$PGHOST:$PGPORT</td>
+END
 
+	#  BLOBIO_SERVICE
 	my $blob_span_status = '<span class="ok">✓</span>';
 	if ($BLOBIO_SERVICE =~ m/^bio4:(.*):(\d{1,5})$/) {
 		$blob_span_status = '<span class="err">✗</span>'
 			unless probe_ip_port($1, $2, 1)
 		;
 	}
+print <<END;
+   <td>$blob_span_status $BLOBIO_SERVICE</td>
+END
 
+	#  Round Robin Database Service
 	my $rrd_span_status = '<span class="ok">✓</span>';
 	$rrd_span_status = '<span class="err">✗</span>'
 			unless probe_ip_port($rrd_host, $rrd_port, 1)
 	;
 print <<END;
-  <tr>
-   <td>$service_tag</td>
-   <td>$pg_span_status $PGUSER\@$PGDATABASE/$PGHOST:$PGPORT</td>
-   <td>$blob_span_status $BLOBIO_SERVICE</td>
    <td>$rrd_span_status $rrd_host:$rrd_port</td>
   </tr>
 END
