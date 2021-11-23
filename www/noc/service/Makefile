@@ -25,7 +25,7 @@ install: all
 	install service $(WWW_PREFIX)/cgi-bin
 
 	install								\
-		service.d/common.pl					\
+		service.d/prob-port.pl					\
 		service.d/help.pl					\
 		service.d/post.add.pl					\
 		service.d/post.del.pl					\

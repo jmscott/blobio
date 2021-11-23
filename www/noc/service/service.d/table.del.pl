@@ -13,7 +13,7 @@ use Socket;
 
 require 'dbi-pg.pl';
 require 'httpd2.d/common.pl';
-require 'service.d/common.pl';
+require 'service.d/probe-port.pl';
 
 STDOUT->autoflush(1);
 
