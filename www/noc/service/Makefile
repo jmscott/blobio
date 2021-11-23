@@ -43,7 +43,6 @@ install: all
 distclean:
 	rm -f $(WWW_PREFIX)/cgi-bin/service
 	rm -rf $(WWW_PREFIX)/lib/service.d
-	rm -f $(WWW_PREFIX)/lib/setcore.cgi
 	rm -rf $(WWW_PREFIX)/htdocs/service
 
 service service.d/help.pl: service.cgi

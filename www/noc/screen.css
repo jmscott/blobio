@@ -75,20 +75,20 @@ header h2
 	background:	#333;
 }
 
-#navigation ul
+#navigation > ul
 {
 	list-style:	none;
 	margin:		0;
 	padding:	0;
 }
 
-#navigation ul li
+#navigation > ul > li
 {
 	list-style-type: none;
 	display: inline;
 }
 
-#navigation li a
+#navigation > ul > li > a
 {
 	display:		block;
 	float:			left;
@@ -99,7 +99,18 @@ header h2
 	border-right:		1px solid #fff;
 }
 
-#navigation li a:hover
+#navigation > ul > li.main
+{
+	display:		block;
+	float:			left;
+	padding:		5px 10px;
+	color:			black;
+	background-color:	white;
+	text-decoration:	none;
+	border-right:		1px solid #fff;
+}
+
+#navigation > ul > li > a:hover
 {
 	color:		black;
 	background:	lightgrey;
@@ -191,7 +202,8 @@ table.query th
 {
 	background:		white;
 	color:			black;
-	font-size:		120%;
+	font-size:		150%;
+	text-decoration:	underline;
 	font-variant:		small-caps;
 	font-weight:		bold;
 }

@@ -1,7 +1,7 @@
 <div id="navigation">
  <ul>
   <li><a href="/">Home</a></li>
-  <li><a href="../service">Services</a></li>
+  <li><a href="../service">Service</a></li>
   <li class="main">&#10596;</li>
   <li><a href="add.shtml">Add</a></li>
   <li><a href="delete.shtml">Delete</a></li>
