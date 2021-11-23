@@ -31,7 +31,7 @@
       <dt>Service Tag</dt>
       <dd>
        <input
-         name="srvtag"
+         name="srv"
 	 type="text"
 	 size="64"
        />

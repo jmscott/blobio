@@ -18,7 +18,7 @@ require 'utf82blob.pl';
 our %POST_VAR;
 
 my $BLOBIO_NOC_LOGIN = $ENV{BLOBIO_NOC_LOGIN};
-my $service_tag = $POST_VAR{srvtag};
+my $service_tag = $POST_VAR{srv};
 
 my $now = `RFC3339Nano`;
 chomp $now;

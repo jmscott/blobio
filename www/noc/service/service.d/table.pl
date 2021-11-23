@@ -105,6 +105,10 @@ END
 	$pg_span_status = '<span class="err">✗</span>'
 				unless probe_ip_port($PGHOST, $PGPORT, 1)
 	;
+
+	my $a =<<END;
+<a href="/service/pg.shtml?srv=
+END
 print <<END;
    <td>$pg_span_status $PGUSER\@$PGDATABASE/$PGHOST:$PGPORT</td>
 END

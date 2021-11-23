@@ -9,8 +9,8 @@
     type="text/css"
   />
   <script type="text/javascript">/*  <![CDATA[  */
-    function post_delete(f) {
-  	return confirm(f);
+    function post_delete(service_name) {
+  	return confirm('Delete service ' + service_name);
     }
     /*  ]]>  */ </script>
    
@@ -25,7 +25,7 @@
     <form
       id="service_del"
       method="POST"
-      onSubmit="return post_delete(this);"
+      onSubmit="return post_delete(this.srv.value);"
       action="/cgi-bin/service"
     >
      <!--#include
@@ -37,7 +37,7 @@
        value="post.del"
      />
      <input
-       name="srvtag"
+       name="srv"
        type="hidden"
      />
     </form>

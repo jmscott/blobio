@@ -37,6 +37,7 @@ install: all
 		delete.shtml						\
 		index.shtml						\
 		nav.shtml						\
+		pg.shtml						\
 		$(WWW_PREFIX)/htdocs/service
 	install service.cgi $(WWW_PREFIX)/lib
 

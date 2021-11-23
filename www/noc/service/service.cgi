@@ -25,7 +25,7 @@
     <title>POST to Add a Service</title>
     <vars>
      <var
-       name="srvtag"
+       name="srv"
        perl5_re="[a-z][a-z0-9_-]{0,32}"
        required="yes"
      />
@@ -70,7 +70,7 @@
     <title>POST to Delete a Service</title>
     <vars>
      <var
-       name="srvtag"
+       name="srv"
        perl5_re="[a-z][a-z0-9_-]{0,32}"
        required="yes"
      />

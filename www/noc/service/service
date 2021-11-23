@@ -73,7 +73,7 @@ $CGI{GET}->{out}->{putter}->{'table.del'}->{name} = 'table.del';
 #  BEGIN: /cgi/POST/in/putter[@name='post.add']
 #
 $CGI{POST}->{in}->{putter}->{'post.add'}->{name} = 'post.add';
-$CGI{POST}->{in}->{putter}->{'post.add'}->{vars}->{var}->{srvtag} = {
+$CGI{POST}->{in}->{putter}->{'post.add'}->{vars}->{var}->{srv} = {
 	perl5_re	=>	'[a-z][a-z0-9_-]{0,32}',
 	required	=>	'yes',
 };
@@ -118,7 +118,7 @@ $CGI{POST}->{in}->{putter}->{'post.add'}->{vars}->{var}->{rrdport} = {
 #  BEGIN: /cgi/POST/in/putter[@name='post.del']
 #
 $CGI{POST}->{in}->{putter}->{'post.del'}->{name} = 'post.del';
-$CGI{POST}->{in}->{putter}->{'post.del'}->{vars}->{var}->{srvtag} = {
+$CGI{POST}->{in}->{putter}->{'post.del'}->{vars}->{var}->{srv} = {
 	perl5_re	=>	'[a-z][a-z0-9_-]{0,32}',
 	required	=>	'yes',
 };

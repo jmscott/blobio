@@ -116,7 +116,9 @@ print <<END;
    <td>
     <input
       value="Delete $service_tag"
-      onClick="document.getElementById('service_del').srvtag.value = '$service_tag';"
+      onClick="
+      	document.getElementById('service_del').srv.value = '$service_tag';
+      "
       type="submit"
     />
    </td>
