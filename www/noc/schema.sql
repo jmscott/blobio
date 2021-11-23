@@ -17,6 +17,7 @@ CREATE DOMAIN noc_time AS timestamptz
   	value BETWEEN '2021/01/01' AND '2121/01/01'
   ) NOT NULL
 ;
+COMMENT ON DOMAIN noc_time IS 'Timestamp for Network Operations';
 
 DROP DOMAIN IF EXISTS noc_port CASCADE;
 CREATE DOMAIN noc_port AS INTEGER
@@ -24,6 +25,7 @@ CREATE DOMAIN noc_port AS INTEGER
   	value BETWEEN 0 AND 65535
   ) NOT NULL
 ;
+COMMENT ON DOMAIN noc_port IS 'IP4 Port';
 
 DROP DOMAIN IF EXISTS noc_tag CASCADE;
 CREATE DOMAIN noc_tag AS text
@@ -31,6 +33,7 @@ CREATE DOMAIN noc_tag AS text
   	value ~ '^[a-z][a-z0-9_-]{0,63}'
   ) NOT NULL
 ;
+COMMENT ON DOMAIN noc_tag IS 'Short (< 64 chars) Tag for Anything';
 
 /*
  *  Note:
@@ -123,6 +126,7 @@ CREATE TABLE www_service (
 
 	PRIMARY KEY	(login_id, service_tag)
 );
+COMMENT ON TABLE www_service IS 'BlobiIO PGSQL/Blob/RRD servers';
 
 INSERT INTO www_service VALUES
 	('jmscott', 'jmsdesk-ess',
