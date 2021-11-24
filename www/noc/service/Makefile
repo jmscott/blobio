@@ -25,12 +25,13 @@ install: all
 	install service $(WWW_PREFIX)/cgi-bin
 
 	install								\
-		service.d/probe-port.pl					\
 		service.d/help.pl					\
 		service.d/post.add.pl					\
 		service.d/post.del.pl					\
-		service.d/table.pl					\
+		service.d/probe-port.pl					\
 		service.d/table.del.pl					\
+		service.d/table.pg.pl					\
+		service.d/table.pl					\
 		$(WWW_PREFIX)/lib/service.d
 	install								\
 		add.shtml						\

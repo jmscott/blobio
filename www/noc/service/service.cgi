@@ -17,6 +17,15 @@
    </putter>
    <putter name="table.del">
    </putter>
+   <putter name="table.pg">
+    <query-args>
+     <arg
+       name="srv"
+       perl5_re="[a-z][a-z0-9_-]{0,32}"
+       required="yes"
+     />
+    </query-args>
+   </putter>
   </out>
  </GET>
  <POST>

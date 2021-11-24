@@ -41,6 +41,21 @@ print <<'END';
      <dt>table.del</dt>
      <dd>
      </dd>
+     <dt>table.pg</dt>
+     <dd>
+<div class="query-args">
+ <h4>Query Args</h4>
+ <dl>
+  <dt>srv</dt>
+  <dd>
+   <ul>
+    <li><code>perl5_re:</code> [a-z][a-z0-9_-]{0,32}</li>
+    <li><code>required:</code> yes</li>
+   </ul>
+  </dd>
+  </dl>
+</div>
+     </dd>
   </dl>
  </div>
 </div>
