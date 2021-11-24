@@ -35,6 +35,19 @@ CREATE DOMAIN noc_tag AS text
 ;
 COMMENT ON DOMAIN noc_tag IS 'Short (< 64 chars) Tag for Anything';
 
+DROP DOMAIN IF EXISTS noc_title CASCADE;
+CREATE DOMAIN noc_title AS text CHECK (
+	length(value) < 256
+	AND
+	value ~ '[[:graph:]]'		--  at least something to display
+	AND
+	value !~ '^[[:space:]]+'	--  no leading space
+	AND
+	value !~ '[[:space:]]+$'	--  no trailing space
+	AND
+	value !~ '[[:space:]][[:space:]]'	--  multiple spaces
+) NOT NULL;
+
 /*
  *  Note:
  *	"secret_blob" ought to be "session_blob".
@@ -97,6 +110,7 @@ CREATE TABLE www_service (
 	login_id	pg_catalog.name
 				REFERENCES www_login(login_id),
 	service_tag	noc_tag,
+	service_title	noc_title,
 
 	/*
 	 *  PostgreSQL Database with the blobio schema.
@@ -128,18 +142,37 @@ CREATE TABLE www_service (
 );
 COMMENT ON TABLE www_service IS 'BlobiIO PGSQL/Blob/RRD servers';
 
-INSERT INTO www_service VALUES
-	('jmscott', 'jmsdesk-ess',
+INSERT INTO
+  www_service (
+	login_id,
+		service_tag,
+		service_title,
+		pghost,
+		pgport,
+		pguser,
+		pgpasswd,
+		pgdatabase,
+		blobio_service,
+		rrd_host,
+		rrd_port
+  ) VALUES
+	('jmscott',
+		'jmsdesk-ess',
+		'John Scott Desktop @ Randy Berger, Yellow Birch',
 		'10.187.1.5', 5432, 'postgres', '', 'jmsdesk',
 		'bio4:10.187.1.5:1797',
 		'10.187.1.5', 2324
 	),
-	('jmscott', 'jmsdesk-wework',
+	('jmscott',
+		'jmsdesk-wework',
+		'John Scott Desktop @ WeWork Dallas Uptown',
 		'10.187.1.3', 5432, 'postgres', '', 'jmsdesk',
 		'bio4:10.187.1.3:1797',
 		'10.187.1.3', 2324
 	),
-	('jmscott', 'jmsdesk-lct',
+	('jmscott',
+		'jmsdesk-lct',
+		'John Scott Desktop @ Lake Cliff Tower, Dallas',
 		'10.187.1.2', 5432, 'postgres', '', 'jmsdesk',
 		'bio4:10.187.1.2:1797',
 		'10.187.1.2', 2324
