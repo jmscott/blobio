@@ -2,10 +2,13 @@
 #
 #  Synopsis:
 #	Create the round robin database for blobio.
+#  Usage:
+#	create-rrd
 #
 
 PROG=$(basename $0)
-RRD=log/bio4d.rrd
+CACHE=cache/rrd
+RRD=cache/rrd/bio4d.rrd
 START=1392491400
 STEP=15
 HBEAT=30
@@ -21,8 +24,9 @@ test "$BLOBIO_ROOT" || die 'env variable not defined: BLOBIO_ROOT'
 cd $BLOBIO_ROOT || die "cd $BLOBIO failed"
 
 test -f $RRD && die "refused to overwrite rrd file: $RRD"
+mkdir -p $CACHE || die "mkdir $CACHE failed: exit status=$?"
 
-rrdtool create $RRD                                     		\
+exec rrdtool create $RRD                                     		\
         --step $STEP                                       		\
         --start $START                                  		\
 	DS:success:DERIVE:$HBEAT:0:$MAX					\
