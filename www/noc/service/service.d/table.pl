@@ -7,10 +7,6 @@
 #	Need to put summary footer at bottom of table!
 #
 
-use Errno;
-use Fcntl;
-use Socket;
-
 require 'dbi-pg.pl';
 require 'httpd2.d/common.pl';
 require 'service.d/probe-port.pl';
@@ -106,11 +102,12 @@ END
 				unless probe_ip_port($PGHOST, $PGPORT, 1)
 	;
 
-	my $a =<<END;
-<a href="/service/pg.shtml?srv=
-END
 print <<END;
-   <td>$pg_span_status $PGUSER\@$PGDATABASE/$PGHOST:$PGPORT</td>
+   <td>
+    <a href="/service/pg.shtml?srv=$service_tag">
+      $pg_span_status $PGUSER\@$PGDATABASE/$PGHOST:$PGPORT
+    </a>
+   </td>
 END
 
 	#  BLOBIO_SERVICE
