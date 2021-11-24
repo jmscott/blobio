@@ -83,13 +83,13 @@ $q = dbi_pg_select(
 	tag =>	'select-blobnoc-service-pg-stat',
 	argv =>	[
 			$PGDATABASE,
-			$$PGDATABASE,	# Note: zap me!
 		],
 	sql => q(
 SELECT
+	ctl.system_identifier,
 	pg_size_pretty(pg_database_size($1))
 		AS database_size_english,
-	pg_database_size($2)
+	pg_database_size($1)
 		AS database_size_bytes,
 
 	--  previous second of blob traffic
@@ -145,14 +145,19 @@ SELECT
   	blobio.service srv
 	  LEFT OUTER JOIN blobio.brr_blob_size sz ON (
 	  	sz.blob = srv.blob
-	  )
+	  ),
+	pg_control_system() ctl
   WHERE
   	srv.discover_time >= now() + '-72 hours'
+  GROUP BY
+  	system_identifier
 ;
 ));
 my $pg_title = "$PGUSER\@$PGDATABASE\@$PGHOST:$PGPORT";
 
 my (
+	$system_identifier,
+
 	$database_size_english,
 	$database_size_bytes,
 
@@ -212,57 +217,63 @@ print <<END;
   </tr>
 
   <tr>
-   <td>Database Size English</td>
+   <th>Database Identifier</th>
+   <td>$system_identifier</td>
+  </tr>
+
+  <tr>
+   <th>Database Size English</th>
    <td>$database_size_english</td>
   </tr>
 
   <tr>
-   <td>Database Size Bytes</td>
+   <th>Database Size Bytes</th>
    <td>$database_size_bytes bytes</td>
   </tr>
 
   <tr>
-   <td>1 Second Blob Count</td>
+   <th>1 Second Blob Count</th>
    <td>$blob_count_sec blobs</td>
   </tr>
   <tr>
-   <td>1 Second Blob Size</td>
+   <th>1 Second Blob Size</th>
    <td>$blob_size_english_sec ($blob_size_sec bytes)</td>
   </tr>
 
   <tr>
-   <td>1 Minute Blob Count</td>
+   <th>1 Minute Blob Count</th>
    <td>$blob_count_min blobs</td>
   </tr>
   <tr>
-   <td>1 Minute Blob Size</td>
+   <th>1 Minute Blob Size</th>
    <td>$blob_size_english_min ($blob_size_min bytes)</td>
   </tr>
 
   <tr>
-   <td>1 Hour Blob Count</td>
+   <th>1 Hour Blob Count</th>
    <td>$blob_count_hr blobs</td>
   </tr>
   <tr>
-   <td>1 Hour Blob Size</td>
+   <th>1 Hour Blob Size</th>
    <td>$blob_size_english_hr ($blob_size_hr bytes)</td>
   </tr>
 
   <tr>
-   <td>24 Hour Blob Count</td>
+   <th>24 Hour Blob Count</th>
    <td>$blob_count_24hr blobs</td>
   </tr>
   <tr>
-   <td>24 Hour Blob Size</td>
+   <th>24 Hour Blob Size</th>
    <td>$blob_size_english_24hr ($blob_size_24hr bytes)</td>
   </tr>
 
   <tr>
-   <td>72 Hour Blob Count</td>
+   <th>72 Hour Blob Count</th>
    <td>$blob_count_72hr blobs</td>
   </tr>
+
   <tr>
-   <td>72 Hour Blob Size</td>
+   <th>72 Hour Blob Size</th>
    <td>$blob_size_english_72hr ($blob_size_72hr bytes)</td>
   </tr>
 
