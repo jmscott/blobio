@@ -1,8 +1,9 @@
 #
 #  Synopsis:
-#	Write html <table> of stats for tables in "blobio" schema.
+#	Put html <table> comparing stats in <= 3 databases for "blobio" schema.
 #  Usage:
-#	/cgi-bin/service?out=table.pg
+#	/cgi-bin/service?out=table.pg&srv=jmsdesk-ess
+#	/cgi-bin/service?out=table.pg&srv=jmsdesk-ess,jmsdesk-wwuptown
 #
 
 use Data::Dumper;
@@ -11,11 +12,48 @@ require 'dbi-pg.pl';
 require 'httpd2.d/common.pl';
 require 'service.d/probe-port.pl';
 
+my %stat2title = (
+	status				=> 'Status',
+	system_identifier		=> 'System Identifier',
+
+	database_size_english		=> 'Database Size',
+	database_size_bytes		=> 'Database Size Bytes',
+
+	blob_count_sec			=> '1 Second Blob Count',
+	blob_size_sec			=> '1 Second Blobs Size',
+	blob_size_english_sec		=> '1 Second Blobs Bytes',
+
+	blob_count_min			=> '1 Minute Blob Count',
+	blob_size_min			=> '1 Minute Blobs Size',
+	blob_size_english_min		=> '1 Minute Blobs Bytes',
+
+	blob_count_hr			=> '1 Hour Blob Count',
+	blob_size_hr			=> '1 Hour Blobs Size',
+	blob_size_english_hr		=> '1 Hour Blobs Bytes',
+
+	blob_count_24hr			=> '24 Hour Blob Count',
+	blob_size_24hr			=> '24 Hour Blobs Size',
+	blob_size_english_24hr		=> '24 Hour Blobs Bytes',
+
+	blob_count_72hr			=> '72 Hour Blob Count',
+	blob_size_72hr			=> '72 Hour Blobs Size',
+	blob_size_english_72hr		=> '72 Hour Blobs Bytes',
+);
+
 STDOUT->autoflush(1);
 
 our %QUERY_ARG;
 
 my $srv = $QUERY_ARG{srv};
+my ($srv1, $srv2, $srv3) = split(',', $srv);
+my %pg_service;
+
+my $service_count = 0;
+$service_count++ if $srv1;
+$service_count++ if $srv2;
+$service_count++ if $srv3;
+my $service_plural = 's';
+$service_plural = '' if $service_count == 1;
 
 print <<END;
 <table
@@ -23,21 +61,44 @@ print <<END;
   $QUERY_ARG{class_att}
 >
  <thead>
-  <caption>
+  <caption>$service_count Services</caption>
+  <tr>
+    <th>Statistic</th>
 END
 
-#  fetch the tuple from table www_service
+sub th_service
+{
+	my $s = $_[0];
+	return unless $s;
+	print '<th>';
+	$title = $pg_service{$s}->{service_title};
+	if ($title) {
+		print encode_html_entities($title);
+	} else {
+		print $s;
+	}
+	print "  </th>\n";
+}
+
+
+#  fetch from the "blobnoc" schema the details for up to three postgresql
+#  databases bounded to up to three www services.
+
 my $db = dbi_pg_connect();
 my $q = dbi_pg_select(
 	db =>	$db,
 	tag =>	'select-blobnoc-service-pg',
 	argv =>	[
 		$ENV{BLOBIO_NOC_LOGIN},
-		$srv
+		$srv1,
+		$srv2,
+		$srv3
 	],
 	#pgdump => 1,
 	sql =>	q(
 SELECT
+	service_tag,
+	service_title,
 	pghost,
 	pgport,
 	pguser,
@@ -45,241 +106,72 @@ SELECT
   FROM
   	blobnoc.www_service
   WHERE
-  	login_id = $1
+  	login_id = :'a1'
 	AND
-	service_tag = $2
+	service_tag IN (:'a2', :'a3', :'a4')
+  ORDER BY
+  	service_tag ASC
 ;
 ));
-my (
-	$PGHOST,
-	$PGPORT,
-	$PGUSER,
-	$PGDATABASE,
-) = $q->fetchrow();
 
-unless ($PGDATABASE) {
-	print <<END;
-   <span class="err">Can not fetch PG vars for service "$srv"</span>
-  </caption>
- </thead>
-</table>
-END
-	return 1;
+my $r;
+while ($r = $q->fetchrow_hashref()) {
+	$pg_service{$r->{service_tag}} = $r;
 }
-
 $q->finish();
-
 dbi_pg_disconnect($db);
 
-$db = dbi_pg_connect(
-	PGHOST =>	$PGHOST,
-	PGPORT =>	$PGPORT,
-	PGUSER =>	$PGUSER,
-	PGDATABASE =>	$PGDATABASE,
-);
+# Determine PostgreSQL state: Up, Down, Unknown
+sub pg_status
+{
+	my $s = $_[0];
+	return '' unless $s;
 
-$q = dbi_pg_select(
-	db =>	$db,
-	tag =>	'select-blobnoc-service-pg-stat',
-	argv =>	[
-			$PGDATABASE,
-		],
-	sql => q(
-SELECT
-	ctl.system_identifier,
-	pg_size_pretty(pg_database_size($1))
-		AS database_size_english,
-	pg_database_size($1)
-		AS database_size_bytes,
+	#  sql fetch failed from blobnoc.www_service
+	$r = $pg_service{$s};
+	return 'Unknown' unless $r && $pg_service{$s};
 
-	--  previous second of blob traffic
-	count(*) FILTER(WHERE srv.discover_time >= now() + '-1 second')
-		AS blob_count_sec,
-	sum(sz.byte_count) FILTER(
-		WHERE srv.discover_time >= now() + '-1 second'
-	) AS blob_size_sec,
-	pg_size_pretty(sum(sz.byte_count) FILTER(
-		WHERE srv.discover_time >= now() + '-1 second'
-	)) AS blob_size_english_sec,
+	#  connect() to the db, returning 'No Answer' if open fails.
 
-	--  previous minute of blob traffic
-	count(*) FILTER(WHERE srv.discover_time >= now() + '-1 minute')
-		AS "blob_count_min",
-	sum(sz.byte_count) FILTER(
-		WHERE srv.discover_time >= now() + '-1 minute'
-	) AS blob_size_min,
-	pg_size_pretty(sum(sz.byte_count) FILTER(
-		WHERE srv.discover_time >= now() + '-1 minute'
-	)) AS blob_size_english_min,
-
-	--  previous hour of traffic
-	count(*) FILTER(WHERE srv.discover_time >= now() + '-1 hour')
-		AS "blob_count_hr",
-	sum(sz.byte_count) FILTER(
-		WHERE srv.discover_time >= now() + '-1 hour'
-	) AS blob_size_hr,
-	pg_size_pretty(sum(sz.byte_count) FILTER(
-		WHERE srv.discover_time >= now() + '-1 hour'
-	)) AS blob_size_english_hr,
-
-	--  previous 24 hours of traffic
-	count(*) FILTER(WHERE srv.discover_time >= now() + '-24 hour')
-		AS "blob_count_24hr",
-	sum(sz.byte_count) FILTER(
-		WHERE srv.discover_time >= now() + '-24 hours'
-	) AS blob_size_24hr,
-	pg_size_pretty(sum(sz.byte_count) FILTER(
-		WHERE srv.discover_time >= now() + '-24 hours'
-	)) AS blob_size_english_24hr,
-
-	--  previous 72 hours of traffic
-	count(*) FILTER(WHERE srv.discover_time >= now() + '-72 hours')
-		AS "blob_count_72hr",
-	sum(sz.byte_count) FILTER(
-		WHERE srv.discover_time >= now() + '-72 hours'
-	) AS blob_size_72hr,
-	pg_size_pretty(sum(sz.byte_count) FILTER(
-		WHERE srv.discover_time >= now() + '-72 hours'
-	)) AS blob_size_english_72hr
-  FROM
-  	blobio.service srv
-	  LEFT OUTER JOIN blobio.brr_blob_size sz ON (
-	  	sz.blob = srv.blob
-	  ),
-	pg_control_system() ctl
-  WHERE
-  	srv.discover_time >= now() + '-72 hours'
-  GROUP BY
-  	system_identifier
-;
-));
-my $pg_title = "$PGUSER\@$PGDATABASE\@$PGHOST:$PGPORT";
-
-my (
-	$system_identifier,
-
-	$database_size_english,
-	$database_size_bytes,
-
-	$blob_count_sec,
-	$blob_size_sec,
-	$blob_size_english_sec,
-
-	$blob_count_min,
-	$blob_size_min,
-	$blob_size_english_min,
-
-	$blob_count_hr,
-	$blob_size_hr,
-	$blob_size_english_hr,
-
-	$blob_count_24hr,
-	$blob_size_24hr,
-	$blob_size_english_24hr,
-
-	$blob_count_72hr,
-	$blob_size_72hr,
-	$blob_size_english_72hr,
-) = $q->fetchrow();
-
-unless ($database_size_english) {
-	print <<END;
-   <span class="err">
-     Can not fetch size of database $PGDATABASE
-   </span>
-  </caption>
- </thead>
-</table>
-END
-	return 1;
+	eval
+	{
+		$r->{$s}->{db} = dbi_pg_connect(
+			PGHOST =>	$r->{pghost},
+			PGPORT =>	$r->{pgport},
+			PGUSER =>	$r->{pguser},
+			PGDATABASE =>	$r->{pgdatabase},
+		);
+	} or return 'Down';
+	return 'Up'; 
 }
 
-#  Note: reset for null sums: ought to be in sql case expression
+unless ($srv1 || $srv2 
 
-($blob_size_sec, $blob_size_english_sec) = ('0', '0') unless $blob_size_sec > 0;
-($blob_size_min, $blob_size_english_min) = ('0', '0') unless $blob_size_min > 0;
-($blob_size_hr, $blob_size_english_hr) = ('0', '0') unless $blob_size_hr > 0;
-($blob_size_24hr, $blob_size_english_24hr) = ('0', '0')
-	unless $blob_size_24hr > 0
-;
-($blob_size_72hr, $blob_size_english_72hr) = ('0', '0')
-	unless $blob_size_72hr > 0
-;
+#  connect to each database
+$r->{srv1}->{status} = pg_status($srv1);
+$r->{srv2}->{status} = pg_status($srv2);
+$r->{srv3}->{status} = pg_status($srv3);
 
-print <<END;
-   <h1>$pg_title</h1>
-  </caption>
- </thead>
- <tbody>
-  <tr>
-   <th>Statistic</th>
-   <th>Value</th>
-  </tr>
+put_th
+{
+	my $s = $_[0];
 
-  <tr>
-   <th>Database Identifier</th>
-   <td>$system_identifier</td>
-  </tr>
+	return unless $s;
 
-  <tr>
-   <th>Database Size English</th>
-   <td>$database_size_english</td>
-  </tr>
-
-  <tr>
-   <th>Database Size Bytes</th>
-   <td>$database_size_bytes bytes</td>
-  </tr>
-
-  <tr>
-   <th>1 Second Blob Count</th>
-   <td>$blob_count_sec blobs</td>
-  </tr>
-  <tr>
-   <th>1 Second Blob Size</th>
-   <td>$blob_size_english_sec ($blob_size_sec bytes)</td>
-  </tr>
-
-  <tr>
-   <th>1 Minute Blob Count</th>
-   <td>$blob_count_min blobs</td>
-  </tr>
-  <tr>
-   <th>1 Minute Blob Size</th>
-   <td>$blob_size_english_min ($blob_size_min bytes)</td>
-  </tr>
-
-  <tr>
-   <th>1 Hour Blob Count</th>
-   <td>$blob_count_hr blobs</td>
-  </tr>
-  <tr>
-   <th>1 Hour Blob Size</th>
-   <td>$blob_size_english_hr ($blob_size_hr bytes)</td>
-  </tr>
-
-  <tr>
-   <th>24 Hour Blob Count</th>
-   <td>$blob_count_24hr blobs</td>
-  </tr>
-  <tr>
-   <th>24 Hour Blob Size</th>
-   <td>$blob_size_english_24hr ($blob_size_24hr bytes)</td>
-  </tr>
-
-  <tr>
-   <th>72 Hour Blob Count</th>
-   <td>$blob_count_72hr blobs</td>
-  </tr>
-
-  <tr>
-   <th>72 Hour Blob Size</th>
-   <td>$blob_size_english_72hr ($blob_size_72hr bytes)</td>
-  </tr>
-
- </tbody>
-</table>
-
+	print "  <th>\n" if $_[0];
+	return unless $_[0];
+	print "  <th>\n"
+  
 END
+}
+
+print "  <th>\n" if $srv1;
+print <<END if $src;
+  <th>
+END
+
+if ($srv1) {
+	print <<END;
+  
 
 1;

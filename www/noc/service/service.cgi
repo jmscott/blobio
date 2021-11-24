@@ -21,13 +21,14 @@
     <query-args>
      <arg
        name="srv"
-       perl5_re="[a-z][a-z0-9_-]{0,32}"
+       perl5_re="[a-z][a-z0-9_-]{0,32}(,[a-z][a-z0-9_-]{0,32}){0,2}"
        required="yes"
      />
     </query-args>
    </putter>
   </out>
  </GET>
+
  <POST>
   <in>
    <putter name="post.add">

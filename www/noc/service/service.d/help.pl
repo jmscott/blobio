@@ -49,7 +49,7 @@ print <<'END';
   <dt>srv</dt>
   <dd>
    <ul>
-    <li><code>perl5_re:</code> [a-z][a-z0-9_-]{0,32}</li>
+    <li><code>perl5_re:</code> [a-z][a-z0-9_-]{0,32}(,[a-z][a-z0-9_-]{0,32}){0,2}</li>
     <li><code>required:</code> yes</li>
    </ul>
   </dd>

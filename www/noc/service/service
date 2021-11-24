@@ -77,7 +77,7 @@ $CGI{GET}->{out}->{putter}->{'table.pg'}->{name} = 'table.pg';
 #  BEGIN: /cgi/GET/out/putter[@name=table.pg]/query-args
 #
 $CGI{GET}->{out}->{putter}->{'table.pg'}->{'query-args'}->{arg}->{srv} = {
-	perl5_re	=>	'[a-z][a-z0-9_-]{0,32}',
+	perl5_re	=>	'[a-z][a-z0-9_-]{0,32}(,[a-z][a-z0-9_-]{0,32}){0,2}',
 	required	=>	'yes',
 };
 #

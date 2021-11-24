@@ -1,8 +1,9 @@
 #
 #  Synopsis:
-#	Write html <table> of sql table "www_service".
+#	Write html <table> comparing one of more PostgreSQL stats, side-by-side
 #  Usage:
-#	/cgi-bin/service?out=table
+#	/cgi-bin/service?out=table.pg&srv=jmsdesk-wework
+#	/cgi-bin/service?out=table.pg&srv=jmsdesk-wework,jmsdesk-ess
 #  Note:
 #	Need to put summary footer at bottom of table!
 #
