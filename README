@@ -355,12 +355,3 @@ To Do:
 
 	- signal handling needs to be pushed to main listen loop or cleaned
  	  up with sigaction().
-Note:
-	bio4d considers {wrap,roll}-> to be green.  only {eat}->no should be
-	green.  not sure how to fix other than track.  failed wrap/roll seem
-	yellow condition.
-
-	Consider posix fadvise(POSIX_FADV_DONTNEED) as a command line option.
-
-	This simple protocol is officially named bio4.  That needs to be
-	clarified in this document.
