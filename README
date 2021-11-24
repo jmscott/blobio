@@ -9,10 +9,10 @@ Description:
 
 		algorithm:digest
 
-	where 'algorithm' is the hash algorithm, like 'sha' for example, and
-	'digest' is the ascii hash value of the blob.  The colon character
-	separates the algorithm and the digest.  The algorithm matches the
-	perl5 regex
+	where 'algorithm' is the hash algorithm, like 'sha' or 'btc20' for
+	example, and 'digest' is the ascii hash value of the blob.  The colon
+	character separates the algorithm and the digest.  The algorithm
+	matches the perl5 regex
 	
 		^[a-z][a-z0-9]{0,7}$
 
@@ -21,41 +21,50 @@ Description:
 		^[[:graph:]]{32,128}$
 		^[[:ascii:]{32,128}$
 
+	Currently, just two digests are support:
+
+		sha:c59f2c4f35b56a4bdf2d2c9f4a9984f2049cf2d4
+		btc20:b0e889a067b5d4fff15c3d6e646554939a793783
+
+	where "sha" is the broken SHA1 and "btc20" is a composition of
+	RIPEMD(SHA256(SHA256(blob))), inspired by the bitcoin wallet.
+	Eventually a SHA3 digest can be added without breaking code.
+
 	An example udig is sha:cd50d19784897085a8d0e3e413f8612b097c03f1
 	which describes the string "hello, world\n".
 
 		echo 'hello, world' | shasum
 		cd50d19784897085a8d0e3e413f8612b097c03f1  -
 
-	The maximum size of an algorithm is 8 characters.  The maximum size
+	The maximum size of the algorithm tag is 8 characters.  The maximum size
 	of a digest is 128 characters, making the maximum size of a udig =
-	8 + 128 + 1 (colon).
+	8 + 128 + 1 (colon).  The minimum size of a digest is 32 ascii chars.
 
 	The network protocol implements 7 verbs
 	
-		get <udig>		get a blob with a particular digest
-		put <udig>		write a blob with a digest
-		take <udig>		get a blob that the source may forget
-		give <udig>		put a blob that the source may forget
-		eat <udig>		untrusted digest of a blob by server
+		get <udig>		#  read a blob with a particular digest
+		put <udig>		#  write a blob with a digest
+		take <udig>		#  get a blob that the source may forget
+		give <udig>		#  put a blob that the source may forget
+		eat <udig>		#  untrusted digest of a blob by server
 
-		wrap			bundle current unwrapped blob traffic
-					logs into a single blob and return
-					udig of the set of all blobs wrapped
-					since the previous roll. the wrapped
-					<udig>, returned to client, will
-					be in the next wrap, which allows
-					perpetual chaining.
+		wrap			#  freeze current unwrapped blob traffic
+					#  log into a single blob and return
+					#  udig of the set of all blobs wrapped
+					#  since the previous "roll". the
+					#  wrapped <udig>, returned to client,
+					#  will  be in the next wrap, which
+					#  allows perpetual merkel chaining.
 
-		roll <udig>		forget all wrapped blob traffic logs in
-					the udig set described by <udig>.
-					subsequent wrap/rolls will probably
-					never see these blob sets again.
-					however, the blobs themselves will
-					exist and probably be gettable.  the
-					<udig> of the rolled udig will be in
-					the next wrap set as a "roll" blob
-					request record.
+		roll <udig>		#  forget all wrapped blob traffic logs
+					#  in the udig set described by <udig>.
+					#  subsequent wrap/rolls will probably
+					#  never see these blob sets again.
+					#  however, the blobs themselves will
+					#  exist and probably be gettable.  the
+					#  <udig> of the rolled udig will be in
+					#  the next wrap set as a "roll" blob
+					#  request record.
 
 	After the initial request by the client, all request replies are just
 	'ok' or 'no', where 'no' is always the last reply. See below for the
@@ -72,7 +81,7 @@ Description:
 
 		https://en.wikipedia.org/wiki/Call_detail_record
 
-	The format of a single brr record is a line of tab separated fields
+	The format of a single BRR record is a line of tab separated fields
 	i.e, the typical unixy ascii record:
 
 		start_time		#  YYYY-MM-DDThh:mm:ss.ns[+-]HH:MM
@@ -115,7 +124,7 @@ Description:
 		<= 370 bytes
 
 	not including a trailing new-line or terminating null character.
-	Since the length is <= 370 bytes, a BR Record can be broadcast in an
+	Since the length is <= 370 bytes, a BRR record can be broadcast in an
 	UDP packet.  The BRR record format is cast in stone.
 
 Protocol Flow:
@@ -180,12 +189,12 @@ Protocol Flow:
 	could be extended as
 
 		get <blob-byte-count> <udig>
-		get=1499 sha:cd50d19784897085a8d0e3e413f8612b097c03f1
+		get.1499 sha:cd50d19784897085a8d0e3e413f8612b097c03f1
 
 		put <blob-byte-count> <udig>
-		put=1499 sha:cd50d19784897085a8d0e3e413f8612b097c03f1
+		put.1499 sha:cd50d19784897085a8d0e3e413f8612b097c03f1
 
-	problematically, such an extension does leak info about the blob.
+	Problematically, such an extension does leak info about the blob.
 	probing for support of the <byte-count> extension could be "solved"
 	by requiring all bio4 servers to contain the "empty" blob
 	("epsilon knowledge").
@@ -200,23 +209,24 @@ Protocol Flow:
 		> get sha:da39a3ee5e6b4b0d3255bfef95601890afd80709
 		< ok
 
+		#  can never remove the empty blob
 		> take sha:da39a3ee5e6b4b0d3255bfef95601890afd80709
 		< no
 
-		> get=0 sha:da39a3ee5e6b4b0d3255bfef95601890afd80709
+		> get.0 sha:da39a3ee5e6b4b0d3255bfef95601890afd80709
 		< no
 
 	proves that the server does not support <byte-count> for the get
 	request.  and
 
-		> get=0 sha:da39a3ee5e6b4b0d3255bfef95601890afd80709
+		> get.0 sha:da39a3ee5e6b4b0d3255bfef95601890afd80709
 		< ok
 
 	proves <byte-count> is supported for get request.
 
 	As blobio evolves, forward facing, untrusted applications will rarely
 	speak the bio4 protocol.  instead, a security oriented gateway protocol
-	will sit in front of the bio4 services, such as http.
+	will sit in front of the bio4 services, such as http or a REST api.
 
 Protocol Questions:
 	- should wrap send the algorithm?
