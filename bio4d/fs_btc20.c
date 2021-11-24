@@ -1,7 +1,7 @@
 #ifdef FS_BTC20_MODULE
 /*
  *  Synopsis:
- *	Module of bitcoin nspired ripemd160(sha256(sha256(blob)) in POSIX files.
+ *	Module of bitcoin inspired hash ripemd160(sha256(sha256(blob)) in POSIX files.
  *  Description:
  *	Implement a digest inspired by bitcoin wallet:
  *
