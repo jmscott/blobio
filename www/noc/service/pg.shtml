@@ -15,6 +15,7 @@
    <!--#include virtual="/header.shtml" -->
    <!--#include virtual="nav.shtml" -->
    <div id="content">
+    <h1>PG Database Statistics Previous 72 Hours</h1>
     <!--#include virtual="/cgi-bin/service?out=table.pg&${QUERY_STRING}" -->
    </div>
    <!--#include virtual="/footer.shtml" -->
