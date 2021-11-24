@@ -1,7 +1,7 @@
 Synopsis:
 	A trivial protocol to manage immutable blobs over a network.
 Description:
-	The blobio environment implements a simple client/server protocol for 
+	The blobio system implements a simple client/server protocol for 
 	associating crypto hash digests as keys for immutable, binary large
 	objects stored on a network.  The blobs are referenced with a uri
 	(uniform resource identifier) called a uniform digest, shortened to
