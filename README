@@ -9,14 +9,14 @@ Description:
 
 		algorithm:digest
 
-	where 'algorithm' is the hash algorithm, like 'sha' or 'btc20' for
+	where 'algorithm' is the hash algorithm, like 'sha' or 'btc20', for
 	example, and 'digest' is the ascii hash value of the blob.  The colon
 	character separates the algorithm and the digest.  The algorithm
 	matches the perl5 regex
 	
 		^[a-z][a-z0-9]{0,7}$
 
-	and the digest matches the perl5 regex
+	and the digest matches both perl5 regexs
 
 		^[[:graph:]]{32,128}$
 		^[[:ascii:]{32,128}$
@@ -26,9 +26,10 @@ Description:
 		sha:c59f2c4f35b56a4bdf2d2c9f4a9984f2049cf2d4
 		btc20:b0e889a067b5d4fff15c3d6e646554939a793783
 
-	where "sha" is the broken SHA1 and "btc20" is a composition of
-	RIPEMD(SHA256(SHA256(blob))), inspired by the bitcoin wallet.
-	Eventually a SHA3 digest can be added without breaking code.
+	where "sha" is the famous but broken SHA1 and "btc20" is a
+	composition of RIPEMD(SHA256(SHA256(blob))), inspired by the
+	bitcoin wallet.  Eventually a SHA3 digest can be added without
+	breaking code.
 
 	An example udig is sha:cd50d19784897085a8d0e3e413f8612b097c03f1
 	which describes the string "hello, world\n".
