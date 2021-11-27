@@ -291,19 +291,19 @@ table.query tr.footer td
 	padding:		1em;
 }
 
-span.warn
+span.warn, span.Unknown
 {
 	background-color:	yellow;
 	color:			black;
 }
 
-span.err
+span.err, span.Down
 {
 	background-color:	red;
 	color:			black;
 }
 
-span.ok
+span.ok, span.Up
 {
 	background-color:	lightgreen;
 	color:			black;

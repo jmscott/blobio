@@ -158,21 +158,21 @@ INSERT INTO
   ) VALUES
 	('jmscott',
 		'jmsdesk-ess',
-		'John Scott Desktop @ Randy Berger, Yellow Birch',
+		'JMS Desktop @ Yellow Birch Roanoke',
 		'10.187.1.5', 5432, 'postgres', '', 'jmsdesk',
 		'bio4:10.187.1.5:1797',
 		'10.187.1.5', 2324
 	),
 	('jmscott',
 		'jmsdesk-wework',
-		'John Scott Desktop @ WeWork Dallas Uptown',
+		'JMS Desktop @ WeWork Uptown',
 		'10.187.1.3', 5432, 'postgres', '', 'jmsdesk',
 		'bio4:10.187.1.3:1797',
 		'10.187.1.3', 2324
 	),
 	('jmscott',
 		'jmsdesk-lct',
-		'John Scott Desktop @ Lake Cliff Tower, Dallas',
+		'JMS Desktop @ Lake Cliff Tower',
 		'10.187.1.2', 5432, 'postgres', '', 'jmsdesk',
 		'bio4:10.187.1.2:1797',
 		'10.187.1.2', 2324

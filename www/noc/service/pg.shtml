@@ -8,6 +8,22 @@
     rel="stylesheet"
     type="text/css"
   />
+  <style>
+  /*  <![CDATA[  */
+  #pg > tbody > tr > th:nth-child(1)
+  {
+  	font-size:	180%;
+  	color:		darkblue;
+  }
+  #pg > tbody > tr > th:nth-child(2),
+  #pg > tbody > tr > th:nth-child(3),
+  #pg > tbody > tr > th:nth-child(4)
+  {
+  	text-decoration:	underline;
+	padding-left:		1em;
+  }
+  /*  ]]>  */
+  </style>
  </head>
 
  <body>
@@ -16,7 +32,9 @@
    <!--#include virtual="nav.shtml" -->
    <div id="content">
     <h1>PG Database Statistics Previous 72 Hours</h1>
-    <!--#include virtual="/cgi-bin/service?out=table.pg&${QUERY_STRING}" -->
+    <!--#include virtual=
+      "/cgi-bin/service?out=table.pg&id=pg&${QUERY_STRING}"
+    -->
    </div>
    <!--#include virtual="/footer.shtml" -->
   </div>

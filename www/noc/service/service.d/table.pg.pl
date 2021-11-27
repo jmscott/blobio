@@ -12,33 +12,33 @@ require 'dbi-pg.pl';
 require 'httpd2.d/common.pl';
 require 'service.d/probe-port.pl';
 
-my %stat2title = (
-	status				=> 'Status',
-	system_identifier		=> 'System Identifier',
+my @stat2title = [
+	'status',  'Status',
+	'system_identifier',  'System Identifier',
 
-	database_size_english		=> 'Database Size',
-	database_size_bytes		=> 'Database Size Bytes',
+	'database_size_english',  'Database Size',
+	'database_size_bytes',  'Database Size Bytes',
 
-	blob_count_sec			=> '1 Second Blob Count',
-	blob_size_sec			=> '1 Second Blobs Size',
-	blob_size_english_sec		=> '1 Second Blobs Bytes',
+	'blob_count_sec',  '1 Second Blob Count',
+	'blob_size_sec',  '1 Second Blobs Size',
+	'blob_size_english_sec',  '1 Second Blobs Bytes',
 
-	blob_count_min			=> '1 Minute Blob Count',
-	blob_size_min			=> '1 Minute Blobs Size',
-	blob_size_english_min		=> '1 Minute Blobs Bytes',
+	'blob_count_min',  '1 Minute Blob Count',
+	'blob_size_min',  '1 Minute Blobs Size',
+	'blob_size_english_min',  '1 Minute Blobs Bytes',
 
-	blob_count_hr			=> '1 Hour Blob Count',
-	blob_size_hr			=> '1 Hour Blobs Size',
-	blob_size_english_hr		=> '1 Hour Blobs Bytes',
+	'blob_count_hr',  '1 Hour Blob Count',
+	'blob_size_hr',  '1 Hour Blobs Size',
+	'blob_size_english_hr',  '1 Hour Blobs Bytes',
 
-	blob_count_24hr			=> '24 Hour Blob Count',
-	blob_size_24hr			=> '24 Hour Blobs Size',
-	blob_size_english_24hr		=> '24 Hour Blobs Bytes',
+	'blob_count_24hr',  '24 Hour Blob Count',
+	'blob_size_24hr',  '24 Hour Blobs Size',
+	'blob_size_english_24hr',  '24 Hour Blobs Bytes',
 
-	blob_count_72hr			=> '72 Hour Blob Count',
-	blob_size_72hr			=> '72 Hour Blobs Size',
-	blob_size_english_72hr		=> '72 Hour Blobs Bytes',
-);
+	'blob_count_72hr',  '72 Hour Blob Count',
+	'blob_size_72hr',  '72 Hour Blobs Size',
+	'blob_size_english_72hr',  '72 Hour Blobs Bytes',
+];
 
 STDOUT->autoflush(1);
 
@@ -61,7 +61,7 @@ print <<END;
   $QUERY_ARG{class_att}
 >
  <thead>
-  <caption>$service_count Services</caption>
+  <caption>$service_count Database Requested</caption>
   <tr>
     <th>Statistic</th>
 END
@@ -71,13 +71,13 @@ sub th_service
 	my $s = $_[0];
 	return unless $s;
 	print '<th>';
-	$title = $pg_service{$s}->{service_title};
+	my $title = $pg_service{$s}->{service_title};
 	if ($title) {
 		print encode_html_entities($title);
 	} else {
 		print $s;
 	}
-	print "  </th>\n";
+	print '</th>', "\n";
 }
 
 
@@ -106,9 +106,9 @@ SELECT
   FROM
   	blobnoc.www_service
   WHERE
-  	login_id = :'a1'
+  	login_id = $1
 	AND
-	service_tag IN (:'a2', :'a3', :'a4')
+	service_tag IN ($2, $3, $4)
   ORDER BY
   	service_tag ASC
 ;
@@ -125,7 +125,6 @@ dbi_pg_disconnect($db);
 sub pg_status
 {
 	my $s = $_[0];
-	return '' unless $s;
 
 	#  sql fetch failed from blobnoc.www_service
 	$r = $pg_service{$s};
@@ -135,7 +134,7 @@ sub pg_status
 
 	eval
 	{
-		$r->{$s}->{db} = dbi_pg_connect(
+		$r->{db} = dbi_pg_connect(
 			PGHOST =>	$r->{pghost},
 			PGPORT =>	$r->{pgport},
 			PGUSER =>	$r->{pguser},
@@ -145,33 +144,72 @@ sub pg_status
 	return 'Up'; 
 }
 
-unless ($srv1 || $srv2 
+#  check status of each database
+$pg_service{$srv1}->{status} = pg_status($srv1);
+$pg_service{$srv2}->{status} = pg_status($srv2) if $service_count > 1;
+$pg_service{$srv3}->{status} = pg_status($srv3) if $service_count > 2;
 
-#  connect to each database
-$r->{srv1}->{status} = pg_status($srv1);
-$r->{srv2}->{status} = pg_status($srv2);
-$r->{srv3}->{status} = pg_status($srv3);
-
-put_th
+sub put_th
 {
 	my $s = $_[0];
 
-	return unless $s;
-
-	print "  <th>\n" if $_[0];
-	return unless $_[0];
-	print "  <th>\n"
-  
-END
+	print '   <th>';
+	my $r = $pg_service{$s};
+	if ($r->{service_title}) {
+		print encode_html_entities($r->{service_title});
+	} else {
+		print encode_html_entities($s);
+	}
+	print '</th>', "\n";
 }
 
-print "  <th>\n" if $srv1;
-print <<END if $src;
-  <th>
+put_th $srv1;
+put_th $srv2 if $service_count > 1;
+put_th $srv3 if $service_count > 2;
+
+my $status = $pg_service{$srv1}->{status};
+print <<END;
+  </tr>
+ </thead>
+ <tbody>
+  <tr>
+   <th>Status</th>
+   <td><span class="$status">$status</td>
 END
 
-if ($srv1) {
+#  finish the db status for next two columns
+
+$status = $pg_service{$srv2}->{status};
+print <<END if $service_count > 1;
+   <td><span class="$status">$status</td>
+END
+
+$status = $pg_service{$srv3}->{status};
+print <<END if $service_count > 2;
+   <td><span class="$status">$status</td>
+END
+
+#  write the remander of the rows of stats
+
+for (my $i = 0;  $i < @stat2title;  $i += 2) {
+
+	#  the particular value
 	print <<END;
-  
+  <tr>
+   <th>$stat2title[$i+1]</th>
+END
+	print '<td>', $pg_service{$srv1}->{$stat2title[$i]}, '</td>', "\n";
+	print '<td>', $pg_service{$srv2}->{$stat2title[$i]}, '</td>', "\n"
+		if $service_count > 1
+	;
+	print '<td>', $pg_service{$srv3}->{$stat2title[$i]}, '</td>', "\n"
+		if $service_count > 2
+	;
+}
+
+print <<END;
+ </tbody>
+</table>
+END
 
 1;
