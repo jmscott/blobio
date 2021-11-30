@@ -60,7 +60,7 @@ print <<END;
   $QUERY_ARG{class_att}
 >
  <thead>
-  <caption>$service_count Database Requested</caption>
+  <caption>$service_count Database$service_plural Requested</caption>
   <tr>
     <th>Statistic</th>
 END
