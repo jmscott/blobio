@@ -12,8 +12,7 @@ require 'dbi-pg.pl';
 require 'httpd2.d/common.pl';
 require 'service.d/probe-port.pl';
 
-my @stat2title = [
-	'status',  'Status',
+my @stat2title = (
 	'system_identifier',  'System Identifier',
 
 	'database_size_english',  'Database Size',
@@ -38,7 +37,7 @@ my @stat2title = [
 	'blob_count_72hr',  '72 Hour Blob Count',
 	'blob_size_72hr',  '72 Hour Blobs Size',
 	'blob_size_english_72hr',  '72 Hour Blobs Bytes',
-];
+);
 
 STDOUT->autoflush(1);
 
@@ -65,20 +64,6 @@ print <<END;
   <tr>
     <th>Statistic</th>
 END
-
-sub th_service
-{
-	my $s = $_[0];
-	return unless $s;
-	print '<th>';
-	my $title = $pg_service{$s}->{service_title};
-	if ($title) {
-		print encode_html_entities($title);
-	} else {
-		print $s;
-	}
-	print '</th>', "\n";
-}
 
 
 #  fetch from the "blobnoc" schema the details for up to three postgresql
@@ -126,7 +111,6 @@ sub pg_status
 {
 	my $s = $_[0];
 
-	#  sql fetch failed from blobnoc.www_service
 	$r = $pg_service{$s};
 	return 'Unknown' unless $r && $pg_service{$s};
 
@@ -141,6 +125,85 @@ sub pg_status
 			PGDATABASE =>	$r->{pgdatabase},
 		);
 	} or return 'Down';
+
+	#  service is up, so fetch stats for schema "blobio".
+	#  Note: need to catch error in an eval{}!
+	my $q = dbi_pg_select(
+		db =>	$r->{db},
+		tag =>	'blobnoc-select-stats',
+		argv =>	[
+				$r->{pgdatabase},
+			],
+		sql =>	q(
+SELECT
+	ctl.system_identifier,
+	pg_size_pretty(pg_database_size($1))
+		AS database_size_english,
+	pg_database_size($1)
+		AS database_size_bytes,
+
+	--  previous second of blob traffic
+	count(*) FILTER(WHERE srv.discover_time >= now() + '-1 second')
+		AS blob_count_sec,
+	sum(sz.byte_count) FILTER(
+		WHERE srv.discover_time >= now() + '-1 second'
+	) AS blob_size_sec,
+	pg_size_pretty(sum(sz.byte_count) FILTER(
+		WHERE srv.discover_time >= now() + '-1 second'
+	)) AS blob_size_english_sec,
+
+	--  previous minute of blob traffic
+	count(*) FILTER(WHERE srv.discover_time >= now() + '-1 minute')
+		AS "blob_count_min",
+	sum(sz.byte_count) FILTER(
+		WHERE srv.discover_time >= now() + '-1 minute'
+	) AS blob_size_min,
+	pg_size_pretty(sum(sz.byte_count) FILTER(
+		WHERE srv.discover_time >= now() + '-1 minute'
+	)) AS blob_size_english_min,
+
+	--  previous hour of traffic
+	count(*) FILTER(WHERE srv.discover_time >= now() + '-1 hour')
+		AS "blob_count_hr",
+	sum(sz.byte_count) FILTER(
+		WHERE srv.discover_time >= now() + '-1 hour'
+	) AS blob_size_hr,
+	pg_size_pretty(sum(sz.byte_count) FILTER(
+		WHERE srv.discover_time >= now() + '-1 hour'
+	)) AS blob_size_english_hr,
+
+	--  previous 24 hours of traffic
+	count(*) FILTER(WHERE srv.discover_time >= now() + '-24 hour')
+		AS "blob_count_24hr",
+	sum(sz.byte_count) FILTER(
+		WHERE srv.discover_time >= now() + '-24 hours'
+	) AS blob_size_24hr,
+	pg_size_pretty(sum(sz.byte_count) FILTER(
+		WHERE srv.discover_time >= now() + '-24 hours'
+	)) AS blob_size_english_24hr,
+
+	--  previous 72 hours of traffic
+	count(*) FILTER(WHERE srv.discover_time >= now() + '-72 hours')
+		AS "blob_count_72hr",
+	sum(sz.byte_count) FILTER(
+		WHERE srv.discover_time >= now() + '-72 hours'
+	) AS blob_size_72hr,
+	pg_size_pretty(sum(sz.byte_count) FILTER(
+		WHERE srv.discover_time >= now() + '-72 hours'
+	)) AS blob_size_english_72hr
+  FROM
+  	blobio.service srv
+	  LEFT OUTER JOIN blobio.brr_blob_size sz ON (
+	  	sz.blob = srv.blob
+	  ),
+	pg_control_system() ctl
+  WHERE
+  	srv.discover_time >= now() + '-72 hours'
+  GROUP BY
+  	system_identifier
+;
+));
+	$r->{stats} = $q->fetchrow();
 	return 'Up'; 
 }
 
@@ -174,7 +237,7 @@ print <<END;
  <tbody>
   <tr>
    <th>Status</th>
-   <td><span class="$status">$status</td>
+   <td><span class="$status">$status</span></td>
 END
 
 #  finish the db status for next two columns
@@ -189,22 +252,31 @@ print <<END if $service_count > 2;
    <td><span class="$status">$status</td>
 END
 
+print <<END;
+  </tr>
+END
+
 #  write the remander of the rows of stats
 
 for (my $i = 0;  $i < @stat2title;  $i += 2) {
 
+	my $v = $stat2title[$i];
 	#  the particular value
 	print <<END;
   <tr>
    <th>$stat2title[$i+1]</th>
 END
-	print '<td>', $pg_service{$srv1}->{$stat2title[$i]}, '</td>', "\n";
-	print '<td>', $pg_service{$srv2}->{$stat2title[$i]}, '</td>', "\n"
+
+	print '<td>', $pg_service{$srv1}->{stats}->{$v}, '</td>', "\n";
+	print '<td>', $pg_service{$srv2}->{stats}->{$v}, '</td>', "\n"
 		if $service_count > 1
 	;
-	print '<td>', $pg_service{$srv3}->{$stat2title[$i]}, '</td>', "\n"
+	print '<td>', $pg_service{$srv3}->{stats}->{$v}, '</td>', "\n"
 		if $service_count > 2
 	;
+	print <<END;
+   </tr>
+END
 }
 
 print <<END;

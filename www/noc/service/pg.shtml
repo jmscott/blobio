@@ -10,17 +10,11 @@
   />
   <style>
   /*  <![CDATA[  */
-  #pg > tbody > tr > th:nth-child(1)
+  #pg > table > thead > tr > th
+  {
   {
   	font-size:	180%;
-  	color:		darkblue;
-  }
-  #pg > tbody > tr > th:nth-child(2),
-  #pg > tbody > tr > th:nth-child(3),
-  #pg > tbody > tr > th:nth-child(4)
-  {
-  	text-decoration:	underline;
-	padding-left:		1em;
+  	color:		pink;
   }
   /*  ]]>  */
   </style>
