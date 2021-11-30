@@ -25,7 +25,7 @@
    <!--#include virtual="/header.shtml" -->
    <!--#include virtual="nav.shtml" -->
    <div id="content">
-    <h1>PG Database Statistics Previous 72 Hours</h1>
+    <h1>PostgreSQL Database Statistics <= 72 Hours</h1>
     <!--#include virtual=
       "/cgi-bin/service?out=table.pg&id=pg&class=query&${QUERY_STRING}"
     -->
