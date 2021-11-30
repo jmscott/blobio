@@ -27,7 +27,7 @@
    <div id="content">
     <h1>PG Database Statistics Previous 72 Hours</h1>
     <!--#include virtual=
-      "/cgi-bin/service?out=table.pg&id=pg&${QUERY_STRING}"
+      "/cgi-bin/service?out=table.pg&id=pg&class=query&${QUERY_STRING}"
     -->
    </div>
    <!--#include virtual="/footer.shtml" -->

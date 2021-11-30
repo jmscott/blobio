@@ -126,6 +126,7 @@ sub pg_status
 		);
 	} or return 'Down';
 
+
 	#  service is up, so fetch stats for schema "blobio".
 	#  Note: need to catch error in an eval{}!
 	my $q = dbi_pg_select(
@@ -145,52 +146,52 @@ SELECT
 	--  previous second of blob traffic
 	count(*) FILTER(WHERE srv.discover_time >= now() + '-1 second')
 		AS blob_count_sec,
-	sum(sz.byte_count) FILTER(
+	coalesce(sum(sz.byte_count) FILTER(
 		WHERE srv.discover_time >= now() + '-1 second'
-	) AS blob_size_sec,
-	pg_size_pretty(sum(sz.byte_count) FILTER(
+	), 0) AS blob_size_sec,
+	pg_size_pretty(coalesce(sum(sz.byte_count) FILTER(
 		WHERE srv.discover_time >= now() + '-1 second'
-	)) AS blob_size_english_sec,
+	), 0)) AS blob_size_english_sec,
 
 	--  previous minute of blob traffic
 	count(*) FILTER(WHERE srv.discover_time >= now() + '-1 minute')
 		AS "blob_count_min",
-	sum(sz.byte_count) FILTER(
+	coalesce(sum(sz.byte_count) FILTER(
 		WHERE srv.discover_time >= now() + '-1 minute'
-	) AS blob_size_min,
-	pg_size_pretty(sum(sz.byte_count) FILTER(
+	), 0) AS blob_size_min,
+	pg_size_pretty(coalesce(sum(sz.byte_count) FILTER(
 		WHERE srv.discover_time >= now() + '-1 minute'
-	)) AS blob_size_english_min,
+	), 0)) AS blob_size_english_min,
 
 	--  previous hour of traffic
 	count(*) FILTER(WHERE srv.discover_time >= now() + '-1 hour')
 		AS "blob_count_hr",
-	sum(sz.byte_count) FILTER(
+	coalesce(sum(sz.byte_count) FILTER(
 		WHERE srv.discover_time >= now() + '-1 hour'
-	) AS blob_size_hr,
-	pg_size_pretty(sum(sz.byte_count) FILTER(
+	), 0) AS blob_size_hr,
+	pg_size_pretty(coalesce(sum(sz.byte_count) FILTER(
 		WHERE srv.discover_time >= now() + '-1 hour'
-	)) AS blob_size_english_hr,
+	), 0)) AS blob_size_english_hr,
 
 	--  previous 24 hours of traffic
 	count(*) FILTER(WHERE srv.discover_time >= now() + '-24 hour')
 		AS "blob_count_24hr",
-	sum(sz.byte_count) FILTER(
+	coalesce(sum(sz.byte_count) FILTER(
 		WHERE srv.discover_time >= now() + '-24 hours'
-	) AS blob_size_24hr,
-	pg_size_pretty(sum(sz.byte_count) FILTER(
+	), 0) AS blob_size_24hr,
+	pg_size_pretty(coalesce(sum(sz.byte_count) FILTER(
 		WHERE srv.discover_time >= now() + '-24 hours'
-	)) AS blob_size_english_24hr,
+	), 0)) AS blob_size_english_24hr,
 
 	--  previous 72 hours of traffic
 	count(*) FILTER(WHERE srv.discover_time >= now() + '-72 hours')
 		AS "blob_count_72hr",
-	sum(sz.byte_count) FILTER(
+	coalesce(sum(sz.byte_count) FILTER(
 		WHERE srv.discover_time >= now() + '-72 hours'
-	) AS blob_size_72hr,
-	pg_size_pretty(sum(sz.byte_count) FILTER(
+	), 0) AS blob_size_72hr,
+	pg_size_pretty(coalesce(sum(sz.byte_count) FILTER(
 		WHERE srv.discover_time >= now() + '-72 hours'
-	)) AS blob_size_english_72hr
+	), 0)) AS blob_size_english_72hr
   FROM
   	blobio.service srv
 	  LEFT OUTER JOIN blobio.brr_blob_size sz ON (
@@ -203,7 +204,7 @@ SELECT
   	system_identifier
 ;
 ));
-	$r->{stats} = $q->fetchrow();
+	$r->{stats} = $q->fetchrow_hashref();
 	return 'Up'; 
 }
 
