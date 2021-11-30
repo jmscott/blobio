@@ -1,1 +1,1 @@
-set search_path to blobnoc,public;
+set search_path to blobnoc,blobio,public;
