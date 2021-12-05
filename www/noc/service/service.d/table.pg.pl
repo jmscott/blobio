@@ -13,6 +13,7 @@ require 'httpd2.d/common.pl';
 require 'service.d/probe-port.pl';
 
 my @stat2title = (
+	'',				'',
 	'system_identifier',		'System Identifier',
 	'',				'',
 
@@ -93,7 +94,22 @@ print <<END;
  <thead>
   <caption>$service_count Database$service_plural Requested</caption>
   <tr>
-    <th>Statistic</th>
+    <!--
+      Note:
+      	css selector logic is just unexpected across safari, crhome, brave AND
+	firefox.  Confused is
+
+		table > tbody > tr > th:nth-child(1)
+
+	for this
+
+		table > thead > tr > th:nth-child(1)
+
+	not sure why.  we can explicity target with a #wtf1 in the invoking
+	web page (probably /service/pg.html).
+    -->
+
+    <th>&nbsp;</th>
 END
 
 
@@ -413,7 +429,7 @@ print <<END;
   </tr>
 END
 
-#  write the remander of the rows of stats
+#  write the rest of the rows of stats
 
 for (my $i = 0;  $i < @stat2title;  $i += 2) {
 

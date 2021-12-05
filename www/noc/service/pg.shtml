@@ -8,12 +8,8 @@
     rel="stylesheet"
     type="text/css"
   />
-  <style>
-  /*  <![CDATA[  */
-  #pg > thead > tr > th
-  {
-  	font-size:	180%;
-  }
+  <style> /*  <![CDATA[  */
+
   #pg > colgroup
   {
   	background-color:	#eee;
@@ -22,13 +18,21 @@
   {
   	column-span:		all;
   	background-color:	#000;
+	padding-top:		.5em;
+
   }
   #pg > tbody > tr > th:nth-child(1)
   {
   	text-decoration:	none;
+	font-size:		large;
+	font-style:		italic;
   }
-  /*  ]]>  */
-  </style>
+  #pg > thead > tr > th
+  {
+  	font-size:	x-large;
+  }
+
+  /*  ]]>  */ </style>
  </head>
 
  <body>
