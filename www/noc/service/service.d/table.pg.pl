@@ -14,41 +14,51 @@ require 'service.d/probe-port.pl';
 
 my @stat2title = (
 	'system_identifier',		'System Identifier',
+	'',				'',
 
 	'database_size_english',	'Database Size',
 	'database_size_bytes',		'Database Size Bytes',
+	'',				'',
 
 	'blob_count_10sec',		'10 Second Blob Count',
 	'blob_size_10sec',		'10 Second Blobs Size',
 	'blob_size_english_10sec',	'10 Second Blobs Bytes',
+	'',				'',
 
 	'blob_count_1min',		'1 Minute Blob Count',
 	'blob_size_1min',		'1 Minute Blobs Size',
 	'blob_size_english_1min',	'1 Minute Blobs Bytes',
+	'',				'',
 
 	'blob_count_15min',		'15 Minute Blob Count',
 	'blob_size_15min',		'15 Minute Blobs Size',
 	'blob_size_english_15min',	'15 Minute Blobs Bytes',
+	'',				'',
 
 	'blob_count_1hr',		'1 Hour Blob Count',
 	'blob_size_1hr',		'1 Hour Blobs Size',
 	'blob_size_english_1hr',	'1 Hour Blobs Bytes',
+	'',				'',
 
 	'blob_count_3hr',		'3 Hour Blob Count',
 	'blob_size_3hr',		'3 Hour Blobs Size',
 	'blob_size_english_3hr',	'3 Hour Blobs Bytes',
+	'',				'',
 
 	'blob_count_6hr',		'6 Hour Blob Count',
 	'blob_size_6hr',		'6 Hour Blobs Size',
 	'blob_size_english_6hr',	'6 Hour Blobs Bytes',
+	'',				'',
 
 	'blob_count_12hr',		'12 Hour Blob Count',
 	'blob_size_12hr',		'12 Hour Blobs Size',
 	'blob_size_english_12hr',	'12 Hour Blobs Bytes',
+	'',				'',
 
 	'blob_count_24hr',		'24 Hour Blob Count',
 	'blob_size_24hr',		'24 Hour Blobs Size',
 	'blob_size_english_24hr',	'24 Hour Blobs Bytes',
+	'',				'',
 
 	'blob_count_72hr',		'72 Hour Blob Count',
 	'blob_size_72hr',		'72 Hour Blobs Size',
@@ -75,6 +85,11 @@ print <<END;
   $QUERY_ARG{id_att}
   $QUERY_ARG{class_att}
 >
+ <colgroup>
+  <col></col>
+  <col span="$service_count"></col>
+ </colgroup>
+
  <thead>
   <caption>$service_count Database$service_plural Requested</caption>
   <tr>
@@ -363,7 +378,7 @@ sub put_col
 	my ($si, $col) = @_;
 	return unless $service_count > $si;	#  service not requested
 
-	my $s = "srv$i";
+	my $s = "srv$si";
 	my $r = $pg_service{$s};
 
 }
@@ -386,12 +401,12 @@ END
 
 $status = $pg_service{$srv2}->{status};
 print <<END if $service_count > 1;
-   <td><span class="$status">$status</td>
+   <td><span class="$status">$status</span></td>
 END
 
 $status = $pg_service{$srv3}->{status};
 print <<END if $service_count > 2;
-   <td><span class="$status">$status</td>
+   <td><span class="$status">$status</span></td>
 END
 
 print <<END;
@@ -403,6 +418,18 @@ END
 for (my $i = 0;  $i < @stat2title;  $i += 2) {
 
 	my $v = $stat2title[$i];
+	unless ($v) {
+		print <<END;
+  <tr>
+   <th
+        class="separator"
+        style="
+   	column-span:	all
+   "></th>
+  </tr>
+END
+		next;
+	}
 	#  the particular value
 	print <<END;
   <tr>

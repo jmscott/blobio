@@ -10,11 +10,13 @@
   />
   <style>
   /*  <![CDATA[  */
-  #pg > table > thead > tr > th
-  {
+  #pg > thead > tr > th
   {
   	font-size:	180%;
-  	color:		pink;
+  }
+  #pg > colgroup
+  {
+  	background-color:	#eee;
   }
   /*  ]]>  */
   </style>
@@ -25,7 +27,7 @@
    <!--#include virtual="/header.shtml" -->
    <!--#include virtual="nav.shtml" -->
    <div id="content">
-    <h1>PostgreSQL Database Statistics <= 72 Hours</h1>
+    <h1>PostgreSQL Database Statistics &lt;= 72 Hours</h1>
     <!--#include virtual=
       "/cgi-bin/service?out=table.pg&id=pg&class=query&${QUERY_STRING}"
     -->
