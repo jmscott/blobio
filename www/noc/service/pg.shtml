@@ -18,6 +18,15 @@
   {
   	background-color:	#eee;
   }
+  #pg > tbody > tr > td.separator
+  {
+  	column-span:		all;
+  	background-color:	#000;
+  }
+  #pg > tbody > tr > th:nth-child(1)
+  {
+  	text-decoration:	none;
+  }
   /*  ]]>  */
   </style>
  </head>

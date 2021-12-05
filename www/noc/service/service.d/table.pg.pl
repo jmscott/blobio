@@ -421,11 +421,7 @@ for (my $i = 0;  $i < @stat2title;  $i += 2) {
 	unless ($v) {
 		print <<END;
   <tr>
-   <th
-        class="separator"
-        style="
-   	column-span:	all
-   "></th>
+   <td class="separator"></td>
   </tr>
 END
 		next;
