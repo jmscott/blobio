@@ -13,30 +13,46 @@ require 'httpd2.d/common.pl';
 require 'service.d/probe-port.pl';
 
 my @stat2title = (
-	'system_identifier',  'System Identifier',
+	'system_identifier',		'System Identifier',
 
-	'database_size_english',  'Database Size',
-	'database_size_bytes',  'Database Size Bytes',
+	'database_size_english',	'Database Size',
+	'database_size_bytes',		'Database Size Bytes',
 
-	'blob_count_sec',  '1 Second Blob Count',
-	'blob_size_sec',  '1 Second Blobs Size',
-	'blob_size_english_sec',  '1 Second Blobs Bytes',
+	'blob_count_10sec',		'10 Second Blob Count',
+	'blob_size_10sec',		'10 Second Blobs Size',
+	'blob_size_english_10sec',	'10 Second Blobs Bytes',
 
-	'blob_count_min',  '1 Minute Blob Count',
-	'blob_size_min',  '1 Minute Blobs Size',
-	'blob_size_english_min',  '1 Minute Blobs Bytes',
+	'blob_count_1min',		'1 Minute Blob Count',
+	'blob_size_1min',		'1 Minute Blobs Size',
+	'blob_size_english_1min',	'1 Minute Blobs Bytes',
 
-	'blob_count_hr',  '1 Hour Blob Count',
-	'blob_size_hr',  '1 Hour Blobs Size',
-	'blob_size_english_hr',  '1 Hour Blobs Bytes',
+	'blob_count_15min',		'15 Minute Blob Count',
+	'blob_size_15min',		'15 Minute Blobs Size',
+	'blob_size_english_15min',	'15 Minute Blobs Bytes',
 
-	'blob_count_24hr',  '24 Hour Blob Count',
-	'blob_size_24hr',  '24 Hour Blobs Size',
-	'blob_size_english_24hr',  '24 Hour Blobs Bytes',
+	'blob_count_1hr',		'1 Hour Blob Count',
+	'blob_size_1hr',		'1 Hour Blobs Size',
+	'blob_size_english_1hr',	'1 Hour Blobs Bytes',
 
-	'blob_count_72hr',  '72 Hour Blob Count',
-	'blob_size_72hr',  '72 Hour Blobs Size',
-	'blob_size_english_72hr',  '72 Hour Blobs Bytes',
+	'blob_count_3hr',		'3 Hour Blob Count',
+	'blob_size_3hr',		'3 Hour Blobs Size',
+	'blob_size_english_3hr',	'3 Hour Blobs Bytes',
+
+	'blob_count_6hr',		'6 Hour Blob Count',
+	'blob_size_6hr',		'6 Hour Blobs Size',
+	'blob_size_english_6hr',	'6 Hour Blobs Bytes',
+
+	'blob_count_12hr',		'12 Hour Blob Count',
+	'blob_size_12hr',		'12 Hour Blobs Size',
+	'blob_size_english_12hr',	'12 Hour Blobs Bytes',
+
+	'blob_count_24hr',		'24 Hour Blob Count',
+	'blob_size_24hr',		'24 Hour Blobs Size',
+	'blob_size_english_24hr',	'24 Hour Blobs Bytes',
+
+	'blob_count_72hr',		'72 Hour Blob Count',
+	'blob_size_72hr',		'72 Hour Blobs Size',
+	'blob_size_english_72hr',	'72 Hour Blobs Bytes',
 );
 
 STDOUT->autoflush(1);
@@ -136,74 +152,188 @@ sub pg_status
 				$r->{pgdatabase},
 			],
 		sql =>	q(
-SELECT
-	ctl.system_identifier,
-	pg_size_pretty(pg_database_size($1))
-		AS database_size_english,
-	pg_database_size($1)
-		AS database_size_bytes,
-
-	--  previous second of blob traffic
-	count(*) FILTER(WHERE srv.discover_time >= now() + '-1 second')
-		AS blob_count_sec,
-	coalesce(sum(sz.byte_count) FILTER(
-		WHERE srv.discover_time >= now() + '-1 second'
-	), 0) AS blob_size_sec,
-	pg_size_pretty(coalesce(sum(sz.byte_count) FILTER(
-		WHERE srv.discover_time >= now() + '-1 second'
-	), 0)) AS blob_size_english_sec,
-
-	--  previous minute of blob traffic
-	count(*) FILTER(WHERE srv.discover_time >= now() + '-1 minute')
-		AS "blob_count_min",
-	coalesce(sum(sz.byte_count) FILTER(
-		WHERE srv.discover_time >= now() + '-1 minute'
-	), 0) AS blob_size_min,
-	pg_size_pretty(coalesce(sum(sz.byte_count) FILTER(
-		WHERE srv.discover_time >= now() + '-1 minute'
-	), 0)) AS blob_size_english_min,
-
-	--  previous hour of traffic
-	count(*) FILTER(WHERE srv.discover_time >= now() + '-1 hour')
-		AS "blob_count_hr",
-	coalesce(sum(sz.byte_count) FILTER(
-		WHERE srv.discover_time >= now() + '-1 hour'
-	), 0) AS blob_size_hr,
-	pg_size_pretty(coalesce(sum(sz.byte_count) FILTER(
-		WHERE srv.discover_time >= now() + '-1 hour'
-	), 0)) AS blob_size_english_hr,
-
-	--  previous 24 hours of traffic
-	count(*) FILTER(WHERE srv.discover_time >= now() + '-24 hour')
-		AS "blob_count_24hr",
-	coalesce(sum(sz.byte_count) FILTER(
-		WHERE srv.discover_time >= now() + '-24 hours'
-	), 0) AS blob_size_24hr,
-	pg_size_pretty(coalesce(sum(sz.byte_count) FILTER(
-		WHERE srv.discover_time >= now() + '-24 hours'
-	), 0)) AS blob_size_english_24hr,
-
-	--  previous 72 hours of traffic
-	count(*) FILTER(WHERE srv.discover_time >= now() + '-72 hours')
-		AS "blob_count_72hr",
-	coalesce(sum(sz.byte_count) FILTER(
-		WHERE srv.discover_time >= now() + '-72 hours'
-	), 0) AS blob_size_72hr,
-	pg_size_pretty(coalesce(sum(sz.byte_count) FILTER(
-		WHERE srv.discover_time >= now() + '-72 hours'
-	), 0)) AS blob_size_english_72hr
+WITH blob_72hr AS (
+  SELECT
+  	srv.blob,
+	sz.byte_count,
+	srv.discover_time
   FROM
   	blobio.service srv
 	  LEFT OUTER JOIN blobio.brr_blob_size sz ON (
 	  	sz.blob = srv.blob
-	  ),
-	pg_control_system() ctl
+	  )
   WHERE
   	srv.discover_time >= now() + '-72 hours'
-  GROUP BY
-  	system_identifier
-;
-));
+), service_10sec AS (
+  SELECT
+	--  Look back 10sec at blob history
+	count(b.*) AS blob_count_10sec,
+	sum(b.byte_count) AS blob_size_10sec
+  FROM
+  	blob_72hr b
+  WHERE
+  	b.discover_time >= now() + '-10 sec'
+), service_1min AS (
+  SELECT
+	--  Look back 1min at blob history
+	count(b.*) AS blob_count_1min,
+	sum(b.byte_count) AS blob_size_1min
+  FROM
+  	blob_72hr b
+  WHERE
+  	b.discover_time >= now() + '-1 minute'
+), service_15min AS (
+  SELECT
+	--  Look back 15min at blob history
+	count(b.*) AS blob_count_15min,
+	sum(b.byte_count) AS blob_size_15min
+  FROM
+  	blob_72hr b
+  WHERE
+  	b.discover_time >= now() + '-15 minute'
+), service_1hr AS (
+  SELECT
+	--  Look back 1hr at blob history
+	count(b.*) AS blob_count_1hr,
+	sum(b.byte_count) AS blob_size_1hr
+  FROM
+  	blob_72hr b
+  WHERE
+  	b.discover_time >= now() + '-1 hour'
+), service_3hr AS (
+  SELECT
+	--  Look back 3hr at blob history
+	count(b.*) AS blob_count_3hr,
+	sum(b.byte_count) AS blob_size_3hr
+  FROM
+  	blob_72hr b
+  WHERE
+  	b.discover_time >= now() + '-3 hour'
+), service_6hr AS (
+  SELECT
+	--  Look back 6hr at blob history
+	count(b.*) AS blob_count_6hr,
+	sum(b.byte_count) AS blob_size_6hr
+  FROM
+  	blob_72hr b
+  WHERE
+  	b.discover_time >= now() + '-6 hour'
+), service_12hr AS (
+  SELECT
+	--  Look back 12hr at blob history
+	count(b.*) AS blob_count_12hr,
+	sum(b.byte_count) AS blob_size_12hr
+  FROM
+  	blob_72hr b
+  WHERE
+  	b.discover_time >= now() + '-12 hour'
+), service_24hr AS (
+  SELECT
+	--  Look back 24hr at blob history
+	count(b.*) AS blob_count_24hr,
+	sum(b.byte_count) AS blob_size_24hr
+  FROM
+  	blob_72hr b
+  WHERE
+  	b.discover_time >= now() + '-24 hour'
+), service_72hr AS (
+  SELECT
+	--  Look back 72hr at blob history
+	count(b.*) AS blob_count_72hr,
+	sum(b.byte_count) AS blob_size_72hr
+  FROM
+  	blob_72hr b
+)
+SELECT
+	ctl.system_identifier,
+	pg_database_size($1)
+	  AS database_size_bytes,
+	pg_size_pretty(pg_database_size($1))
+	  AS database_size_english,
+
+	--  most recent 10secs
+	COALESCE(s10s.blob_count_10sec, 0)
+	  AS blob_count_10sec,
+	COALESCE(s10s.blob_size_10sec, 0)
+	  AS blob_size_10sec,
+	pg_size_pretty(COALESCE(s10s.blob_size_10sec, 0))
+	  AS blob_size_english_10sec,
+
+	--  most recent 1 minute
+	COALESCE(s1m.blob_count_1min, 0)
+	  AS blob_count_1min,
+	COALESCE(s1m.blob_size_1min, 0)
+	  AS blob_size_1min,
+	pg_size_pretty(COALESCE(s1m.blob_size_1min, 0))
+	  AS blob_size_english_1min,
+
+	--  most recent 15 minutes
+	COALESCE(s15m.blob_count_15min, 0)
+	  AS blob_count_15min,
+	COALESCE(s15m.blob_size_15min, 0)
+	  AS blob_size_15min,
+	pg_size_pretty(COALESCE(s15m.blob_size_15min, 0))
+	  AS blob_size_english_15min,
+
+	--  most recent 1 hour
+	COALESCE(s1h.blob_count_1hr, 0)
+	  AS blob_count_1hr,
+	COALESCE(s1h.blob_size_1hr, 0)
+	  AS blob_size_1hr,
+	pg_size_pretty(COALESCE(s1h.blob_size_1hr, 0))
+	  AS blob_size_english_1hr,
+
+	--  most recent 3 hours
+	COALESCE(s3h.blob_count_3hr, 0)
+	  AS blob_count_3hr,
+	COALESCE(s3h.blob_size_3hr, 0)
+	  AS blob_size_3hr,
+	pg_size_pretty(COALESCE(s3h.blob_size_3hr, 0))
+	  AS blob_size_english_3hr,
+
+	--  most recent 6 hours
+	COALESCE(s6h.blob_count_6hr, 0)
+	  AS blob_count_6hr,
+	COALESCE(s6h.blob_size_6hr, 0)
+	  AS blob_size_6hr,
+	pg_size_pretty(COALESCE(s6h.blob_size_6hr, 0))
+	  AS blob_size_english_6hr,
+
+	--  most recent 12 hours
+	COALESCE(s12h.blob_count_12hr, 0)
+	  AS blob_count_12hr,
+	COALESCE(s12h.blob_size_12hr, 0)
+	  AS blob_size_12hr,
+	pg_size_pretty(COALESCE(s12h.blob_size_12hr, 0))
+	  AS blob_size_english_12hr,
+
+	--  most recent 24 hours
+	COALESCE(s24h.blob_count_24hr, 0)
+	  AS blob_count_24hr,
+	COALESCE(s24h.blob_size_24hr, 0)
+	  AS blob_size_24hr,
+	pg_size_pretty(COALESCE(s24h.blob_size_24hr, 0))
+	  AS blob_size_english_24hr,
+
+	--  most recent 72 hours
+	COALESCE(s72h.blob_count_72hr, 0)
+	  AS blob_count_72hr,
+	COALESCE(s72h.blob_size_72hr, 0)
+	  AS blob_size_72hr,
+	pg_size_pretty(COALESCE(s72h.blob_size_72hr, 0))
+	  AS blob_size_english_72hr
+    FROM
+	pg_control_system() ctl,
+	service_10sec s10s,
+	service_1min s1m,
+	service_15min s15m,
+	service_1hr s1h,
+	service_3hr s3h,
+	service_6hr s6h,
+	service_12hr s12h,
+	service_24hr s24h,
+	service_72hr s72h
+;));
 	$r->{stats} = $q->fetchrow_hashref();
 	return 'Up'; 
 }
@@ -225,6 +355,17 @@ sub put_th
 		print encode_html_entities($s);
 	}
 	print '</th>', "\n";
+}
+
+sub put_col
+{
+	#  service index: 1, 2, 3
+	my ($si, $col) = @_;
+	return unless $service_count > $si;	#  service not requested
+
+	my $s = "srv$i";
+	my $r = $pg_service{$s};
+
 }
 
 put_th $srv1;
