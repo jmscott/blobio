@@ -20,9 +20,19 @@ BRR=spool/bio4d.brr
 test -r $BRR || die "can not read brr log: $(pwd)/$BRR"
 wc -l $BRR
 
-find sync/remote -mindepth 1 -maxdepth 1 -type d			|
+find sync/remote							\
+	-mindepth 1							\
+	-maxdepth 1							\
+	-type d								|
   while read D;  do
-	find $D/spool -maxdepth 1 -type f -name '*.brr'			|
+	find $D/spool							\
+		-maxdepth 1						\
+		-type f							\
+		\(							\
+			-name bio4d.brr					\
+			-o						\
+			-name flowd.brr					\
+		\)							|
 	  while read BRR;  do
 		wc -l $BRR
 	  done
