@@ -5,6 +5,7 @@
 include ../local.mk
 include ../blobio.mk
 
+SRCs=	wrap2stat_json.go
 LIBs=									\
 	blobio.flow.example						\
 	contrib/udig/udig.sql.in					\
@@ -23,22 +24,24 @@ SBINs=									\
 	fs-eat								\
 	fs-xor-service							\
 	minus-service							\
+	wrap2stat_json							\
 
-install:
+all: wrap2stat_json
+
+wrap2stat_json: wrap2stat_json.go
+	$(GODIST)/bin/go build wrap2stat_json.go
+
+install: $(SBINs) $(LIBs)
 	install -g $(DIST_GROUP) -o $(DIST_USER) -m ug=r,o=		\
 		$(LIBs)							\
 		$(DIST_ROOT)/lib
+	install -g $(DIST_GROUP) -o $(DIST_USER) -m ug=r,o=		\
+		$(SRCs)							\
+		$(DIST_ROOT)/src
 
 	install -g $(DIST_GROUP) -o $(DIST_USER) -m u=rx,go=		\
 		$(SBINs)						\
 		$(DIST_ROOT)/sbin
-
-db:
-	createdb blobio 						\
-		--encoding=UTF8 					\
-		--template=template0 					\
-		--owner blobio 						\
-		--user postgres
 
 dev-links:
 	test -e etc || ln -s . etc
@@ -48,13 +51,15 @@ dev-links:
 	test -e log || ln -s . log
 	test -e spool || ln -s . spool
 
-frisk ff:
-	flowd frisk blobio.flow.example
-
 distclean:
 	test ! -d $(DIST_ROOT)/lib || (cd $(DIST_ROOT)/lib;  rm -f $(LIBs))
 	test ! -d $(DIST_ROOT)/sbin || (cd $(DIST_ROOT)/sbin;  rm -f $(SBINs))
-
+	test ! -f $(DIST_ROOT)/src/wrap2stat_json.go || 		\
+		rm $(DIST_ROOT)/src/wrap2stat_json.go
+clean:
+	rm -f wrap2stat_json
 world:
+	$(MAKE) $(MFLAGS) clean
+	$(MAKE) $(MFLAGS) all
 	$(MAKE) $(MFLAGS) distclean
 	$(MAKE) $(MFLAGS) install
