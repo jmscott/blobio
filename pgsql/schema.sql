@@ -128,8 +128,7 @@ CREATE TABLE brr_blob_size
 (
 	blob		udig
 				PRIMARY KEY,
-	byte_count	ui63
-				NOT NULL,
+	byte_count	ui63,
 	CONSTRAINT size_check CHECK ((
 		udig_is_empty(blob)
 		AND
@@ -398,5 +397,30 @@ CREATE TABLE bio4d_stat
 	eat_no_count	ui63,
 	take_no_count	ui63
 );
+
+DROP TABLE IF EXISTS wrap2stat_json CASCADE;
+CREATE TABLE wrap2stat_json
+(
+	blob			udig
+					PRIMARY KEY,
+	run_time		brr_timestamp,
+
+	wrap_blob		udig NOT NULL,
+	previous_wrap_udig	udig,
+
+	distinct_udig_count	ui63,
+					
+	min_start_time		brr_timestamp,
+	max_start_time		brr_timestamp,	
+	max_wall_duration	brr_duration,
+	max_blob_size		ui63,
+
+	no_count		ui63,
+	ok_count		ui63
+
+);
+COMMENT ON TABLE wrap2stat_json IS
+  'Summarize json output for command sbin/wrap2stat_json'
+;
 
 COMMIT;
