@@ -20,9 +20,7 @@
 #	STOP_WRAP=bct20:ee0fad120ce49e34b8d2c72c160c1a948c27d526
 #	walk-wrap-set --start-wrap $START_WRAP --stop-wrap-set $STOP_WRAP
 #
-#	#  See blobs in service, according to the chain
-#	walk-wrap-set | grep '^#'
-#
+#	#  walk back 3 wrap sets
 #	walk-wrap-set --stop-brr-log-count 3
 #  Note:
 #	Each wrap set contains at least one wrap request record, describing
@@ -30,7 +28,7 @@
 #	the first record in the wrap blob.  Also, the udig for a roll request
 #	may not even exist or be related to a recently seen wrap udig.
 #
-#	If a stop-wrap is specificed but does not exist in the block chain
+#	If a stop-wrap is specified but does not exist in the block chain
 #	then an error ought to occur, instead of walking to end of chain.
 #	Not sure.
 #
