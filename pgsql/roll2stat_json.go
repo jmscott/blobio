@@ -14,6 +14,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"os/exec"
 	"regexp"
 	"time"
 )
@@ -22,7 +23,6 @@ var udig_re = regexp.MustCompile("^[a-z][a-z0-9]{0,7}:[[:graph:]]{32,128}$")
 var verbose bool
 
 type stats struct {
-	RollBlob		string		`json:"roll_blob"`
 	WrapSetCount		uint64		`json:"wrap_set_count"`
 	BRRCount		uint64		`json:"brr_count"`
 
@@ -61,6 +61,7 @@ type roll2stat struct {
 	Argv			[]string 	`json:"argv"`
 	Env			[]string	`json:"environment"`
 
+	RollBlob		string		`json:"roll_blob"`
 	Stats			stats		`json:"roll2stat.blob.io"`
 
 	WorkDir			string		`json:"work_dir"`
@@ -68,7 +69,7 @@ type roll2stat struct {
 var r2s *roll2stat
 
 func ERROR(format string, args ...interface{}) {
-	fmt.Fprintf(os.Stderr, "ERROR: " + format, args...)
+	fmt.Fprintf(os.Stderr, "ERROR: " + format + "\n", args...)
 }
 
 func leave(exit_status int) {
@@ -98,7 +99,7 @@ func die(format string, args ...interface{}) {
 
 func info(format string, args ...interface{}) {
 	if verbose {
-		fmt.Fprintf(os.Stderr, format, args...)
+		fmt.Fprintf(os.Stderr, format + "\n", args...)
 	}
 }
 
@@ -130,17 +131,7 @@ func init() {
 	}
 }
 
-func main() {
-
-	info("hello, world")
-
-	r2s = &roll2stat{
-			Argc:		len(os.Args),
-			Argv:		os.Args,
-			Env:		os.Environ(),
-		  }
-	r2s.Stats.RollBlob = os.Args[1]
-	//  go to temporary work directory
+func goto_work_dir() {
 	r2s.WorkDir = fmt.Sprintf(
 				"%s/roll2stat_json-%d.d",
 				os.TempDir(),
@@ -155,6 +146,42 @@ func main() {
 	if err != nil {
 		die("os.Chdir(work) failed: %s", err)
 	}
+}
+
+func scan_roll_blob() {
+	cmd := exec.Command(
+		"blobio",
+		"get",
+		"--udig",
+		r2s.RollBlob,
+		"--service",
+		os.Getenv("BLOBIO_SERVICE"),
+		"--output-path",
+		r2s.RollBlob + ".blob",
+	)
+	err := cmd.Run()
+	if err != nil {
+		die("scan_roll_blob: blobio get failed: %s", err)
+	}
+}
+
+func main() {
+
+	info("hello, world")
+	info("PATH=%s", os.Getenv("PATH"))
+
+	r2s = &roll2stat{
+			Argc:		len(os.Args),
+			Argv:		os.Args,
+			Env:		os.Environ(),
+		  }
+	r2s.RollBlob = os.Args[1]
+	info("roll blob: %s", r2s.RollBlob)
+	info("BLOBIO_SERVICE=%s", os.Getenv("BLOBIO_SERVICE"))
+
+	goto_work_dir()
+
+	scan_roll_blob()
 
 	//  write json version of stats to standard output
 	enc := json.NewEncoder(os.Stdout)
