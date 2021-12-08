@@ -5,7 +5,7 @@
 include ../local.mk
 include ../blobio.mk
 
-SRCs=	wrap2stat_json.go
+SRCs=	roll2stat_json.go
 LIBs=									\
 	blobio.flow.example						\
 	contrib/udig/udig.sql.in					\
@@ -24,12 +24,12 @@ SBINs=									\
 	fs-eat								\
 	fs-xor-service							\
 	minus-service							\
-	wrap2stat_json							\
+	roll2stat_json							\
 
-all: wrap2stat_json
+all: roll2stat_json
 
-wrap2stat_json: wrap2stat_json.go
-	$(GODIST)/bin/go build wrap2stat_json.go
+roll2stat_json: roll2stat_json.go
+	$(GODIST)/bin/go build roll2stat_json.go
 
 install: $(SBINs) $(LIBs)
 	install -g $(DIST_GROUP) -o $(DIST_USER) -m ug=r,o=		\
@@ -54,10 +54,10 @@ dev-links:
 distclean:
 	test ! -d $(DIST_ROOT)/lib || (cd $(DIST_ROOT)/lib;  rm -f $(LIBs))
 	test ! -d $(DIST_ROOT)/sbin || (cd $(DIST_ROOT)/sbin;  rm -f $(SBINs))
-	test ! -f $(DIST_ROOT)/src/wrap2stat_json.go || 		\
-		rm $(DIST_ROOT)/src/wrap2stat_json.go
+	test ! -f $(DIST_ROOT)/src/roll2stat_json.go || 		\
+		rm -f $(DIST_ROOT)/src/roll2stat_json.go
 clean:
-	rm -f wrap2stat_json
+	rm -f roll2stat_json
 world:
 	$(MAKE) $(MFLAGS) clean
 	$(MAKE) $(MFLAGS) all
