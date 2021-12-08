@@ -406,6 +406,7 @@ CREATE TABLE wrap2stat_json
 	run_time		brr_timestamp,
 
 	wrap_blob		udig NOT NULL,
+	wrap_set_count		ui63,
 	previous_wrap_udig	udig,
 
 	distinct_udig_count	ui63,
