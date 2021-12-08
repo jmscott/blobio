@@ -398,30 +398,47 @@ CREATE TABLE bio4d_stat
 	take_no_count	ui63
 );
 
-DROP TABLE IF EXISTS wrap2stat_json CASCADE;
-CREATE TABLE wrap2stat_json
+DROP TABLE IF EXISTS roll2stat_json CASCADE;
+CREATE TABLE roll2stat_json
 (
-	blob			udig
-					PRIMARY KEY,
-	run_time		brr_timestamp,
+	blob			udig PRIMARY KEY,
 
-	wrap_blob		udig NOT NULL,
+	roll_blob		udig NOT NULL,
 	wrap_set_count		ui63,
-	previous_wrap_udig	udig,
+	brr_count		ui63,
 
-	distinct_udig_count	ui63,
+	prev_roll_udig		udig,
+	prev_roll_start_time	brr_timestamp NULL,
+	prev_roll_wall_time	brr_duration NULL,
+
+	udig_count		ui63,
 					
-	min_start_time		brr_timestamp,
-	max_start_time		brr_timestamp,	
-	max_wall_duration	brr_duration,
-	max_blob_size		ui63,
+	min_brr_start_time	brr_timestamp,
+	max_brr_start_time	brr_timestamp,	
+	max_brr_wall_duration	brr_duration,
 
-	no_count		ui63,
-	ok_count		ui63
+	max_brr_blob_size	ui63,
 
+	eat_ok_count		ui63,
+	eat_no_count		ui63,
+
+	get_count		ui63,
+	get_byte_count		ui63,
+
+	take_count		ui63,
+	take_byte_count		ui63,
+
+	put_count		ui63,
+	put_byte_count		ui63,
+
+	give_count		ui63,
+	give_byte_count		ui63,
+
+	ok_count		ui63,
+	no_count		ui63
 );
-COMMENT ON TABLE wrap2stat_json IS
-  'Summarize json output for command sbin/wrap2stat_json'
+COMMENT ON TABLE roll2stat_json IS
+  'Summarize json output for command sbin/roll2stat_json'
 ;
 
 COMMIT;
