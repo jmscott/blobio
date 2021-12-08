@@ -4,6 +4,8 @@
  *  Usage:
  *	roll2stat_json <roll-set-udig>
  *	roll2stat_json --verbose <roll-set-udig>
+ *  Note:
+ *	Think about "space" field.
  */
 
 package main;
@@ -19,11 +21,7 @@ import (
 var udig_re = regexp.MustCompile("^[a-z][a-z0-9]{0,7}:[[:graph:]]{32,128}$")
 var verbose bool
 
-type roll2stat struct {
-	Argc			int		`json:"argc"`
-	Argv			[]string 	`json:"argv"`
-	Env			[]string	`json:"environment"`
-
+type stats struct {
 	RollBlob		string		`json:"roll_blob"`
 	WrapSetCount		uint64		`json:"wrap_set_count"`
 	BRRCount		uint64		`json:"brr_count"`
@@ -56,6 +54,14 @@ type roll2stat struct {
 
 	OkCount			uint64		`json:"ok_count"`
 	NoCount			uint64		`json:"no_count"`
+}
+
+type roll2stat struct {
+	Argc			int		`json:"argc"`
+	Argv			[]string 	`json:"argv"`
+	Env			[]string	`json:"environment"`
+
+	Stats			stats		`json:"roll2stat.blob.io"`
 
 	WorkDir			string		`json:"work_dir"`
 }
@@ -132,8 +138,8 @@ func main() {
 			Argc:		len(os.Args),
 			Argv:		os.Args,
 			Env:		os.Environ(),
-			RollBlob:	os.Args[1],
 		  }
+	r2s.Stats.RollBlob = os.Args[1]
 	//  go to temporary work directory
 	r2s.WorkDir = fmt.Sprintf(
 				"%s/roll2stat_json-%d.d",
