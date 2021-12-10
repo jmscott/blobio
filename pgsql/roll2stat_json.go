@@ -15,6 +15,7 @@
 package main;
 
 import (
+	"bufio"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -27,7 +28,7 @@ var udig_re = regexp.MustCompile("^[a-z][a-z0-9]{0,7}:[[:graph:]]{32,128}$")
 var verbose bool
 
 type stats struct {
-	WrapSetCount		uint64		`json:"wrap_set_count"`
+	BRRLogCount		uint64		`json:"brr_log_count"`
 	BRRCount		uint64		`json:"brr_count"`
 
 	PrevRollUDig		string		`json:"prev_roll_udig"`
@@ -153,6 +154,12 @@ func goto_work_dir() {
 }
 
 func scan_roll_blob() {
+
+	_die := func(format string, args ...interface{}) {
+		die("scan_roll_blob: " + format, args...)
+	}
+
+	roll_blob := r2s.RollBlob + ".blob"
 	cmd := exec.Command(
 		"blobio",
 		"get",
@@ -161,16 +168,30 @@ func scan_roll_blob() {
 		"--service",
 		os.Getenv("BLOBIO_SERVICE"),
 		"--output-path",
-		r2s.RollBlob + ".blob",
+		roll_blob,
 	)
 	err := cmd.Run()
 	if err != nil {
 		if cmd.ProcessState.ExitCode() > 1 {
-			die("scan_roll_blob: blobio get failed: %s", err)
+			_die("blobio get failed: %s", err)
 		}
-		ERROR("can not fetch roll blob: %s", r2s.RollBlob)
+		ERROR("blobio get roll: says no: %s", r2s.RollBlob)
 		leave(1)
 	}
+	f, err := os.Open(roll_blob)
+	if err != nil {
+		_die("os.Open(roll blob) failed: %s", err)
+	}
+	in := bufio.NewScanner(f)
+	for in.Scan() {
+		ud := in.Text()
+		if !udig_re.MatchString(ud) {
+			ERROR("non udig in brr set: %s", roll_blob)
+			_die("brr log not a udig: %s", ud)
+		}
+		r2s.Stats.BRRLogCount++
+	}
+	f.Close()
 }
 
 func main() {
