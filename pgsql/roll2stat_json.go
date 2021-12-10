@@ -4,6 +4,10 @@
  *  Usage:
  *	roll2stat_json <roll-set-udig>
  *	roll2stat_json --verbose <roll-set-udig>
+ *  Exit Status:
+ *	0	json written, all blobs fetched, no errors
+ *	1	roll or brr log blob does not exist, no json written
+ *	2	unexpected error
  *  Note:
  *	Think about "space" field.
  */
@@ -94,7 +98,7 @@ func leave(exit_status int) {
 func die(format string, args ...interface{}) {
 
 	ERROR(format, args...)
-	leave(1)
+	leave(2)
 }
 
 func info(format string, args ...interface{}) {
@@ -161,7 +165,11 @@ func scan_roll_blob() {
 	)
 	err := cmd.Run()
 	if err != nil {
-		die("scan_roll_blob: blobio get failed: %s", err)
+		if cmd.ProcessState.ExitCode() > 1 {
+			die("scan_roll_blob: blobio get failed: %s", err)
+		}
+		ERROR("can not fetch roll blob: %s", r2s.RollBlob)
+		leave(1)
 	}
 }
 
