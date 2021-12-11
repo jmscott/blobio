@@ -9,7 +9,7 @@
  *	1	roll or brr log blob does not exist, no json written
  *	2	unexpected error
  *  Note:
- *	Think about "space" field.
+ *	Think about "space" command-line argument.
  */
 
 package main;
@@ -21,11 +21,15 @@ import (
 	"os"
 	"os/exec"
 	"regexp"
+	"strings"
 	"time"
 )
 
 var udig_re = regexp.MustCompile("^[a-z][a-z0-9]{0,7}:[[:graph:]]{32,128}$")
+var SERVICE_re = regexp.MustCompile("^[a-z][a-z0-9]{0,7}:[[:graph:]]{1,128}$")
+
 var verbose bool
+var BLOBIO_SERVICE string
 
 type stats struct {
 	BRRLogCount		uint64		`json:"brr_log_count"`
@@ -79,7 +83,10 @@ func ERROR(format string, args ...interface{}) {
 
 func leave(exit_status int) {
 
-	if  r2s.WorkDir != "" {
+	if r2s == nil {			//  no hello, world
+		os.Exit(exit_status)
+	}
+	if r2s.WorkDir != "" {
 		err := os.Chdir(os.TempDir())
 		if err == nil {
 			err := os.RemoveAll(r2s.WorkDir)
@@ -109,30 +116,52 @@ func info(format string, args ...interface{}) {
 }
 
 func init() {
-	//  parse command line arguments
-	if len(os.Args) != 2 && len(os.Args) != 3 {
-		die(
-			"wrong number of arguments: got %d, expected 1 or 2",
-			len(os.Args) - 1,
-		)
+	if len(os.Args) < 2 {
+		die("must be at least command line args")
 	}
 
 	//  extract roll_udig as first argument.
-
 	if !udig_re.MatchString(os.Args[1]) {
 		die("roll udig not a udig: %s", os.Args[1])
 	}
-	if len(os.Args) == 3 {
-		if os.Args[2] != "--verbose" {
-			die("unknown option: %s", os.Args[2])
-		}
-		if verbose {
-			die("option --verbose: called more than once")
-		}
-		verbose = true
+
+	var opt string
+
+	_eo := func(msg string) {
+		die(opt + ": %s", msg)
 	}
-	if os.Getenv("BLOBIO_SERVICE") == "" {
-		die("env not defined: BLOBIO_SERVICE")
+
+	_eo2 := func() {
+		_eo("given twice")
+	}
+	argc := len(os.Args)
+	for i := 2;  i < argc;  i++ {
+		opt = os.Args[i]
+		if opt == "--verbose" {
+			if verbose {
+				_eo2()
+			}
+			verbose = true
+		} else if opt == "--BLOBIO_SERVICE" {
+			if BLOBIO_SERVICE != "" {
+				_eo2()
+			}
+			i++
+			if i == argc {
+				_eo("missing service url")
+			}
+			BLOBIO_SERVICE = os.Args[i]
+			if !SERVICE_re.MatchString(BLOBIO_SERVICE) {
+				_eo("not a BLOBIO_SERVICE: " + BLOBIO_SERVICE)
+			}
+		} else if strings.HasPrefix(opt, "--") {
+			die("unknown option: %s", opt)
+		} else {
+			die("unknown command line arg: %s", opt)
+		}
+	}
+	if BLOBIO_SERVICE == "" {
+		die("missing required option: --BLOBIO_SERVICE <service url>")
 	}
 }
 
