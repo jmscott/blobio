@@ -33,6 +33,7 @@ var verbose bool
 var BLOBIO_SERVICE string
 
 type blob_stream struct {
+	what	string
 	out	*bufio.Scanner
 	cmd	*exec.Cmd
 }
@@ -220,7 +221,23 @@ func open_stream(blob, what string) *blob_stream {
 	return &blob_stream{
 		out:	bufio.NewScanner(stdout),
 		cmd:	cmd,
+		what:	what,
 	}
+}
+
+func (bs *blob_stream) wait(ok_exit int) (ex int) {
+
+	cmd := bs.cmd
+
+	ps, err := cmd.Process.Wait()
+	if err != nil {
+		die("cmd.Process.Wait() failed: %s", err)
+	}
+	ex = ps.ExitCode()
+	if ex > 0 && ex != ok_exit {
+		die(bs.what + ": cmd.ProcessState.ExitCode > 0")
+	}
+	return
 }
 
 func scan_roll(done chan interface{}) {
@@ -243,17 +260,8 @@ func scan_roll(done chan interface{}) {
 		}
 		go scan_brr_log(ud, done)
 	}
-	cmd := rs.cmd
 
-	ps, err := cmd.Process.Wait()
-	if err != nil {
-		_die("cmd.Process.Wait() failed: %s", err)
-	}
-	ex := ps.ExitCode()
-	if ex > 1 {
-		_die("cmd.ProcessState.ExitCode > 0")
-	}
-	if ex == 1 {
+	if rs.wait(1) == 1 {
 		ERROR("no roll blob: %s", r2s.RollBlob)
 		leave(1)
 	}
