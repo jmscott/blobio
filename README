@@ -82,8 +82,8 @@ Description:
 
 		https://en.wikipedia.org/wiki/Call_detail_record
 
-	The format of a single BRR record is a line of tab separated fields
-	i.e, the typical unixy ascii record:
+	The format of a single BRR record is a line of seven tab separated
+	fields: i.e, the typical unixy ascii record:
 
 		start_time		#  YYYY-MM-DDThh:mm:ss.ns[+-]HH:MM
 		transport		#  [a-z][a-z0-9]{0,7}~[[:graph:]]{1,128}
