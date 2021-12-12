@@ -22,6 +22,7 @@ import (
 	"os"
 	"os/exec"
 	"regexp"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -276,6 +277,11 @@ func scan_brr_log(brr_log string, done chan interface{}) {
 		if !blob_size_re.MatchString(fld[5]) {
 			_bdie(`udig`, fld[5])
 		}
+		blob_size, err := strconv.ParseUint(fld[5], 10, 63)
+		if err != nil {
+			_bdie(`blob_size`, fld[5])
+		}
+
 		if !wall_duration_re.MatchString(fld[6]) {
 			_bdie(`wall_duration`, fld[6])
 		}
@@ -339,6 +345,12 @@ func scan_brr_log(brr_log string, done chan interface{}) {
 		r2s.mux.Lock()
 		if r2s.Stat.MaxBRRWallDuration.duration < wall_duration {
 			r2s.Stat.MaxBRRWallDuration.duration = wall_duration
+		}
+		r2s.mux.Unlock()
+
+		r2s.mux.Lock()
+		if blob_size > r2s.Stat.MaxBRRBlobSize {
+			r2s.Stat.MaxBRRBlobSize = blob_size
 		}
 		r2s.mux.Unlock()
 	}
