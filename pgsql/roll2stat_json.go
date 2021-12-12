@@ -9,6 +9,8 @@
  *	1	roll or brr log blob does not exist, no json written
  *	2	unexpected error
  *  Note:
+ *	Think about a per verb unique udig count
+ *
  *	Think about "space" command-line argument.
  */
 
@@ -114,6 +116,7 @@ type stat struct {
 
 	MaxBRRWallDuration	brr_duration	`json:"max_brr_wall_duration"`
 	MaxBRRBlobSize		uint64		`json:"max_brr_blob_size"`
+	SumBRRBlobSize		uint64		`json:"sum_brr_blob_size"`
 
 	EatOkCount		uint64		`json:"eat_ok_count"`
 	EatNoCount		uint64		`json:"eat_no_count"`
@@ -124,11 +127,17 @@ type stat struct {
 	TakeCount		uint64		`json:"take_count"`
 	TakeByteCount		uint64		`json:"take_byte_count"`
 
-	PutCount		uint64		`json:"get_count"`
+	PutCount		uint64		`json:"put_count"`
 	PutByteCount		uint64		`json:"put_byte_count"`
 
 	GiveCount		uint64		`json:"give_count"`
 	GiveByteCount		uint64		`json:"give_byte_count"`
+
+	WrapCount		uint64		`json:"wrap_count"`
+
+	RollCount		uint64		`json:"roll_count"`
+	RollOkCount		uint64		`json:"roll_ok_count"`
+	RollNoCount		uint64		`json:"roll_no_count"`
 
 	OkCount			uint64		`json:"ok_count"`
 	NoCount			uint64		`json:"no_count"`
@@ -262,18 +271,24 @@ func scan_brr_log(brr_log string, done chan interface{}) {
 		if !RFC3339Nano_re.MatchString(fld[0]) {
 			_bdie(`start time`, fld[0])
 		}
+
 		if !transport_re.MatchString(fld[1]) {
 			_bdie(`transport`, fld[1])
 		}
+
 		if !verb_re.MatchString(fld[2]) {
 			_bdie(`verb`, fld[2])
 		}
+
 		if !udig_re.MatchString(fld[3]) {
 			_bdie(`udig`, fld[3])
 		}
+
 		if !chat_history_re.MatchString(fld[4]) {
 			_bdie(`chat_history`, fld[4])
 		}
+		chat_history := fld[4]
+
 		if !blob_size_re.MatchString(fld[5]) {
 			_bdie(`udig`, fld[5])
 		}
@@ -320,19 +335,92 @@ func scan_brr_log(brr_log string, done chan interface{}) {
 			_die("time.ParseDuration(wall) failed: %s", err)
 		}
 
-		//  set stats for singular "roll" udig.
-		//  die if another "roll" udig has been seen
-
-		if fld[2] == "roll" {
-			r2s.mux.Lock()
+		r2s.mux.Lock()
+		switch fld[2] {
+		case "eat":
+			switch chat_history {
+			case "ok":
+				r2s.Stat.EatOkCount++
+			case "no":
+				r2s.Stat.EatNoCount++
+			default:
+				panic(
+					"impossible eat chat history: " +
+					chat_history,
+				)
+			}
+		case "get":
+			if chat_history != "no" && chat_history != "ok" {
+				die(
+					"get: impossible chat history: %s",
+					chat_history,
+				)
+			}
+			r2s.Stat.GetCount++
+			r2s.Stat.GetByteCount += blob_size
+		case "put":
+			switch chat_history {
+			case "ok,ok":
+			case "no":
+			case "ok,no":
+			default:
+				panic(fmt.Sprintf(
+					"put: impossible chat_history: %s",
+					chat_history,
+				))
+			}
+			r2s.Stat.PutCount++
+			r2s.Stat.PutByteCount += blob_size
+		case "give":
+			switch chat_history {
+			case "ok,ok,ok":
+			case "ok,no":
+			case "ok,ok,no":
+			case "no":
+			default:
+				panic(fmt.Sprintf(
+					"give: impossible chat_history: %s",
+					chat_history,
+				))
+			}
+			r2s.Stat.GiveCount++
+			r2s.Stat.GiveByteCount += blob_size
+		case "take":
+			switch chat_history {
+			case "ok,ok,ok":
+			case "ok,no":
+			case "ok,ok,no":
+			case "no":
+			default:
+				panic(fmt.Sprintf(
+					"take: impossible chat_history: %s",
+					chat_history,
+				))
+			}
+			r2s.Stat.TakeCount++
+			r2s.Stat.TakeByteCount += blob_size
+		case "roll":
 			if r2s.Stat.PrevRollUDig != "" {
 				die("multiple roll udig seen")
 			}
 			r2s.Stat.PrevRollUDig = fld[5]
 			r2s.Stat.PrevRollStartTime = start_time
 			r2s.Stat.PrevRollWallDuration.duration = wall_duration
-			r2s.mux.Unlock()
+			switch chat_history {
+			case "ok":
+				r2s.Stat.RollOkCount++
+			case "no":
+				r2s.Stat.RollNoCount++
+			default:
+				panic("impossible chat_history: " +chat_history)
+			}
+		case "wrap":
+			r2s.Stat.WrapCount++
+		default:
+			panic(fmt.Sprintf("impossible brr verb: %s", fld[2]))
+
 		}
+		r2s.mux.Unlock()
 
 		//  unique blob udigs
 		r2s.mux.Lock()
@@ -351,6 +439,17 @@ func scan_brr_log(brr_log string, done chan interface{}) {
 		r2s.mux.Lock()
 		if blob_size > r2s.Stat.MaxBRRBlobSize {
 			r2s.Stat.MaxBRRBlobSize = blob_size
+		}
+		r2s.Stat.SumBRRBlobSize += blob_size
+		r2s.mux.Unlock()
+
+		r2s.mux.Lock()
+		if strings.HasPrefix(chat_history, "ok") {
+			r2s.Stat.OkCount++
+		} else if strings.HasPrefix(chat_history, "no") {
+			r2s.Stat.NoCount++
+		} else {
+			panic("impossible chat_history: " + chat_history)
 		}
 		r2s.mux.Unlock()
 	}
@@ -466,7 +565,10 @@ func main() {
 
 	//  cheap sanity checks
 	if r2s.Stat.BRRCount < r2s.Stat.UDigCount {
-		die("BRRCount < UDigCount")
+		die("brr BRRCount < UDigCount")
+	}
+	if r2s.Stat.MaxBRRBlobSize > r2s.Stat.SumBRRBlobSize {
+		die("brr MaxBRRBlobSize > SumBRRBlobSize")
 	}
 	r2s.Stat.UDigCount = uint64(len(r2s.udig_set))
 
