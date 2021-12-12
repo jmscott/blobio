@@ -22,16 +22,22 @@ import (
 	"os/exec"
 	"regexp"
 	"strings"
+	"sync"
 	"time"
 )
 
-var udig_re = regexp.MustCompile("^[a-z][a-z0-9]{0,7}:[[:graph:]]{32,128}$")
-var SERVICE_re = regexp.MustCompile("^[a-z][a-z0-9]{0,7}:[[:graph:]]{1,128}$")
+var udig_re = regexp.MustCompile(`^[a-z][a-z0-9]{0,7}:[[:graph:]]{32,128}$`)
+var SERVICE_re = regexp.MustCompile(`^[a-z][a-z0-9]{0,7}:[[:graph:]]{1,128}$`)
 
 var verbose bool
 var BLOBIO_SERVICE string
 
-type stats struct {
+type blob_stream struct {
+	out	*bufio.Scanner
+	cmd	*exec.Cmd
+}
+
+type stat struct {
 	BRRLogCount		uint64		`json:"brr_log_count"`
 	BRRCount		uint64		`json:"brr_count"`
 
@@ -71,9 +77,11 @@ type roll2stat struct {
 	Env			[]string	`json:"environment"`
 
 	RollBlob		string		`json:"roll_blob"`
-	Stats			stats		`json:"roll2stat.blob.io"`
+	Stat			stat		`json:"roll2stat.blob.io"`
 
 	WorkDir			string		`json:"work_dir"`
+
+	stat_mux		sync.Mutex
 }
 var r2s *roll2stat
 
@@ -182,45 +190,73 @@ func goto_work_dir() {
 	}
 }
 
-func scan_roll_blob() {
+func scan_brr_log(brr_log string, done chan interface{}) {
+	done <- interface{}(nil)
+}
+
+func open_stream(blob, what string) *blob_stream {
+
+	_df := what + ": " + "stream_blob: "
+	_die := func(format string, args ...interface{}) {
+		die(_df + format, args...)
+	}
+
+	cmd := exec.Command(
+			"blobio",
+			"get",
+			"--udig",
+			blob,
+			"--service",
+			BLOBIO_SERVICE,
+		)
+	stdout, err := cmd.StdoutPipe()
+	if err != nil {
+		_die("exec.cmd.StdoutPipe() failed: %s", err)
+	}
+	err = cmd.Start()
+	if err != nil {
+		_die("exec.cmd.Start() failed: %s", err)
+	}
+	return &blob_stream{
+		out:	bufio.NewScanner(stdout),
+		cmd:	cmd,
+	}
+}
+
+func scan_roll(done chan interface{}) {
 
 	_die := func(format string, args ...interface{}) {
-		die("scan_roll_blob: " + format, args...)
+		die("scan_roll: " + format, args...)
 	}
 
-	roll_blob := r2s.RollBlob + ".blob"
-	cmd := exec.Command(
-		"blobio",
-		"get",
-		"--udig",
-		r2s.RollBlob,
-		"--service",
-		os.Getenv("BLOBIO_SERVICE"),
-		"--output-path",
-		roll_blob,
-	)
-	err := cmd.Run()
-	if err != nil {
-		if cmd.ProcessState.ExitCode() > 1 {
-			_die("blobio get failed: %s", err)
-		}
-		ERROR("blobio get roll: says no: %s", r2s.RollBlob)
-		leave(1)
-	}
-	f, err := os.Open(roll_blob)
-	if err != nil {
-		_die("os.Open(roll blob) failed: %s", err)
-	}
-	in := bufio.NewScanner(f)
+	rs := open_stream(r2s.RollBlob, `scan_roll`)
+	in := rs.out
 	for in.Scan() {
+		r2s.Stat.BRRLogCount++
 		ud := in.Text()
 		if !udig_re.MatchString(ud) {
-			ERROR("non udig in brr set: %s", roll_blob)
-			_die("brr log not a udig: %s", ud)
+			_die(
+				"line %d: not udig in brr set: %s",
+				r2s.Stat.BRRLogCount,
+				r2s.RollBlob,
+			)
 		}
-		r2s.Stats.BRRLogCount++
+		go scan_brr_log(ud, done)
 	}
-	f.Close()
+	cmd := rs.cmd
+
+	ps, err := cmd.Process.Wait()
+	if err != nil {
+		_die("cmd.Process.Wait() failed: %s", err)
+	}
+	ex := ps.ExitCode()
+	if ex > 1 {
+		_die("cmd.ProcessState.ExitCode > 0")
+	}
+	if ex == 1 {
+		ERROR("no roll blob: %s", r2s.RollBlob)
+		leave(1)
+	}
 }
 
 func main() {
@@ -239,9 +275,14 @@ func main() {
 
 	goto_work_dir()
 
-	scan_roll_blob()
+	done := make(chan interface{})
+	scan_roll(done)
 
-	//  write json version of stats to standard output
+	for i := uint64(0);  i < r2s.Stat.BRRLogCount;  i++ {
+		<- done
+	}
+
+	//  write json version of stat to standard output
 	enc := json.NewEncoder(os.Stdout)
 	enc.SetEscapeHTML(false)
 	enc.SetIndent("", "\t")
