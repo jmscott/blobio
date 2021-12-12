@@ -29,6 +29,31 @@ import (
 var udig_re = regexp.MustCompile(`^[a-z][a-z0-9]{0,7}:[[:graph:]]{32,128}$`)
 var SERVICE_re = regexp.MustCompile(`^[a-z][a-z0-9]{0,7}:[[:graph:]]{1,128}$`)
 
+//  match 2021-12-12T06:39:58.528973000+00:00
+
+var RFC3339Nano_re = regexp.MustCompile(
+   	`^[23]\d\d\d-[01]\d-[0123]\d`  	+  //  year
+	`T`				+  //  start of time of day
+	`[0-2]\d:`			+  //  hour
+	`[0-6]\d:`			+  //  minute
+	`[0-6]\d\.\d{1,9}`		+  //  second
+	`[+-][0-2]\d:[0-6]\d$`,		   // timezone
+)
+
+var transport_re = regexp.MustCompile(
+	`^[a-z][a-z0-9]{0,7}~[[:graph:]]{1,128}$`,
+)
+
+var verb_re = regexp.MustCompile(
+	`^(get|put|give|take|eat|wrap|roll)$`,
+)
+
+var chat_history_re = regexp.MustCompile(
+	`((ok|no)|((ok,ok)|(ok,no))|(ok,ok,ok)|(ok,ok,no))$`,
+)
+var blob_size_re = regexp.MustCompile(`^0|([1-9][0-9]{0,18})$`)
+var wall_duration_re = regexp.MustCompile(`[0-9]{1,10}(\.[0-9]{0,9})$`)
+
 var verbose bool
 var BLOBIO_SERVICE string
 
@@ -192,6 +217,74 @@ func goto_work_dir() {
 }
 
 func scan_brr_log(brr_log string, done chan interface{}) {
+
+	lino := uint64(0)
+
+	_die := func(format string, args ...interface{}) {
+		fmt := fmt.Sprintf("scan_brr_log: line %d: %s", lino, format)
+		die(fmt, args...)
+	}
+
+	_bdie := func(what, fld string) {
+		_die("brr: not a " + what + ": %s", fld)
+	}
+
+	bs := open_stream(brr_log, `scan_brr_log`)
+
+	in := bs.out
+	for in.Scan() {
+		lino++
+
+		/*
+		 *  parse the single blob request record
+		 *
+		 *  start_time		#  YYYY-MM-DDThh:mm:ss.ns[+-]HH:MM
+		 *  transport		#  [a-z][a-z0-9]{0,7}~[[:graph:]]{1,128}
+		 *  verb		#  get/put/take/give/eat/wrap/roll
+		 *  algorithm:digest	#  [a-z][a-z0-9]{0,7}:		\
+		 *		 	#	[[:graph:]]{32,128}
+		 *  chat_history	#  ok/no handshake between server&client
+		 *  blob_size		#  unsigned 63 bit long <= 2^63
+		 *  wall_duration	#  request wall duration in sec.ns>=0
+		 */
+
+		brr := in.Text()
+		fld := strings.Split(brr, "\t")
+		if len(fld) != 7 {
+			_bdie("len(tab brr) != 7", string(len(fld)))
+		}
+		if !RFC3339Nano_re.MatchString(fld[0]) {
+			_bdie(`start time`, fld[0])
+		}
+		if !transport_re.MatchString(fld[1]) {
+			_bdie(`transport`, fld[1])
+		}
+		if !verb_re.MatchString(fld[2]) {
+			_bdie(`verb`, fld[2])
+		}
+		if !udig_re.MatchString(fld[3]) {
+			_bdie(`udig`, fld[3])
+		}
+		if !chat_history_re.MatchString(fld[4]) {
+			_bdie(`chat_history`, fld[4])
+		}
+		if !blob_size_re.MatchString(fld[5]) {
+			_bdie(`udig`, fld[5])
+		}
+		if !wall_duration_re.MatchString(fld[6]) {
+			_bdie(`wall_duration`, fld[6])
+		}
+
+		r2s.stat_mux.Lock()
+		r2s.Stat.BRRCount++
+		r2s.stat_mux.Unlock()
+	}
+
+	if bs.wait(1) == 1 {
+		ERROR("no roll blob: %s", r2s.RollBlob)
+		leave(1)
+	}
+
 	done <- interface{}(nil)
 }
 
@@ -246,8 +339,8 @@ func scan_roll(done chan interface{}) {
 		die("scan_roll: " + format, args...)
 	}
 
-	rs := open_stream(r2s.RollBlob, `scan_roll`)
-	in := rs.out
+	bs := open_stream(r2s.RollBlob, `scan_roll`)
+	in := bs.out
 	for in.Scan() {
 		r2s.Stat.BRRLogCount++
 		ud := in.Text()
@@ -261,7 +354,7 @@ func scan_roll(done chan interface{}) {
 		go scan_brr_log(ud, done)
 	}
 
-	if rs.wait(1) == 1 {
+	if bs.wait(1) == 1 {
 		ERROR("no roll blob: %s", r2s.RollBlob)
 		leave(1)
 	}
