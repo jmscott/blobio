@@ -17,6 +17,7 @@ package main;
 import (
 	"bufio"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"os/exec"
@@ -63,19 +64,54 @@ type blob_stream struct {
 	cmd	*exec.Cmd
 }
 
+type brr_duration struct {
+    duration	time.Duration
+}
+
+func (d brr_duration) MarshalJSON() ([]byte, error) {
+    return json.Marshal(d.duration.String())
+}
+
+func (d *brr_duration) UnmarshalJSON(b []byte) error {
+    var v interface{}
+
+    if err := json.Unmarshal(b, &v); err != nil {
+        return err
+    }
+
+    switch value := v.(type) {
+    case float64:
+        d.duration = time.Duration(value)
+        return nil
+    case string:
+        var err error
+        d.duration, err = time.ParseDuration(value)
+        if err != nil {
+            return err
+        }
+        return nil
+    default:
+    	return errors.New(fmt.Sprintf("invalid duration: %s", d))
+    }
+}
+
+
 type stat struct {
 	BRRLogCount		uint64		`json:"brr_log_count"`
 	BRRCount		uint64		`json:"brr_count"`
 
 	PrevRollUDig		string		`json:"prev_roll_udig"`
-	PrevRollStartTime	string		`json:"prev_roll_start_time"`
-	PrevRollWallTime	string		`json:"prev_roll_wall_time"`
+	PrevRollStartTime	time.Time	`json:"prev_roll_start_time"`
+
+	PrevRollWallDuration	brr_duration	`json:"prev_roll_wall_time"`
 
 	UDigCount		uint64		`json:"udig_count"`
 
 	MinBRRStartTime		time.Time	`json:"min_brr_start_time"`
 	MaxBRRStartTime		time.Time	`json:"max_brr_start_time"`
-	MaxBRRWallDuration	time.Duration	`json:"max_brr_wall_duration"`
+
+
+	MaxBRRWallDuration	brr_duration	`json:"max_brr_wall_duration"`
 	MaxBRRBlobSize		uint64		`json:"max_brr_blob_size"`
 
 	EatOkCount		uint64		`json:"eat_ok_count"`
@@ -106,6 +142,7 @@ type roll2stat struct {
 	Stat			stat		`json:"roll2stat.blob.io"`
 
 	mux			sync.Mutex
+	udig_set		map[string]bool
 }
 var r2s *roll2stat
 
@@ -199,7 +236,6 @@ func scan_brr_log(brr_log string, done chan interface{}) {
 
 	bs := open_stream(brr_log, `scan_brr_log`)
 
-	mux := r2s.mux
 	in := bs.out
 	for in.Scan() {
 		lino++
@@ -244,33 +280,67 @@ func scan_brr_log(brr_log string, done chan interface{}) {
 			_bdie(`wall_duration`, fld[6])
 		}
 
-		mux.Lock()
+		r2s.mux.Lock()
 		r2s.Stat.BRRCount++
-		mux.Unlock()
+		r2s.mux.Unlock()
 
-		//  reset start_time stats
+		//  properly parse start_time
 		start_time, err := time.Parse(time.RFC3339Nano, fld[0])
 		if err != nil {
 			_die("can not parse start time: %s", err)
 		}
 
 		//  check Stat.MinBRRStartTime
-		mux.Lock()
+		r2s.mux.Lock()
 		if r2s.Stat.MinBRRStartTime.IsZero() {
 			r2s.Stat.MinBRRStartTime = start_time
 		} else if r2s.Stat.MinBRRStartTime.After(start_time) {
 			r2s.Stat.MinBRRStartTime = start_time
 		}
-		mux.Unlock()
+		r2s.mux.Unlock()
 
 		//  check Stat.MaxBRRStartTime
-		mux.Lock()
+		r2s.mux.Lock()
 		if r2s.Stat.MaxBRRStartTime.IsZero() {
 			r2s.Stat.MaxBRRStartTime = start_time
 		} else if r2s.Stat.MaxBRRStartTime.Before(start_time) {
 			r2s.Stat.MaxBRRStartTime = start_time
 		}
-		mux.Unlock()
+		r2s.mux.Unlock()
+
+		//  parse the wall duration
+		wall_duration, err := time.ParseDuration(fld[6] + "s")
+		if err != nil {
+			_die("time.ParseDuration(wall) failed: %s", err)
+		}
+
+		//  set stats for singular "roll" udig.
+		//  die if another "roll" udig has been seen
+
+		if fld[2] == "roll" {
+			r2s.mux.Lock()
+			if r2s.Stat.PrevRollUDig != "" {
+				die("multiple roll udig seen")
+			}
+			r2s.Stat.PrevRollUDig = fld[5]
+			r2s.Stat.PrevRollStartTime = start_time
+			r2s.Stat.PrevRollWallDuration.duration = wall_duration
+			r2s.mux.Unlock()
+		}
+
+		//  unique blob udigs
+		r2s.mux.Lock()
+		if r2s.udig_set[fld[3]] == false {
+			r2s.udig_set[fld[3]] = true
+		}
+		r2s.mux.Unlock()
+
+		//  max wall duration
+		r2s.mux.Lock()
+		if r2s.Stat.MaxBRRWallDuration.duration < wall_duration {
+			r2s.Stat.MaxBRRWallDuration.duration = wall_duration
+		}
+		r2s.mux.Unlock()
 	}
 
 	if bs.wait(1) == 1 {
@@ -278,10 +348,12 @@ func scan_brr_log(brr_log string, done chan interface{}) {
 		leave(1)
 	}
 
-	//  cheap sanity test
+	//  cheap sanity tests
+	r2s.mux.Lock()
 	if r2s.Stat.MinBRRStartTime.After(r2s.Stat.MaxBRRStartTime) {
 		_die("min_brr_start_time > max_brr_start_time")
 	}
+	r2s.mux.Unlock()
 
 	done <- interface{}(nil)
 }
@@ -367,6 +439,7 @@ func main() {
 			Argc:		len(os.Args),
 			Argv:		os.Args,
 			Env:		os.Environ(),
+			udig_set:	make(map[string]bool),
 		  }
 	r2s.RollBlob = os.Args[1]
 	info("roll blob: %s", r2s.RollBlob)
@@ -378,6 +451,12 @@ func main() {
 	for i := uint64(0);  i < r2s.Stat.BRRLogCount;  i++ {
 		<- done
 	}
+
+	//  cheap sanity checks
+	if r2s.Stat.BRRCount < r2s.Stat.UDigCount {
+		die("BRRCount < UDigCount")
+	}
+	r2s.Stat.UDigCount = uint64(len(r2s.udig_set))
 
 	//  write json version of stat to standard output
 	enc := json.NewEncoder(os.Stdout)
