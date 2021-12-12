@@ -105,9 +105,7 @@ type roll2stat struct {
 	RollBlob		string		`json:"roll_blob"`
 	Stat			stat		`json:"roll2stat.blob.io"`
 
-	WorkDir			string		`json:"work_dir"`
-
-	stat_mux		sync.Mutex
+	mux			sync.Mutex
 }
 var r2s *roll2stat
 
@@ -119,19 +117,6 @@ func leave(exit_status int) {
 
 	if r2s == nil {			//  no hello, world
 		os.Exit(exit_status)
-	}
-	if r2s.WorkDir != "" {
-		err := os.Chdir(os.TempDir())
-		if err == nil {
-			err := os.RemoveAll(r2s.WorkDir)
-			if err != nil {
-				ERROR("os.RemoveAll(work_dir) failed: %s", err)
-				exit_status = 1
-			}
-		} else {
-			ERROR("os.Chdir(TempDir) failed: %s", err)
-			exit_status = 1
-		}
 	}
 	info("good bye, cruel world")
 	os.Exit(exit_status)
@@ -199,23 +184,6 @@ func init() {
 	}
 }
 
-func goto_work_dir() {
-	r2s.WorkDir = fmt.Sprintf(
-				"%s/roll2stat_json-%d.d",
-				os.TempDir(),
-				os.Getpid(),
-	)
-	info("work dir: %s", r2s.WorkDir)
-	err := os.Mkdir(r2s.WorkDir, 0700)
-	if err != nil {
-		die("os.Mkdir(work) failed: %s", err)
-	}
-	err = os.Chdir(r2s.WorkDir)
-	if err != nil {
-		die("os.Chdir(work) failed: %s", err)
-	}
-}
-
 func scan_brr_log(brr_log string, done chan interface{}) {
 
 	lino := uint64(0)
@@ -231,6 +199,7 @@ func scan_brr_log(brr_log string, done chan interface{}) {
 
 	bs := open_stream(brr_log, `scan_brr_log`)
 
+	mux := r2s.mux
 	in := bs.out
 	for in.Scan() {
 		lino++
@@ -275,14 +244,43 @@ func scan_brr_log(brr_log string, done chan interface{}) {
 			_bdie(`wall_duration`, fld[6])
 		}
 
-		r2s.stat_mux.Lock()
+		mux.Lock()
 		r2s.Stat.BRRCount++
-		r2s.stat_mux.Unlock()
+		mux.Unlock()
+
+		//  reset start_time stats
+		start_time, err := time.Parse(time.RFC3339Nano, fld[0])
+		if err != nil {
+			_die("can not parse start time: %s", err)
+		}
+
+		//  check Stat.MinBRRStartTime
+		mux.Lock()
+		if r2s.Stat.MinBRRStartTime.IsZero() {
+			r2s.Stat.MinBRRStartTime = start_time
+		} else if r2s.Stat.MinBRRStartTime.After(start_time) {
+			r2s.Stat.MinBRRStartTime = start_time
+		}
+		mux.Unlock()
+
+		//  check Stat.MaxBRRStartTime
+		mux.Lock()
+		if r2s.Stat.MaxBRRStartTime.IsZero() {
+			r2s.Stat.MaxBRRStartTime = start_time
+		} else if r2s.Stat.MaxBRRStartTime.Before(start_time) {
+			r2s.Stat.MaxBRRStartTime = start_time
+		}
+		mux.Unlock()
 	}
 
 	if bs.wait(1) == 1 {
 		ERROR("no roll blob: %s", r2s.RollBlob)
 		leave(1)
+	}
+
+	//  cheap sanity test
+	if r2s.Stat.MinBRRStartTime.After(r2s.Stat.MaxBRRStartTime) {
+		_die("min_brr_start_time > max_brr_start_time")
 	}
 
 	done <- interface{}(nil)
@@ -373,8 +371,6 @@ func main() {
 	r2s.RollBlob = os.Args[1]
 	info("roll blob: %s", r2s.RollBlob)
 	info("BLOBIO_SERVICE=%s", os.Getenv("BLOBIO_SERVICE"))
-
-	goto_work_dir()
 
 	done := make(chan interface{})
 	scan_roll(done)
