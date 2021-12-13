@@ -68,36 +68,35 @@ type blob_stream struct {
 }
 
 type brr_duration struct {
-    duration	time.Duration
+	duration	time.Duration
 }
 
 func (d brr_duration) MarshalJSON() ([]byte, error) {
-    return json.Marshal(d.duration.String())
+	return json.Marshal(d.duration.String())
 }
 
 func (d *brr_duration) UnmarshalJSON(b []byte) error {
-    var v interface{}
+	var v interface{}
 
-    if err := json.Unmarshal(b, &v); err != nil {
-        return err
-    }
+	if err := json.Unmarshal(b, &v); err != nil {
+		return err
+	}
 
-    switch value := v.(type) {
-    case float64:
-        d.duration = time.Duration(value)
-        return nil
-    case string:
-        var err error
-        d.duration, err = time.ParseDuration(value)
-        if err != nil {
-            return err
-        }
-        return nil
-    default:
-    	return errors.New(fmt.Sprintf("invalid duration: %s", d))
+	switch value := v.(type) {
+	case float64:
+		d.duration = time.Duration(value)
+		return nil
+	case string:
+		var err error
+		d.duration, err = time.ParseDuration(value)
+		if err != nil {
+		    return err
+		}
+		return nil
+	default:
+		return errors.New(fmt.Sprintf("invalid duration: %s", d))
     }
 }
-
 
 type stat struct {
 	BRRLogCount		uint64		`json:"brr_log_count"`
@@ -121,26 +120,29 @@ type stat struct {
 	EatOkCount		uint64		`json:"eat_ok_count"`
 	EatNoCount		uint64		`json:"eat_no_count"`
 
-	GetCount		uint64		`json:"get_count"`
+	GetOkCount		uint64		`json:"get_count"`
+	GetNoCount		uint64		`json:"get_count"`
 	GetByteCount		uint64		`json:"get_byte_count"`
 
-	TakeCount		uint64		`json:"take_count"`
+	TakeOkCount		uint64		`json:"take_ok_count"`
+	TakeNoCount		uint64		`json:"take_ok_count"`
 	TakeByteCount		uint64		`json:"take_byte_count"`
 
-	PutCount		uint64		`json:"put_count"`
+	PutOkCount		uint64		`json:"put_ok_count"`
+	PutNoCount		uint64		`json:"put_no_count"`
 	PutByteCount		uint64		`json:"put_byte_count"`
 
-	GiveCount		uint64		`json:"give_count"`
+	GiveOkCount		uint64		`json:"give_ok_count"`
+	GiveNoCount		uint64		`json:"give_no_count"`
 	GiveByteCount		uint64		`json:"give_byte_count"`
 
-	WrapCount		uint64		`json:"wrap_count"`
+	WrapOkCount		uint64		`json:"wrap_ok_count"`
+	WrapNoCount		uint64		`json:"wrap_no_count"`
 
-	RollCount		uint64		`json:"roll_count"`
 	RollOkCount		uint64		`json:"roll_ok_count"`
 	RollNoCount		uint64		`json:"roll_no_count"`
 
-	OkCount			uint64		`json:"ok_count"`
-	NoCount			uint64		`json:"no_count"`
+	BytesScanned		uint64		`json:"bytes_scanned"`
 }
 
 type roll2stat struct {
@@ -231,6 +233,12 @@ func init() {
 	}
 }
 
+func is_empty_udig(blob string) bool {
+	return blob == `sha:da39a3ee5e6b4b0d3255bfef95601890afd80709` ||
+	       blob == `bc160:b472a266d0bd89c13706a4132ccfb16f7c3b9fcb` ||
+	       blob == `btc20:fd7b15dc5dc2039556693555c2b81b36c8deec15`
+}
+
 func scan_brr_log(brr_log string, done chan interface{}) {
 
 	lino := uint64(0)
@@ -242,6 +250,10 @@ func scan_brr_log(brr_log string, done chan interface{}) {
 
 	_bdie := func(what, fld string) {
 		_die("brr: not a " + what + ": %s", fld)
+	}
+
+	_cdie := func(verb, chat_history string) {
+		_die("impossible %s chat history: %s", verb, chat_history)
 	}
 
 	bs := open_stream(brr_log, `scan_brr_log`)
@@ -264,6 +276,7 @@ func scan_brr_log(brr_log string, done chan interface{}) {
 		 */
 
 		brr := in.Text()
+
 		fld := strings.Split(brr, "\t")
 		if len(fld) != 7 {
 			_bdie("len(tab brr) != 7", string(len(fld)))
@@ -344,60 +357,61 @@ func scan_brr_log(brr_log string, done chan interface{}) {
 			case "no":
 				r2s.Stat.EatNoCount++
 			default:
-				panic(
-					"impossible eat chat history: " +
-					chat_history,
-				)
+				_cdie("eat", chat_history)
 			}
 		case "get":
-			if chat_history != "no" && chat_history != "ok" {
-				die(
-					"get: impossible chat history: %s",
-					chat_history,
-				)
+			switch chat_history {
+			case "ok":
+				r2s.Stat.GetOkCount++
+			case "no":
+				r2s.Stat.GetNoCount++
+			default:
+				_cdie("get", chat_history)
 			}
-			r2s.Stat.GetCount++
 			r2s.Stat.GetByteCount += blob_size
 		case "put":
 			switch chat_history {
 			case "ok,ok":
+				r2s.Stat.PutOkCount++
 			case "no":
 			case "ok,no":
+				r2s.Stat.PutNoCount++
 			default:
 				panic(fmt.Sprintf(
 					"put: impossible chat_history: %s",
 					chat_history,
 				))
 			}
-			r2s.Stat.PutCount++
 			r2s.Stat.PutByteCount += blob_size
 		case "give":
 			switch chat_history {
 			case "ok,ok,ok":
+				r2s.Stat.GiveOkCount++
 			case "ok,no":
 			case "ok,ok,no":
 			case "no":
+				r2s.Stat.GiveNoCount++
 			default:
 				panic(fmt.Sprintf(
 					"give: impossible chat_history: %s",
 					chat_history,
 				))
 			}
-			r2s.Stat.GiveCount++
 			r2s.Stat.GiveByteCount += blob_size
 		case "take":
 			switch chat_history {
 			case "ok,ok,ok":
+				r2s.Stat.TakeOkCount++
 			case "ok,no":
 			case "ok,ok,no":
 			case "no":
+				r2s.Stat.TakeNoCount++
 			default:
 				panic(fmt.Sprintf(
 					"take: impossible chat_history: %s",
 					chat_history,
 				))
 			}
-			r2s.Stat.TakeCount++
 			r2s.Stat.TakeByteCount += blob_size
 		case "roll":
 			if r2s.Stat.PrevRollUDig != "" {
@@ -412,10 +426,19 @@ func scan_brr_log(brr_log string, done chan interface{}) {
 			case "no":
 				r2s.Stat.RollNoCount++
 			default:
-				panic("impossible chat_history: " +chat_history)
+				panic("roll: impossible chat_history: " +
+				      chat_history)
 			}
 		case "wrap":
-			r2s.Stat.WrapCount++
+			switch chat_history {
+			case "ok":
+				r2s.Stat.WrapOkCount++
+			case "no":
+				r2s.Stat.WrapNoCount++
+			default:
+				panic("wrap: impossible chat_history: " +
+				      chat_history)
+			}
 		default:
 			panic(fmt.Sprintf("impossible brr verb: %s", fld[2]))
 
@@ -441,16 +464,6 @@ func scan_brr_log(brr_log string, done chan interface{}) {
 			r2s.Stat.MaxBRRBlobSize = blob_size
 		}
 		r2s.Stat.SumBRRBlobSize += blob_size
-		r2s.mux.Unlock()
-
-		r2s.mux.Lock()
-		if strings.HasPrefix(chat_history, "ok") {
-			r2s.Stat.OkCount++
-		} else if strings.HasPrefix(chat_history, "no") {
-			r2s.Stat.NoCount++
-		} else {
-			panic("impossible chat_history: " + chat_history)
-		}
 		r2s.mux.Unlock()
 	}
 
@@ -541,6 +554,28 @@ func scan_roll(done chan interface{}) {
 	}
 }
 
+func sanity() {
+	//  cheap sanity checks
+	if r2s.Stat.BRRCount < r2s.Stat.UDigCount {
+		die("brr BRRCount < UDigCount")
+	}
+	if r2s.Stat.MaxBRRBlobSize > r2s.Stat.SumBRRBlobSize {
+		die("brr MaxBRRBlobSize > SumBRRBlobSize")
+	}
+	r2s.Stat.UDigCount = uint64(len(r2s.udig_set))
+
+	verb_count := r2s.Stat.GetOkCount + r2s.Stat.GetNoCount +
+	              r2s.Stat.PutOkCount + r2s.Stat.PutNoCount +
+	              r2s.Stat.GiveOkCount + r2s.Stat.GiveNoCount +
+	              r2s.Stat.TakeOkCount + r2s.Stat.TakeNoCount +
+	              r2s.Stat.WrapOkCount + r2s.Stat.WrapNoCount +
+	              r2s.Stat.RollOkCount + r2s.Stat.RollNoCount +
+		      r2s.Stat.EatOkCount + r2s.Stat.EatNoCount
+	if verb_count != r2s.Stat.BRRCount {
+		die("verb_count != brr_count")
+	}
+}
+
 func main() {
 
 	info("hello, world")
@@ -562,15 +597,7 @@ func main() {
 	for i := uint64(0);  i < r2s.Stat.BRRLogCount;  i++ {
 		<- done
 	}
-
-	//  cheap sanity checks
-	if r2s.Stat.BRRCount < r2s.Stat.UDigCount {
-		die("brr BRRCount < UDigCount")
-	}
-	if r2s.Stat.MaxBRRBlobSize > r2s.Stat.SumBRRBlobSize {
-		die("brr MaxBRRBlobSize > SumBRRBlobSize")
-	}
-	r2s.Stat.UDigCount = uint64(len(r2s.udig_set))
+	sanity()
 
 	//  write json version of stat to standard output
 	enc := json.NewEncoder(os.Stdout)
