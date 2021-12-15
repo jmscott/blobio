@@ -404,7 +404,7 @@ CREATE TABLE roll2stat_json
 	blob			udig PRIMARY KEY,
 
 	roll_blob		udig NOT NULL,
-	wrap_set_count		ui63,
+	brr_log_count		ui63,
 	brr_count		ui63,
 
 	prev_roll_udig		udig,
@@ -440,5 +440,4 @@ CREATE TABLE roll2stat_json
 COMMENT ON TABLE roll2stat_json IS
   'Summarize json output for command sbin/roll2stat_json'
 ;
-
 COMMIT;
