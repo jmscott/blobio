@@ -2,15 +2,13 @@
  *  Synopsis:
  *	Summarize a roll of blob request records as json blob.
  *  Usage:
- *	roll2stat_json <roll-set-udig>
- *	roll2stat_json --verbose <roll-set-udig>
+ *	roll2stat_json <blobio-service> <roll-set-udig> 
+ *	roll2stat_json <blobio-service> <roll-set-udig> --verbose
  *  Exit Status:
  *	0	json written, all blobs fetched, no errors
  *	1	roll or brr log blob does not exist, no json written
  *	2	unexpected error
  *  Note:
- *	Think about a per verb unique udig count
- *
  *	Think about "space" command-line argument.
  */
 
@@ -31,7 +29,7 @@ import (
 )
 
 var udig_re = regexp.MustCompile(`^[a-z][a-z0-9]{0,7}:[[:graph:]]{32,128}$`)
-var SERVICE_re = regexp.MustCompile(`^[a-z][a-z0-9]{0,7}:[[:graph:]]{1,128}$`)
+var SERVICE_re = regexp.MustCompile(`^[a-z][a-z3-9]{0,7}:[[:graph:]]{1,128}$`)
 
 //  match 2021-12-12T06:39:58.528973000+00:00
 
@@ -59,7 +57,6 @@ var blob_size_re = regexp.MustCompile(`^0|([1-9][0-9]{0,18})$`)
 var wall_duration_re = regexp.MustCompile(`[0-9]{1,10}(\.[0-9]{0,9})$`)
 
 var verbose bool
-var BLOBIO_SERVICE string
 
 type blob_stream struct {
 	what	string
@@ -114,26 +111,26 @@ type stat struct {
 
 	MaxBRRWallDuration	brr_duration	`json:"max_brr_wall_duration"`
 	MaxBRRBlobSize		uint64		`json:"max_brr_blob_size"`
-	SumBRRBlobSize		uint64		`json:"sum_brr_blob_size"`
+	SumBRRBlobSize		uint64		`json:"sum_blob_size"`
 
 	EatOkCount		uint64		`json:"eat_ok_count"`
 	EatNoCount		uint64		`json:"eat_no_count"`
 
 	GetOkCount		uint64		`json:"get_count"`
 	GetNoCount		uint64		`json:"get_count"`
-	GetByteCount		uint64		`json:"get_byte_count"`
+	GetBlobSize		uint64		`json:"get_blob_size"`
 
 	TakeOkCount		uint64		`json:"take_ok_count"`
 	TakeNoCount		uint64		`json:"take_ok_count"`
-	TakeByteCount		uint64		`json:"take_byte_count"`
+	TakeBlobSize		uint64		`json:"take_blob_size"`
 
 	PutOkCount		uint64		`json:"put_ok_count"`
 	PutNoCount		uint64		`json:"put_no_count"`
-	PutByteCount		uint64		`json:"put_byte_count"`
+	PutBlobSize		uint64		`json:"put_blob_size"`
 
 	GiveOkCount		uint64		`json:"give_ok_count"`
 	GiveNoCount		uint64		`json:"give_no_count"`
-	GiveByteCount		uint64		`json:"give_byte_count"`
+	GiveBlobSize		uint64		`json:"give_blob_size"`
 
 	WrapOkCount		uint64		`json:"wrap_ok_count"`
 	WrapNoCount		uint64		`json:"wrap_no_count"`
@@ -148,6 +145,7 @@ type roll2stat struct {
 	Env			[]string	`json:"environment"`
 
 	RollBlob		string		`json:"roll_blob"`
+	BLOBIO_SERVICE		string		`json:"BLOBIO_SERVICE"`
 	Stat			stat		`json:"roll2stat.blob.io"`
 
 	mux			sync.Mutex
@@ -181,53 +179,35 @@ func info(format string, args ...interface{}) {
 }
 
 func init() {
-	if len(os.Args) < 2 {
-		die("must be at least command line args")
+	argc := len(os.Args)
+	if argc != 3 && argc != 4 {
+		die("wrong arg count: got %d, expected 2 or 3", argc)
+	}
+
+	if !SERVICE_re.MatchString(os.Args[1]) {
+		die("not blobio service: %s", os.Args[1])
 	}
 
 	//  extract roll_udig as first argument.
-	if !udig_re.MatchString(os.Args[1]) {
-		die("roll udig not a udig: %s", os.Args[1])
+	if !udig_re.MatchString(os.Args[2]) {
+		die("not a roll udig: %s", os.Args[2])
 	}
-
-	var opt string
-
-	_eo := func(msg string) {
-		die(opt + ": %s", msg)
-	}
-
-	_eo2 := func() {
-		_eo("given twice")
-	}
-	argc := len(os.Args)
-	for i := 2;  i < argc;  i++ {
-		opt = os.Args[i]
-		if opt == "--verbose" {
-			if verbose {
-				_eo2()
-			}
+	if argc == 4 {
+		if os.Args[3] == "--verbose" {
 			verbose = true
-		} else if opt == "--BLOBIO_SERVICE" {
-			if BLOBIO_SERVICE != "" {
-				_eo2()
-			}
-			i++
-			if i == argc {
-				_eo("missing service url")
-			}
-			BLOBIO_SERVICE = os.Args[i]
-			if !SERVICE_re.MatchString(BLOBIO_SERVICE) {
-				_eo("not a BLOBIO_SERVICE: " + BLOBIO_SERVICE)
-			}
-		} else if strings.HasPrefix(opt, "--") {
-			die("unknown option: %s", opt)
 		} else {
-			die("unknown command line arg: %s", opt)
+			die("unknown command line argument: %s", os.Args[3])
 		}
 	}
-	if BLOBIO_SERVICE == "" {
-		die("missing required option: --BLOBIO_SERVICE <service url>")
-	}
+	r2s = &roll2stat{
+			Argc:		len(os.Args),
+			Argv:		os.Args,
+			Env:		os.Environ(),
+			BLOBIO_SERVICE:	os.Args[1],
+			RollBlob:	os.Args[2],
+
+			udig_set:	make(map[string]bool),
+		  }
 }
 
 func is_empty_udig(blob string) bool {
@@ -313,6 +293,7 @@ func scan_brr_log(brr_log string, done chan interface{}) {
 
 		r2s.mux.Lock()
 		r2s.Stat.BRRCount++
+		r2s.Stat.SumBRRBlobSize += blob_size
 		r2s.mux.Unlock()
 
 		//  properly parse start_time
@@ -360,47 +341,53 @@ func scan_brr_log(brr_log string, done chan interface{}) {
 			switch chat_history {
 			case "ok":
 				r2s.Stat.GetOkCount++
+				r2s.Stat.GetBlobSize += blob_size
 			case "no":
 				r2s.Stat.GetNoCount++
 			default:
 				_cdie("get", chat_history)
 			}
-			r2s.Stat.GetByteCount += blob_size
 		case "put":
 			switch chat_history {
 			case "ok,ok":
 				r2s.Stat.PutOkCount++
+				r2s.Stat.PutBlobSize += blob_size
 			case "no":
+				r2s.Stat.PutNoCount++
 			case "ok,no":
 				r2s.Stat.PutNoCount++
+				r2s.Stat.PutBlobSize += blob_size
 			default:
 				_cdie("put", chat_history)
 			}
-			r2s.Stat.PutByteCount += blob_size
 		case "give":
 			switch chat_history {
 			case "ok,ok,ok":
 				r2s.Stat.GiveOkCount++
+				r2s.Stat.GiveBlobSize += blob_size
 			case "ok,no":
+				r2s.Stat.GiveBlobSize += blob_size
 			case "ok,ok,no":
+				r2s.Stat.GiveBlobSize += blob_size
 			case "no":
 				r2s.Stat.GiveNoCount++
 			default:
 				_cdie("give", chat_history)
 			}
-			r2s.Stat.GiveByteCount += blob_size
 		case "take":
 			switch chat_history {
 			case "ok,ok,ok":
 				r2s.Stat.TakeOkCount++
+				r2s.Stat.TakeBlobSize += blob_size
 			case "ok,no":
 			case "ok,ok,no":
+				r2s.Stat.TakeNoCount++
+				r2s.Stat.TakeBlobSize += blob_size
 			case "no":
 				r2s.Stat.TakeNoCount++
 			default:
 				_cdie("take", chat_history)
 			}
-			r2s.Stat.TakeByteCount += blob_size
 		case "roll":
 			if r2s.Stat.PrevRollUDig != "" {
 				die("multiple roll udig seen")
@@ -448,7 +435,6 @@ func scan_brr_log(brr_log string, done chan interface{}) {
 		if blob_size > r2s.Stat.MaxBRRBlobSize {
 			r2s.Stat.MaxBRRBlobSize = blob_size
 		}
-		r2s.Stat.SumBRRBlobSize += blob_size
 		r2s.mux.Unlock()
 	}
 
@@ -480,7 +466,7 @@ func open_stream(blob, what string) *blob_stream {
 			"--udig",
 			blob,
 			"--service",
-			BLOBIO_SERVICE,
+			r2s.BLOBIO_SERVICE,
 		)
 	stdout, err := cmd.StdoutPipe()
 	if err != nil {
@@ -559,29 +545,37 @@ func sanity() {
 	if verb_count != r2s.Stat.BRRCount {
 		die("verb_count != brr_count")
 	}
+
+	//  Note: not sure this test is needed!
+	verb_blob_size := r2s.Stat.GetBlobSize + r2s.Stat.PutBlobSize +
+	              r2s.Stat.GiveBlobSize + r2s.Stat.TakeBlobSize
+	if verb_blob_size != r2s.Stat.SumBRRBlobSize {
+		die("verb_blob_size(%d) != SumBRRBlobSize(%d)", verb_blob_size, r2s.Stat.SumBRRBlobSize)
+	}
 }
 
 func main() {
 
 	info("hello, world")
-	info("PATH=%s", os.Getenv("PATH"))
-
-	r2s = &roll2stat{
-			Argc:		len(os.Args),
-			Argv:		os.Args,
-			Env:		os.Environ(),
-			udig_set:	make(map[string]bool),
-		  }
-	r2s.RollBlob = os.Args[1]
+	info("BLOBIO_SERVICE=%s", r2s.BLOBIO_SERVICE)
 	info("roll blob: %s", r2s.RollBlob)
-	info("BLOBIO_SERVICE=%s", os.Getenv("BLOBIO_SERVICE"))
+	info("PATH=%s", os.Getenv("PATH"))
 
 	done := make(chan interface{})
 	scan_roll(done)
 
+	//
+	//  wait for the scanners of each blob request log in the roll set
+	//
+	//  Note:
+	//	invoke a blob stream process for each brr log in the set.
+	//	that could be problematic for large roll sets.  probably
+	//	ought to limit to runtime.NumCPU()
+	//
 	for i := uint64(0);  i < r2s.Stat.BRRLogCount;  i++ {
 		<- done
 	}
+
 	sanity()
 
 	//  write json version of stat to standard output
