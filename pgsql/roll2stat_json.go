@@ -112,7 +112,6 @@ type stat struct {
 	MinBRRStartTime		time.Time	`json:"min_brr_start_time"`
 	MaxBRRStartTime		time.Time	`json:"max_brr_start_time"`
 
-
 	MaxBRRWallDuration	brr_duration	`json:"max_brr_wall_duration"`
 	MaxBRRBlobSize		uint64		`json:"max_brr_blob_size"`
 	SumBRRBlobSize		uint64		`json:"sum_brr_blob_size"`
@@ -141,8 +140,6 @@ type stat struct {
 
 	RollOkCount		uint64		`json:"roll_ok_count"`
 	RollNoCount		uint64		`json:"roll_no_count"`
-
-	BytesScanned		uint64		`json:"bytes_scanned"`
 }
 
 type roll2stat struct {
@@ -377,10 +374,7 @@ func scan_brr_log(brr_log string, done chan interface{}) {
 			case "ok,no":
 				r2s.Stat.PutNoCount++
 			default:
-				panic(fmt.Sprintf(
-					"put: impossible chat_history: %s",
-					chat_history,
-				))
+				_cdie("put", chat_history)
 			}
 			r2s.Stat.PutByteCount += blob_size
 		case "give":
@@ -392,10 +386,7 @@ func scan_brr_log(brr_log string, done chan interface{}) {
 			case "no":
 				r2s.Stat.GiveNoCount++
 			default:
-				panic(fmt.Sprintf(
-					"give: impossible chat_history: %s",
-					chat_history,
-				))
+				_cdie("give", chat_history)
 			}
 			r2s.Stat.GiveByteCount += blob_size
 		case "take":
@@ -407,10 +398,7 @@ func scan_brr_log(brr_log string, done chan interface{}) {
 			case "no":
 				r2s.Stat.TakeNoCount++
 			default:
-				panic(fmt.Sprintf(
-					"take: impossible chat_history: %s",
-					chat_history,
-				))
+				_cdie("take", chat_history)
 			}
 			r2s.Stat.TakeByteCount += blob_size
 		case "roll":
@@ -426,8 +414,7 @@ func scan_brr_log(brr_log string, done chan interface{}) {
 			case "no":
 				r2s.Stat.RollNoCount++
 			default:
-				panic("roll: impossible chat_history: " +
-				      chat_history)
+				_cdie("roll", chat_history)
 			}
 		case "wrap":
 			switch chat_history {
@@ -436,12 +423,10 @@ func scan_brr_log(brr_log string, done chan interface{}) {
 			case "no":
 				r2s.Stat.WrapNoCount++
 			default:
-				panic("wrap: impossible chat_history: " +
-				      chat_history)
+				_cdie("wrap", chat_history)
 			}
 		default:
-			panic(fmt.Sprintf("impossible brr verb: %s", fld[2]))
-
+			_die("impossible brr verb: %s", fld[2])
 		}
 		r2s.mux.Unlock()
 
