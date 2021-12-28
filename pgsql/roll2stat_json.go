@@ -96,7 +96,7 @@ func (d *brr_duration) UnmarshalJSON(b []byte) error {
 }
 
 type stat struct {
-	BRRLogCount		uint64		`json:"brr_log_count"`
+	RollBRRCount		uint64		`json:"roll_brr_count"`
 	BRRCount		uint64		`json:"brr_count"`
 
 	PrevRollUDig		string		`json:"prev_roll_udig"`
@@ -111,17 +111,16 @@ type stat struct {
 
 	MaxBRRWallDuration	brr_duration	`json:"max_brr_wall_duration"`
 	MaxBRRBlobSize		uint64		`json:"max_brr_blob_size"`
-	SumBRRBlobSize		uint64		`json:"sum_blob_size"`
 
 	EatOkCount		uint64		`json:"eat_ok_count"`
 	EatNoCount		uint64		`json:"eat_no_count"`
 
 	GetOkCount		uint64		`json:"get_count"`
-	GetNoCount		uint64		`json:"get_count"`
+	GetNoCount		uint64		`json:"get_no_count"`
 	GetBlobSize		uint64		`json:"get_blob_size"`
 
 	TakeOkCount		uint64		`json:"take_ok_count"`
-	TakeNoCount		uint64		`json:"take_ok_count"`
+	TakeNoCount		uint64		`json:"take_no_count"`
 	TakeBlobSize		uint64		`json:"take_blob_size"`
 
 	PutOkCount		uint64		`json:"put_ok_count"`
@@ -293,7 +292,6 @@ func scan_brr_log(brr_log string, done chan interface{}) {
 
 		r2s.mux.Lock()
 		r2s.Stat.BRRCount++
-		r2s.Stat.SumBRRBlobSize += blob_size
 		r2s.mux.Unlock()
 
 		//  properly parse start_time
@@ -351,29 +349,26 @@ func scan_brr_log(brr_log string, done chan interface{}) {
 			switch chat_history {
 			case "ok,ok":
 				r2s.Stat.PutOkCount++
-				r2s.Stat.PutBlobSize += blob_size
 			case "no":
 				r2s.Stat.PutNoCount++
 			case "ok,no":
 				r2s.Stat.PutNoCount++
-				r2s.Stat.PutBlobSize += blob_size
 			default:
 				_cdie("put", chat_history)
 			}
+			r2s.Stat.PutBlobSize += blob_size
 		case "give":
 			switch chat_history {
 			case "ok,ok,ok":
 				r2s.Stat.GiveOkCount++
-				r2s.Stat.GiveBlobSize += blob_size
 			case "ok,no":
-				r2s.Stat.GiveBlobSize += blob_size
 			case "ok,ok,no":
-				r2s.Stat.GiveBlobSize += blob_size
 			case "no":
 				r2s.Stat.GiveNoCount++
 			default:
 				_cdie("give", chat_history)
 			}
+			r2s.Stat.GiveBlobSize += blob_size
 		case "take":
 			switch chat_history {
 			case "ok,ok,ok":
@@ -507,12 +502,12 @@ func scan_roll(done chan interface{}) {
 	bs := open_stream(r2s.RollBlob, `scan_roll`)
 	in := bs.out
 	for in.Scan() {
-		r2s.Stat.BRRLogCount++
+		r2s.Stat.RollBRRCount++
 		ud := in.Text()
 		if !udig_re.MatchString(ud) {
 			_die(
 				"line %d: not udig in brr set: %s",
-				r2s.Stat.BRRLogCount,
+				r2s.Stat.RollBRRCount,
 				r2s.RollBlob,
 			)
 		}
@@ -530,9 +525,6 @@ func sanity() {
 	if r2s.Stat.BRRCount < r2s.Stat.UDigCount {
 		die("brr BRRCount < UDigCount")
 	}
-	if r2s.Stat.MaxBRRBlobSize > r2s.Stat.SumBRRBlobSize {
-		die("brr MaxBRRBlobSize > SumBRRBlobSize")
-	}
 	r2s.Stat.UDigCount = uint64(len(r2s.udig_set))
 
 	verb_count := r2s.Stat.GetOkCount + r2s.Stat.GetNoCount +
@@ -544,13 +536,6 @@ func sanity() {
 		      r2s.Stat.EatOkCount + r2s.Stat.EatNoCount
 	if verb_count != r2s.Stat.BRRCount {
 		die("verb_count != brr_count")
-	}
-
-	//  Note: not sure this test is needed!
-	verb_blob_size := r2s.Stat.GetBlobSize + r2s.Stat.PutBlobSize +
-	              r2s.Stat.GiveBlobSize + r2s.Stat.TakeBlobSize
-	if verb_blob_size != r2s.Stat.SumBRRBlobSize {
-		die("verb_blob_size(%d) != SumBRRBlobSize(%d)", verb_blob_size, r2s.Stat.SumBRRBlobSize)
 	}
 }
 
@@ -572,7 +557,7 @@ func main() {
 	//	that could be problematic for large roll sets.  probably
 	//	ought to limit to runtime.NumCPU()
 	//
-	for i := uint64(0);  i < r2s.Stat.BRRLogCount;  i++ {
+	for i := uint64(0);  i < r2s.Stat.RollBRRCount;  i++ {
 		<- done
 	}
 
