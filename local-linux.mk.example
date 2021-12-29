@@ -23,6 +23,12 @@
 #	cp local-linux.mk.example local.mk
 #	vi local.mk
 #	make install
+#  Note:
+#  Note:
+#	Does openssl have a config program, simlar to postgresql "pg_config"
+#	or golang "go environment"?
+#
+#	Replace GODIST with call to "GOEXE/bin/go environment"
 #
 
 #  Where to install entire blobio distribution.
@@ -35,8 +41,19 @@ DIST_ROOT=$(HOME)/opt/blobio
 OPENSSL_INC=-DOPENSSL_API_COMPAT=0x10100000L
 OPENSSL_LIB=-lssl -lcrypto
 
-#  where golang distribution installed
+#
+#  where golang distribution installed.
+#
+#  Note:
+#	replace with "$GOEXE environment"
+#
 GODIST=/usr/local/go
+
+#  postgresql configuration, for both source built and repo install.
+PGCONFIG?=/usr/local/pgsql/bin/pg_config
+
+#  https://github.com/jmscott/work
+JMSCOTT_ROOT?=/usr/local/jmscott
 
 #  Undefine to generate www/noc web site
 #NOC_DNS_VHOST_SUFFIX=blob.io

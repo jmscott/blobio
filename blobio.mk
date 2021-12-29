@@ -35,3 +35,6 @@ endif
 BLOBIO_PREFIX=$(DIST_ROOT)
 BLOBIO_GROUP=$(DIST_GROUP)
 BLOBIO_USER=$(DIST_USER)
+
+PGLIB=$(shell $PG_CONFIG --libdir)
+PGINC=$(shell $PG_CONFIG --include-dir)
