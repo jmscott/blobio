@@ -1,0 +1,121 @@
+/*
+ *  Synopsis:
+ *  	Merge a json blob read on stdin into table blobio.roll2stat_json.
+ *  Usage:
+ *	merge-stdin-roll2stat_json
+ *  Arguments:
+ *  	1	udig of the json blob
+ *  	2	number of bytes to read on the standard input
+ *  Exit Status:
+ *  	0	ok, tuple was merged
+ *	1	unexpected error.
+ *  Note:
+ *	Note clear how to write include path to epgc.c.
+ *	Should the path be "jmscott/include/epgc.c"?
+ */
+
+#include "jmscott/include/ecpg.c"
+
+char jmscott_progname[] = "merge-stdin-roll2stat_json";
+
+#define EXIT_OK		0
+#define EXIT_FAULT	1
+
+static void
+die(char *msg1)
+{
+	jmscott_die(EXIT_FAULT, msg1);
+}
+
+static void
+die2(char *msg1, char *msg2)
+{
+	jmscott_die2(EXIT_FAULT, msg1, msg2); 
+}
+
+#include <stdlib.h>
+
+static struct _ecpg_sql_state_fault no_warn[] =
+{
+	{ "02000", -1},		//  no data for conflict on upsert/insert
+	{(char *)0, 0}
+};
+
+static void
+die(char *msg)
+{
+	jmscott_die(EXIT_FAULT, msg);
+}
+
+static void
+die2(char *msg1, char *msg2)
+{
+	jmscott_die2(EXIT_FAULT, msg1, msg2);
+}
+
+int
+main(int argc, char **argv)
+{
+	int size;
+	size_t len;
+	char *sz;
+
+EXEC SQL BEGIN DECLARE SECTION;
+	char *blob;
+	char *doc;
+EXEC SQL END DECLARE SECTION;
+
+	if (argc != 3)
+		die(EXIT_BAD_ARGC, "wrong number of arguments");
+	close(1);
+
+	//  parse the udig as argv[1]
+	blob = argv[1];
+	len = strlen(blob);
+	if (len < 34 || len > 255 || strchr(blob, ':') == NULL)
+		die2("syntax error in json udig", blob);
+
+	//  parse the blob size as argv[2]
+	sz = argv[2];
+	len = strlen(sz);
+	if (len < 1 || len > 19)
+		die2("blob size not > 0 and < 20 chars", sz);
+
+	//  need to validate that all chars are decimal digits
+	size = atoi(sz);
+	if (size <= 0)
+		die2("atoi(blob size) <= 0", sz);
+
+	//  allocate the json buffer plus null byte
+	doc = malloc(size + 1);
+	if (doc == NULL)
+		die2("malloc() failed", sz);
+	doc[size] = 0;
+
+	_read_blob(0, doc, size);
+
+	EXEC SQL WHENEVER SQLERROR CALL jmscott_ecpg_sql_error(
+		(struct _ecpg_sql_state_fault *)0
+	);
+	EXEC SQL WHENEVER SQLWARNING CALL jmscott_ecpg_sql_warning(no_warn);
+	EXEC SQL CONNECT TO default;
+
+	/*
+	 *  Merge blob into jsonorg.jsonb_255 table.
+	 */
+	EXEC SQL BEGIN TRANSACTION;
+	EXEC SQL
+	  INSERT INTO jsonorg.jsonb_255(
+		blob,
+		doc
+	  ) VALUES (
+		:blob::udig,
+		:doc::jsonb
+	  )
+  	  ON CONFLICT
+  		DO NOTHING
+	;
+	EXEC SQL END TRANSACTION;
+
+	jmscott_exit(EXIT_OK);
+}

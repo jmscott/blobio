@@ -403,13 +403,13 @@ CREATE TABLE roll2stat_json
 (
 	blob			udig PRIMARY KEY,
 
-	roll_blob		udig NOT NULL,
-	brr_log_count		ui63,
-	brr_count		ui63,
-
-	prev_roll_udig		udig,
+	prev_roll_blob		udig,
 	prev_roll_start_time	brr_timestamp NULL,
 	prev_roll_wall_time	brr_duration NULL,
+
+	roll_blob		udig NOT NULL,
+	roll_brr_count		ui63,
+	brr_count		ui63,
 
 	udig_count		ui63,
 					
@@ -422,20 +422,27 @@ CREATE TABLE roll2stat_json
 	eat_ok_count		ui63,
 	eat_no_count		ui63,
 
-	get_count		ui63,
+	get_ok_count		ui63,
+	get_no_count		ui63,
 	get_byte_count		ui63,
 
-	take_count		ui63,
+	take_ok_count		ui63,
+	take_no_count		ui63,
 	take_byte_count		ui63,
 
-	put_count		ui63,
+	put_ok_count		ui63,
+	put_no_count		ui63,
 	put_byte_count		ui63,
 
-	give_count		ui63,
+	give_ok_count		ui63,
+	give_no_count		ui63,
 	give_byte_count		ui63,
 
-	ok_count		ui63,
-	no_count		ui63
+	wrap_ok_count		ui63,
+	wrap_no_count		ui63,
+
+	roll_ok_count		ui63,
+	roll_no_count		ui63
 );
 COMMENT ON TABLE roll2stat_json IS
   'Summarize json output for command sbin/roll2stat_json'

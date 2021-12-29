@@ -5,7 +5,7 @@
 include ../local.mk
 include ../blobio.mk
 
-SRCs=	roll2stat_json.go
+SRCs=	roll2stat_json.go merge-stdin-roll2stat_json.pgc
 LIBs=									\
 	blobio.flow.example						\
 	contrib/udig/udig.sql.in					\
@@ -26,7 +26,7 @@ SBINs=									\
 	minus-service							\
 	roll2stat_json							\
 
-all: roll2stat_json
+all: roll2stat_json merge-stdin-roll2stat_json
 
 roll2stat_json: roll2stat_json.go
 	$(GODIST)/bin/go build roll2stat_json.go
@@ -42,6 +42,15 @@ install: $(SBINs) $(LIBs)
 	install -g $(DIST_GROUP) -o $(DIST_USER) -m u=rx,go=		\
 		$(SBINs)						\
 		$(DIST_ROOT)/sbin
+
+merge-stdin-roll2stat_json: merge-stdin-roll2stat_json.pgc
+	ecpg merge-stdin-roll2stat_json.pgc
+	$(CC) $(CFLAGS) 						\
+		-I$(JMSCOTT_INC)					\
+		-I$(PGINC) 						\
+		merge-stdin-roll2stat_json.c				\
+		-o merge-stdin-roll2stat_json -L$(PGLIB) -lecpg
+	#rm merge-stdin-roll2stat_json.c
 
 dev-links:
 	test -e etc || ln -s . etc

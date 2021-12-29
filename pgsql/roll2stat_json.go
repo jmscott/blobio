@@ -99,7 +99,7 @@ type stat struct {
 	RollBRRCount		uint64		`json:"roll_brr_count"`
 	BRRCount		uint64		`json:"brr_count"`
 
-	PrevRollUDig		string		`json:"prev_roll_udig"`
+	PrevRollBlob		string		`json:"prev_roll_blob"`
 	PrevRollStartTime	time.Time	`json:"prev_roll_start_time"`
 
 	PrevRollWallDuration	brr_duration	`json:"prev_roll_wall_time"`
@@ -384,10 +384,10 @@ func scan_brr_log(brr_log string, done chan interface{}) {
 				_cdie("take", chat_history)
 			}
 		case "roll":
-			if r2s.Stat.PrevRollUDig != "" {
-				die("multiple roll udig seen")
+			if r2s.Stat.PrevRollBlob != "" {
+				die("roll blob seen twice: %s", fld[5])
 			}
-			r2s.Stat.PrevRollUDig = fld[5]
+			r2s.Stat.PrevRollBlob = fld[5]
 			r2s.Stat.PrevRollStartTime = start_time
 			r2s.Stat.PrevRollWallDuration.duration = wall_duration
 			switch chat_history {
