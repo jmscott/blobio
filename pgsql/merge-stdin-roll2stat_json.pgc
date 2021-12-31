@@ -1,8 +1,8 @@
 /*
  *  Synopsis:
- *  	Merge a json blob read on stdin into table blobio.roll2stat_json.
+ *  	Merge a json blob into sql table blobio.roll2stat_json.
  *  Usage:
- *	merge-stdin-roll2stat_json
+ *	merge-stdin-roll2stat_json <json-udig> <size>
  *  Arguments:
  *  	1	udig of the json blob
  *  	2	number of bytes to read on the standard input
@@ -13,33 +13,25 @@
  *	Note clear how to write include path to epgc.c.
  *	Should the path be "jmscott/include/epgc.c"?
  */
-
-#include "jmscott/include/ecpg.c"
-
-char jmscott_progname[] = "merge-stdin-roll2stat_json";
-
-#define EXIT_OK		0
-#define EXIT_FAULT	1
-
-static void
-die(char *msg1)
-{
-	jmscott_die(EXIT_FAULT, msg1);
-}
-
-static void
-die2(char *msg1, char *msg2)
-{
-	jmscott_die2(EXIT_FAULT, msg1, msg2); 
-}
-
+//  Note: pare down #include!
+#include <unistd.h>
 #include <stdlib.h>
 
-static struct _ecpg_sql_state_fault no_warn[] =
+#include "jmscott/include/strcat.c"
+#include "jmscott/include/die.c"
+#include "jmscott/include/posio.c"
+#include "jmscott/include/ecpg.c"
+
+static struct jmscott_ecpg_state_fault no_warn[] =
 {
 	{ "02000", -1},		//  no data for conflict on upsert/insert
 	{(char *)0, 0}
 };
+
+char *jmscott_progname = "merge-stdin-roll2stat_json";
+
+#define EXIT_OK		0
+#define EXIT_FAULT	1
 
 static void
 die(char *msg)
@@ -50,7 +42,7 @@ die(char *msg)
 static void
 die2(char *msg1, char *msg2)
 {
-	jmscott_die2(EXIT_FAULT, msg1, msg2);
+	jmscott_die2(EXIT_FAULT, msg1, msg2); 
 }
 
 int
@@ -66,8 +58,11 @@ EXEC SQL BEGIN DECLARE SECTION;
 EXEC SQL END DECLARE SECTION;
 
 	if (argc != 3)
-		die(EXIT_BAD_ARGC, "wrong number of arguments");
+		die("wrong number of arguments");
 	close(1);
+
+	jmscott_ecpg_error_code = EXIT_FAULT;
+	jmscott_ecpg_warn_code = EXIT_FAULT;
 
 	//  parse the udig as argv[1]
 	blob = argv[1];
@@ -92,30 +87,46 @@ EXEC SQL END DECLARE SECTION;
 		die2("malloc() failed", sz);
 	doc[size] = 0;
 
-	_read_blob(0, doc, size);
+	if (jmscott_read_exact(0, doc, size) != 0)
+		die2("read(json) failed", sz);
 
-	EXEC SQL WHENEVER SQLERROR CALL jmscott_ecpg_sql_error(
-		(struct _ecpg_sql_state_fault *)0
+	EXEC SQL
+		WHENEVER SQLERROR CALL jmscott_ecpg_error(
+			(struct jmscott_ecpg_state_fault *)0
 	);
-	EXEC SQL WHENEVER SQLWARNING CALL jmscott_ecpg_sql_warning(no_warn);
-	EXEC SQL CONNECT TO default;
+	EXEC SQL
+		WHENEVER SQLWARNING CALL jmscott_ecpg_warning(no_warn)
+	;
+	EXEC SQL
+		CONNECT TO default
+	;
+	EXEC SQL
+		BEGIN TRANSACTION;
+
+	EXEC SQL
+	  CREATE TEMP TABLE roll_json
+	  (
+	  	blob	udig,
+	  	doc	jsonb
+	  )
+	;
 
 	/*
 	 *  Merge blob into jsonorg.jsonb_255 table.
 	 */
-	EXEC SQL BEGIN TRANSACTION;
 	EXEC SQL
-	  INSERT INTO jsonorg.jsonb_255(
+	  INSERT INTO roll_json(
 		blob,
 		doc
 	  ) VALUES (
 		:blob::udig,
 		:doc::jsonb
 	  )
-  	  ON CONFLICT
-  		DO NOTHING
 	;
-	EXEC SQL END TRANSACTION;
 
-	jmscott_exit(EXIT_OK);
+	EXEC SQL
+		END TRANSACTION
+	;
+
+	exit(EXIT_OK);
 }

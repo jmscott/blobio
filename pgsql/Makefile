@@ -50,7 +50,7 @@ merge-stdin-roll2stat_json: merge-stdin-roll2stat_json.pgc
 		-I$(PGINC) 						\
 		merge-stdin-roll2stat_json.c				\
 		-o merge-stdin-roll2stat_json -L$(PGLIB) -lecpg
-	#rm merge-stdin-roll2stat_json.c
+	rm merge-stdin-roll2stat_json.c
 
 dev-links:
 	test -e etc || ln -s . etc
