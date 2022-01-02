@@ -2,6 +2,7 @@ cron-rummy.txn
 etc
 lib
 log
+merge-stdin-roll2stat_json
 roll2stat_json
 run
 sbin

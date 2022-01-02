@@ -17,10 +17,9 @@
 #include <unistd.h>
 #include <stdlib.h>
 
-#include "jmscott/include/strcat.c"
-#include "jmscott/include/die.c"
-#include "jmscott/include/posio.c"
-#include "jmscott/include/ecpg.c"
+#include "jmscott/die.c"
+#include "jmscott/posio.c"
+#include "jmscott/ecpg.c"
 
 static struct jmscott_ecpg_state_fault no_warn[] =
 {
@@ -88,7 +87,7 @@ EXEC SQL END DECLARE SECTION;
 	doc[size] = 0;
 
 	if (jmscott_read_exact(0, doc, size) != 0)
-		die2("read(json) failed", sz);
+		die2("read_exact(json) failed", sz);
 
 	EXEC SQL
 		WHENEVER SQLERROR CALL jmscott_ecpg_error(
