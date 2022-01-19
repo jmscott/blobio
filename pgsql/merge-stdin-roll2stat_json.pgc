@@ -2,7 +2,7 @@
  *  Synopsis:
  *  	Merge a json blob into sql table blobio.roll2stat_json.
  *  Usage:
- *	merge-stdin-roll2stat_json <json-udig> <size>
+ *	merge-stdin-roll2stat_json [json-udig] [size]
  *  Arguments:
  *  	1	udig of the json blob
  *  	2	number of bytes to read on the standard input
@@ -10,6 +10,9 @@
  *  	0	ok, tuple was merged
  *	1	unexpected error.
  *  Note:
+ *	Create functions clang/udig.c and clang/int.c to parse udig and
+ *	sizes.
+ *
  *	Note clear how to write include path to epgc.c.
  *	Should the path be "jmscott/include/epgc.c"?
  */
@@ -63,13 +66,35 @@ EXEC SQL END DECLARE SECTION;
 	jmscott_ecpg_error_code = EXIT_FAULT;
 	jmscott_ecpg_warn_code = EXIT_FAULT;
 
-	//  parse the udig as argv[1]
+	/*
+	 *  Parse a udig.
+	 *
+	 *	Note:
+	 *		move udig parser to clang/udig.
+	 */
 	blob = argv[1];
 	len = strlen(blob);
-	if (len < 34 || len > 255 || strchr(blob, ':') == NULL)
-		die2("syntax error in json udig", blob);
+	if (len == 0)
+		die("blob udig is empty");
+	if (len < 34)
+		die2("length of blob udig < 34 chars", blob);
+	if (len > 255)
+		die2("length of blob udig > 255 chars", blob);
+	//  parse colon in udig.
+	{
+		char *colon = strchr(blob, ':');
+		if (colon == NULL)
+			die2("no colon in udig", blob);
+		if (colon - blob >= 8)
+			die2("colon occurs after > 8 chars", blob);
+	}
 
-	//  parse the blob size as argv[2]
+	/*
+	 *  Parse the uint63 blob size.
+	 *
+	 *	Note:
+	 *		Move this code to $JMSCOTT_ROOT/include/
+	 */
 	sz = argv[2];
 	len = strlen(sz);
 	if (len < 1 || len > 19)
