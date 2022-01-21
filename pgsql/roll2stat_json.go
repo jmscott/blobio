@@ -153,7 +153,8 @@ type roll2stat struct {
 var r2s *roll2stat
 
 func ERROR(format string, args ...interface{}) {
-	fmt.Fprintf(os.Stderr, "ERROR: " + format + "\n", args...)
+	fmt.Fprintf(os.Stderr,
+		"roll2stat_json: ERROR: " + format + "\n", args...)
 }
 
 func leave(exit_status int) {
@@ -178,8 +179,8 @@ func info(format string, args ...interface{}) {
 }
 
 func init() {
-	argc := len(os.Args)
-	if argc != 3 && argc != 4 {
+	argc := len(os.Args) - 1
+	if argc != 2 && argc != 3 {
 		die("wrong arg count: got %d, expected 2 or 3", argc)
 	}
 

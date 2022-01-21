@@ -115,17 +115,17 @@ EXEC SQL END DECLARE SECTION;
 		die2("read_exact(json) failed", sz);
 
 	EXEC SQL
-		WHENEVER SQLERROR CALL jmscott_ecpg_error(
+	  WHENEVER SQLERROR CALL jmscott_ecpg_error(
 			(struct jmscott_ecpg_state_fault *)0
 	);
 	EXEC SQL
-		WHENEVER SQLWARNING CALL jmscott_ecpg_warning(no_warn)
+	  WHENEVER SQLWARNING CALL jmscott_ecpg_warning(no_warn)
 	;
 	EXEC SQL
-		CONNECT TO default
+	  CONNECT TO default
 	;
 	EXEC SQL
-		BEGIN TRANSACTION;
+	  BEGIN TRANSACTION;
 
 	EXEC SQL
 	  CREATE TEMP TABLE roll_json
@@ -149,7 +149,9 @@ EXEC SQL END DECLARE SECTION;
 	;
 
 	EXEC SQL
-		END TRANSACTION
+
+	EXEC SQL
+	  END TRANSACTION
 	;
 
 	exit(EXIT_OK);
