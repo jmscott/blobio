@@ -405,7 +405,7 @@ CREATE TABLE roll2stat_json
 
 	prev_roll_blob		udig,
 	prev_roll_start_time	brr_timestamp NULL,
-	prev_roll_wall_time	brr_duration NULL,
+	prev_roll_wall_duration	brr_duration NULL,
 
 	roll_blob		udig NOT NULL,
 	roll_brr_count		ui63,
@@ -447,4 +447,5 @@ CREATE TABLE roll2stat_json
 COMMENT ON TABLE roll2stat_json IS
   'Summarize json output for command sbin/roll2stat_json'
 ;
+
 COMMIT;

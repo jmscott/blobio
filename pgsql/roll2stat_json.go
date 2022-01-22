@@ -153,8 +153,7 @@ type roll2stat struct {
 var r2s *roll2stat
 
 func ERROR(format string, args ...interface{}) {
-	fmt.Fprintf(os.Stderr,
-		"roll2stat_json: ERROR: " + format + "\n", args...)
+	fmt.Fprintf(os.Stderr, "ERROR: " + format + "\n", args...)
 }
 
 func leave(exit_status int) {
@@ -179,7 +178,8 @@ func info(format string, args ...interface{}) {
 }
 
 func init() {
-	argc := len(os.Args) - 1
+	argc := len(os.Args)
+	argc--;
 	if argc != 2 && argc != 3 {
 		die("wrong arg count: got %d, expected 2 or 3", argc)
 	}
@@ -188,7 +188,7 @@ func init() {
 		die("not blobio service: %s", os.Args[1])
 	}
 
-	//  extract roll_udig as first argument.
+	//  extract roll_udig as second argument.
 	if !udig_re.MatchString(os.Args[2]) {
 		die("not a roll udig: %s", os.Args[2])
 	}
@@ -451,9 +451,11 @@ func scan_brr_log(brr_log string, done chan interface{}) {
 
 func open_stream(blob, what string) *blob_stream {
 
-	_df := what + ": " + "stream_blob: "
 	_die := func(format string, args ...interface{}) {
-		die(_df + format, args...)
+		die(fmt.Sprintf(
+			"open_stream: " + what + ": " + format,
+			args...,
+		))
 	}
 
 	cmd := exec.Command(
@@ -481,15 +483,19 @@ func open_stream(blob, what string) *blob_stream {
 
 func (bs *blob_stream) wait(ok_exit int) (ex int) {
 
+	_die := func(format string, args ...interface{}) {
+		die("wait: " + bs.what + ": "  + format, args...)
+	}
+
 	cmd := bs.cmd
 
 	ps, err := cmd.Process.Wait()
 	if err != nil {
-		die("cmd.Process.Wait() failed: %s", err)
+		_die("cmd.Process.Wait() failed: %s", err)
 	}
 	ex = ps.ExitCode()
 	if ex > 0 && ex != ok_exit {
-		die(bs.what + ": cmd.ProcessState.ExitCode > 0")
+		_die("cmd.ProcessState.ExitCode > 0 or != %d: %d", ex, ok_exit)
 	}
 	return
 }

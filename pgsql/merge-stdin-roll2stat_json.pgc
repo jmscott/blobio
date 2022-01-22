@@ -17,9 +17,11 @@
  *	Should the path be "jmscott/include/epgc.c"?
  */
 //  Note: pare down #include!
+#include <limits.h>
 #include <unistd.h>
 #include <stdlib.h>
 
+#include "jmscott/string.c"
 #include "jmscott/die.c"
 #include "jmscott/posio.c"
 #include "jmscott/ecpg.c"
@@ -50,9 +52,8 @@ die2(char *msg1, char *msg2)
 int
 main(int argc, char **argv)
 {
-	int size;
-	size_t len;
-	char *sz;
+	size_t size;
+	char *sz, *err;
 
 EXEC SQL BEGIN DECLARE SECTION;
 	char *blob;
@@ -67,18 +68,18 @@ EXEC SQL END DECLARE SECTION;
 	jmscott_ecpg_warn_code = EXIT_FAULT;
 
 	/*
-	 *  Parse a udig.
+	 *  Parse argv[1] as a blob udig (uniform digest).
 	 *
 	 *	Note:
 	 *		move udig parser to clang/udig.
 	 */
 	blob = argv[1];
-	len = strlen(blob);
-	if (len == 0)
+	size = strlen(blob);
+	if (size == 0)
 		die("blob udig is empty");
-	if (len < 34)
+	if (size < 34)
 		die2("length of blob udig < 34 chars", blob);
-	if (len > 255)
+	if (size > 255)
 		die2("length of blob udig > 255 chars", blob);
 	//  parse colon in udig.
 	{
@@ -90,20 +91,15 @@ EXEC SQL END DECLARE SECTION;
 	}
 
 	/*
-	 *  Parse the uint63 blob size.
-	 *
-	 *	Note:
-	 *		Move this code to $JMSCOTT_ROOT/include/
+	 *  Parse argv[2] as uint63 blob size, and then insure <= MAX_INT.
+	 *  Technically, any blob can be <= 2^63.  However, malloc(size_t)
+	 *  may choke if too big.
 	 */
 	sz = argv[2];
-	len = strlen(sz);
-	if (len < 1 || len > 19)
-		die2("blob size not > 0 and < 20 chars", sz);
-
-	//  need to validate that all chars are decimal digits
-	size = atoi(sz);
-	if (size <= 0)
-		die2("atoi(blob size) <= 0", sz);
+	if ((err = jmscott_a2size_t(sz, &size)))
+		die2("can not parse input size", err);
+	if (size == SIZE_MAX)
+		die("json size == SIZE_MAX");
 
 	//  allocate the json buffer plus null byte
 	doc = malloc(size + 1);
@@ -119,13 +115,13 @@ EXEC SQL END DECLARE SECTION;
 			(struct jmscott_ecpg_state_fault *)0
 	);
 	EXEC SQL
-	  WHENEVER SQLWARNING CALL jmscott_ecpg_warning(no_warn)
+		WHENEVER SQLWARNING CALL jmscott_ecpg_warning(no_warn)
 	;
 	EXEC SQL
-	  CONNECT TO default
+		CONNECT TO default
 	;
 	EXEC SQL
-	  BEGIN TRANSACTION;
+		BEGIN TRANSACTION;
 
 	EXEC SQL
 	  CREATE TEMP TABLE roll_json
@@ -147,11 +143,135 @@ EXEC SQL END DECLARE SECTION;
 		:doc::jsonb
 	  )
 	;
+	EXEC SQL
+	  SET search_path to blobio,public
+	;
+	EXEC SQL
+	  WITH roll2stat AS (
+	    SELECT
+	    	(doc->>'roll_blob')::udig	AS roll_blob,
+		CASE
+		  WHEN
+		  	length(doc->>'prev_roll_blob') > 0
+		  THEN
+			(doc->>'prev_roll_blob')::udig
+		  ELSE
+		  	NULL
+		END AS prev_roll_blob,
+		CASE
+		  WHEN
+		  	length(doc->>'prev_roll_start_time') > 0
+		  THEN
+			(doc->>'prev_roll_start_time')::brr_timestamp
+		  ELSE
+		  	'2008-05-17 10:06:42'::brr_timestamp
+		END AS prev_roll_start_time,
+		doc->'roll2stat.blob.io'	AS doc
+		CASE
+		  WHEN
+		  	length(doc->>'prev_roll_wall_time') > 0
+		  THEN
+			(doc->>'prev_roll_start_time')::brr_timestamp
+		  ELSE
+		  	'2008-05-17 10:06:42'::brr_timestamp
+		END AS prev_roll_start_time,
+		doc->'roll2stat.blob.io'	AS doc
+	      FROM
+	   	roll_json
+	  ) INSERT INTO roll2stat_json(
+	  	blob,
+		
+		prev_roll_blob,
+		prev_roll_start_time,
+		prev_roll_wall_time,
+
+		roll_blob,
+		roll_brr_count,
+		brr_count,
+
+		udig_count,
+					
+		min_brr_start_time,
+		max_brr_start_time,
+		max_brr_wall_duration,
+
+		max_brr_blob_size,
+
+		eat_ok_count,
+		eat_no_count,
+
+		get_ok_count,
+		get_no_count,
+		get_byte_count,
+
+		take_ok_count,
+		take_no_count,
+		take_byte_count,
+
+		put_ok_count,
+		put_no_count,
+		put_byte_count,
+
+		give_ok_count,
+		give_no_count,
+		give_byte_count,
+
+		wrap_ok_count,
+		wrap_no_count,
+
+		roll_ok_count,
+		roll_no_count
+	  ) SELECT
+	  	:blob::udig,
+		
+		prev_roll_blob,
+		prev_roll_start_time,
+		'0 sec'::interval,
+
+		roll_blob,
+		(doc->'roll_brr_count')::ui63,
+		0,
+
+		0,
+					
+		'2008-05-17 10:06:42'::brr_timestamp,
+		'2008-05-17 10:06:42'::brr_timestamp,
+		'0 sec'::brr_duration,
+
+		0,
+
+		0,
+		0,
+
+		0,
+		0,
+		0,
+
+		0,
+		0,
+		0,
+
+		0,
+		0,
+		0,
+
+		0,
+		0,
+		0,
+
+		0,
+		0,
+
+		0,
+		0
+	      FROM
+	  	roll2stat
+	  ON CONFLICT
+	  	DO NOTHING
+	;
 
 	EXEC SQL
-
-	EXEC SQL
-	  END TRANSACTION
+		END TRANSACTION
 	;
 
 	exit(EXIT_OK);
