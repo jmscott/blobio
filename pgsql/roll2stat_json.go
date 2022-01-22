@@ -95,14 +95,21 @@ func (d *brr_duration) UnmarshalJSON(b []byte) error {
     }
 }
 
+type BRR struct {
+	StartTime	time.Time       `json:"start_time"`
+	Transport	string       	`json:"transport"`
+	Verb		string		`json:"verb"`
+	Blob		string		`json:"blob"`
+	ChatHistory	string		`json:"chat_history"`
+	BlobSize	uint64		`json:"blob_size"`
+	WallDuration	time.Duration	`json:"wall_duration"`
+}
+
 type stat struct {
 	RollBRRCount		uint64		`json:"roll_brr_count"`
 	BRRCount		uint64		`json:"brr_count"`
 
-	PrevRollBlob		string		`json:"prev_roll_blob"`
-	PrevRollStartTime	time.Time	`json:"prev_roll_start_time"`
-
-	PrevRollWallDuration	brr_duration	`json:"prev_roll_wall_time"`
+	PrevRoll		*BRR		`json:"prev_roll,omitempty"`
 
 	UDigCount		uint64		`json:"udig_count"`
 
@@ -385,12 +392,21 @@ func scan_brr_log(brr_log string, done chan interface{}) {
 				_cdie("take", chat_history)
 			}
 		case "roll":
-			if r2s.Stat.PrevRollBlob != "" {
+			if r2s.Stat.PrevRoll != nil {
 				die("roll blob seen twice: %s", fld[5])
 			}
-			r2s.Stat.PrevRollBlob = fld[5]
-			r2s.Stat.PrevRollStartTime = start_time
-			r2s.Stat.PrevRollWallDuration.duration = wall_duration
+			r2s.Stat.PrevRoll = &BRR{
+				StartTime:	start_time,
+				Transport:	fld[1],
+				Verb:		fld[2],
+				Blob:		fld[3],
+				ChatHistory:	fld[4],
+				BlobSize:	blob_size,
+				WallDuration:	wall_duration,
+			}
+			r2s.Stat.PrevRoll.Blob = fld[5]
+			r2s.Stat.PrevRoll.StartTime = start_time
+			r2s.Stat.PrevRoll.WallDuration = wall_duration
 			switch chat_history {
 			case "ok":
 				r2s.Stat.RollOkCount++
