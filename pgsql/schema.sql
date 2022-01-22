@@ -92,6 +92,155 @@ COMMENT ON DOMAIN tag IS
   'no null, up to 16 ascii tag matching [a-z][a-z0-9_]{0,15}'
 ;
 
+DROP DOMAIN IF EXISTS brr_transport CASCADE;
+CREATE DOMAIN brr_transport AS text
+  CHECK (
+  	value ~ '[a-z][a-z0-9]{0,7}~[[:graph:]]{1,128}'
+	AND
+	value IS NOT NULL
+  )
+;
+COMMENT ON DOMAIN brr_transport IS
+  'Network transport for a blob request record'
+;
+
+DROP DOMAIN IF EXISTS brr_verb CASCADE;
+CREATE DOMAIN brr_verb AS text
+  CHECK (
+  	value IN (
+		'get',
+		'put',
+		'give',
+		'take',
+		'wrap',
+		'roll',
+		'eat'
+	)
+	AND
+	value IS NOT NULL
+);
+COMMENT ON DOMAIN brr_verb IS
+  'The 7 deadly verbs of a blob request record'
+;
+
+DROP DOMAIN IF EXISTS brr_chat_history CASCADE;
+CREATE DOMAIN brr_chat_history AS text
+  CHECK (
+  	value IN (
+		'ok',
+		'no',
+		'ok,ok',
+		'ok,no',
+		'ok,ok,ok',
+		'ok,ok,no'
+	)
+	AND
+	value IS NOT NULL
+);
+
+DROP DOMAIN IF EXISTS brr_udig CASCADE;
+CREATE DOMAIN brr_udig AS udig CHECK (
+	value IS NOT NULL
+);
+COMMENT ON DOMAIN brr_udig IS
+  'A uniform digest in a blob request record (never null)'
+;
+
+DROP TYPE IF EXISTS blob_request_record CASCADE;
+CREATE TYPE blob_request_record AS (
+	start_time	brr_timestamp,
+	transport	brr_transport,
+	verb		brr_verb,
+	blob		brr_udig,
+	chat_history	brr_chat_history,
+	blob_size	ui63,
+	wall_duration	brr_duration
+);
+COMMENT ON TYPE blob_request_record IS
+  'A blob request record type'
+;
+
+DROP DOMAIN IF EXISTS brr CASCADE;
+CREATE DOMAIN brr AS blob_request_record
+  CHECK (
+  	--  "get" verb
+  	(
+		(value).verb = 'get'
+		AND
+		(value).chat_history IN ('ok', 'no')
+	)
+	OR
+  	(
+		(value).verb = 'put'
+		AND
+		(value).chat_history IN ('no', 'ok,ok', 'ok,no')
+	)
+	OR
+  	(
+		(value).verb IN ('eat', 'wrap', 'roll')
+		AND
+		(value).chat_history IN ('no', 'ok')
+	)
+	OR
+  	(
+		(value).verb IN ('give', 'take')
+		AND
+		(value).chat_history IN ('no', 'ok,ok,ok', 'ok,no', 'ok,ok,no')
+	)
+  )
+;
+COMMENT ON DOMAIN brr IS
+  'Blob Request Record qualifications (not allowed in blob_request_record TYPE)'
+;
+
+DROP TABLE IF EXISTS roll2stat_json CASCADE;
+CREATE TABLE roll2stat_json
+(
+	blob			udig PRIMARY KEY,
+
+	prev_roll		brr,
+
+	roll_blob		udig NOT NULL,
+	roll_brr_count		ui63,
+	brr_count		ui63,
+
+	udig_count		ui63,
+					
+	min_brr_start_time	brr_timestamp,
+	max_brr_start_time	brr_timestamp,	
+	max_brr_wall_duration	brr_duration,
+
+	max_brr_blob_size	ui63,
+
+	eat_ok_count		ui63,
+	eat_no_count		ui63,
+
+	get_ok_count		ui63,
+	get_no_count		ui63,
+	get_byte_count		ui63,
+
+	take_ok_count		ui63,
+	take_no_count		ui63,
+	take_byte_count		ui63,
+
+	put_ok_count		ui63,
+	put_no_count		ui63,
+	put_byte_count		ui63,
+
+	give_ok_count		ui63,
+	give_no_count		ui63,
+	give_byte_count		ui63,
+
+	wrap_ok_count		ui63,
+	wrap_no_count		ui63,
+
+	roll_ok_count		ui63,
+	roll_no_count		ui63
+);
+COMMENT ON TABLE roll2stat_json IS
+  'Summarize json output for command sbin/roll2stat_json'
+;
+
 /*
  *  Most recently seen successfull take FROM this service.
  *  The connection chat history was ok,ok,ok, hence ok3.
@@ -397,55 +546,5 @@ CREATE TABLE bio4d_stat
 	eat_no_count	ui63,
 	take_no_count	ui63
 );
-
-DROP TABLE IF EXISTS roll2stat_json CASCADE;
-CREATE TABLE roll2stat_json
-(
-	blob			udig PRIMARY KEY,
-
-	prev_roll_blob		udig,
-	prev_roll_start_time	brr_timestamp NULL,
-	prev_roll_wall_duration	brr_duration NULL,
-
-	roll_blob		udig NOT NULL,
-	roll_brr_count		ui63,
-	brr_count		ui63,
-
-	udig_count		ui63,
-					
-	min_brr_start_time	brr_timestamp,
-	max_brr_start_time	brr_timestamp,	
-	max_brr_wall_duration	brr_duration,
-
-	max_brr_blob_size	ui63,
-
-	eat_ok_count		ui63,
-	eat_no_count		ui63,
-
-	get_ok_count		ui63,
-	get_no_count		ui63,
-	get_byte_count		ui63,
-
-	take_ok_count		ui63,
-	take_no_count		ui63,
-	take_byte_count		ui63,
-
-	put_ok_count		ui63,
-	put_no_count		ui63,
-	put_byte_count		ui63,
-
-	give_ok_count		ui63,
-	give_no_count		ui63,
-	give_byte_count		ui63,
-
-	wrap_ok_count		ui63,
-	wrap_no_count		ui63,
-
-	roll_ok_count		ui63,
-	roll_no_count		ui63
-);
-COMMENT ON TABLE roll2stat_json IS
-  'Summarize json output for command sbin/roll2stat_json'
-;
 
 COMMIT;
