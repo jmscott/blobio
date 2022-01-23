@@ -12,7 +12,7 @@ BEGIN;
 DROP SCHEMA IF EXISTS blobio CASCADE;
 CREATE SCHEMA blobio;
 COMMENT ON SCHEMA blobio IS
-  'blobs in service and brr history'
+  'blobs in service and summaries of historical blob request records'
 ;
 
 DROP DOMAIN IF EXISTS brr_duration CASCADE;
@@ -81,6 +81,7 @@ COMMENT ON DOMAIN ui8 IS
   'non null integer in range 0 <= 2^8 - 1'
 ;
 
+--  Note: rename to ascii_tag16?  utf8 tags may someday be needed
 DROP DOMAIN IF EXISTS tag CASCADE;
 CREATE DOMAIN tag AS text
   CHECK (
@@ -89,7 +90,7 @@ CREATE DOMAIN tag AS text
   NOT NULL
 ;
 COMMENT ON DOMAIN tag IS
-  'no null, up to 16 ascii tag matching [a-z][a-z0-9_]{0,15}'
+  'up to 16 ascii tag matching ^[a-z][a-z0-9_]{0,15}$'
 ;
 
 DROP DOMAIN IF EXISTS brr_transport CASCADE;
@@ -190,7 +191,7 @@ CREATE DOMAIN brr AS blob_request_record
   )
 ;
 COMMENT ON DOMAIN brr IS
-  'Blob Request Record qualifications (not allowed in blob_request_record TYPE)'
+  'Qualified Blob Request Record, (no quals in SQL TYPE blob_request record)'
 ;
 
 DROP TABLE IF EXISTS roll2stat_json CASCADE;
@@ -198,7 +199,7 @@ CREATE TABLE roll2stat_json
 (
 	blob			udig PRIMARY KEY,
 
-	prev_roll		brr,
+	prev_roll		brr NULL,
 
 	roll_blob		udig NOT NULL,
 	roll_brr_count		ui63,
