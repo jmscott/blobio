@@ -197,24 +197,7 @@ EXEC SQL END DECLARE SECTION;
 	  ) SELECT
 	  	:blob::udig,
 		
-		CASE
-		  WHEN
-		  	doc->'prev_roll'->>'verb' = 'wtf'
-		  THEN
-		  	ROW(
-				(doc->'prev_roll'->>'start_time')::brr_duration,
-				(doc->'prev_roll'->>'transport'),
-				doc->'prev_roll'->>'verb',
-				doc->'prev_roll'->>'blob',
-				doc->'prev_roll'->>'chat_history',
-				(doc->'prev_roll'->>'blob_size')::ui63,
-				(doc->'prev_roll'->>'wall_duration')
-					::brr_duration
-			)::brr
-		  ELSE
-		  	NULL
-		  END,
-
+		cast_json_brr(doc->'prev_roll'),
 		roll_blob,
 		(doc->'roll_brr_count')::ui63,
 		0,
