@@ -551,4 +551,49 @@ CREATE TABLE bio4d_stat
 	take_no_count	ui63
 );
 
+CREATE OR REPLACE FUNCTION cast_jsonb_blob_request_record(doc jsonb)
+  RETURNS blob_request_record
+  AS $$
+  DECLARE
+  	r blob_request_record;
+  BEGIN
+	IF doc->>'verb' = 'get' then 
+		SELECT INTO r ROW(
+			(doc->>'start_time')::brr_duration,
+			(doc->>'transport'),
+			doc->>'verb',
+			doc->>'blob',
+			doc->>'chat_history',
+			(doc->>'blob_size')::ui63,
+			(doc->>'wall_duration')::brr_duration
+		)::blobio.brr;
+	END IF;
+	RETURN r;
+	END
+  $$
+  LANGUAGE plpgsql
+;
+COMMENT ON FUNCTION cast_jsonb_blob_request_record(jsonb) IS
+  'Cast a jsonb type to a TYPE blobio_request_record'
+;
+
+/*
+ *  Note:
+ *	See script bug-cast_jsonb_brr.sql for a wierd reproducible error.
+ *
+ *		 XX000: cache lookup failed for type 0
+ *
+ *	Writing the
+ */
+CREATE OR REPLACE FUNCTION cast_jsonb_brr(doc jsonb)
+  RETURNS brr
+  AS $$
+  	SELECT cast_jsonb_blob_request_record(doc)::brr;
+  $$
+  LANGUAGE sql
+;
+COMMENT ON FUNCTION cast_jsonb_brr(jsonb) IS
+  'Cast a jsonb type to a DOMAIN brr'
+;
+
 COMMIT;
