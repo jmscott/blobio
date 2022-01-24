@@ -138,6 +138,9 @@ CREATE DOMAIN brr_chat_history AS text
 	AND
 	value IS NOT NULL
 );
+COMMENT ON DOMAIN brr_chat_history IS
+  'Blob Request Chat (ok/no) History'
+;
 
 DROP DOMAIN IF EXISTS brr_udig CASCADE;
 CREATE DOMAIN brr_udig AS udig CHECK (
