@@ -122,7 +122,7 @@ type stat struct {
 	EatOkCount		uint64		`json:"eat_ok_count"`
 	EatNoCount		uint64		`json:"eat_no_count"`
 
-	GetOkCount		uint64		`json:"get_count"`
+	GetOkCount		uint64		`json:"get_ok_count"`
 	GetNoCount		uint64		`json:"get_no_count"`
 	GetBlobSize		uint64		`json:"get_blob_size"`
 
