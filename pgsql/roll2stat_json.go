@@ -404,9 +404,6 @@ func scan_brr_log(brr_log string, done chan interface{}) {
 				BlobSize:	blob_size,
 				WallDuration:	wall_duration,
 			}
-			r2s.Stat.PrevRoll.Blob = fld[5]
-			r2s.Stat.PrevRoll.StartTime = start_time
-			r2s.Stat.PrevRoll.WallDuration = wall_duration
 			switch chat_history {
 			case "ok":
 				r2s.Stat.RollOkCount++
