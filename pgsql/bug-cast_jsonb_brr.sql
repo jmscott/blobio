@@ -27,8 +27,8 @@ CREATE OR REPLACE FUNCTION bug_cast_jsonb_brr(doc jsonb)
   $$
   LANGUAGE plpgsql
 ;
-COMMENT ON FUNCTION cast_jsonb_brr(jsonb) IS
-  'Demonstrate bug in PG14 type cache'
+COMMENT ON FUNCTION bug_cast_jsonb_brr(jsonb) IS
+  'Demonstrate bug in PG14 type cache. See bug-cast_jsonb_brr.sql'
 ;
 
 select bug_cast_jsonb_brr(null);
