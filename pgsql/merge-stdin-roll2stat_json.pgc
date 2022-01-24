@@ -121,21 +121,27 @@ EXEC SQL END DECLARE SECTION;
 		CONNECT TO default
 	;
 	EXEC SQL
-		BEGIN TRANSACTION;
+	  SET search_path to blobio,public
+	;
 
+	/*
 	EXEC SQL
-	  CREATE TEMP TABLE roll_json
+	  DROP TABLE IF EXISTS json_stdin
+	;
+	EXEC SQL
+	  CREATE TABLE json_stdin
 	  (
 	  	blob	udig,
 	  	doc	jsonb
 	  )
 	;
+	*/
 
 	/*
 	 *  Merge blob into jsonorg.jsonb_255 table.
 	 */
 	EXEC SQL
-	  INSERT INTO roll_json(
+	  INSERT INTO json_stdin(
 		blob,
 		doc
 	  ) VALUES (
@@ -144,15 +150,12 @@ EXEC SQL END DECLARE SECTION;
 	  )
 	;
 	EXEC SQL
-	  SET search_path to blobio,public
-	;
-	EXEC SQL
 	  WITH roll2stat AS (
 	    SELECT
 	    	(doc->>'roll_blob')::udig	AS roll_blob,
 		doc->'roll2stat.blob.io'	AS doc
 	      FROM
-	   	roll_json
+	   	json_stdin
 	  ) INSERT INTO roll2stat_json(
 	  	blob,
 		
@@ -239,7 +242,6 @@ EXEC SQL END DECLARE SECTION;
 	  ON CONFLICT
 	  	DO NOTHING
 	;
-
 	EXEC SQL
 		END TRANSACTION
 	;
