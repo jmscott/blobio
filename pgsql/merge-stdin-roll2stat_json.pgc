@@ -197,43 +197,43 @@ EXEC SQL END DECLARE SECTION;
 	  ) SELECT
 	  	:blob::udig,
 		
-		cast_json_brr(doc->'prev_roll'),
+		cast_jsonb_brr(doc->'prev_roll'),
 		roll_blob,
 		(doc->'roll_brr_count')::ui63,
-		0,
+		(doc->'brr_count')::ui63,
 
-		0,
+		(doc->'udig_count')::ui63,
 					
-		'2008-05-17 10:06:42'::brr_timestamp,
-		'2008-05-17 10:06:42'::brr_timestamp,
-		'0 sec'::brr_duration,
+		(doc->>'min_brr_start_time')::brr_timestamp,
+		(doc->>'max_brr_start_time')::brr_timestamp,
+		(doc->>'max_brr_wall_duration')::brr_duration,
 
-		0,
+		(doc->'max_brr_blob_size')::ui63,
 
-		0,
-		0,
+		(doc->'eat_ok_count')::ui63,
+		(doc->'eat_no_count')::ui63,
 
-		0,
-		0,
-		0,
+		(doc->'get_ok_count')::ui63,
+		(doc->'get_no_count')::ui63,
+		(doc->'get_blob_size')::ui63,
 
-		0,
-		0,
-		0,
+		(doc->'take_ok_count')::ui63,
+		(doc->'take_no_count')::ui63,
+		(doc->'take_blob_size')::ui63,
 
-		0,
-		0,
-		0,
+		(doc->'put_ok_count')::ui63,
+		(doc->'put_no_count')::ui63,
+		(doc->'put_blob_size')::ui63,
 
-		0,
-		0,
-		0,
+		(doc->'give_ok_count')::ui63,
+		(doc->'give_no_count')::ui63,
+		(doc->'give_blob_size')::ui63,
 
-		0,
-		0,
+		(doc->'wrap_ok_count')::ui63,
+		(doc->'wrap_no_count')::ui63,
 
-		0,
-		0
+		(doc->'roll_ok_count')::ui63,
+		(doc->'roll_no_count')::ui63
 	      FROM
 	  	roll2stat
 	  ON CONFLICT
