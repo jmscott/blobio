@@ -66,7 +66,7 @@ distclean:
 	test ! -f $(DIST_ROOT)/src/roll2stat_json.go || 		\
 		rm -f $(DIST_ROOT)/src/roll2stat_json.go
 clean:
-	rm -f roll2stat_json
+	rm -f merge-stdin-roll2stat_json roll2stat_json
 world:
 	$(MAKE) $(MFLAGS) clean
 	$(MAKE) $(MFLAGS) all
