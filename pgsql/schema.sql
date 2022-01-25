@@ -554,24 +554,22 @@ CREATE TABLE bio4d_stat
 CREATE OR REPLACE FUNCTION cast_jsonb_blob_request_record(doc jsonb)
   RETURNS blob_request_record
   AS $$
-  DECLARE
-  	r blob_request_record;
-  BEGIN
-	IF doc->>'verb' = 'get' then 
-		SELECT INTO r ROW(
-			(doc->>'start_time')::brr_duration,
-			(doc->>'transport'),
-			doc->>'verb',
-			doc->>'blob',
-			doc->>'chat_history',
-			(doc->>'blob_size')::ui63,
-			(doc->>'wall_duration')::brr_duration
-		)::blobio.brr;
-	END IF;
-	RETURN r;
-	END
+	SELECT ROW(
+		(doc->>'start_time')::brr_timestamp,
+		(doc->>'transport'),
+		doc->>'verb',
+		doc->>'blob',
+		doc->>'chat_history',
+		(doc->>'blob_size')::ui63,
+		(doc->>'wall_duration')::brr_duration
+	)::blob_request_record
+	  WHERE
+	  	doc IS NOT NULL
+	;
   $$
-  LANGUAGE plpgsql
+  STRICT
+  IMMUTABLE
+  LANGUAGE sql
 ;
 COMMENT ON FUNCTION cast_jsonb_blob_request_record(jsonb) IS
   'Cast a jsonb type to a TYPE blobio_request_record'
