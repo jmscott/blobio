@@ -124,18 +124,13 @@ EXEC SQL END DECLARE SECTION;
 	  SET search_path to blobio,public
 	;
 
-	/*
 	EXEC SQL
-	  DROP TABLE IF EXISTS json_stdin
-	;
-	EXEC SQL
-	  CREATE TABLE json_stdin
+	  CREATE TEMP TABLE json_stdin
 	  (
 	  	blob	udig,
 	  	doc	jsonb
 	  )
 	;
-	*/
 
 	/*
 	 *  Merge blob into jsonorg.jsonb_255 table.
