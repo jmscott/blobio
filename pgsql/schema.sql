@@ -184,6 +184,8 @@ CREATE DOMAIN brr AS blob_request_record
 		(value).verb IN ('eat', 'wrap', 'roll')
 		AND
 		(value).chat_history IN ('no', 'ok')
+		AND
+		(value).blob_size = 0
 	)
 	OR
   	(
