@@ -133,7 +133,7 @@ EXEC SQL END DECLARE SECTION;
 	;
 
 	/*
-	 *  Merge blob into jsonorg.jsonb_255 table.
+	 *  Merge blob into roll2stat_json table.
 	 */
 	EXEC SQL
 	  INSERT INTO json_stdin(
