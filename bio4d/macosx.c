@@ -1,6 +1,10 @@
 /*
  *  Synopsis:
  *	Mach OS stub function to emulate Posix clock_gettime().
+ *
+ *  Note:
+ *	Appears __APPLE__ and __ENVIRONMENT_MAC_OS_X_VERSION_MIN_REQUIRED__
+ *	are undefined for Big Sur.  Can we remove macosx.c?
  */
 #if __APPLE__ == 1 && __ENVIRONMENT_MAC_OS_X_VERSION_MIN_REQUIRED__ < 101200
 
