@@ -628,20 +628,12 @@ udig_in(PG_FUNCTION_ARGS)
 		ereport(ERROR,
 			(errcode(ERRCODE_INVALID_TEXT_REPRESENTATION),
 			errmsg(empty_udig, udig)));
-	if (a8[8] == ':') {
-		if (u_end == u)
-			ereport(ERROR,
-				(errcode(ERRCODE_INVALID_TEXT_REPRESENTATION),
-					errmsg(no_colon, udig),
-					errhint(ALGO_HINT)
-				));
-		else
-			ereport(ERROR,
-				(errcode(ERRCODE_INVALID_TEXT_REPRESENTATION),
-					errmsg(big_algo, udig),
-					errhint(ALGO_HINT)
-				));
-	}
+	if (a8[8] == ':')
+		ereport(ERROR,
+			(errcode(ERRCODE_INVALID_TEXT_REPRESENTATION),
+				errmsg(no_colon, udig),
+				errhint(ALGO_HINT)
+			));
 	/*
 	 *  Store BTC20, SHA or BC160 digests in binary form.
 	 */
