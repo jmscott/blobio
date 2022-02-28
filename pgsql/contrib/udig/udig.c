@@ -171,7 +171,6 @@ Datum	udig_le_btc20(PG_FUNCTION_ARGS);
 Datum	udig_cmp_btc20(PG_FUNCTION_ARGS);
 
 static char empty_udig[] = "empty udig";
-static char big_algo[] = "algorithm > 8 characters: \"%s\"";
 static char no_aprint[] = "unprintable character in algorithm name: 0x%x";
 #define ALGO_HINT "did you mean sha, btc20 or bc160"
 
