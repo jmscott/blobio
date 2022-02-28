@@ -591,7 +591,7 @@ udig_in(PG_FUNCTION_ARGS)
 	Size size = 0;
 
 	static char no_algo[] = "unknown algorithm in udig: \"%s\"";
-	static char no_colon[] = "no colon in udig: \"%s\"";
+	static char no_parse_algo[] = "can not parse algorithm: \"%s\"";
 	static char bad_dig[] =
 		"invalid input syntax for udig %s digest: \"%s\"";
 
@@ -630,7 +630,7 @@ udig_in(PG_FUNCTION_ARGS)
 	if (a8[8] == ':')
 		ereport(ERROR,
 			(errcode(ERRCODE_INVALID_TEXT_REPRESENTATION),
-				errmsg(no_colon, udig),
+				errmsg(no_parse_algo, udig),
 				errhint(ALGO_HINT)
 			));
 	/*
