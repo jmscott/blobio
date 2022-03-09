@@ -57,8 +57,9 @@ type flow_worker_sample struct {
 	ok_count	uint64
 	fault_count	uint64
 
-	success_count	uint64
-	fail_count	uint64
+	green_count	uint64
+	yellow_count	uint64
+	red_count	uint64
 
 	wall_duration Duration
 }
@@ -118,15 +119,17 @@ func put_stat(boot, recent flow_worker_sample) {
 		)
 	}
 	stat := Sprintf(
-		"boot\t%d\t%d\t0\t%d\n" +
-		"recent\t%d\t%d\t0\t%d\n",
+		"boot\t%d\t%d\t%d\t%d\n" +
+		"recent\t%d\t%d\t%d\t%d\n",
 			boot.epoch,
-			boot.success_count,
-			boot.fail_count,
+			boot.green_count,
+			boot.yellow_count,
+			boot.red_count,
 
 			recent.epoch,
-			recent.success_count,
-			recent.fail_count,
+			recent.green_count,
+			recent.yellow_count,
+			recent.red_count,
 	);
 	if _, err := sf.Write([]byte(stat));  err != nil {
 		croak("Write(stat) failed: %s", err)
@@ -257,8 +260,9 @@ func (conf *config) server(par *parse) {
 				today_sample.wall_duration += sam.wall_duration
 				today_sample.ok_count += sam.ok_count
 				today_sample.fault_count += sam.fault_count
-				today_sample.success_count += sam.success_count
-				today_sample.fail_count += sam.fail_count 
+				today_sample.green_count += sam.green_count
+				today_sample.yellow_count += sam.yellow_count 
+				today_sample.red_count += sam.red_count 
 			}
 		}
 	}()
@@ -511,15 +515,11 @@ func (conf *config) server(par *parse) {
 			recent.fdr_count++
 			recent.ok_count += sam.ok_count
 			recent.fault_count += sam.fault_count
+			recent.green_count += sam.green_count
+			recent.yellow_count += sam.yellow_count
+			recent.red_count += sam.red_count
 			recent.wall_duration += sam.wall_duration
 
-			if sam.fault_count > 0 {
-				boot.fail_count++
-				recent.fail_count++
-			} else {		//  not sure what empty is
-				boot.success_count++
-				recent.success_count++
-			}
 			recent.epoch = Now().Unix()
 			worker_stats[sam.worker_id-1]++
 
@@ -608,6 +608,9 @@ func (conf *config) server(par *parse) {
 			boot.fdr_count += sfc
 			boot.ok_count += recent.ok_count
 			boot.fault_count += recent.fault_count
+			boot.green_count += recent.green_count
+			boot.yellow_count += recent.yellow_count
+			boot.red_count += recent.red_count
 			boot.wall_duration += recent.wall_duration
 
 			put_stat(boot, recent)
@@ -721,6 +724,9 @@ func (work *flow_worker) flow() {
 
 		sam.ok_count = uint64(fv.fdr.ok_count)
 		sam.fault_count = uint64(fv.fdr.fault_count)
+		sam.green_count = uint64(fv.green_count)
+		sam.yellow_count = uint64(fv.yellow_count)
+		sam.red_count = uint64(fv.red_count)
 		sam.wall_duration = fv.fdr.wall_duration
 		work.flow_sample_chan <- sam
 

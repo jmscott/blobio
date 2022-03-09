@@ -307,6 +307,10 @@ type flow struct {
 
 	//  lock is active.  closed when session ends
 	active_lock	string
+
+	green_count	uint8
+	yellow_count	uint8
+	red_count	uint8
 }
 
 //  the river of blobs
@@ -1516,6 +1520,14 @@ func (flo *flow) log_xdr(
 						xdr.system_duration.Seconds(),
 						xdr.user_duration.Seconds(),
 					))
+				switch xdr.termination_class {
+				case "OK":
+					flo.green_count++
+				case "SIG":
+					flo.yellow_count++
+				case "ERR":
+					flo.red_count++
+				}
 			}
 			out <- xv
 		}
@@ -1524,7 +1536,7 @@ func (flo *flow) log_xdr(
 	return out
 }
 
-func (flow *flow) log_qdr(
+func (flo *flow) log_qdr(
 	log_ch chan []byte,
 	in qdr_chan,
 ) (out qdr_chan) {
@@ -1534,7 +1546,7 @@ func (flow *flow) log_qdr(
 	go func() {
 		defer close(out)
 
-		for flow = flow.get(); flow != nil; flow = flow.get() {
+		for flo = flo.get(); flo != nil; flo = flo.get() {
 
 			qv := <-in
 			if qv == nil {
@@ -1558,6 +1570,14 @@ func (flow *flow) log_qdr(
 						qdr.wall_duration.Seconds(),
 						qdr.query_duration.Seconds(),
 					))
+				switch qdr.termination_class {
+				case "OK":
+					flo.green_count++
+				case "SIG":
+					flo.yellow_count++
+				case "ERR":
+					flo.red_count++
+				}
 			}
 			out <- qv
 		}
