@@ -1527,6 +1527,12 @@ func (flo *flow) log_xdr(
 					flo.yellow_count++
 				case "ERR":
 					flo.red_count++
+				default:
+					panic(
+						"log_xdr: " +
+						"termination class: " +
+						xdr.termination_class,
+					)
 				}
 			}
 			out <- xv
@@ -1577,6 +1583,12 @@ func (flo *flow) log_qdr(
 					flo.yellow_count++
 				case "ERR":
 					flo.red_count++
+				default:
+					panic(
+						"log_xdr: " +
+						"termination class: " +
+						qdr.termination_class,
+					)
 				}
 			}
 			out <- qv
