@@ -21,7 +21,7 @@ Description:
 		^[[:graph:]]{32,128}$
 		^[[:ascii:]{32,128}$
 
-	Currently, just two digests are support:
+	Currently, just two digests are supported:
 
 		sha:c59f2c4f35b56a4bdf2d2c9f4a9984f2049cf2d4
 		btc20:b0e889a067b5d4fff15c3d6e646554939a793783
@@ -39,7 +39,8 @@ Description:
 
 	The maximum size of the algorithm tag is 8 characters.  The maximum size
 	of a digest is 128 characters, making the maximum size of a udig =
-	8 + 128 + 1 (colon).  The minimum size of a digest is 32 ascii chars.
+	8 + 128 + 1 (colon).  The minimum size of a digest is 32 ascii chars,
+	making the minum size of a udig 1 + 1 + 32 = 34 chars.
 
 	The network protocol implements 7 verbs
 	
