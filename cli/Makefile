@@ -1,47 +1,50 @@
 #
 #  Synopsis:
-#	Install client scripts
+#	Install client scripts and blobio client interface
 #
 
 include ../local.mk
 include ../blobio.mk
 
+_MAKE=$(MAKE) $(MFLAGS)
+
+DIST=blobio-cli.dist
+COMPILEs := $(shell  (. ./$(DIST) && echo $$COMPILEs))
+BINs := $(shell  (. ./$(DIST) && echo $$BINs))
+LIBs := $(shell  (. ./$(DIST) && echo $$LIBs))
+
 all:
-	cd blobio;	$(MAKE) $(MFLAGS) all
+	cd blobio && $(_MAKE) all
+
+install-dirs:
+	cd .. && $(_MAKE) install-dirs
+	install -g $(DIST_GROUP) -o $(DIST_USER)			\
+		-d $(DIST_ROOT)/src/cli
 
 install: all
-	install -g $(DIST_GROUP) -o $(DIST_USER) -m ugo=rx		\
-		bio-blob_size.sql					\
-		$(DIST_ROOT)/lib
+	$(_MAKE) install-dirs
 
 	install -g $(DIST_GROUP) -o $(DIST_USER) -m ugo=rx		\
-		bio-bc160						\
-		bio-blob_size						\
-		bio-btc20						\
-		bio-cat							\
-		bio-eat							\
-		bio-file 						\
-		bio-fs-stat						\
-		bio-fs2udig						\
-		bio-get							\
-		bio-get-null						\
-		bio-give						\
-		bio-ls							\
-		bio-merge						\
-		bio-more						\
-		bio-put							\
-		bio-put-file						\
-		bio-put-stdin						\
-		bio-take						\
-		bio-udig2fs						\
-		bio-unroll						\
-		bio-wrap						\
-		bio-wrap-roll						\
-		bio-zap							\
+		$(LIBs)							\
+		$(DIST_ROOT)/lib
+	install -g $(DIST_GROUP) -o $(DIST_USER) -m ugo=rx		\
+		$(BINs)							\
 		$(DIST_ROOT)/bin
-	cd blobio;	$(MAKE) $(MFLAGS) install
+
+	cd blobio && $(_MAKE) install
 clean:
-	cd blobio;  $(MAKE) $(MFLAGS) clean
+	cd blobio && $(_MAKE) clean
+distclean:
+	cd blobio && $(_MAKE) distclean
+	test -d $(DIST_ROOT)/bin && (cd $(DIST_ROOT)/bin && rm -f $(BINs))
+	test -d $(DIST_ROOT)/lib && (cd $(DIST_ROOT)/lib && rm -f $(LIBs))
+	rm -rf $(DIST_ROOT)/src/cli
 
 dev-links:
 	test -e lib || ln -s . lib
+
+world:
+	$(_MAKE) clean
+	$(_MAKE) all
+	$(_MAKE) distclean
+	$(_MAKE) install

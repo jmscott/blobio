@@ -5,67 +5,19 @@
 include ../local.mk
 include ../blobio.mk
 
+_MAKE=$(MAKE) $(MFLAGS)
+
+DIST=blobio-bio4d.dist
+COMPILEs := $(shell  (. ./$(DIST) && echo $$COMPILEs))
+BINs := $(shell  (. ./$(DIST) && echo $$BINs))
+SBINs := $(shell  (. ./$(DIST) && echo $$SBINs))
+LIBs := $(shell  (. ./$(DIST) && echo $$LIBs))
+SRCs := $(shell  (. ./$(DIST) && echo $$SRCs))
+OBJs := $(shell  (. ./$(DIST) && echo $$OBJs))
+
 SRC=$(DIST_ROOT)/src
 SBIN=$(DIST_ROOT)/sbin
 LIB=$(DIST_ROOT)/lib
-
-OBJS=									\
-	arbor.o								\
-	bio4d.o								\
-	blob_set.o							\
-	brr.o								\
-	fs_bc160.o							\
-	fs_btc20.o							\
-	fs_sha.o							\
-	io.o								\
-	log.o								\
-	macosx.o							\
-	module.o							\
-	net.o								\
-	ps_title.o							\
-	req.o								\
-	signal.o							\
-	tmp.o								\
-
-CSRC=									\
-	append-brr.c							\
-	arbor.c								\
-	bio4d.c								\
-	bio4d.h								\
-	blob_set.c							\
-	brr.c								\
-	fs_bc160.c							\
-	fs_btc20.c							\
-	fs_sha.c							\
-	io.c								\
-	log.c								\
-	macosx.c							\
-	macosx.h							\
-	module.c							\
-	net.c								\
-	ps_title.c							\
-	req.c								\
-	signal.c							\
-	tmp.c								\
-
-SBINs=									\
-	append-brr							\
-	bio4d								\
-	bio4d_ctl							\
-	boot-bio4d							\
-	create-rrd							\
-	fs-frisk							\
-	fs2udig								\
-	graph-rrd							\
-	gyr-run-tuple-bio4d						\
-	kill-bio4d							\
-	run-stat-bio4d-tuple						\
-	tcp4-stat							\
-	update-rrd							\
-
-LIBs=									\
-	blobio.bio4d.plist.example					\
-	blobio.bio4d.service.example					\
 
 #  Linux requires linking to realtime timer library
 
@@ -75,46 +27,28 @@ endif
 
 all: bio4d append-brr
 
-install: all
-	install -g $(DIST_GROUP) -o $(DIST_USER)			\
-		-d $(DIST_ROOT)
-	install -g $(DIST_GROUP) -o $(DIST_USER)			\
-		-d $(DIST_ROOT)/bin
-	install -g $(DIST_GROUP) -o $(DIST_USER)			\
-		-d $(DIST_ROOT)/src
+install-dirs:
+	cd .. && $(_MAKE) install-dirs
+
 	install -g $(DIST_GROUP) -o $(DIST_USER)			\
 		-d $(DIST_ROOT)/src/bio4d
-	install -g $(DIST_GROUP) -o $(DIST_USER)			\
-		-m u=rwx,go= -d $(DIST_ROOT)/sbin
-	install -g $(DIST_GROUP) -o $(DIST_USER)			\
-		-d $(DIST_ROOT)/lib
-	install -g $(DIST_GROUP) -o $(DIST_USER)			\
-		-m u=rwx,g=x,o= -d $(DIST_ROOT)/data
-	install -g $(DIST_GROUP) -o $(DIST_USER) 			\
-		-m u=rwx,g=x,o= -d $(DIST_ROOT)/data/fs_sha
-	install -g $(DIST_GROUP) -o $(DIST_USER) 			\
-		-m u=rwx,go= -d $(DIST_ROOT)/data/fs_sha/tmp
-	install -g $(DIST_GROUP) -o $(DIST_USER) 			\
-		-m u=rwx,g=x,o= -d $(DIST_ROOT)/data/fs_bc160
-	install -g $(DIST_GROUP) -o $(DIST_USER) 			\
-		-m u=rwx,go= -d $(DIST_ROOT)/data/fs_bc160/tmp
-	install -g $(DIST_GROUP) -o $(DIST_USER) 			\
-		-m u=rwx,g=x,o= -d $(DIST_ROOT)/data/fs_btc20
-	install -g $(DIST_GROUP) -o $(DIST_USER) 			\
-		-m u=rwx,go= -d $(DIST_ROOT)/data/fs_btc20/tmp
+install: all
+	$(_MAKE) install-dirs
 
 	install -g $(DIST_GROUP) -o $(DIST_USER) -m u=rx,go=		\
 		$(SBINs)						\
 		$(DIST_ROOT)/sbin
 
 	install -g $(DIST_GROUP) -o $(DIST_USER) -m u=rx,g=rx,o=	\
-		$(CSRC) $(DIST_ROOT)/src/bio4d
+		$(SRCs)							\
+		$(DIST_ROOT)/src/bio4d
 
 	install -g $(DIST_GROUP) -o $(DIST_USER) -m u=rx,g=rx,o=	\
-		$(LIBs) $(DIST_ROOT)/lib
+		$(LIBs)							\
+		$(DIST_ROOT)/lib
 
-bio4d: $(OBJS)
-	$(CC) -o bio4d $(OBJS)						\
+bio4d: $(OBJs)
+	$(CC) -o bio4d $(OBJs)						\
 		$(RT_LINK)						\
 		$(OPENSSL_LIB)
 
@@ -124,6 +58,7 @@ append-brr: append-brr.c
 arbor.o: arbor.c bio4d.h
 	$(CC) $(CFLAGS) -c arbor.c
 
+#  Note: is blobio.o stale from when cli was built here?
 blobio: blobio.o
 	$(CC) -o blobio blobio.o
 
@@ -191,14 +126,14 @@ clean-dev-links:
 	rm -rf htdocs log run bin sbin lib tmp data spool		\
 		fs_sha fs_btc20 fs_bc160
 clean:
-	rm -f $(OBJS) bio4d append-brr
+	rm -f $(COMPILEs)
 
 distclean:
-	test ! -e $(SRC) || (cd $(SRC);  rm -f $(CSRC))
+	test ! -e $(SRC) || (cd $(SRC);  rm -f $(SRCs))
 	test ! -e $(SBIN) || (cd $(SBIN);  rm -f $(SBINs))
 	test ! -e $(LIB) || (cd $(LIB);  rm -f $(LIBs))
 world:
-	$(MAKE) $(MFLAGS) clean
-	$(MAKE) $(MFLAGS) all
-	$(MAKE) $(MFLAGS) distclean
-	$(MAKE) $(MFLAGS) install
+	$(_MAKE) clean
+	$(_MAKE) all
+	$(_MAKE) distclean
+	$(_MAKE) install

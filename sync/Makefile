@@ -2,34 +2,17 @@
 #  Synopsis:
 #	Ye'old Makefile for sync code used by various daemons.
 #
-
 include ../local.mk
 include ../blobio.mk
 
-SRCs=jaccard.go jaccard-tip.go
-SBINs=									\
-	flip-remote-brr							\
-	jaccard								\
-	jaccard-tip							\
-	make-sync-remote						\
-	purge-sync-cache						\
-	reboot-sync							\
-	rummy-chain							\
-	sync-put							\
-	sync-wrap							\
-	sync-wrap-chain							\
-	walk-wrap-set							\
+_MAKE=$(MAKE) $(MFLAGS)
 
-LIBs=									\
-	blobio.sync.remote.flowd.plist.example				\
-	blobio.sync.remote.flowd.service.example			\
-	jaccard-all.conf.example					\
-	jaccard-tip.conf.example					\
-	not-in-service.sql						\
-	profile-sync.example						\
-	rummy-chain.sql							\
-	sync-remote.flow.example					\
-	syncness.sql							\
+DIST=blobio-sync.dist
+BINs := $(shell  (. ./$(DIST) && echo $$BINs))
+SBINs := $(shell  (. ./$(DIST) && echo $$SBINs))
+LIBs := $(shell  (. ./$(DIST) && echo $$LIBs))
+SRCs := $(shell  (. ./$(DIST) && echo $$SRCs))
+COMPILEs := $(shell  (. ./$(DIST) && echo $$COMPILEs))
 
 all: jaccard jaccard-tip
 
@@ -38,38 +21,39 @@ jaccard-tip: jaccard-tip.go
 jaccard: jaccard.go
 	$(GODIST)/bin/go build jaccard.go
 
+install-dirs:
+	cd .. && $(_MAKE) install-dirs
 install: all
-	install -g $(DIST_GROUP) -o $(DIST_USER)			\
-		-d $(DIST_ROOT)
-	install -g $(DIST_GROUP) -o $(DIST_USER)			\
-		-m u=rwx,go= -d $(DIST_ROOT)/sbin
-	install -g $(DIST_GROUP) -o $(DIST_USER)			\
-		-d $(DIST_ROOT)/lib
+	$(_MAKE) install-dirs
+
 	install -g $(DIST_GROUP) -o $(DIST_USER)			\
 		-m u=rwx,go= -d $(DIST_ROOT)/sync
-	install -g $(DIST_GROUP) -o $(DIST_USER)			\
-		-m u=rwx,go= -d $(DIST_ROOT)/sync/remote
+	install -g $(DIST_GROUP) -o $(DIST_USER) -m u=rwx,g=rx,o=	\
+		-d $(DIST_ROOT)/src/sync
 	install -g $(DIST_GROUP) -o $(DIST_USER) -m u=rx,go=		\
 		$(SBINs)						\
 		$(DIST_ROOT)/sbin
 	install -g $(DIST_GROUP) -o $(DIST_USER) -m ug=r,o=		\
 		$(LIBs)							\
 		$(DIST_ROOT)/lib
-	install -g $(DIST_GROUP) -o $(DIST_USER) -m u=rwx,g=rx,o=	\
-		-d $(DIST_ROOT)/src/sync
 	install -g $(DIST_GROUP) -o $(DIST_USER) -m ug=r,o=		\
-		jaccard.go						\
-		jaccard-tip.go						\
+		$(SRCs)							\
 		$(DIST_ROOT)/src/sync
 
 distclean:
-	cd $(DIST_ROOT)/sbin && rm -f $(SBINs)
-	cd $(DIST_ROOT)/lib && rm -f $(LIBs)
+	rm -rf $(DIST_ROOT)/src/sync
+	test -d $(DIST_ROOT)/sbin && cd $(DIST_ROOT)/sbin &&rm -f $(SBINs)
+	test -d $(DIST_ROOT)/lib && cd $(DIST_ROOT)/sbin &&rm -f $(LIBs)
 clean:
-	rm -f jaccard-tip
+	rm -f $(COMPILEs)
 
 dev-links:
 	test -e etc || ln -s . etc
 	test -e lib || ln -s . lib
 	test -e run || ln -s . run
 	test -e sbin || ln -s . sbin
+world:
+	$(_MAKE) clean
+	$(_MAKE) all
+	$(_MAKE) distclean
+	$(_MAKE) install

@@ -19,29 +19,36 @@
 include local.mk
 include blobio.mk
 
+_MAKE=$(MAKE) $(MFLAGS)
+
+DIST=blobio.dist
+SBINs := $(shell  (. ./$(DIST) && echo $$SBINs))
+BINs := $(shell  (. ./$(DIST) && echo $$BINs))
+LIBs := $(shell  (. ./$(DIST) && echo $$LIBs))
+
 all:
-	cd bio4d;	$(MAKE) $(MFLAGS) all
-	cd cli;		$(MAKE) $(MFLAGS) all
-	cd flowd;	$(MAKE) $(MFLAGS) all
-	cd sync;	$(MAKE) $(MFLAGS) all
+	cd bio4d &&	$(_MAKE) all
+	cd cli &&	$(_MAKE) all
+	cd flowd &&	$(_MAKE) all
+	cd sync &&	$(_MAKE) all
 ifdef DASH_DNS_VHOST_SUFFIX
-	cd www && $(MAKE) $(MFLAGS) all
+	cd www &&	$(_MAKE) all
 endif
 
 clean:
 ifdef DASH_DNS_VHOST_SUFFIX
-	cd www && $(MAKE) $(MFLAGS) clean
+	cd www &&	$(_MAKE) clean
 endif
-	cd bio4d;	$(MAKE) $(MFLAGS) clean
-	cd cli;		$(MAKE) $(MFLAGS) clean
-	cd flowd;	$(MAKE) $(MFLAGS) clean
-	cd sync;	$(MAKE) $(MFLAGS) clean
+	cd bio4d &&	$(_MAKE) clean
+	cd cli &&	$(_MAKE) clean
+	cd flowd &&	$(_MAKE) clean
+	cd sync &&	$(_MAKE) clean
 
 distclean:
 ifdef DASH_DNS_VHOST_SUFFIX
-	cd www && $(MAKE) $(MFLAGS) distclean
+	cd www &&	$(_MAKE) distclean
 endif
-	cd bio4d;	$(MAKE) $(MFLAGS) distclean
+	cd bio4d	$(_MAKE) distclean
 
 ifeq "$(DIST_ROOT)" "/usr"
 	@echo 'refuse to distclean /usr'
@@ -53,13 +60,13 @@ ifeq "$(DIST_ROOT)" "/usr/local"
 	exit 1
 endif
 
-	cd flowd;	$(MAKE) $(MFLAGS) distclean
+	cd flowd &&	$(_MAKE) distclean
 	rm -rf $(DIST_ROOT)/bin
 	rm -rf $(DIST_ROOT)/lib
 	rm -rf $(DIST_ROOT)/sbin
 	rm -rf $(DIST_ROOT)/src
 
-install: all
+install-dirs:
 	#  setup the directories
 	install -g $(DIST_GROUP) -o $(DIST_USER)			\
 		-d $(DIST_ROOT)
@@ -110,38 +117,20 @@ install: all
 		-m u=rwx,g=rx,o= -d $(DIST_ROOT)/sync
 	install -g $(DIST_GROUP) -o $(DIST_USER)			\
 		-d $(DIST_ROOT)/lib
-	#install -g $(DIST_GROUP) -o $(DIST_USER)			\
-		#-d $(DIST_ROOT)/www
+install: all
+	$(_MAKE) install-dirs
+
 	install -g $(DIST_GROUP) -o $(DIST_USER) -m ugo=rx		\
-		pgsql/bio-merge-service					\
+		$(BINs)							\
 		$(DIST_ROOT)/bin
 
 	install -g $(DIST_GROUP) -o $(DIST_USER) -m u=rx,go=		\
-		BLOBIO_ROOT-bash					\
-		brr-stat						\
-		cron-pg_dump-daily					\
-		cron-reboot						\
-		cron-wrap						\
-		dev-reboot						\
-		lock-flow-udig						\
-		ls-service						\
-		run-stat-report						\
-		run-stat-tuple						\
-		tail-log						\
-		unlock-flow-udig					\
+		$(SBINs)						\
 		$(DIST_ROOT)/sbin
 
 	install -g $(DIST_GROUP) -o $(DIST_USER) -m ug=r,o=		\
-		bash_login.example					\
-		bash_login-dev.example					\
-		crontab.example						\
-		hamlet.txt						\
-		profile.example						\
-		psqlrc.example						\
+		$(LIBs)							\
 		$(DIST_ROOT)/lib
-	install -g $(DIST_GROUP) -o $(DIST_USER) -m ug=r,o=		\
-		README							\
-		$(DIST_ROOT)/lib/README.blobio
 	cd bio4d;	$(MAKE) $(MFLAGS) install
 	cd cli;		$(MAKE) $(MFLAGS) install
 	cd pgsql;	$(MAKE) $(MFLAGS) install
@@ -160,7 +149,7 @@ dev-links:
 	test -e run || ln -s . run
 
 world:
-	$(MAKE) $(MFLAGS) clean
-	$(MAKE) $(MFLAGS) all
-	$(MAKE) $(MFLAGS) distclean
-	$(MAKE) $(MFLAGS) install
+	$(_MAKE) clean
+	$(_MAKE) all
+	$(_MAKE) distclean
+	$(_MAKE) install

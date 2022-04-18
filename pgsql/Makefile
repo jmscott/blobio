@@ -5,33 +5,22 @@
 include ../local.mk
 include ../blobio.mk
 
-SRCs=	roll2stat_json.go merge-stdin-roll2stat_json.pgc
-LIBs=									\
-	blobio.flow.example						\
-	contrib/udig/udig.sql.in					\
-	eat-unroll.sql							\
-	eat-wrap-missed.sql						\
-	merge-bio4d_request_stat.sql					\
-	schema.sql							\
-	select-rummy.sql						\
-	select-rummy-since.sql						\
+_MAKE=$(MAKE) $(MFLAGS)
 
-SBINs=									\
-	cron-bio4d-stat2pg						\
-	cron-eat-unroll							\
-	cron-rummy							\
-	eat-wrap-missed							\
-	fs-eat								\
-	fs-xor-service							\
-	minus-service							\
-	roll2stat_json							\
+DIST=blobio-pgsql.dist
 
-all: roll2stat_json merge-stdin-roll2stat_json
+COMPILEs := $(shell  (. ./$(DIST) && echo $$COMPILEs))
+SBINs := $(shell  (. ./$(DIST) && echo $$SBINs))
+SRCs := $(shell  (. ./$(DIST) && echo $$SRCs))
+LIBs := $(shell  (. ./$(DIST) && echo $$LIBs))
+
+all: $(COMPILEs)
 
 roll2stat_json: roll2stat_json.go
 	$(GODIST)/bin/go build roll2stat_json.go
 
 install: $(SBINs) $(LIBs)
+	cd .. && $(_MAKE) install-dirs
 	install -g $(DIST_GROUP) -o $(DIST_USER) -m ug=r,o=		\
 		$(LIBs)							\
 		$(DIST_ROOT)/lib
@@ -63,10 +52,9 @@ dev-links:
 distclean:
 	test ! -d $(DIST_ROOT)/lib || (cd $(DIST_ROOT)/lib;  rm -f $(LIBs))
 	test ! -d $(DIST_ROOT)/sbin || (cd $(DIST_ROOT)/sbin;  rm -f $(SBINs))
-	test ! -f $(DIST_ROOT)/src/roll2stat_json.go || 		\
-		rm -f $(DIST_ROOT)/src/roll2stat_json.go
+	test ! -d $(DIST_ROOT)/src || (cd $(DIST_ROOT)/sbin && rm -f $(SRCs))
 clean:
-	rm -f merge-stdin-roll2stat_json roll2stat_json
+	rm -f $(COMPILEs) merge-stdin-roll2stat_json.c
 world:
 	$(MAKE) $(MFLAGS) clean
 	$(MAKE) $(MFLAGS) all

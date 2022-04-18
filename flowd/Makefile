@@ -18,6 +18,17 @@
 include ../local.mk
 include ../blobio.mk
 
+_MAKE=$(MAKE) $(MFLAGS)
+
+DIST=blobio-flowd.dist
+
+SRCs := $(shell  (. ./$(DIST) && echo $$SRCs))
+BINs := $(shell  (. ./$(DIST) && echo $$BINs))
+SBINs := $(shell  (. ./$(DIST) && echo $$SBINs))
+LIBs := $(shell  (. ./$(DIST) && echo $$LIBs))
+COMPILEs := $(shell  (. ./$(DIST) && echo $$COMPILEs))
+GOSRCs := $(shell  (. ./$(DIST) && echo $$GOSRCs))
+
 export PATH := $(GODIST)/bin:$(PATH)
 GO=$(GODIST)/bin/go
 
@@ -35,26 +46,6 @@ GOPKG_OSARCH=$(GOHOSTOS)_$(GOHOSTARCH)
 #
 #GO_BUILD_RACE=-race
 
-EXEC=flowd flowd-execv
-
-GOSRC=									\
-	flowd.go							\
-	brr.go								\
-	command.go							\
-	compile.go							\
-	fdr.go								\
-	file.go								\
-	flow.go								\
-	log.go								\
-	parser.go							\
-	pid-log.go							\
-	qdr.go								\
-	server.go							\
-	sql.go								\
-	tail.go								\
-	tsort.go							\
-	xdr.go
-
 #  Do 'go tool compile' for list of compile time flags
 #
 #  Disable opimixations like function inline
@@ -65,66 +56,38 @@ GOSRC=									\
 #GCFLAGS=-gcflags "-N -l"
 #GCFLAGS=-gcflags "-l"
 
-all: $(EXEC)
+all: flowd flowd-execv
 
-flowd: $(GOSRC)
-	$(GO) build $(GCFLAGS) $(GO_BUILD_RACE) $(GOSRC)
+flowd: $(GOSRCs)
+	$(GO) build $(GCFLAGS) $(GO_BUILD_RACE) $(GOSRCs)
 
-install: all
-	install -g $(DIST_GROUP) -o $(DIST_USER) -m u=rwx,g=rx,o=	\
-		-d $(DIST_ROOT)/src
+install-dirs:
 	install -g $(DIST_GROUP) -o $(DIST_USER) -m u=rwx,g=rx,o=	\
 		-d $(DIST_ROOT)/src/flowd
-	install -g $(DIST_GROUP) -o $(DIST_USER) -m u=rwx,g=x,o=	\
-		-d $(DIST_ROOT)/lib
-	install -g $(DIST_GROUP) -o $(DIST_USER) -m u=rwx,g=rx,o=	\
-		-d $(DIST_ROOT)/bin
-	install -g $(DIST_GROUP) -o $(DIST_USER) -m u=rwx,go=		\
-		-d $(DIST_ROOT)/sbin
-	install -g $(DIST_GROUP) -o $(DIST_USER) -m u=rwx,go=		\
-		-d $(DIST_ROOT)/attic
-	install -g $(DIST_GROUP) -o $(DIST_USER) -m u=rwx,go=		\
-		-d $(DIST_ROOT)/attic/log
+install: all
+	$(_MAKE) install-dirs
+
 	install -g $(DIST_GROUP) -o $(DIST_USER) -m ug=r,o=		\
-		flowd-execv.c						\
-		parser.y						\
-		$(GOSRC)						\
+		$(SRCs)							\
 		$(DIST_ROOT)/src/flowd
 	install -g $(DIST_GROUP) -o $(DIST_USER) -m ugo=rx		\
-		bio-dr2rrd						\
-		flowd							\
-		flowd-execv						\
-		xdr2pg							\
-		xdr2psql						\
+		$(BINs)							\
 		$(DIST_ROOT)/bin
 	install -g $(DIST_GROUP) -o $(DIST_USER) -m u=rx,go=		\
-		boot-flowd						\
-		cron-dr2rrd						\
-		fdr2pg-copy-stage					\
-		fdr2rrd-minute						\
-		kill-flowd						\
-		rrd-create-fdr						\
-		rrd-graph-fdr						\
-		run-stat-flowd-tuple					\
+		$(SBINs)						\
 		$(DIST_ROOT)/sbin
 	install -g $(DIST_GROUP) -o $(DIST_USER) -m ugo=r		\
-		blobio.flowd.plist.example				\
-		blobio.flowd.service.example				\
-		fdr-template.rrd					\
-		schema-rrd-stage.sql					\
-		stage-fdr2rrd.sql					\
+		$(LIBs)							\
 		$(DIST_ROOT)/lib
 
 clean:
-	rm -f $(EXEC) parser.go y.output y.go
+	rm -f $(COMPILEs) y.output
 
 distclean:
-	rm -rf 								\
-		$(DIST_ROOT)/src/flowd	 				\
-		$(DIST_ROOT)/bin/flowd					\
-		$(DIST_ROOT)/bin/flowd-execv				\
-		$(DIST_ROOT)/sbin/boot-flowd
-
+	rm -rf $(DIST_ROOT)/src/flowd
+	test -e $(DIST_ROOT)/bin && cd $(DIST_ROOT)/bin && rm -f $(BINs)
+	test -e $(DIST_ROOT)/lib && cd $(DIST_ROOT)/lib && rm -f $(LIBs)
+	test -e $(DIST_ROOT)/sbin && cd $(DIST_ROOT)/sbin && rm -f $(SBINs)
 
 fmt: $(GOSRC)
 	$(GO) fmt $(GOSRC)
@@ -153,8 +116,6 @@ dev-links:
 	test -e spool || ln -s . spool
 clean-links:
 	rm -rf attic data etc lib log profile rrd run sbin spool
-env:
-	env
 goenv:
 	$(GO) env
 doc:
@@ -167,7 +128,7 @@ lint:
 		grep -v 'receiver name .* should be consistent with previous receiver name'); exit 0
 
 world:
-	$(MAKE) $(MFLAGS) clean
-	$(MAKE) $(MFLAGS) all
-	$(MAKE) $(MFLAGS) distclean
-	$(MAKE) $(MFLAGS) install
+	$(_MAKE) clean
+	$(_MAKE) all
+	$(_MAKE) distclean
+	$(_MAKE) install

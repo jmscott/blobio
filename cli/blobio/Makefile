@@ -1,64 +1,47 @@
 #
 #  Synopsis:
-#	Build blobio binary executable from C source
+#	Build blobio command line binary executable from C source
 #  Note:
 #	Move variables OBJs and SRCs to dist file.
 #
 include ../../local.mk
 include ../../blobio.mk
 
-OBJs=									\
-	bc160.o								\
-	bio4.o								\
-	btc20.o								\
-	buf.o								\
-	cache4.o							\
-	digest.o 							\
-	fs.o								\
-	service.o							\
-	sha.o								\
-	trace.o								\
-	uni.o
-SRCs=									\
-	bc160.c								\
-	btc20.c								\
-	bio4.c								\
-	blobio.c							\
-	blobio.h							\
-	buf.c								\
-	cache4.c							\
-	digest.c 							\
-	fs.c								\
-	service.c							\
-	sha.c								\
-	trace.c								\
-	uni.c								\
+_MAKE=$(MAKE) $(MFLAGS)
+
+DIST=blobio-cli-blobio.dist
+BINs := $(shell  (. ./$(DIST) && echo $$BINs))
+LIBs := $(shell  (. ./$(DIST) && echo $$LIBs))
+SRCs := $(shell  (. ./$(DIST) && echo $$SRCs))
+OBJs := $(shell  (. ./$(DIST) && echo $$OBJs))
+COMPILEs := $(shell  (. ./$(DIST) && echo $$COMPILEs))
 
 all: blobio
 
 clean:
-	rm -f blobio $(OBJs) blobio.o
+	rm -f $(COMPILEs)
+
+install-dirs:
+	cd .. && $(_MAKE) install-dirs
+
+	install -g $(DIST_GROUP) -o $(DIST_USER)			\
+		-d $(DIST_ROOT)/src/cli/blobio
 
 install: all
-	install -g $(DIST_GROUP) -o $(DIST_USER)			\
-		-d $(DIST_ROOT)/bin
-	install -g $(DIST_GROUP) -o $(DIST_USER)			\
-		-d $(DIST_ROOT)/src
-	install -g $(DIST_GROUP) -o $(DIST_USER)			\
-		-d $(DIST_ROOT)/src/blobio
+	$(_MAKE) install-dirs
+
 	install -g $(DIST_GROUP) -o $(DIST_USER) -m ugo=rx		\
-		blobio							\
+		$(BINs)							\
 		$(DIST_ROOT)/bin
 	install -g $(DIST_GROUP) -o $(DIST_USER) -m u=rx,go=		\
 		$(SRCs)							\
-		$(DIST_ROOT)/src/blobio
+		$(DIST_ROOT)/src/cli/blobio
 
-blobio: blobio.o $(OBJs)
-	$(CC) -o blobio blobio.o $(OBJs) $(OPENSSL_LIB)
+blobio: $(OBJs)
+	$(CC) -o blobio $(OBJs) $(OPENSSL_LIB)
 
 bio4.o: bio4.c blobio.h
 	$(CC) $(CFLAGS) -c bio4.c
-
 cache4.o: cache4.c blobio.h
 	$(CC) $(CFLAGS) -c cache4.c
 buf.o: buf.c
@@ -83,9 +66,10 @@ uni.o: uni.c blobio.h
 	$(CC) $(CFLAGS) -c uni.c
 
 distclean:
-	rm -rf $(DIST_ROOT)/src/blobio $(DIST_ROOT)/bin/blobio
+	test -d $(DIST_ROOT)/bin && cd $(DIST_ROOT)/bin && rm -f $(BINs)
+	rm -rf $(DIST_ROOT)/src/cli/blobio
 world:
-	$(MAKE) $(MFLAGS) clean
-	$(MAKE) $(MFLAGS) all
-	$(MAKE) $(MFLAGS) distclean
-	$(MAKE) $(MFLAGS) install
+	$(_MAKE) clean
+	$(_MAKE) all
+	$(_MAKE) distclean
+	$(_MAKE) install
