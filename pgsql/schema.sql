@@ -596,4 +596,27 @@ COMMENT ON FUNCTION cast_jsonb_brr(jsonb) IS
   'Cast a jsonb type to a DOMAIN brr'
 ;
 
+/*
+ *  Synopsis:
+ *	Find all blobs in postgres blobio.service with missing data.
+ *  Usage:
+ *	psql -f select-rummy-since.sql
+ *  See:
+ *	sbin/cron-rummy
+ */
+
+DROP VIEW IF EXISTS rummy CASCADE;
+CREATE VIEW rummy AS
+  SELECT
+	srv.blob
+    FROM
+  	blobio.service srv
+	  LEFT OUTER JOIN blobio.brr_blob_size sz ON (sz.blob = srv.blob)
+  WHERE
+	sz.blob IS null
+;
+COMMENT ON view rummy IS
+  'Blobs with known unknown attributes'
+;
+
 COMMIT;
