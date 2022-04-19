@@ -48,7 +48,7 @@ distclean:
 ifdef DASH_DNS_VHOST_SUFFIX
 	cd www &&	$(_MAKE) distclean
 endif
-	cd bio4d	$(_MAKE) distclean
+	cd bio4d &&	$(_MAKE) distclean
 
 ifeq "$(DIST_ROOT)" "/usr"
 	@echo 'refuse to distclean /usr'
