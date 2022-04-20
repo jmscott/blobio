@@ -599,8 +599,6 @@ COMMENT ON FUNCTION cast_jsonb_brr(jsonb) IS
 /*
  *  Synopsis:
  *	Find all blobs in postgres blobio.service with missing data.
- *  Usage:
- *	psql -f select-rummy-since.sql
  *  See:
  *	sbin/cron-rummy
  */
