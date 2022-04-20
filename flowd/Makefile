@@ -85,9 +85,9 @@ clean:
 
 distclean:
 	rm -rf $(DIST_ROOT)/src/flowd
-	test -e $(DIST_ROOT)/bin && cd $(DIST_ROOT)/bin && rm -f $(BINs)
-	test -e $(DIST_ROOT)/lib && cd $(DIST_ROOT)/lib && rm -f $(LIBs)
-	test -e $(DIST_ROOT)/sbin && cd $(DIST_ROOT)/sbin && rm -f $(SBINs)
+	test ! -d $(DIST_ROOT)/bin || (cd $(DIST_ROOT)/bin && rm -f $(BINs))
+	test ! -d $(DIST_ROOT)/lib || (cd $(DIST_ROOT)/lib && rm -f $(LIBs))
+	test ! -d $(DIST_ROOT)/sbin || (cd $(DIST_ROOT)/sbin && rm -f $(SBINs))
 
 fmt: $(GOSRC)
 	$(GO) fmt $(GOSRC)
