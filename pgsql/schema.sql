@@ -2,6 +2,9 @@
  *  Synopsis:
  *	PostgreSQL schema tracks blobs available in a particular bio4d server.
  *  Note:
+ *	Domains have explicit NOT NULL.  That is wrong.  The NOT
+ *	should be in the table declaration!
+ *
  *	Why does column brr_no_recent.wall_duration exist?
  */
 \set ON_ERROR_STOP on
@@ -271,6 +274,10 @@ CREATE INDEX brr_take_ok_recent_hash ON
 CREATE INDEX brr_take_ok_recent_start_time ON
 	brr_take_ok_recent(start_time)
 ;
+CREATE INDEX brr_take_ok_recent_start_time_brin
+  ON brr_take_ok_recent
+  USING brin(start_time)
+;
 COMMENT ON TABLE brr_take_ok_recent IS
   'most recently seen take request record for a particular blob'
 ;
@@ -284,7 +291,8 @@ CREATE TABLE brr_blob_size
 	blob		udig
 				PRIMARY KEY,
 	byte_count	ui63,
-	CONSTRAINT size_check CHECK ((
+	CONSTRAINT size_check CHECK (
+	  (
 		udig_is_empty(blob)
 		AND
 		byte_count = 0
@@ -368,6 +376,10 @@ CREATE INDEX brr_discover_hash
 ;
 CREATE INDEX brr_discover_start_time
 	ON brr_discover(start_time)
+;
+CREATE INDEX brr_discover_start_time_brin
+  ON brr_discover
+  USING brin(start_time)
 ;
 COMMENT ON TABLE brr_discover
   IS
