@@ -353,6 +353,10 @@ CREATE INDEX brr_no_recent_hash
 CREATE INDEX brr_no_recent_start_time
 	ON brr_no_recent(start_time)
 ;
+CREATE INDEX brr_no_recent_start_time_brin
+  ON brr_no_recent
+  USING brin(start_time)
+;
 COMMENT ON TABLE brr_no_recent IS
   'most recently failed attempt to get or eat the blob'
 ;
