@@ -35,7 +35,6 @@
 
 LIBs="
 	bash_login.example						\
-	bash_login-dev.example						\
 	crontab.example							\
 	hamlet.txt							\
 	README								\
@@ -56,7 +55,6 @@ SBINs="
 	cron-pg_dump-daily						\
 	cron-reboot							\
 	cron-wrap							\
-	dev-reboot							\
 	lock-flow-udig							\
 	ls-service							\
 	run-stat-report							\
