@@ -36,14 +36,15 @@ COMPILEs="
 "
 
 LIBs="
+	blobio.flow.example
 	bug-cast_jsonb_brr.sql
 	eat-unroll.sql
 	eat-wrap-missed.sql
 	merge-bio4d_request_stat.sql
+	psqlrc.example
 	schema.sql
 	select-rummy-since.sql
 	select-rummy.sql
-	blobio.flow.example
 "
 
 #  Uncoment to create bin/ directory

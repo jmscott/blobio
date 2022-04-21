@@ -40,7 +40,6 @@ LIBs="
 	hamlet.txt							\
 	README								\
 	profile.example							\
-	psqlrc.example							\
 "
 
 #

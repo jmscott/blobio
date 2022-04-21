@@ -60,3 +60,6 @@ world:
 	$(MAKE) $(MFLAGS) all
 	$(MAKE) $(MFLAGS) distclean
 	$(MAKE) $(MFLAGS) install
+
+dist:
+	make-dist tar $(DIST)
