@@ -9,9 +9,14 @@
 #  Depends:
 #	GNU date
 #	github https://github.com/jmscott/work
+#	postgresql
 #  Exit Status:
 #	0	ok
 #	1	error
+#  Note:
+#	Consider detecting if another blob is running and exiting
+#	quickly with an empty *.txn record.  We could tag such records
+#	cause START_TIME==END_TIME and NO/OK==0.
 #
 
 START_TIME=$(RFC3339Nano)		#  Note: need $JMSCOTT_ROOT in PATH
@@ -48,27 +53,30 @@ trap leave EXIT
 
 log "BLOBIO_ROOT=$BLOBIO_ROOT"
 cd $BLOBIO_ROOT || die "cd $BLOBIO_ROOT failed: exit status=$?"
+test -e 
 . etc/profile
 
-log "tmp rummy udig set: $RUMMY_UDIG_SET"
+test -n "$BLOBIO_SERVICE" || die 'env not defined: BLOBIO_SERVICE'
 log "BLOBIO_SERVICE=$BLOBIO_SERVICE"
 log "PATH=$PATH"
-log "PGHOST=$PGHOST"
-log "PGPORT=$PGPORT"
-log "PGUSER=$PGUSER"
-log "PGPASSWORD=$PGPASSWORD"
-log "PGDATABASE=$PGDATABASE"
+log "PGHOST=$PGHOST PORT=$PGPORT USER=$PGUSER DATABASE=$PGDATABASE"
 
-log 'fetching blobs from rummy ...'
-$PSQL <<END || die "psql rummy yeserday failed: exit status=$?"
+log "tmp rummy udig set: $RUMMY_UDIG_SET"
+log 'fetching blobs from rummy since yesterday ...'
+$PSQL --output $RUMMY_UDIG_SET <<'END'					|| die "psql rummy yeserday failed: exit status=$?"
 SELECT
-	blob
+	r.blob
   FROM
-  	blobio.rummy
+  	blobio.rummy r
+	  JOIN blobio.brr_discover d ON (d.blob = r.blob)
+  WHERE
+  	d.start_time >= 'yesterday'
+;
 END
 
-NO_SIZE_COUNT=$(wc -l $RUMMY_UDIG_SET | awk '{print $1}')
-log "blobs with no brr_blob_size: $NO_SIZE_COUNT"
+test -e $RUMMY_UDIG_SET || die 'rummy set file does not exist'
+
+log "rummy blob count: $(wc -l $RUMMY_UDIG_SET | awk '{print $1}')"
 
 #  fetch each blob to trigger merge of row in table brr_blob_size
 
@@ -97,7 +105,7 @@ done <$RUMMY_UDIG_SET
 
 TXN=spool/cron-rummy-yesterday.txn
 log "transaction log: $TXN"
-echo "$START_TIME	$(RFC3339Nano)	$SINCE_SEC	$OK	$NO" >>$TXN ||
+echo "$START_TIME	$(RFC3339Nano)	$OK	$NO" >>$TXN		||
 	die "echo >txn failed: exit status=$?"
 
 exit 0

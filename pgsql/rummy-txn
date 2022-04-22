@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 #
 #  Synopsis:
-#	Find blobs in blobio.service table with missing information.
+#	Get rummy blobs, over a time interval, log transaction in data/rummy.txn
 #  Usage:
 #	cron-rummy <postgres-time-interval>
 #	cron-rummy '-1 week'
@@ -23,27 +23,42 @@
 START_TIME=$(RFC3339Nano)
 PROG=$(basename $0)
 START_EPOCH=$(date +'%s')
+TXN=data/rummy.txn
+RUMMY_SET=${TMPDIR:=/tmp}/$(basename $0)-$$.udig
+PSQL='psql --set ON_ERROR_STOP=1 --quiet --no-align --no-psqlrc --tuples-only'
 
-#  store transaction record here
-data/rummy/
-
-RUMMY_UDIG_SET=${TMPDIR:=/tmp}/$(basename $0)-$$.udig
-PSQL='psql --quiet --no-align --no-psqlrc --tuples-only'
+now()
+{
+	date +'%Y/%m/%d %H:%M:%S'
+}
 
 log()
 {
-	echo "$(date +'%Y/%m/%d %H:%M:%S'): $@"
+	echo "$(now): $@"
+}
+
+ERROR()
+{
+	log "ERROR: $@" >&2
+}
+
+fault()
+{
+	ERROR "$@"
+	FAULT=run/$PROG.fault
+	echo "$(now): ERROR: $@" >>$FAULT			||
+		ERROR "echo to $FAULT failed: exit status=$?"
 }
 
 die()
 {
-	log "ERROR: $@" >&2
+	fault "$@"
 	exit 1
 }
 
 leave()
 {
-	rm -f $RUMMY_UDIG_SET || log "ERROR: rm -f $RUMMY_UDIG_SET failed" >&2
+	rm -f $RUMMY_SET || fault "rm -f $RUMMY_SET failed"
 	log "good bye, cruel world: elapsed $(
 		duration-english $(expr $(date +'%s') - $START_EPOCH)
 	)"
@@ -64,25 +79,36 @@ log "BLOBIO_SERVICE=$BLOBIO_SERVICE"
 
 log "ago: $AGO"
 
+#  Note:  check for tabs in AGO!
+case "$AGO" in
+yesterday|today|2[123]*/*/*|infinity|-infinity)
+	SQL_SINCE="'$AGO'"
+	;;
+*)
+	SQL_SINCE="now() + '$AGO'::interval"
+	;;
+esac
+
 log "PATH=$PATH"
 log "PGHOST=$PGHOST PORT=$PGPORT USER=$PGUSER DATABASE=$PGDATABASE"
 
-log "tmp rummy udig set: $RUMMY_UDIG_SET"
-log "fetching blobs from rummy since now-$AGO"
-$PSQL --output $RUMMY_UDIG_SET <<'END'					|| die "psql rummy yeserday failed: exit status=$?"
+log "tmp rummy udig set: $RUMMY_SET"
+log "fetching blobs from rummy since $AGO"
+$PSQL --output $RUMMY_SET <<END || die "psql rummy failed: exit status=$?"
+
 SELECT
 	r.blob
   FROM
   	blobio.rummy r
 	  JOIN blobio.brr_discover d ON (d.blob = r.blob)
   WHERE
-  	d.start_time >= 'yesterday'
+  	d.start_time >= $SQL_SINCE
 ;
 END
 
-test -e $RUMMY_UDIG_SET || die 'rummy set file does not exist'
+test -e $RUMMY_SET || die 'rummy set file does not exist'
 
-log "rummy blob count: $(wc -l $RUMMY_UDIG_SET | awk '{print $1}')"
+log "rummy blob count: $(wc -l $RUMMY_SET | awk '{print $1}')"
 
 #  fetch each blob to trigger merge of row in table brr_blob_size
 
@@ -107,11 +133,11 @@ while read UDIG;  do
 		die "blobio get /dev/null failed: exit status=$STATUS"
 		;;
 	esac
-done <$RUMMY_UDIG_SET
+done <$RUMMY_SET
 
-TXN=spool/cron-rummy-yesterday.txn
+TXN=data/rummy.txn
 log "transaction log: $TXN"
-echo "$START_TIME	$(RFC3339Nano)	$OK	$NO" >>$TXN		||
+echo "$START_TIME	$AGO	$(RFC3339Nano)	$OK	$NO" >>$TXN	||
 	die "echo >txn failed: exit status=$?"
 
 exit 0

@@ -56,6 +56,7 @@ SBINs="
 	cron-bio4d-stat2pg
 	cron-eat-unroll
 	cron-rummy
+	cron-rummy-yesterday
 	eat-unroll.sql
 	eat-wrap-missed
 	eat-wrap-missed.sql
@@ -63,6 +64,7 @@ SBINs="
 	fs-xor-service
 	minus-service
 	roll2stat_json
+	rummy-txn
 "
 
 #  Uncomment to create tmp/ directory
