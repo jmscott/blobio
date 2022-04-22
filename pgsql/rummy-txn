@@ -81,7 +81,10 @@ log "ago: $AGO"
 
 #  Note:  check for tabs in AGO!
 case "$AGO" in
-yesterday|today|2[123]*/*/*|infinity|-infinity)
+infinity)
+	die "ago: no rummy blobs have postive infinity!"
+	;;
+yesterday|today|2[123]*/*/*|-infinity)
 	SQL_SINCE="'$AGO'"
 	;;
 *)
@@ -108,7 +111,8 @@ END
 
 test -e $RUMMY_SET || die 'rummy set file does not exist'
 
-log "rummy blob count: $(wc -l $RUMMY_SET | awk '{print $1}')"
+RUMMY_COUNT=$(wc -l $RUMMY_SET | awk '{print $1}')
+log "rummy blob count: $RUMMY_COUNT"
 
 #  fetch each blob to trigger merge of row in table brr_blob_size
 
@@ -139,5 +143,7 @@ TXN=data/rummy.txn
 log "transaction log: $TXN"
 echo "$START_TIME	$AGO	$(RFC3339Nano)	$OK	$NO" >>$TXN	||
 	die "echo >txn failed: exit status=$?"
+
+log "got $RUMMY_COUNT blobs"
 
 exit 0
