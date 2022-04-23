@@ -10,9 +10,10 @@
 #		PATH=bin:sbin:/usr/local/bin:/usr/bin:/bin
 #
 
-../../../etc/profile
+. ../../../etc/profile
 
-export PATH=${JMSCOTT_ROOT:=/usr/local/jmscott}/bin:$PATH
+#  implies flowd starts in $BLOBIO_ROOT/sync/remote/<tag>
+export BLOBIO_ROOT=$(pwd)
 
 #  For work directory
 export TMPDIR=$BLOBIO_ROOT/sync/remote/wework/tmp
