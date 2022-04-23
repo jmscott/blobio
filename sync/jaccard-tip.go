@@ -1,6 +1,6 @@
 /*
  *  Synopsis:
- *	Calculate jaccard pairwise metric across a set of blobio services.
+ *	Calculate jaccard n-wise metric across a set of blobio services.
  *  Usage:
  *	jaccard <config-file>
  *  Note:
@@ -64,6 +64,8 @@ type Config struct {
 	EscapeHTML		bool	`json:"escape_html"`
 	IndentLinePrefix	string	`json:"indent_line_prefix"`
 	IndentPrefix		string	`json:"indent_prefix"`
+	TipLimit		uint64	`json:tip_limit`
+	TipDiscoverDuration	uint64	`json:tip_discover_duration`
 }
 
 type Answer struct {
