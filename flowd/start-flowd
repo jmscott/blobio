@@ -1,50 +1,65 @@
-#!/bin/bash
+#!/usr/bin/env bash
 #
 #  Synopsis:
-#	Boot flowd process from MAC OS launchd or systemd.
+#	Hard start of flowd process from MAC OS launchd or systemd.
 #  Usage:
+#	export BLOBIO_ROOT=/opt/local/jmscott/jmsdesk/blobio
+#	sbin/start-flowd
+#  Requires:
+#	gnu xargs
+#  Note:
 #	Ponder moving 'unset PGSYSCONFDIR' somewhere else.
 #	Only gocode/libpq croaks on defined PGSYSCONFDIR, so we can
 #	not put 'unset PGSYSCONFDIR' in etc/profile.
 #
 #		BLOBIO_ROOT=/usr/local/blobio/sync/remote/wework
 #		cd $BLOBIO_ROOT
-#		sbin/boot-flowd etc/wework.flow
-#  Note:
-#	Need to log when removing stale files in run/flowd.*
-#
-#	Change explicit dependence on
-#
-#		etc/sync-<remote-tag>.flow
-#
-#	to
-#		etc/<remote-tag>.flow
+#		sbin/start-flowd etc/wework.flow
 #
 
 PROG=$(basename $0)
 
 unset PGSYSCONFDIR			#  PGSYSCONFDIR busts golang libpq
 
+now()
+{
+	date +'%Y/%m/%d %H:%M:%S'
+}
+
 log()
 {
-	echo "$(date +'%Y/%m/%d %H:%M:%S'): $PROG: $@"
+	echo "$(now): $PROG: $@"
+}
+
+ERROR()
+{
+	log "ERROR: $@" >&2
+}
+
+fault()
+{
+	ERROR "$@"
+	test -d run && log "FAULT: ERROR: $@" >>run/$PROG.fault
 }
 
 die()
 {
-	log "ERROR: $@" >&2
+	fault "$@"
 	exit 1
 }
 
 zap_run()
 {
-	test -z "$BLOBIO_ROOT" -o ! -d $BLOBIO_ROOT && return
+	test -z "$BLOBIO_ROOT" -o ! -d $BLOBIO_ROOT && return 0
 
 	log 'removing stale files in run/flowd*'
 	find run/ -type f -name 'flowd*' | xargs --no-run-if-empty rm -v
 	local STATUS="${PIPESTATUS[*]}"
-	test "$STATUS" = '0 0'					||
-		log "WARN: rm run/stale failed: exit status=$STATUS" >&2
+	if [ "$STATUS" != '0 0' ];  then
+		fault "rm run/stale failed: exit status=$STATUS"
+		return 1
+	fi
+	return 0
 }
 
 leave()
@@ -55,8 +70,9 @@ leave()
 	exit $STATUS
 }
 
-test $# = 1 || die "wrong number of command arguments: got $#, expected 1"
-FLOW_CONF=$1
+test $# = 0 || die "wrong number of command arguments: got $#, expected 0"
+test -n "$BLOBIO_ROOT" || die 'env not defined: BLOBIO_ROOT'
+FLOW_CONF=etc/blobio.flow
 
 log 'hello, world'
 trap leave EXIT
@@ -96,10 +112,9 @@ else
 	log 'no run/flowd.pid (good)'
 fi
 
-zap_run
+zap_run || die 'zap_run failed'
 
 log "invoking flowd server: $FLOW_CONF"
 bin/flowd server $FLOW_CONF
-STATUS=$?
-log "flowd exit status: $STATUS"
-exit $STATUS
+log "flowd exit status: $?"
+exit 0

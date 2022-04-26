@@ -54,7 +54,6 @@ BINs="
 "
 
 SBINs="
-	boot-flowd
 	cron-dr2rrd
 	fdr2pg-copy-stage
 	fdr2rrd-minute
@@ -62,6 +61,7 @@ SBINs="
 	rrd-create-fdr
 	rrd-graph-fdr
 	run-stat-flowd-tuple
+	start-flowd
 "
 
 #  Uncomment to create tmp/ directory

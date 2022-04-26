@@ -9,7 +9,7 @@
 #       to
 #               etc/<remote-tag>.flow
 #
-#	Merge launchd-flowd and systemd-flowd into boot-flowd.
+#	Merge launchd-flowd and systemd-flowd into start-flowd.
 #
 
 PROG=$(basename $0)
