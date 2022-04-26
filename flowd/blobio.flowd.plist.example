@@ -30,8 +30,7 @@
   <key>ProgramArguments</key>
   <array>
 	<string>/usr/local/jmscott/sbin/launchd-log</string>
-	<string>sbin/launchd-flowd</string>
-	<string>etc/blobio.flow</string>
+	<string>sbin/start-flowd</string>
   </array>
 
   <key>Disabled</key>
