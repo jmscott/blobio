@@ -39,7 +39,7 @@ ERROR()
 fault()
 {
 	ERROR "$@"
-	test -d run && log "FAULT: ERROR: $@" >>run/$PROG.fault
+	test -d run && log "$@" >>run/$PROG.fault
 }
 
 die()
@@ -70,9 +70,9 @@ leave()
 	exit $STATUS
 }
 
-test $# = 0 || die "wrong number of command arguments: got $#, expected 0"
+test $# = 1 || die "wrong number of command arguments: got $#, expected 0"
+FLOW_CONF=$1
 test -n "$BLOBIO_ROOT" || die 'env not defined: BLOBIO_ROOT'
-FLOW_CONF=etc/blobio.flow
 
 log 'hello, world'
 trap leave EXIT
@@ -82,7 +82,8 @@ log "PATH=$PATH"
 log "flow conf: $FLOW_CONF"
 log "current directory: $(pwd)"
 
-test -r etc/profile || die "can not read $(pwd)/etc/profile"
+test -r $FLOW_CONF || die "can not read flow conf: $FLOW_CONF"
+test -r etc/profile || die "can not read etc/profile"
 . etc/profile
 
 #  Note: need flowd to be smarter about missing brr file!
