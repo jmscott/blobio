@@ -1,6 +1,8 @@
 #!/bin/bash
 #
 #  Synopsis:
+#	Interactive kill of flowd process, not suitable for "init stop" 
+#  Usage:
 #	export BLOBIO_ROOT=/opt/jmscott/jmsdesk/blobio
 #	kill-flowd
 #
