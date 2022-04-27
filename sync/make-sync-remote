@@ -25,10 +25,7 @@ _mkdir()
 
 _ln_root()
 {
-	S=$1
-	DIR=$BLOBIO_ROOT/$S
-	test -e $S && return
-	test -h $S && die "invalid symbolic link: $(pwd)/$S"
+	DIR=../../../$1
 	ln -s $DIR . || die "ln -s $DIR . failed: exit status=$?"
 }
 
@@ -59,17 +56,18 @@ test -d $SYNC_ROOT && die "refuse to overwrite remote dir: $SYNC_ROOT"
 _mkdir $SYNC_ROOT
 
 cd $SYNC_ROOT || die "cd $SYNC_ROOT failed: exit status=$?"
-_mkdir attic
-_mkdir cache
 _mkdir etc
 _mkdir log
 _mkdir run
 _mkdir spool
+>$SYNC_ROOT/spool/biod4.brr						||
+	die "echo >spool/biod4.brr failed: exit status=$?"
 _mkdir tmp
 
 _ln_root sbin
 _ln_root bin
 _ln_root lib
+_ln_root data
 
 #  build a default flow file from the example file in
 #  $BLOBIO_ROOT/lib/sync-remote.flow.example .
@@ -79,7 +77,7 @@ FLOW=etc/sync-$REMOTE_TAG.flow
 FLOW_EXAMPLE=$BLOBIO_ROOT/lib/sync-remote.flow.example
 test -r $FLOW_EXAMPLE || die "can not read flow example: $FLOW_EXAMPLE"
 sed "s/{REMOTE_BLOBIO_SERVICE}/$REMOTE_BLOBIO_SERVICE/g" $FLOW_EXAMPLE	|
-	sed "s/{BLOBIO_SERVICE}/$BLOBIO_SERVICE/g"			\
+	sed "s/{BLOBIO_SERVICE}/fs:./g"					\
 	>$FLOW
 STATUS=${PIPESTATUS[*]}
 test "$STATUS" = '0 0' ||
@@ -89,7 +87,7 @@ test "$STATUS" = '0 0' ||
 
 cat >etc/profile <<END || die "cat >etc/profile failed: exit status=$?"
 . ../../../etc/profile
-export BLOBIO_ROOT=$SYNC_ROOT
+export BLOBIO_ROOT=../../..
 END
 
 cat <<END
