@@ -57,7 +57,7 @@ command lock_put
 
 command unlock_put
 {
-	path = "lock-flow-udig";
+	path = "unlock-flow-udig";
 	argv = (
 		"put"
 	);
