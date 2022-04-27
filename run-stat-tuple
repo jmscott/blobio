@@ -73,6 +73,10 @@ run-stat-flowd-tuple flowd
 
 #  check sync flowd process
 
-find sync/remote -maxdepth 2 -name run -type d | while read RUN_DIR;  do
-	run-stat-flowd-tuple "flowd>$(basename $(dirname $RUN_DIR))"
-done
+find sync/remote							\
+	-maxdepth 2							\
+	-name run							\
+	\( -type d -o -type l \)					|
+	  while read RUN_DIR;  do
+		run-stat-flowd-tuple "flowd>$(basename $(dirname $RUN_DIR))"
+	  done
