@@ -1,0 +1,245 @@
+/*
+ *  Synopsis:
+ *  	Merge a json blob into sql table blobio.roll2stat_json.
+ *  Usage:
+ *	merge-stdin-roll2stat_json [json-udig] [size]
+ *  Arguments:
+ *  	1	udig of the json blob
+ *  	2	number of bytes to read on the standard input
+ *  Exit Status:
+ *  	0	ok, tuple was merged
+ *	1	unexpected error.
+ *  Note:
+ *	Create functions clang/udig.c and clang/int.c to parse udig and
+ *	sizes.
+ *
+ *	Note clear how to write include path to epgc.c.
+ *	Should the path be "jmscott/include/epgc.c"?
+ */
+//  Note: pare down #include!
+#include <limits.h>
+#include <unistd.h>
+#include <stdlib.h>
+
+#include "jmscott/string.c"
+#include "jmscott/die.c"
+#include "jmscott/posio.c"
+#include "jmscott/ecpg.c"
+
+static struct jmscott_ecpg_state_fault no_warn[] =
+{
+	{ "02000", -1},		//  no data for conflict on upsert/insert
+	{(char *)0, 0}
+};
+
+char *jmscott_progname = "merge-stdin-roll2stat_json";
+
+#define EXIT_OK		0
+#define EXIT_FAULT	1
+
+static void
+die(char *msg)
+{
+	jmscott_die(EXIT_FAULT, msg);
+}
+
+static void
+die2(char *msg1, char *msg2)
+{
+	jmscott_die2(EXIT_FAULT, msg1, msg2); 
+}
+
+int
+main(int argc, char **argv)
+{
+	size_t size;
+	char *sz, *err;
+
+EXEC SQL BEGIN DECLARE SECTION;
+	char *blob;
+	char *doc;
+EXEC SQL END DECLARE SECTION;
+
+	if (argc != 3)
+		die("wrong number of arguments");
+	close(1);
+
+	jmscott_ecpg_error_code = EXIT_FAULT;
+	jmscott_ecpg_warn_code = EXIT_FAULT;
+
+	/*
+	 *  Parse argv[1] as a blob udig (uniform digest).
+	 *
+	 *	Note:
+	 *		move udig parser to clang/udig.
+	 */
+	blob = argv[1];
+	size = strlen(blob);
+	if (size == 0)
+		die("blob udig is empty");
+	if (size < 34)
+		die2("length of blob udig < 34 chars", blob);
+	if (size > 255)
+		die2("length of blob udig > 255 chars", blob);
+	//  parse colon in udig.
+	{
+		char *colon = strchr(blob, ':');
+		if (colon == NULL)
+			die2("no colon in udig", blob);
+		if (colon - blob >= 8)
+			die2("colon occurs after > 8 chars", blob);
+	}
+
+	/*
+	 *  Parse argv[2] as uint63 blob size, and then insure <= MAX_INT.
+	 *  Technically, any blob can be <= 2^63.  However, malloc(size_t)
+	 *  may choke if too big.
+	 */
+	sz = argv[2];
+	if ((err = jmscott_a2size_t(sz, &size)))
+		die2("can not parse input size", err);
+	if (size == SIZE_MAX)
+		die("json size == SIZE_MAX");
+
+	//  allocate the json buffer plus null byte
+	doc = malloc(size + 1);
+	if (doc == NULL)
+		die2("malloc() failed", sz);
+	doc[size] = 0;
+
+	if (jmscott_read_exact(0, doc, size) != 0)
+		die2("read_exact(json) failed", sz);
+
+	EXEC SQL
+	  WHENEVER SQLERROR CALL jmscott_ecpg_error(
+			(struct jmscott_ecpg_state_fault *)0
+	);
+	EXEC SQL
+		WHENEVER SQLWARNING CALL jmscott_ecpg_warning(no_warn)
+	;
+	EXEC SQL
+		CONNECT TO default
+	;
+	EXEC SQL
+	  SET search_path to blobio,public
+	;
+
+	EXEC SQL
+	  CREATE TEMP TABLE json_stdin
+	  (
+	  	blob	udig,
+	  	doc	jsonb
+	  )
+	;
+
+	/*
+	 *  Merge blob into roll2stat_json table.
+	 */
+	EXEC SQL
+	  INSERT INTO json_stdin(
+		blob,
+		doc
+	  ) VALUES (
+		:blob::udig,
+		:doc::jsonb
+	  )
+	;
+	EXEC SQL
+	  WITH roll2stat AS (
+	    SELECT
+	    	(doc->>'roll_blob')::udig	AS roll_blob,
+		doc->'roll2stat.blob.io'	AS doc
+	      FROM
+	   	json_stdin
+	  ) INSERT INTO roll2stat_json(
+	  	blob,
+		
+		prev_roll,
+
+		roll_blob,
+		roll_brr_count,
+		brr_count,
+
+		udig_count,
+					
+		min_brr_start_time,
+		max_brr_start_time,
+		max_brr_wall_duration,
+
+		max_brr_blob_size,
+
+		eat_ok_count,
+		eat_no_count,
+
+		get_ok_count,
+		get_no_count,
+		get_byte_count,
+
+		take_ok_count,
+		take_no_count,
+		take_byte_count,
+
+		put_ok_count,
+		put_no_count,
+		put_byte_count,
+
+		give_ok_count,
+		give_no_count,
+		give_byte_count,
+
+		wrap_ok_count,
+		wrap_no_count,
+
+		roll_ok_count,
+		roll_no_count
+	  ) SELECT
+	  	:blob::udig,
+		
+		cast_jsonb_brr(doc->'prev_roll'),
+		roll_blob,
+		(doc->'roll_brr_count')::ui63,
+		(doc->'brr_count')::ui63,
+
+		(doc->'udig_count')::ui63,
+					
+		(doc->>'min_brr_start_time')::brr_timestamp,
+		(doc->>'max_brr_start_time')::brr_timestamp,
+		(doc->>'max_brr_wall_duration')::brr_duration,
+
+		(doc->'max_brr_blob_size')::ui63,
+
+		(doc->'eat_ok_count')::ui63,
+		(doc->'eat_no_count')::ui63,
+
+		(doc->'get_ok_count')::ui63,
+		(doc->'get_no_count')::ui63,
+		(doc->'get_blob_size')::ui63,
+
+		(doc->'take_ok_count')::ui63,
+		(doc->'take_no_count')::ui63,
+		(doc->'take_blob_size')::ui63,
+
+		(doc->'put_ok_count')::ui63,
+		(doc->'put_no_count')::ui63,
+		(doc->'put_blob_size')::ui63,
+
+		(doc->'give_ok_count')::ui63,
+		(doc->'give_no_count')::ui63,
+		(doc->'give_blob_size')::ui63,
+
+		(doc->'wrap_ok_count')::ui63,
+		(doc->'wrap_no_count')::ui63,
+
+		(doc->'roll_ok_count')::ui63,
+		(doc->'roll_no_count')::ui63
+	      FROM
+	  	roll2stat
+	  ON CONFLICT
+	  	DO NOTHING
+	;
+	EXEC SQL
+		END TRANSACTION
+	;
+
+	exit(EXIT_OK);
+}
