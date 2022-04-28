@@ -22,7 +22,7 @@
 #	triggering another discovery flow in the brrflow server.
 #
 #  Exit Status:
-#	The exit status comprises a bit map of the various stages during the
+	The exit status comprises a bit map of the various stages during the
 #	sync with the postgres database.
 #
 #		--------0	wrap blob exists
