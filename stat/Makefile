@@ -20,7 +20,7 @@ install-dirs:
 	cd .. && $(_MAKE) install-dirs
 
 install: $(SBINs) $(LIBs)
-	cd .. && $(_MAKE) install-dirs
+	$(_MAKE) install-dirs
 
 	install -g $(DIST_GROUP) -o $(DIST_USER) -m ug=r,o=		\
 		$(LIBs)							\
