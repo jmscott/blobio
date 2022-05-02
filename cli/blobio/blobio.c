@@ -1,9 +1,9 @@
 /*
  *  Synopsis:
- *	Client to get/put/give/take/eat/wrap/roll blobs to a blobio service.
+ *	Client to get/put/give/take/eat/wrap/roll blobs to blobio services.
  *  Exit Status:
  *  	0	request succeed - ok
- *  	1	request denied.  blob may not exist or is not empty -
+ *  	1	request denied.
  *	2	missing or invalid command line argument
  *	16	unexpected hash digest error
  *	17	unexpected blobio service error
@@ -17,10 +17,8 @@
  *	--brr-path path/to/fs.brr
  *	--help
  *  Note:
- *	When --input-path does not exist, then exit status should indicate
- *	specifically.  such a code help sctip frisk-fs with rare race
- *	condition.  thinking exit=3 does the trick.
- *	
+ *	Simplify exit codes.
+ *
  *	Investigate linux system calls splice(), sendfile() and
  *	copy_file_range().
  *
@@ -47,24 +45,16 @@
  *  	Options desperately need to be folding into a data structure.
  *  	We refuse to use getopts.
  *
- *	A shared library service might be interesting.
- *
  *	Also, the take&give exit statuses ought to reflect the various ok/no
  *	chat histories or perhaps the exit status ought to also store the
  *	verb.  See exit status for child process requests in the blobio
  *	server.  a bit map may be interesting.
  *
  *	Would be nice to eliminate stdio dependencies.  Currently stdio is
- *	required by only trace.c.
- *
- *	--algorithm <name> needs a way to prepend the algorithm to the written
- *	digest, so that a full udig is written instead of the just the digest.
- *	perhaps adding a plus to the end of algorithm name.
- *
- *		--algorithm sha+
+ *	required by only trace.c.  perhaps compile time option for --trace.
  *
  *	The service structure only understands ascii [:graph:] chars,
- *	which will be a problem for DNS host names.
+ *	which will be a problem for UTF8 DNS host names.
  */
 #include <sys/types.h>
 #include <sys/stat.h>
