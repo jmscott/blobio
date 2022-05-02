@@ -72,11 +72,13 @@
 #include <time.h>
 #include <stdio.h>
 
+#include "jmscott/die.c"
+
 #include "blobio.h"
 
 #define BRR_SIZE		370		//  terminating null NOT counted
 
-static char	*progname = "blobio";
+char	*jmscott_progname = "blobio";
 
 extern int	tracing;
 
@@ -98,7 +100,7 @@ unsigned long long	blob_size;
 struct timespec	start_time;
 int trust_fd = -1;
 
-// standard in/out must remain open before calling leave()
+// standard in/out must remain open before calling cleanup()
 
 int	input_fd = 0;
 int	output_fd = 1;
@@ -127,7 +129,7 @@ static char	*brr_format =
 static void
 ecat(char *buf, int size, char *msg)
 {
-	bufcat(buf, size, progname);
+	bufcat(buf, size, jmscott_progname);
 	if (verb)
 		buf2cat(buf, size, ": ", verb);
 	if (service)
@@ -136,7 +138,7 @@ ecat(char *buf, int size, char *msg)
 }
 
 static void
-leave(int status)
+cleanup(int status)
 {
 	if (service) {
 		service->close();
@@ -170,7 +172,6 @@ leave(int status)
 			uni_write(2, buf, strlen(buf));
 		}
 	TRACE("good bye, cruel world");
-	_exit(status);
 }
 
 static void
@@ -216,7 +217,8 @@ Digests:\n\
 		write(1, digests[j]->algorithm, strlen(digests[j]->algorithm));
 	}
 	write(1, "\n", 1);
-	leave(0);
+	cleanup(0);
+	exit(0);
 }
 
 /*
@@ -229,47 +231,22 @@ Digests:\n\
 void
 die(int status, char *msg)
 {
-	char buf[PIPE_MAX];
-
-	buf[0] = 0;
-	if (msg)
-		ecat(buf, sizeof buf, msg);
-	else
-		ecat(buf, sizeof buf, "<null error message>");
-	bufcat(buf, sizeof buf, "\n");
-	uni_write(2, buf, strlen(buf));
-	leave(status);
+	cleanup(status);
+	jmscott_die(status, msg);
 }
 
 void
 die2(int status, char *msg1, char *msg2)
 {
-	char buf[PIPE_MAX];
-
-	buf[0] = 0;
-	if (msg1)
-		bufcat(buf, sizeof buf, msg1);
-	if (msg2) {
-		if (buf[0])
-			bufcat(buf, sizeof buf, ": ");
-		bufcat(buf, sizeof buf, msg2);
-	}
-	die(status, buf);
+	cleanup(status);
+	jmscott_die2(status, msg1, msg2);
 }
 
 void
 die3(int status, char *msg1, char *msg2, char *msg3)
 {
-	char buf[PIPE_MAX];
-
-	buf[0] = 0;
-	if (msg1) {
-		bufcat(buf, sizeof buf, msg1);
-		if (msg2)
-			buf2cat(buf, sizeof buf, ": ", msg2);
-	} else if (msg2)
-		bufcat(buf, sizeof buf, msg2);
-	die2(status, buf, msg3);
+	cleanup(status);
+	jmscott_die3(status, msg1, msg2, msg3);
 }
 
 /*
@@ -1013,7 +990,7 @@ main(int argc, char **argv)
 	if (brr_path)
 		brr_write();
 
-	leave(exit_status);
+	cleanup(exit_status);
 
 	/*NOTREACHED*/
 	exit(0);
