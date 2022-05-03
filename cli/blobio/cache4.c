@@ -258,7 +258,7 @@ cache4_get(int *ok_no)
 	);
 	if (status)
 		return status;
-	if (uni_rename(tmp_path, cache_path)) {
+	if (rename(tmp_path, cache_path)) {
 		int e = errno;
 		zap_temp(tmp_path, tmp_fd);
 		if (e != EEXIST)

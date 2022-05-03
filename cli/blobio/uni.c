@@ -1,6 +1,8 @@
 /*
  *  Synopsis:
  *	Interuptible posix/unixish routines, with errno untouched.
+ *  Note:
+ *	Investigate why syscall rename() requires stdio.h!
  */
 
 #include <sys/types.h>
@@ -9,6 +11,8 @@
 #include <errno.h>
 #include <fcntl.h>
 #include <unistd.h>
+
+#include "jmscott/posio.c"
 
 /*
  *  Note:
@@ -27,13 +31,7 @@ extern int rename(const char *oldpath, const char *newpath);
 int
 uni_close(int fd)
 {
-again:
-	errno = 0;
-	if (close(fd) == 0)
-		return 0;
-	if (errno == EINTR)
-		goto again;
-	return -1;
+	return jmscott_close(fd);
 }
 
 /*
@@ -43,44 +41,18 @@ again:
 ssize_t
 uni_write(int fd, const void *buf, size_t count)
 {
-	ssize_t nwrite;
-
-again:
-	errno = 0;
-	nwrite = write(fd, buf, count);
-	if (nwrite > 0)
-		return nwrite;
-
-	//  write of zero only occurs on interupted system call?
-
-	if (errno == EINTR)
-		goto again;
-	return -1;
+	return jmscott_write(fd, (void *)buf, count);
 }
 
 /*
  *  Write a full buffer or return error.
  *  Caller can depend on correct value of errno.
  *
- *  Note:
- *	Ought to be renamed uni_write_all().
  */
 int
 uni_write_buf(int fd, const void *buf, size_t count)
 {
-	size_t nwrite = 0;
-
-	errno = 0;
-	while (nwrite < count) {
-
-		ssize_t nw;
-
-		nw = uni_write(fd, buf + nwrite, count - nwrite);
-		if (nw == -1)
-			return -1;
-		nwrite += nw;
-	}
-	return 0;
+	return jmscott_write(fd, (void *)buf, count);
 }
 
 /*
@@ -89,13 +61,7 @@ uni_write_buf(int fd, const void *buf, size_t count)
 int
 uni_mkdir(const char *path, mode_t mode)
 {
-again:
-	if (mkdir(path, mode)) {
-		if (errno == EINTR)
-			goto again;
-		return -1;
-	}
-	return 0;
+	return jmscott_mkdir(path, mode);
 }
 
 /*
@@ -105,92 +71,35 @@ again:
 ssize_t
 uni_read(int fd, void *buf, size_t count)
 {
-	ssize_t nread;
-
-again:
-	errno = 0;
-	nread = read(fd, buf, count);
-	if (nread >= 0)
-		return nread;
-	if (errno == EINTR)
-		goto again;
-	return -1;
+	return jmscott_read(fd, buf, count);
 }
 
 int
 uni_open(const char *path, int flags)
 {
-	int fd;
-
-again:
-	errno = 0;
-	fd = open(path, flags);
-	if (fd >= 0)
-		return fd;
-	if (errno == EINTR)
-		goto again;
-	return -1;
+	return jmscott_open((char *)path, flags, 0);
 }
 
 int
 uni_open_mode(const char *path, int flags, int mode)
 {
-	int fd;
-
-again:
-	errno = 0;
-	fd = open(path, flags, mode);
-	if (fd >= 0)
-		return fd;
-	if (errno == EINTR)
-		goto again;
-	return -1;
+	return jmscott_open((char *)path, flags, mode);
 }
 
 int
-uni_link(const char *oldpath, const char *newpath)
+uni_link(const char *old_path, const char *new_path)
 {
-again:
-	errno = 0;
-	if (link(oldpath, newpath) == 0)
-		return 0;
-	if (errno == EINTR)
-		goto again;
-	return -1;
+	return jmscott_link(old_path, new_path);
 }
 
 int
 uni_unlink(const char *path)
 {
-again:
-	errno = 0;
-	if (unlink(path) == 0)
-		return 0;
-	if (errno == EINTR)
-		goto again;
-	return -1;
+	return jmscott_unlink(path);
 }
 
 int
 uni_access(const char *path, int mode)
 {
-again:
-	errno = 0;
-	if (access(path, mode) == 0)
-		return 0;
-	if (errno == EINTR)
-		goto again;
-	return -1;
-}
-
-int
-uni_rename(const char *old, const char *new)
-{
-again:
-	errno = 0;
-	if (rename(old, new) == 0)
-		return 0;
-	if (errno == EINTR)		//  is rename interuptible?
-		goto again;
-	return -1;
+	return jmscott_access(path, mode);
 }

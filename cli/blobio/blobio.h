@@ -199,6 +199,5 @@ extern int	uni_unlink(const char *path);
 extern int	uni_write_buf(int fd, const void *buf, size_t count);
 extern ssize_t	uni_read(int fd, void *buf, size_t count);
 extern ssize_t	uni_write(int fd, const void *buf, size_t count);
-extern int	uni_rename(const char *old, const char *new);
 
 #endif
