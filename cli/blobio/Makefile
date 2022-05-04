@@ -38,7 +38,7 @@ install: all
 		$(DIST_ROOT)/src/cli/blobio
 
 blobio: $(OBJs)
-	$(CC) -o blobio $(OBJs) $(OPENSSL_LIB)
+	$(CC) -o blobio $(OBJs) $(OPENSSL_LIB) -L$(JMSCOTT_ROOT)/lib -ljmscott
 
 bio4.o: bio4.c blobio.h
 	$(CC) $(CFLAGS) -c bio4.c
