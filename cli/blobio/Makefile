@@ -52,6 +52,8 @@ digest.o: digest.c blobio.h
 	$(CC) $(CFLAGS) -c digest.c
 fs.o: fs.c blobio.h
 	$(CC) $(CFLAGS) -c fs.c
+null.o: null.c blobio.h
+	$(CC) $(CFLAGS) -c null.c
 sha.o: sha.c blobio.h
 	$(CC) $(CFLAGS) $(OPENSSL_INC) -c sha.c
 bc160.o: bc160.c blobio.h
@@ -73,3 +75,5 @@ world:
 	$(_MAKE) all
 	$(_MAKE) distclean
 	$(_MAKE) install
+dist:
+	make-dist tar $(DIST)

@@ -23,14 +23,15 @@
 
 #  Note: blobio.o must be first to satisfy linker.
 OBJs="
-	blobio.o
 	bc160.o
 	bio4.o
+	blobio.o
 	btc20.o
 	buf.o
 	cache4.o
 	digest.o
 	fs.o
+	null.o
 	service.o
 	sha.o
 	trace.o
@@ -77,14 +78,15 @@ BINs="
 #  Uncomment to create src/ directory
 SRCs="
 	bc160.c
-	btc20.c
 	bio4.c
 	blobio.c
 	blobio.h
+	btc20.c
 	buf.c
 	cache4.c
 	digest.c 
-	fs.c
+		fs.c
+	null.c
 	service.c
 	sha.c
 	trace.c
