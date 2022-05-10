@@ -173,6 +173,17 @@ struct service
 	struct digest	*digest;
 };
 
+struct uri_query_arg
+{
+	char	*name;
+
+	union {
+		char		*str;
+		unsigned char	bool;
+		unsigned char	u8;
+	} u;
+};
+
 extern char	*bufcat(char *tgt, int tgtsize, const char *src);
 extern char	*buf2cat(char *tgt, int tgtsize,
 				const char *src, const char *src2);

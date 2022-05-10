@@ -26,10 +26,10 @@ char *parse_tmo(char *tmo)
 	return "tmo not implemented";
 }
 
-struct uri_query_arg {
+struct uri_query_arg_parse {
 	char	*name;
 	char    *(*frisk)(char *value);
-} uri_query_arg[] = {
+} uri_query_args[] = {
 
 	{"tmo",	parse_tmo},
 	{0}
