@@ -1,6 +1,6 @@
 /*
  *  Synopsis:
- *	C header for Command Line Interface to BlobIO.
+ *	C header for Command Line CLient Interface to BlobIO.
  */
 #ifndef BLOBIO_H
 #define BLOBIO_H
@@ -36,6 +36,8 @@
 #define TRACE4(msg1,msg2,msg3,msg4)
 
 #endif
+
+#define BLOBIO_MAX_URI_QARGS	5
 
 struct digest
 {

@@ -32,6 +32,7 @@ OBJs="
 	digest.o
 	fs.o
 	null.o
+	qarg.o
 	service.o
 	sha.o
 	trace.o
@@ -85,8 +86,9 @@ SRCs="
 	buf.c
 	cache4.c
 	digest.c 
-		fs.c
+	fs.c
 	null.c
+	qarg.c
 	service.c
 	sha.c
 	trace.c

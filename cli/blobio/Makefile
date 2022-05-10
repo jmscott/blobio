@@ -66,6 +66,8 @@ trace.o: trace.c blobio.h
 	$(CC) $(CFLAGS) -c trace.c
 uni.o: uni.c blobio.h
 	$(CC) $(CFLAGS) -c uni.c
+qarg.o: qarg.c blobio.h
+	$(CC) $(CFLAGS) -c qarg.c
 
 distclean:
 	test -d $(DIST_ROOT)/bin && cd $(DIST_ROOT)/bin && rm -f $(BINs)
