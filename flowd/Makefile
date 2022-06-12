@@ -4,8 +4,8 @@
 #  Yacc:
 #	Compiled with yacc at
 #
-#		/usr/local/go/bin/go get -v -u golang.org/x/tools/cmd/goyacc
 #		export GO111MODULE=off
+#		/usr/local/go/bin/go get -v -u golang.org/x/tools/cmd/goyacc
 #		/usr/local/go/bin/go get -v -u github.com/lib/pq
 #
 #	wish installs goyacc in $GOPATH/bin.
