@@ -12,7 +12,7 @@
 #include <fcntl.h>
 #include <unistd.h>
 
-#include "jmscott/posio.c"
+#include "jmscott/libjmscott.h"
 
 /*
  *  Note:

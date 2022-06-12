@@ -5,8 +5,6 @@
 #include <ctype.h>
 #include <stdlib.h>
 
-#include "jmscott/string.c"
-
 #include "blobio.h"
 
 /*

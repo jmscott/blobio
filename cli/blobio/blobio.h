@@ -8,6 +8,11 @@
 #include <sys/types.h>
 #include <unistd.h>
 
+#include "jmscott/libjmscott.h"
+
+/*
+ *  compile code to include network/fs tracing option --trace
+ */
 #define COMPILE_TRACE
 
 #define EXIT_OK		0	//  request satisfied

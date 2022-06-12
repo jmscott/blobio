@@ -72,9 +72,6 @@
 #include <time.h>
 #include <stdio.h>
 
-#define JMSCOTT_STATIC_LIB
-#include "jmscott/die.c"
-
 #include "blobio.h"
 
 #define BRR_SIZE		370		//  terminating null NOT counted

@@ -11,7 +11,6 @@ _MAKE=$(MAKE) $(MFLAGS)
 
 DIST=blobio-cli-blobio.dist
 BINs := $(shell  (. ./$(DIST) && echo $$BINs))
-LIBs := $(shell  (. ./$(DIST) && echo $$LIBs))
 SRCs := $(shell  (. ./$(DIST) && echo $$SRCs))
 OBJs := $(shell  (. ./$(DIST) && echo $$OBJs))
 COMPILEs := $(shell  (. ./$(DIST) && echo $$COMPILEs))
@@ -39,9 +38,9 @@ install: all
 
 blobio: $(OBJs)
 	$(CC) -o blobio 						\
+		-I$(JMSCOTT_ROOT)/include				\
 		$(OBJs)							\
 		$(OPENSSL_LIB)						\
-		-DJMSCOTT_STATIC_LIB=1					\
 		-L$(JMSCOTT_ROOT)/lib -ljmscott
 
 bio4.o: bio4.c blobio.h

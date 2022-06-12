@@ -1,5 +1,7 @@
-#define JMSCOTT_STATIC_LIB
-#include "jmscott/string.c"
+/*
+ *  Strings handling to be replaced with libjmscott.a
+ */
+#include "blobio.h"
 
 char *
 bufcat(char *tgt, int tgtsize, const char *src)
