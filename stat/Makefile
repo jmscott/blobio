@@ -41,7 +41,9 @@ merge-stdin-roll2stat_json: merge-stdin-roll2stat_json.pgc
 		-I$(JMSCOTT_INC)					\
 		-I$(PGINC) 						\
 		merge-stdin-roll2stat_json.c				\
-		-o merge-stdin-roll2stat_json -L$(PGLIB) -lecpg
+		-o merge-stdin-roll2stat_json				\
+		-L$(JMSCOTT_ROOT)/lib -ljmscott				\
+		-L$(PGLIB) -lecpg
 	rm merge-stdin-roll2stat_json.c
 
 dev-links:

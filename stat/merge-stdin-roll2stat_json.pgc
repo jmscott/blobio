@@ -21,10 +21,7 @@
 #include <unistd.h>
 #include <stdlib.h>
 
-#include "jmscott/string.c"
-#include "jmscott/die.c"
-#include "jmscott/posio.c"
-#include "jmscott/ecpg.c"
+#include "jmscott/libjmscott.h"
 
 static struct jmscott_ecpg_state_fault no_warn[] =
 {
