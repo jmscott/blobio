@@ -1,6 +1,6 @@
 /*
  *  Synopsis:
- *	A reference blobio server that speaks the blob.io protocol
+ *	A reference blobio server that speaks the bio4 protocol
  *  Usage:
  *	cd /usr/local/blobio
  *	sbin/bio4d
@@ -383,16 +383,37 @@ die3_NO(char *msg1, char *msg2, char *msg3)
  *	get algorithm:digest\n		# request for blob
  *	    <ok\n[bytes][close]		# server sends blob, bye
  *          <no\n[close]		# server rejects blob, bye
+ *  Return Status:
+ *	0	no error
+ *	-1	error
  */
 static int
 get(struct request *rp, struct digest_module *mp)
 {
 	request_exit_status = (request_exit_status & 0x1C) |
 					(REQUEST_EXIT_STATUS_GET << 2);
-
 	rp->step = "request";
+
+	/*
+	 *  Test if the digest is empty.  Formally, an empty digest always
+	 *  exists, regardless of the digest algorithm.
+	 *
+	 *	client: get algo:empty_digest -> bio4d:
+	 *	bio4d: ok\n[close] -> client:
+	 */
+	if ((*mp->is_digest)(rp->digest) == 2) {
+		if (write_ok(rp))
+			return -1;
+		return 0;
+	}
+
+	/*
+	 *  Digest is "full", so consult the driver
+	 *  to finish the request.
+	 */
 	if ((*mp->get_request)(rp))
 		return write_no(rp);
+
 	if (write_ok(rp))
 		return -1;
 
@@ -627,9 +648,12 @@ bio4d(char *verb, char *algorithm, char *digest,
 	if (!mp)
 		die3_NO(verb, "unknown digest algorithm", algorithm);
 	/*
-	 *  Verify the digest is correct.
+	 *  Verify the digest is syntacally correct.
+	 *
+	 *  Note:
+	 *	what if *digest == 0?
 	 */
-	if (*digest && !mp->is_digest(req.digest)) {
+	if (*digest && mp->is_digest(req.digest) == 0) {
 		char ebuf[MSG_SIZE];
 
 		snprintf(ebuf, sizeof ebuf, "not a %s digest", algorithm);
@@ -1528,6 +1552,7 @@ gyr_rrd()
 	red_count_prev = red_count;
 }
 
+//  write an empty text record for rrd data
 static void
 gyr_rrd_empty()
 {

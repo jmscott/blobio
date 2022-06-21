@@ -11,6 +11,7 @@
  */
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <ctype.h>
 #include <fcntl.h>
 #include <unistd.h>
 
@@ -978,25 +979,34 @@ fs_sha_boot()
 	return 0;
 }
 
+/*
+ *  Is the digest syntactically valid, empty, or invalid?
+ *
+ *  Returns:
+ *	0	invalid sha digest.
+ *	1	is valid and non empty
+ *	2	is valid and empty
+ */
 static int
 fs_sha_is_digest(char *digest)
 {
-	static char empty[] = "da39a3ee5e6b4b0d3255bfef95601890afd80709";
-	char *d, *d_end;
+	char *d, *d_end, c;
 
-	if (strlen(digest) != 40)
-		return 0;
 	d = digest;
 	d_end = d + 40;
 	while (d < d_end) {
-		int c = *d++;
-
-		if (('0' <= c&&c <= '9') || ('a' <= c&&c <= 'f'))
-			continue;
-		return 0;
+		c = *d++;
+		if (!c || !isxdigit(c) || (isalpha(c) && !islower(c)))
+			return 0;
 	}
+
+	//  40th digit is not null so not a valid digest
+	if (*d_end)
+		return 0;
+
+	//  quick check of first three chars for empty
 	if (digest[0] == 'd' && digest[1] == 'a' && digest[2] == '3')
-		return strcmp(digest, empty) == 0 ? 2 : 1;
+		return strcmp(digest, empty_ascii) == 0 ? 2 : 1;
 	return 1;
 }
 

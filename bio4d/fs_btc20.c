@@ -21,6 +21,7 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <unistd.h>
+#include <ctype.h>
 
 #include "openssl/opensslv.h"
 #include "openssl/sha.h"
@@ -33,7 +34,7 @@
 #define CHUNK_SIZE		(4 * 1024)
 
 static char	fs_btc20_root[]	= "data/fs_btc20";
-static char	empty[]	= "fd7b15dc5dc2039556693555c2b81b36c8deec15";
+static char	empty_ascii[]	= "fd7b15dc5dc2039556693555c2b81b36c8deec15";
 
 typedef struct
 {
@@ -873,7 +874,7 @@ fs_btc20_put_bytes(struct request *r)
 	 *  Note: the caller has already ensured that no more data has
 	 *  been written by the client, so no need to check r->scan_size.
 	 */
-	if (strcmp(r->digest, empty) == 0)
+	if (strcmp(r->digest, empty_ascii) == 0)
 		goto digested;
 
 	/*
@@ -1199,24 +1200,34 @@ fs_btc20_boot()
 	return 0;
 }
 
+/*
+ *  Is the digest syntactically valid, empty, or invalid?
+ *
+ *  Returns:
+ *	0	invalid sha digest.
+ *	1	is valid and non empty
+ *	2	is valid and empty
+ */
 static int
 fs_btc20_is_digest(char *digest)
 {
-	char *d, *d_end;
+	char *d, *d_end, c;
 
-	if (strlen(digest) != 40)
-		return 0;
 	d = digest;
 	d_end = d + 40;
 	while (d < d_end) {
-		int c = *d++;
-
-		if (('0' <= c&&c <= '9') || ('a' <= c&&c <= 'f'))
-			continue;
-		return 0;
+		c = *d++;
+		if (!c || !isxdigit(c) || (isalpha(c) && !islower(c)))
+			return 0;
 	}
-	if (digest[0] == 'd' && digest[1] == 'a' && digest[2] == '3')
-		return strcmp(digest, empty) == 0 ? 2 : 1;
+
+	//  40th digit is not null so not a valid digest
+	if (*d_end)
+		return 0;
+
+	//  quick check of first three chars for empty
+	if (digest[0] == 'f' && digest[1] == 'd' && digest[2] == '7')
+		return strcmp(digest, empty_ascii) == 0 ? 2 : 1;
 	return 1;
 }
 
