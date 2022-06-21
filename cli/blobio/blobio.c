@@ -111,7 +111,8 @@ struct digest			*digest_module;
 static struct service		*service = 0;
 
 static char		usage[] =
-       "usage: blobio [help | get|put|give|take|eat|wrap|roll|empty] [options]\n"
+	"usage: blobio [help | get|put|give|take|eat|wrap|roll|empty] "
+	"[options]\n"
 ;
 
 static char	*brr_format =
@@ -946,8 +947,9 @@ main(int argc, char **argv)
 		/*
 		 *  is the udig the empty udig?
 		 */
-		} else if (ascii_digest[0])
+		} else if (ascii_digest[0]) {
 			exit_status = digest_module->empty() == 1 ? 0 : 1;
+		}
 		/*
 		 *  write the empty ascii digest.
 		 */
@@ -991,5 +993,5 @@ main(int argc, char **argv)
 	cleanup(exit_status);
 
 	/*NOTREACHED*/
-	exit(0);
+	exit(exit_status);
 }
