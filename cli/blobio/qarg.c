@@ -9,15 +9,15 @@
 
 /*
  *  Synopsis:
- *	Frisk (but not extract) query args in a uri of $BLOBIO_SERVICE.
+ *	Syntaxtically Frisk (but not extract) query args in a uri of $BLOBIO_SERVICE.
  *  Description:
  *	Brute force frisk (but not extract) of query args in a uri
  *	$BLOBIO_SERVICE.
  *
  *		tmo=20			#  timeout in seconds <= 255
- *		brr=<path>		#  where to append blob request record
+ *		brr=<file name>		#  path to brr log at spool/<name>.brr
  *
- *	Tis an error if args other than "tmo" or "brr" path.
+ *	Tis an error if args other than "tmo" or "brr" exist.
  *  Returns:
  *	An error string or (char *)0 if no unexpected args exist.
  */
@@ -52,7 +52,8 @@ BLOBIO_SERVICE_frisk_query(char *query)
 			if (!c || c == '&')
 				return "missing file path after arg brr=";
 
-			//  skip over path till we hit end of string or '&'
+			//  skip over file name till we hit end of string or '&'
+			int cnt = 0;
 			while ((c = *q++)) {
 				if (!c)
 					return (char *)0;
@@ -62,6 +63,9 @@ BLOBIO_SERVICE_frisk_query(char *query)
 					return "non ascii char in \"brr\" arg";
 				if (!isgraph(c))
 					return "non graph char in \"brr\" arg";
+				cnt++;
+				if (cnt > 31)
+					return ">31 chars in \"brr\" arg";
 			}
 			break;
 		case 't':		//  match "tmo"
@@ -187,7 +191,7 @@ BLOBIO_SERVICE_get_tmo(char *query, int *tmo)
 
 /*
  *  Synopsis:
- *  	Get and verify a path to blob request file in a frisked $BLOBIO_SERVICE
+ *  	Get glob request file name a frisked $BLOBIO_SERVICE string
  *  Usage:
  *	char *status;
  *	status =  BLOBIO_SERVICE_frisk_query(query);
@@ -196,18 +200,18 @@ BLOBIO_SERVICE_get_tmo(char *query, int *tmo)
  *
  *	...
  *
- *	char brr_path[256];
- *	brr_path[0] = 0;
- *	status = BLOBIO_SERVICE_get_brr(query, char brr_path);
+ *	char brr_file_name[32];
+ *	file_name[0] = 0;
+ *	status = BLOBIO_SERVICE_get_brr_file_name(query, char file_name);
  *	if (status)
  *		die2("error parsing \"brr\" query arg", status);
  */
 char *
-BLOBIO_SERVICE_get_brr_path(char *query, char *brr_path)
+BLOBIO_SERVICE_get_brr_file_name(char *query, char *file_name)
 {
 	char *q = query, c;
 
-	*brr_path = 0;
+	*file_name = 0;
 	while ((c = *q++)) {
 		if (c == '&')
 			continue;
@@ -221,8 +225,8 @@ BLOBIO_SERVICE_get_brr_path(char *query, char *brr_path)
 			continue;
 		}
 		/*
-		 *  extract file path matching [[:ascii:]]+ and
-		 *  [[:graph:]]+ and {1,128} and [^&].
+		 *  extract file name matching [[:ascii:]]+ and
+		 *  [[:graph:]]+ and {1,31} and [^&].
 		 */
 		c = *q++;
 		if (c != 'r')
