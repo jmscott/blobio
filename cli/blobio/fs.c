@@ -178,7 +178,7 @@ fs_copy(char *in_path, char *out_path)
 	int in = -1, out = -1;
 	int nr;
 	int e;
-	unsigned char buf[PIPE_MAX];
+	unsigned char buf[MAX_ATOMIC_MSG];
 
 	//  open input path or point to standard input
 
@@ -324,7 +324,7 @@ fs_put(int *ok_no)
 	char *np;
 	int in_fd, tmp_fd;
 	int nr;
-	unsigned char buf[PIPE_MAX];
+	unsigned char buf[MAX_ATOMIC_MSG];
 
 	//  Name of temporary file
 	//  size: 1 + 8 + 1 + 21 + 1 + 21 + 1

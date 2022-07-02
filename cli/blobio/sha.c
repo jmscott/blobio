@@ -232,7 +232,7 @@ _trace(char *msg)
 static char *
 sha_eat_input()
 {
-	unsigned char buf[PIPE_MAX], *q, *q_end;
+	unsigned char buf[MAX_ATOMIC_MSG], *q, *q_end;
 	char *p;
 	int nread;
 

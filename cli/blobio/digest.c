@@ -54,7 +54,7 @@ char *
 digest_copy(int in_fd, int out_fd)
 {
 	int nread;
-	unsigned char buf[PIPE_MAX];
+	unsigned char buf[MAX_ATOMIC_MSG];
 	char *status = "";
 
 	if ((status = digest_module->init()))

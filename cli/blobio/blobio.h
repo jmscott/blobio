@@ -15,16 +15,7 @@
  */
 #define COMPILE_TRACE
 
-#define EXIT_OK		0	//  request satisfied
-#define EXIT_NO		1	//  request not satisfied
-#define EXIT_BAD_ARG	2	//  missing or invalid command line argument
-#define EXIT_BAD_DIG	16	//  unexpetced error in digest
-#define EXIT_BAD_SRV	17	//  unexpected error in blob service
-#define EXIT_BAD_UNI	18	//  unexpected error in unix system call
-
-#ifndef PIPE_MAX
-#define PIPE_MAX		4096
-#endif
+#define MAX_ATOMIC_MSG	JMSCOTT_ATOMIC_WRITE_SIZE
 
 #ifdef COMPILE_TRACE
 
@@ -187,8 +178,9 @@ extern char	*buf4cat(char *tgt, int tgtsize,
 			const char *src, const char *src2,
 			const char *src3, const char *src4);
 
-extern void	die(int status, char *msg);
-extern void	die2(int status, char *msg1, char *msg2);
+extern void	die(char *msg);
+extern void	die2(char *msg1, char *msg2);
+extern void	die_timeout(char *msg);
 extern int	tracing;
 extern void	trace(char *);
 extern void	trace2(char *, char *);
@@ -206,5 +198,9 @@ extern int	uni_unlink(const char *path);
 extern int	uni_write_buf(int fd, const void *buf, size_t count);
 extern ssize_t	uni_read(int fd, void *buf, size_t count);
 extern ssize_t	uni_write(int fd, const void *buf, size_t count);
+
+extern char	*BLOBIO_SERVICE_frisk_query(char *query);
+extern char	*BLOBIO_SERVICE_get_tmo(char *query, int *tmo);
+extern char	*BLOBIO_SERVICE_get_brr_path(char *query, char *brr_path);
 
 #endif

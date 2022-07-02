@@ -458,14 +458,14 @@ make_request(char *command)
 static void
 die_ALRM(char *func)
 {
-	char buf[PIPE_MAX];
+	char buf[MAX_ATOMIC_MSG];
 
 	_TRACE2(func, "caught timeout alarm");
 
 	buf[0] = 0;
 	buf2cat(buf, sizeof buf, func, "() timed out");
 
-	die(17, buf);
+	die_timeout(buf);
 }
 
 static void
@@ -638,7 +638,7 @@ request(int *ok_no)
 static char *
 _get(int *ok_no, int in_take)
 {
-	unsigned char buf[PIPE_MAX];
+	unsigned char buf[MAX_ATOMIC_MSG];
 	char *err;
 	int more;
 	int nread;
@@ -742,7 +742,7 @@ _put_untrusted()
 
 	char *err;
 	int nread, more;
-	unsigned char buf[PIPE_MAX];
+	unsigned char buf[MAX_ATOMIC_MSG];
 
 	//  write the blob to the server
 	more = 1;
@@ -785,7 +785,7 @@ _put_trusted()
 
 	char *err;
 	int nread;
-	unsigned char buf[PIPE_MAX];
+	unsigned char buf[MAX_ATOMIC_MSG];
 
 	nread = -1;
 	while (nread != 0) {

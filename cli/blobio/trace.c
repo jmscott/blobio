@@ -30,13 +30,12 @@ RFC3339Nano_time()
 	 */
 	if (clock_gettime(CLOCK_REALTIME, &now) < 0)
 		die2(
-			EXIT_BAD_UNI,
 			"TRACE: clock_gettime(end REALTIME) failed",
 			strerror(errno)
 		);
 	t = gmtime(&now.tv_sec);
 	if (!t)
-		die2(EXIT_BAD_UNI, "TRACE: gmtime() failed", strerror(errno));
+		die2("TRACE: gmtime() failed", strerror(errno));
 	/*
 	 *  Format the record buffer.
 	 */
@@ -56,7 +55,7 @@ RFC3339Nano_time()
 void
 trace(char *msg)
 {
-	char buf[PIPE_MAX];
+	char buf[MAX_ATOMIC_MSG];
 
 	buf[0] = 0;
 
@@ -76,7 +75,7 @@ void
 trace2(char *msg1, char *msg2)
 {
 	if (msg1) {
-		char buf[PIPE_MAX];
+		char buf[MAX_ATOMIC_MSG];
 
 		buf[0] = 0;
 		bufcat(buf, sizeof buf, msg1);
@@ -91,7 +90,7 @@ void
 trace3(char *msg1, char *msg2, char *msg3)
 {
 	if (msg1) {
-		char buf[PIPE_MAX];
+		char buf[MAX_ATOMIC_MSG];
 
 		buf[0] = 0;
 		bufcat(buf, sizeof buf, msg1);
@@ -106,7 +105,7 @@ void
 trace4(char *msg1, char *msg2, char *msg3, char *msg4)
 {
 	if (msg1) {
-		char buf[PIPE_MAX];
+		char buf[MAX_ATOMIC_MSG];
 
 		buf[0] = 0;
 		bufcat(buf, sizeof buf, msg1);

@@ -1,29 +1,23 @@
 /*
  *  Synopsis:
- *	Client to get/put/give/take/eat/wrap/roll blobs to blobio services.
+ *	Client to get/put/give/take/eat/wrap/roll blobs from blobio services.
  *  Exit Status:
- *  	0	request succeed - ok
- *  	1	request denied.
- *	2	missing or invalid command line argument
- *	16	unexpected hash digest error
- *	17	unexpected blobio service error
- *	18	unexpected error on unix system call
+ *  	0	request succeed (ok).
+ *  	1	request denied (no).
+ *	2	timeout
+ *	3	unexpected error.
  *  Options:
  *	--service name:end_point
  *	--udig algorithm:digest
  *	--algorithm name
  *	--input-path <path/to/file>
  *	--output-path <path/to/file>
- *	--brr-path path/to/fs.brr
  *	--help
  *  Note:
- *	Simplify exit codes.
+ *	Should timeout have different exit code than 2?
  *
  *	Investigate linux system calls splice(), sendfile() and
  *	copy_file_range().
- *
- *	Timeout needs to be explicit status, so network flaps can be
- *	diagnosed.
  *
  *	The following fails with exit 1 for service fs:/usr/local/blobio
  *	when blob actually exists but output dir does not!
@@ -38,9 +32,6 @@
  *	A SIGPIPE when reading from stdin probably out to be considered a
  *	cancel.  Currently a SIGPIPE generated an error about the input
  *	not matching the digest, which is confusing.
- *
- *	Hanging blobio's processes are (rarely) seen on Mac OSX 10.12.3,
- *	implying timeouts are STILL not executing correctly.
  *
  *  	Options desperately need to be folding into a data structure.
  *  	We refuse to use getopts.
@@ -71,10 +62,11 @@
 #include <signal.h>
 #include <time.h>
 #include <stdio.h>
+#include <strings.h>
 
 #include "blobio.h"
 
-#define BRR_SIZE		370		//  terminating null NOT counted
+#define BRR_SIZE	370		//  terminating null NOT counted
 
 char	*jmscott_progname = "blobio";
 
@@ -88,10 +80,11 @@ char	algorithm[9] = {0};
 char	ascii_digest[129] = {0};
 char	*output_path = 0;
 char	*input_path = 0;
-char	*brr_path = 0;
+char	brr_path[64] = {0};
 char	*null_device = "/dev/null";
 char	chat_history[10] = {0};
 char	transport[129] = {0};
+int	timeout = -1;
 
 unsigned long long	blob_size;
 
@@ -150,13 +143,13 @@ cleanup(int status)
 
 	//  upon error, unlink() file created by --output-path,
 	//  grumbling if unlink() fails.
-
-	if (status && status != EXIT_BAD_ARG && output_path &&
-	    output_path != null_device && uni_unlink(output_path))
+	if (status > 1 && 
+	    output_path && output_path != null_device &&
+	    uni_unlink(output_path))
 		if (errno != ENOENT) {
 			static char panic[] =
 				"PANIC: unlink(output_path) failed: ";
-			char buf[PIPE_MAX];
+			char buf[MAX_ATOMIC_MSG];
 			char *err;
 
 			err = strerror(errno);
@@ -185,14 +178,12 @@ Options:\n\
 	--udig          algorithm:digest for get/put/give/take/eat/empty/roll\n\
 	--algorithm     algorithm name for local eat request\n\
 	--trace		trace i/o to standard error\n\
-	--brr-path	append a blob request record to file at path\n\
 	--help\n\
 Exit Status:\n\
 	0	request succeed\n\
   	1	request denied.  blob may not exist or is not empty\n\
-	2	missing or invalid command line argument\n\
-	16	unexpected bio4:// service error\n\
-	17	unexpected fs:// system service error\n\
+	2	timeout on i/o\n\
+	3	unexpected error\n\
 Examples:\n\
 	S=bio4:localhost:1797\n\
 	UD=sha:a0bc76c479b55b5af2e3c7c4a4d2ccf44e6c4e71\n\
@@ -203,7 +194,7 @@ Examples:\n\
 \n\
 	UDIG=$(blobio eat --algorithm sha --input-path resume.pdf)\n\
 	blobio put --udig $UD --input-path resume.pdf --service $S\n\
-Digests:\n\
+Digest Algorithms:\n\
 ";
 	write(1, blurb, strlen(blurb));
 
@@ -228,24 +219,31 @@ Digests:\n\
  *  and write to standard error and exit.
  */
 void
-die(int status, char *msg)
+die(char *msg)
 {
-	cleanup(status);
-	jmscott_die(status, msg);
+	cleanup(3);
+	jmscott_die(3, msg);
 }
 
 void
-die2(int status, char *msg1, char *msg2)
+die2(char *msg1, char *msg2)
 {
-	cleanup(status);
-	jmscott_die2(status, msg1, msg2);
+	cleanup(3);
+	jmscott_die2(3, msg1, msg2);
+}
+
+static void
+die3(char *msg1, char *msg2, char *msg3)
+{
+	cleanup(2);
+	jmscott_die3(3, msg1, msg2, msg3);
 }
 
 void
-die3(int status, char *msg1, char *msg2, char *msg3)
+die_timeout(char *msg)
 {
-	cleanup(status);
-	jmscott_die3(status, msg1, msg2, msg3);
+	cleanup(2);
+	jmscott_die(2, msg);
 }
 
 /*
@@ -306,10 +304,12 @@ parse_udig(char *udig)
 	return (char *)0;
 }
 
+//  a fatal error parsing command line options.
+
 static void
 eopt(const char *option, char *why)
 {
-	char buf[PIPE_MAX];
+	char buf[MAX_ATOMIC_MSG];
 
 	buf[0] = 0;
 
@@ -319,13 +319,15 @@ eopt(const char *option, char *why)
 		buf2cat(buf, sizeof buf, ": ", why);
 	else
 		bufcat(buf, sizeof buf, "<null why message>");
-	die(EXIT_BAD_ARG, buf);
+	die(buf);
 }
+
+//  a fatal error parsing command line options: the two arg version.
 
 static void
 eopt2(char *option, char *why1, char *why2)
 {
-	char buf[PIPE_MAX];
+	char buf[MAX_ATOMIC_MSG];
 
 	buf[0] = 0;
 	if (why1)
@@ -338,6 +340,8 @@ eopt2(char *option, char *why1, char *why2)
 	eopt(option, buf);
 }
 
+//  a fatal error parsing the BLOBIO_SERVICE option.
+
 static void
 eservice(char *why1, char *why2)
 {
@@ -347,26 +351,32 @@ eservice(char *why1, char *why2)
 		eopt("service", why1);
 }
 
+//  a fatal error when an option is missing.
+
 static void
 no_opt(char *option)
 {
-	char buf[PIPE_MAX];
+	char buf[MAX_ATOMIC_MSG];
 
 	buf[0] = 0;
 	buf2cat(buf, sizeof buf, "missing required option: --", option);
 
-	die(EXIT_BAD_ARG, buf);
+	die(buf);
 }
+
+//  a fatal error when a command line option has been given more than once.
 
 static void
 emany(char *option)
 {
-	char buf[PIPE_MAX];
+	char buf[MAX_ATOMIC_MSG];
 
 	buf[0] = 0;
 	buf2cat(buf, sizeof buf, "option given more than once: --", option);
-	die(EXIT_BAD_ARG, buf);
+	die(buf);
 }
+
+//  a fatal error that a command line option is not needed.
 
 static void
 enot(char *option)
@@ -385,7 +395,7 @@ parse_argv(int argc, char **argv)
 
 	if (argc == 1) {
 		uni_write(2, usage, strlen(usage));
-		die(EXIT_BAD_ARG, "no command line arguments");
+		die("no command line arguments");
 	}
 	if (strcmp("help", argv[1]) == 0 || strcmp("--help", argv[1]) == 0)
 		help();
@@ -400,11 +410,11 @@ parse_argv(int argc, char **argv)
 	    strcmp("wrap",  argv[1]) != 0 &&
 	    strcmp("roll",  argv[1]) != 0 &&
 	    strcmp("empty", argv[1]) != 0)
-	    	die2(EXIT_BAD_ARG, "unknown verb", argv[1]);
+	    	die2("unknown verb", argv[1]);
 
 	verb = argv[1];
 
-	//  parse command line arguments, pass 1
+	//  parse command line arguments after the request verb
 
 	for (i = 2;  i < argc;  i++) {
 		char *a = argv[i];
@@ -412,22 +422,31 @@ parse_argv(int argc, char **argv)
 		//  all options start with --
 
 		if (*a++ != '-' || *a++ != '-')
-			die2(EXIT_BAD_ARG, "unknown option", argv[i]);
+			die2("unknown option", argv[i]);
 
 		/*
 		 *  Options:
-		 *	--service name:end_point
 		 *	--udig algorithm:digest
-		 *	--algorithm name
+		 *	--service protocol:end_point
+		 *	--algorithm [btc20|sha|bc160]
 		 *	--input-path <path/to/file>
 		 *	--output-path <path/to/file>
 		 *	--trace
 		 *	--help
 		 */
+
+		//  --udig <udig>
+
 		if (strcmp("udig", a) == 0) {
+
+			//  udig syntax:
+			//	^[a-z][a-z0-9]{0,7}:[[:isgraph:]]{32,128}$
+
 			char *ud;
 			int j;
 			struct digest *d;
+
+			//  option --udig given more than once.
 
 			if (ascii_digest[0])
 				emany("udig");
@@ -463,6 +482,9 @@ parse_argv(int argc, char **argv)
 					ascii_digest
 				);
 			digest_module = d;
+
+		//  --algorithm [a-z][a-z0-9]{0,7}
+
 		} else if (strcmp("algorithm", a) == 0) {
 			int j;
 			char *n;
@@ -485,6 +507,9 @@ parse_argv(int argc, char **argv)
 				eopt2("algorithm", "unknown algorithm", n);
 			strcpy(algorithm, digests[j]->algorithm);
 			digest_module = digests[j];
+
+		//  --input-path path/to/file
+
 		} else if (strcmp("input-path", a) == 0) {
 			if (input_path)
 				emany("input-path");
@@ -494,6 +519,8 @@ parse_argv(int argc, char **argv)
 			if (!*argv[i])
 				eopt("input-path", "empty file path");
 			input_path = argv[i];
+
+		//  --ouput-path pth/to/file
 
 		} else if (strcmp("output-path", a) == 0) {
 			if (output_path)
@@ -505,6 +532,9 @@ parse_argv(int argc, char **argv)
 				output_path = null_device;
 			else
 				output_path = argv[i];
+
+		//  --service protocol:endpoint
+
 		} else if (strcmp("service", a) == 0) {
 			char *s, *p;
 			char name[9], *endp;
@@ -528,7 +558,7 @@ parse_argv(int argc, char **argv)
 			if (p - s == 0)
 				eservice("empty name", s);
 
-			//  find the service structure
+			//  find the service driver
 
 			memcpy(name, s, p - s);
 			name[p - s] = 0;
@@ -539,13 +569,16 @@ parse_argv(int argc, char **argv)
 				eservice("unknown service", name);
 
 			/*
-			 *  End point > 0 and < 256 characters
+			 *  End point > 0 and < 128 characters,
+			 *  including query args.
 			 */
 			p++;
-			if (strlen(p) > 128)
-				eservice("end point > 128 characters", s);
+			if (strlen(p) >= 128)
+				eservice("end point >= 128 characters", s);
 			if (!*p)
-				eservice("missing <end point>", s);
+				eservice("empty <end point>", s);
+			if (*p == '?')
+				eservice("empty <end point> before ? char", s);
 			endp = p;
 
 			/*
@@ -558,6 +591,35 @@ parse_argv(int argc, char **argv)
 				p++;
 			}
 
+			/*
+			 *  Extract query arguments from service: brr, tmo
+			 *
+			 *	fs:/home/jmscott/opt/blobio?tmp=20&brr=fs.brr
+			 *
+			 *  Note:
+			 *	can we write to the service string, which is
+			 *	part of argv?
+			 */
+			char *query;
+			if ((query = rindex(endp, '?'))) {
+				*query++ = 0;
+
+				char *err = BLOBIO_SERVICE_frisk_query(query);
+				if (err)
+					eservice("query", err);
+
+				err = BLOBIO_SERVICE_get_tmo(query, &timeout);
+				if (err)
+					eservice("query: timeout", err);
+
+				err = BLOBIO_SERVICE_get_brr_path(
+					query,
+					brr_path
+				);
+				if (err)
+					eservice("query: brr path", err);
+			}
+
 			//  validate the syntax of the specific end point
 
 			err = sp->end_point_syntax(endp);
@@ -565,18 +627,6 @@ parse_argv(int argc, char **argv)
 				eservice(err, endp);
 			service = sp;
 			strcpy(service->end_point, endp);
-		} else if (strcmp("brr-path", a) == 0) {
-			if (brr_path)
-				emany("brr-path");
-			if (verb[0] == 'e' && verb[1] == 'm')
-				eopt("brr-path", "no brr path for empty verb");
-
-			if (++i == argc)
-				eopt("brr-path", "requires path to brr log");
-			if (!*argv[i])
-				eopt("brr-path", "empty path to brr log");
-			brr_path = argv[i];
-			
 		} else if (strcmp("trace", a) == 0) {
 			if (tracing)
 				emany("trace");
@@ -585,7 +635,7 @@ parse_argv(int argc, char **argv)
 		} else if (strcmp("help", a) == 0) {
 			help();
 		} else
-			die2(EXIT_BAD_ARG, "unknown option", argv[i]);
+			die2("unknown option", argv[i]);
 	}
 }
 
@@ -599,22 +649,27 @@ xref_args()
 {
 	/*
 	 *  verb: get/give/put/take/roll
-	 *
 	 *  	--service required
 	 *  	--udig required
+	 *
 	 *  verb: roll
 	 *  	no --{input,output}-path
+	 *
 	 *  verb: give
 	 *  	no --output-path
+	 *
 	 *  verb: take, get
 	 *  	no --input-path
+	 *
 	 *  verb: eat
 	 *  	no --output-path
 	 *	--service requires --udig and 
 	 *		implies no --algorithm
+	 *
 	 *  verb: wrap
 	 *	no --{input,output}-path, --udig
 	 *	--algorithm required
+	 *
 	 *  Note:
 	 *	Convert if/else if/ tests to switch.
 	 */
@@ -700,22 +755,18 @@ brr_write()
 		S_IRUSR|S_IWUSR|S_IRGRP
 	);
 	if (fd < 0)
-		die2(EXIT_BAD_UNI, "open(brr-path) failed", strerror(errno));
+		die2("open(brr-path) failed", strerror(errno));
 	/*
 	 *  Build the ascii version of the start time.
 	 */
 	t = gmtime(&start_time.tv_sec);
 	if (!t)
-		die2(EXIT_BAD_UNI, "gmtime() failed", strerror(errno));
+		die2("gmtime() failed", strerror(errno));
 	/*
 	 *  Record start time.
 	 */
 	if (clock_gettime(CLOCK_REALTIME, &end_time) < 0)
-		die2(
-			EXIT_BAD_UNI,
-			"clock_gettime(end REALTIME) failed",
-			strerror(errno)
-		);
+		die2("clock_gettime(end REALTIME) failed", strerror(errno));
 	/*
 	 *  Calculate the elapsed time in seconds and
 	 *  nano seconds.  The trick of adding 1000000000
@@ -767,9 +818,9 @@ brr_write()
 	 *  Write the entire blob request record in a single write().
 	 */
 	if (uni_write(fd, brr, len) < 0)
-		die2(EXIT_BAD_UNI, "write(brr-path) failed", strerror(errno));
+		die2("write(brr-path) failed", strerror(errno));
 	if (uni_close(fd) < 0)
-		die2(EXIT_BAD_UNI, "close(brr-path) failed", strerror(errno));
+		die2("close(brr-path) failed", strerror(errno));
 }
 
 int
@@ -778,25 +829,28 @@ main(int argc, char **argv)
 	char *err;
 	int exit_status = -1, ok_no;
 
-	parse_argv(argc, argv);
+	if (clock_gettime(CLOCK_REALTIME, &start_time) < 0)
+		die2(
+			"clock_gettime(start REALTIME) failed",
+			strerror(errno)
+		);
 
-	//  record the start time for a brr record.
-	if (brr_path) {
-		/*
-		 *  Record start time.
-		 */
-		if (clock_gettime(CLOCK_REALTIME, &start_time) < 0)
-			die2(
-				EXIT_BAD_UNI,
-				"clock_gettime(start REALTIME) failed",
-				strerror(errno)
-			);
-	}
+	parse_argv(argc, argv);
 
 #ifndef COMPILE_TRACE
 	tracing = 0;
 #endif
 	xref_args();
+
+	if (tracing) {
+		char buf[MAX_ATOMIC_MSG];
+
+		snprintf(buf, sizeof buf, "timeout: %d", timeout);
+		TRACE(buf);
+
+		snprintf(buf, sizeof buf, "brr path: %s", brr_path);
+		TRACE(buf);
+	}
 
 	//  the input path must always exist in the file system.
 
@@ -829,12 +883,11 @@ main(int argc, char **argv)
 	//  initialize the digest module
 
 	if (digest_module && (err = digest_module->init()))
-		die(EXIT_BAD_DIG, err);
+		die(err);
 
 	//  open the blob service
-
 	if (service && (err = service->open())) {
-		char buf[PIPE_MAX];
+		char buf[MAX_ATOMIC_MSG];
 
 		*buf = 0;
 		buf3cat(
@@ -844,7 +897,7 @@ main(int argc, char **argv)
 				service->end_point,
 			") failed"
 		);
-		die2(EXIT_BAD_SRV, buf, err);
+		die2(buf, err);
 	}
 
 	//  open the input path in the file system
@@ -854,8 +907,7 @@ main(int argc, char **argv)
 
 		fd = uni_open(input_path, O_RDONLY);
 		if (fd == -1)
-			die3(EXIT_BAD_SRV, "open(input) failed",
-						err, strerror(errno));
+			die3("open(input) failed", err, strerror(errno));
 		input_fd = fd;
 	}
 
@@ -865,7 +917,7 @@ main(int argc, char **argv)
 		if (service) {
 			err = service->open_output();
 			if (err)
-				die3(EXIT_BAD_SRV,
+				die3(
 					"service open(output) failed",
 					err,
 					output_path
@@ -878,7 +930,7 @@ main(int argc, char **argv)
 				flag |= O_EXCL;
 			fd = uni_open_mode(output_path, flag, S_IRUSR|S_IRGRP);
 			if (fd == -1)
-				die3(EXIT_BAD_SRV,
+				die3(
 					"open(output) failed",
 					strerror(errno),
 					output_path
@@ -898,11 +950,11 @@ main(int argc, char **argv)
 
 		if (verb[1] == 'e') {
 			if ((err = service->get(&ok_no)))
-				die2(EXIT_BAD_SRV, "get failed", err);
+				die2("get failed", err);
 			exit_status = ok_no;
 		} else {
 			if ((err = service->give(&ok_no)))
-				die2(EXIT_BAD_SRV, "give failed", err);
+				die2("give failed", err);
 
 			//  remove input path upon successful "give"
 
@@ -910,7 +962,7 @@ main(int argc, char **argv)
 				int status = uni_unlink(input_path);
 
 				if (status == -1 && errno != ENOENT)
-					die2(EXIT_BAD_UNI,
+					die2(
 						"unlink(input) failed",
 						strerror(errno)
 					);
@@ -924,24 +976,23 @@ main(int argc, char **argv)
 		if (verb[1] == 'a') {
 			if (service) {
 				if ((err = service->eat(&ok_no)))
-					die2(EXIT_BAD_SRV,
-						"eat(service) failed", err);
+					die2("eat(service) failed", err);
 				exit_status = ok_no;
 			} else {
 				char buf[128 + 1];
 
 				if ((err = digest_module->eat_input()))
-					die2(EXIT_BAD_SRV,
-						"eat(input) failed", err);
+					die2("eat(input) failed", err);
 
 				//  write the ascii digest
 
 				buf[0] = 0;
 				buf2cat(buf, sizeof buf, ascii_digest, "\n");
 				if (uni_write_buf(output_fd, buf, strlen(buf)))
-					die2(EXIT_BAD_UNI,
+					die2(
 						"write(ascii_digest) failed",
-						strerror(errno));
+						strerror(errno)
+					);
 				exit_status = 0;
 			}
 		/*
@@ -961,33 +1012,33 @@ main(int argc, char **argv)
 		}
 	} else if (*verb == 'p') {
 		if ((err = service->put(&ok_no)))
-			die2(EXIT_BAD_SRV, "put() failed", err);
+			die2("put() failed", err);
 		exit_status = ok_no;
 	} else if (*verb == 't') {
 		if ((err = service->take(&ok_no)))
-			die2(EXIT_BAD_SRV, "take() failed", err);
+			die2("take() failed", err);
 		exit_status = ok_no;
 	} else if (*verb == 'w') {
 		if ((err = service->wrap(&ok_no)))
-			die2(EXIT_BAD_SRV, "wrap() failed", err);
+			die2("wrap() failed", err);
 		exit_status = ok_no;
 	} else if (*verb == 'r') {
 		if ((err = service->roll(&ok_no)))
-			die2(EXIT_BAD_SRV, "roll() failed", err);
+			die2("roll() failed", err);
 		exit_status = ok_no;
 	}
 
 	//  close input file
 
 	if (input_fd > 0 && uni_close(input_fd))
-		die2(EXIT_BAD_UNI, "close(in) failed", strerror(errno));
+		die2("close(input-path) failed", strerror(errno));
 
 	//  close output file
 
 	if (output_fd > 1 && uni_close(output_fd))
-		die2(EXIT_BAD_UNI, "close(out) failed", strerror(errno));
+		die2("close(output-path) failed",strerror(errno));
 
-	if (brr_path)
+	if (brr_path[0])
 		brr_write();
 
 	cleanup(exit_status);

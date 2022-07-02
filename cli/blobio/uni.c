@@ -17,7 +17,7 @@
 /*
  *  Note:
  *	I (jms) refuse to pull in <stdio.h> for single declaration!
- *	WTF are "feature test macros"?
+ *	WTF are "feature test macros", by the way?
  *
  *		http://man7.org/linux/man-pages/man7/feature_test_macros.7.html
  */

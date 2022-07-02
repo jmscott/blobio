@@ -9,7 +9,7 @@
 
 /*
  *  Synopsis:
- *	Syntaxtically Frisk (but not extract) query args in a uri of $BLOBIO_SERVICE.
+ *	Frisk (but not extract) query args in a uri of $BLOBIO_SERVICE.
  *  Description:
  *	Brute force frisk (but not extract) of query args in a uri
  *	$BLOBIO_SERVICE.
@@ -25,8 +25,9 @@ char *
 BLOBIO_SERVICE_frisk_query(char *query)
 {
 	char *q = query, c;
+	char seen_tmo = 0, seen_brr = 0;
 
-	if (!query || *query)
+	if (!query || !*query)
 		return (char *)0;
 	while ((c = *q++)) {
 		if (c == '&')
@@ -35,24 +36,27 @@ BLOBIO_SERVICE_frisk_query(char *query)
 		case 'b':		//  match "brr"
 			c = *q++;
 			if (!c)
-				return "unexpected null after 'b' query arg";
+				return "unexpected null after \"b\" query arg";
 			if (c != 'r')
-				return "unexpected char after 'b' query arg";
+				return "unexpected char after \"b\" query arg";
 			c = *q++;
 			if (!c)
-				return "unexpected null after 'br' query arg";
+				return "unexpected null after \"br\" query arg";
 			if (c != 'r')
-				return "unexpected char after 'br' query arg";
+				return "unexpected char after \"br\" query arg";
 			c = *q++;
 			if (c != '=')
-				return "no char '=' after arg 'brr'";
+				return "no char '=' after arg \"brr\"";
 			
 			//  at least one char
 			c = *q++;
 			if (!c || c == '&')
 				return "missing file path after arg brr=";
+			if (seen_brr)
+				return "\"brr\" specified more than once";
+			seen_brr = 1;
 
-			//  skip over file name till we hit end of string or '&'
+			//  skip over path till we hit end of string or '&'
 			int cnt = 0;
 			while ((c = *q++)) {
 				if (!c)
@@ -64,8 +68,8 @@ BLOBIO_SERVICE_frisk_query(char *query)
 				if (!isgraph(c))
 					return "non graph char in \"brr\" arg";
 				cnt++;
-				if (cnt > 31)
-					return ">31 chars in \"brr\" arg";
+				if (cnt >= 64)
+					return "=>64 chars in \"brr\" arg";
 			}
 			break;
 		case 't':		//  match "tmo"
@@ -82,26 +86,21 @@ BLOBIO_SERVICE_frisk_query(char *query)
 			c = *q++;
 			if (c != '=')
 				return "no char '=' after arg 'tmo'";
+			seen_tmo = 1;
 			
-			//  at least one digit
-			c = *q++;
-			if (!c)
-				return "unexpected null in \"tmo=\"";
-			if (!isdigit(c))
-				return "first char not digit in arg \"tmo=\""; 
-
-			//  skip over path till we hit end of string or '&'
-			int count = 0;
+			//  skip over timeout till we hit end of string or '&'
+			int count = 1;
 			while ((c = *q++)) {
-				if (count++ > 3)
-					return "too many chars in arg \"tmo=\"";
-				if (!c)
-					return (char *)0;
 				if (c == '&')
 					break;
+				count++;
+				if (count++ >= 4)
+					return "too many chars in arg \"tmo=\"";
 				if (!isdigit(c))
 					return "non-digit in arg \"tmo=\"";
 			}
+			if (count == 0)
+				return "tmo: no digits";
 			break;
 		default:
 			return "unexpected char in query arg";
@@ -191,27 +190,27 @@ BLOBIO_SERVICE_get_tmo(char *query, int *tmo)
 
 /*
  *  Synopsis:
- *  	Get glob request file name a frisked $BLOBIO_SERVICE string
+ *  	Get the brr path in the query portion of $BLOBIO_SERCICE
  *  Usage:
- *	char *status;
- *	status =  BLOBIO_SERVICE_frisk_query(query);
- *	if (status)
+ *	char *err;
+ *	err =  BLOBIO_SERVICE_frisk_brr_path(query, path);
+ *	if (err)
  *		return status;		//  error in a query arg
  *
  *	...
  *
- *	char brr_file_name[32];
- *	file_name[0] = 0;
- *	status = BLOBIO_SERVICE_get_brr_file_name(query, char file_name);
- *	if (status)
- *		die2("error parsing \"brr\" query arg", status);
+ *	char brr_path[64];
+ *	brr_path[0] = 0;
+ *	err = BLOBIO_SERVICE_get_brr_path(query, char *path);
+ *	if (err)
+ *		die2("error parsing \"brr\" for path", err);
  */
 char *
-BLOBIO_SERVICE_get_brr_file_name(char *query, char *file_name)
+BLOBIO_SERVICE_get_brr_path(char *query, char *path)
 {
 	char *q = query, c;
 
-	*file_name = 0;
+	*path = 0;
 	while ((c = *q++)) {
 		if (c == '&')
 			continue;
@@ -226,7 +225,7 @@ BLOBIO_SERVICE_get_brr_file_name(char *query, char *file_name)
 		}
 		/*
 		 *  extract file name matching [[:ascii:]]+ and
-		 *  [[:graph:]]+ and {1,31} and [^&].
+		 *  [[:graph:]]+ and {1,64} and [^&].
 		 */
 		c = *q++;
 		if (c != 'r')
