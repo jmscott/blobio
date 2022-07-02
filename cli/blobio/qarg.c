@@ -26,12 +26,11 @@ BLOBIO_SERVICE_frisk_query(char *query)
 {
 	char *q = query, c;
 	char seen_tmo = 0, seen_brr = 0;
+	int count;
 
 	if (!query || !*query)
 		return (char *)0;
 	while ((c = *q++)) {
-		if (c == '&')
-			continue;
 		switch (c) {
 		case 'b':		//  match "brr"
 			c = *q++;
@@ -57,7 +56,7 @@ BLOBIO_SERVICE_frisk_query(char *query)
 			seen_brr = 1;
 
 			//  skip over path till we hit end of string or '&'
-			int cnt = 0;
+			count = 0;
 			while ((c = *q++)) {
 				if (!c)
 					return (char *)0;
@@ -67,8 +66,8 @@ BLOBIO_SERVICE_frisk_query(char *query)
 					return "non ascii char in \"brr\" arg";
 				if (!isgraph(c))
 					return "non graph char in \"brr\" arg";
-				cnt++;
-				if (cnt >= 64)
+				count++;
+				if (count >= 64)
 					return "=>64 chars in \"brr\" arg";
 			}
 			break;
@@ -86,15 +85,17 @@ BLOBIO_SERVICE_frisk_query(char *query)
 			c = *q++;
 			if (c != '=')
 				return "no char '=' after arg 'tmo'";
+			if (seen_tmo)
+				return "arg 'tmo' given more than once";
 			seen_tmo = 1;
 			
 			//  skip over timeout till we hit end of string or '&'
-			int count = 1;
+			count = 0;
 			while ((c = *q++)) {
 				if (c == '&')
 					break;
 				count++;
-				if (count++ >= 4)
+				if (count >= 4)
 					return "too many chars in arg \"tmo=\"";
 				if (!isdigit(c))
 					return "non-digit in arg \"tmo=\"";
@@ -104,6 +105,12 @@ BLOBIO_SERVICE_frisk_query(char *query)
 			break;
 		default:
 			return "unexpected char in query arg";
+		}
+		if (c == 0)
+			break;
+		if (c == '&') {
+			if (!*q)
+				return "no query argument after \"&\"";
 		}
 	}
 	return (char *)0;
@@ -236,6 +243,9 @@ BLOBIO_SERVICE_get_brr_path(char *query, char *path)
 		c = *q++;
 		if (c != '=')
 			return "impossible: char '=' not after \"brr\"";
+		while ((c = *q++) && c != '&')
+			*path++ = c;
+		path = 0;
 	}
 
 	return (char *)0;
