@@ -2,6 +2,8 @@
  *  Synopsis:
  *	Interuptible posix/unixish routines, with errno untouched.
  *  Note:
+ *	Eventually the uni.c goes away, replaced with jmscott_*() equivalents.
+ *
  *	Investigate why syscall rename() requires stdio.h!
  */
 
