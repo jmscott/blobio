@@ -55,7 +55,7 @@ extern char	transport[129];
 extern char	algorithm[9];
 extern char	ascii_digest[129];
 extern char	end_point[129];
-extern char	*brr_path;
+extern char	brr_path[65];
 extern char	*output_path;
 extern char	*null_device;
 extern int	output_fd;
@@ -350,12 +350,14 @@ again3:
 	*p_server_fd = fd;
 	_CTRACE("done");
 
-	if (brr_path)
+TRACE("WTF1");
+	if (brr_path[0])
 		snprintf(transport, sizeof transport,
-			"x~bio4c:%s:%d",
+			"tcp4~%s:%d",
 			inet_ntoa(s.sin_addr),
 			port
 		);
+TRACE("WTF2");
 	return 0;
 }
 

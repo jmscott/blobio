@@ -2,6 +2,8 @@
  *  Synopsis:
  *	Interuptible posix/unixish routines, with errno untouched.
  *  Note:
+ *	Rename uni.c to posio.c
+ *
  *	Eventually the uni.c goes away, replaced with jmscott_*() equivalents.
  *
  *	Investigate why syscall rename() requires stdio.h!
@@ -16,6 +18,8 @@
 
 #include "jmscott/libjmscott.h"
 
+extern int	timeout;
+
 /*
  *  Note:
  *	I (jms) refuse to pull in <stdio.h> for single declaration!
@@ -23,7 +27,6 @@
  *
  *		http://man7.org/linux/man-pages/man7/feature_test_macros.7.html
  */
-
 extern int rename(const char *oldpath, const char *newpath);
 
 /*
@@ -73,6 +76,8 @@ uni_mkdir(const char *path, mode_t mode)
 ssize_t
 uni_read(int fd, void *buf, size_t count)
 {
+	if (timeout > 0)
+		return jmscott_read_timeout(fd, buf, count, timeout);
 	return jmscott_read(fd, buf, count);
 }
 

@@ -14,8 +14,6 @@
  *	--output-path <path/to/file>
  *	--help
  *  Note:
- *	Should timeout have different exit code than 2?
- *
  *	Investigate linux system calls splice(), sendfile() and
  *	copy_file_range().
  *
@@ -84,7 +82,7 @@ char	brr_path[64] = {0};
 char	*null_device = "/dev/null";
 char	chat_history[10] = {0};
 char	transport[129] = {0};
-int	timeout = -1;
+int	timeout = 20;
 
 unsigned long long	blob_size;
 
