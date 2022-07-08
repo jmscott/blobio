@@ -23,8 +23,7 @@
 
 #include "blobio.h"
 
-#define BIO4_TIMEOUT_DEFAULT	20
-#define BIO4_TRUST_FS_DEFAULT	0
+extern int	timeout;
 
 //  Note: where is HOST_NAME_MAX defined on OS X?
 
@@ -64,10 +63,6 @@ extern int	input_fd;
 extern int	trust_fs;
 
 static int server_fd = -1;
-static int timeout = -1;
-
-static char *get_timeout(char *frag, int *p_tmo, int *p_tfs);
-static char *get_trust_fs(char *frag, int *p_tfs, int *p_tmo);
 
 extern struct service bio4_service;		//  initialized below
 
@@ -99,94 +94,6 @@ static void
 ctrace2(char *msg1, char *msg2)
 {
 	_trace3("connect", msg1, msg2);
-}
-
-static char *
-get_timeout(char *frag, int *p_tmo, int *p_tfs)
-{
-	_TRACE2("get_timeout", frag);
-
-	char buf[4], *bp;		//  0 to 255
-	char *fp = frag, c;
-	unsigned int tmo;
-
-	if (*fp++ != 't' || *fp++ != 'm' || *fp++ != 'o' || *fp++ != '=')
-		return "expected tmo= in query fragment";
-	if (!isdigit(*fp))
-		return "missing seconds after tmo= in query fragment";
-
-	/*
-	 *  copy timeout digits into buf, upto '&' or null character.
-	 */
-	bp = buf;
-	while ((c = *fp++)) {
-		if (c == '&')
-			break;
-		if (!isdigit(c))
-			return "expected digit in tmo query fragment";
-		if (bp - buf > 3)
-			return "too many digits in timeout seconds";
-		*bp++ = c;
-	}
-	*bp = 0;
-	tmo = atoi(buf);
-	if (tmo > 255)
-		return "timeout > 255 seconds";
-	if (tmo == 0)
-		return "timeout must > 0";
-	if (p_tmo) {
-		if (*p_tmo == -1)
-			return "query frag 'tmo' given more than once";
-		*p_tmo = tmo;
-	}
-	return c ? get_trust_fs(fp, p_tfs, p_tmo) : (char *)0;
-}
-
-/*
- *  Parse query fragment "tfs=t|f"
- */
-static char *
-get_trust_fs(char *frag, int *p_tfs, int *p_tmo)
-{
-	_TRACE2("get_trust_fs", frag);
-
-	char *fp = frag;
-
-	if (*fp++ != 't' || *fp++ != 'f' || *fp++ != 's' || *fp++ != '=')
-		return "expected tfs= in query fragment";
-	int tfs = -1;
-	switch(*fp++) {
-	case 'f':
-		tfs = 0;
-		break;
-	case 't':
-		tfs = 1;
-		break;
-	default:
-		return "expected only 't' or 'f' for query fragment tfs";
-	}
-	if (p_tfs) {
-		if (*p_tfs != -1)
-			return "query fragment tfs given more than once";
-		*p_tfs = tfs;
-	}
-	if (!*fp)
-		return (char *)0;
-	if (*fp++ != '&')
-		return "expected & in query fragment";
-	return get_timeout(fp, p_tmo, p_tfs);
-}
-
-static char *
-get_query_frag(char *frag, int *p_tmo, int *p_tfs)
-{
-	if (frag[0] == 't') {
-		if (frag[1] == 'm')
-			return get_timeout(frag, p_tmo, p_tfs); 
-		if (frag[1] == 'f')
-			return get_trust_fs(frag, p_tfs, p_tmo);
-	}
-	return "unknown query fragment";
 }
 
 /*
@@ -241,7 +148,7 @@ bio4_end_point_syntax(char *endp)
 	 *	?tmo=[0-9]{1,3}
 	 *	?tfs=true
 	 */
-	return get_query_frag(ep, (int *)0, (int *)0);
+	return (char *)0;
 }
 
 /*
@@ -350,14 +257,12 @@ again3:
 	*p_server_fd = fd;
 	_CTRACE("done");
 
-TRACE("WTF1");
 	if (brr_path[0])
 		snprintf(transport, sizeof transport,
 			"tcp4~%s:%d",
 			inet_ntoa(s.sin_addr),
 			port
 		);
-TRACE("WTF2");
 	return 0;
 }
 
@@ -368,7 +273,6 @@ bio4_open()
 	char host[HOST_NAME_MAX + 1], *p;
 	char pbuf[6];
 	int port = 0;
-	char *qmark;
 	char *ep = bio4_service.end_point;
 
 	_TRACE2("request to open()", ep);
@@ -378,17 +282,7 @@ bio4_open()
 	host[p - ep] = 0;
 	p++;
 	_TRACE2("port fragment", p);
-	qmark = strchr(p, '?');
-	if (qmark) {
-		get_query_frag(qmark + 1, &timeout, &trust_fs);
-		memcpy(pbuf, p, qmark - p);
-		pbuf[p - qmark] = 0;
-	} else
-		strcpy(pbuf, p);
-	if (timeout == -1)
-		timeout = BIO4_TIMEOUT_DEFAULT;
-	if (trust_fs == -1)
-		trust_fs = BIO4_TRUST_FS_DEFAULT;
+	strcpy(pbuf, p);
 
 	port = atoi(pbuf);
 
@@ -479,15 +373,6 @@ catch_write_ALRM(int sig)
 	die_ALRM("write");
 }
 
-static void
-catch_read_ALRM(int sig)
-{
-	_TRACE("catch_read_ALRM");
-
-	(void)sig;
-	die_ALRM("read");
-}
-
 /*
  *  Synopsis:
  *	Write bytes with tracing and timeout
@@ -530,20 +415,13 @@ _read(int fd, unsigned char *buf, int buf_size, int *nread)
 
 	_TRACE("request to read()");
 
-	if (timeout > 0) {
-		if (signal(SIGALRM, catch_read_ALRM) == SIG_ERR)
-			return strerror(errno);
-		alarm((unsigned int)timeout);
-	}
-	if ((nr = uni_read(fd, (unsigned char *)buf, buf_size)) < 0)
-		err = strerror(errno);
-		
-	if (timeout > 0) {
-		if (signal(SIGALRM, SIG_IGN) == SIG_ERR && !err)
+	if ((nr = uni_read(fd, (unsigned char *)buf, buf_size)) < 0) {
+		if (nr == -1)
 			err = strerror(errno);
-		alarm(0);
+		else
+			err = "read timeout";
 	}
-
+		
 #ifdef COMPILE_TRACE
 	if (err) {
 		_TRACE2("ERROR", err);

@@ -98,19 +98,6 @@ fs_open()
 	struct stat st;
 	char *end_point = fs_service.end_point;
 
-	if (brr_path) {
-		/*
-		 *  In brr record need room for fs~<pid>:<path>.
-		 */
-		if (strlen(end_point) >= 128 - (3 + 10))
-			return "option --brr-path: " \
-				"the fs path must be < 115 chars";
-
-		//  brr syntax requires path be only graph chars
-		for (char *ep = end_point;  *ep;  ep++)
-			if (!isgraph(*ep))
-				return "non graph char in file path";
-	}
 	if (*verb == 'w')
 		return "wrap verb not supported";
 

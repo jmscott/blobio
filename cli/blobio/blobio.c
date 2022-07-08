@@ -531,7 +531,7 @@ parse_argv(int argc, char **argv)
 			else
 				output_path = argv[i];
 
-		//  --service protocol:endpoint
+		//  --service protocol:endpoint[?qargs]
 
 		} else if (strcmp("service", a) == 0) {
 			char *s, *p;
