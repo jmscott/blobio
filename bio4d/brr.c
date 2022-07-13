@@ -1158,7 +1158,7 @@ wrap(struct request *r, struct digest_module *mp)
 	strcat(wrap_set_udig, "\n");
 	len = strlen(wrap_set_udig);
 	if (req_write(r, (unsigned char *)wrap_set_udig, len)) {
-		error4(n, "net_write() failed", r->algorithm, r->digest);
+		error4(n, "req_write() failed", r->algorithm, r->digest);
 		return -1;
 	}
 	return 0;

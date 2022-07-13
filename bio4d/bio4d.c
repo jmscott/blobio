@@ -5,6 +5,13 @@
  *	cd /usr/local/blobio
  *	sbin/bio4d
  *  Note:
+ *	Having GYR stats in bio4d is problematic.  The observer
+ *	should defined green/yellow/red, not the performer!
+ *
+ *	Need to add udig distinct/total stats, which implies a hash table,
+ *	probably managed by either a hash table or a bloom filter process.
+ *	when (total udig - distinct) grows to big, then caching needed.
+ *
  *	Should {wrap,roll}->no be considered green, not yellow!
  *
  *	Need to count distinct blobs as part of stats!
@@ -148,14 +155,17 @@ static int		listen_fd = -1;
 
 /*
  *  Inbound Connections:
- *	connect_count ==
+ *	accept_count ==
  *		success_count +
  *		error_count +
  *		timeout_count +
  *		signal_count +
  *		fault_count
+ *
+ *  we track accept/wait explicity, to ferret bugs.
  */
-static u8	connect_count = 0;	//  socket connections answered
+static u8	accept_count = 0;	//  socket connections answered
+static u8	wait_count = 0;		//  number of req process waited upon
 
 /*
  *  Request summaries
@@ -1073,6 +1083,7 @@ again:
 			);
 			panic2("unexpected exit of arborist process", buf);
 		}
+		wait_count++;
 
 		/*
 		 *  Process exited abnormally with signal, so log status.
@@ -1231,9 +1242,10 @@ static void
 heartbeat()
 {
 	char buf[MSG_SIZE];
-	u8 connect_diff;
-	float connect_rate;
-	static u8 prev_connect_count = 0;
+	u8 accept_diff;
+	float accept_rate;
+	static u8 prev_accept_count = 0;
+	static u8 prev_wait_count = 0;
 	time_t now;
 
 	time(&now);
@@ -1258,8 +1270,16 @@ heartbeat()
 	 *  Only burp out message when request count changes.
 	 *  A simple tickle of the listen socket will change the request count.
 	 */
-	if (prev_connect_count == connect_count)
+	if (prev_accept_count == accept_count &&
+	    prev_wait_count == wait_count)
 		return;
+
+	snprintf(buf, sizeof buf,
+		"accept=%llu,exit=%llu",
+			accept_count,
+			wait_count
+	);
+	info(buf);
 
 	snprintf(buf, sizeof buf,
 		"suc=%llu, err=%llu, tmo=%llu, sig=%llu, flt=%llu",
@@ -1302,13 +1322,14 @@ heartbeat()
 	);
 	info(buf);
 
-	connect_diff = connect_count - prev_connect_count;
-	connect_rate = (float)connect_diff / (float)LOG_HEARTBEAT;
-	snprintf(buf, sizeof buf, "sample: %.0f connect/sec, connect=%llu",
-				connect_rate, connect_diff);
+	accept_diff = accept_count - prev_accept_count;
+	accept_rate = (float)accept_diff / (float)LOG_HEARTBEAT;
+	snprintf(buf, sizeof buf, "sample: %.0f accept/sec, accept=%llu",
+				accept_rate, accept_diff);
 	info(buf);
 
-	prev_connect_count = connect_count;
+	prev_accept_count = accept_count;
+	prev_wait_count = wait_count;
 }
 
 /*
@@ -1332,6 +1353,9 @@ heartbeat()
  *
  *	time epoch:
  *		//  request summaries
+ *
+ *		accept_count:		//  accept() with no error
+ *		wait_count:		//  number of process waited upon
  *
  *		success_count:		//  blob request record generated
  *		error_count:		//  stable error in request
@@ -1360,6 +1384,8 @@ heartbeat()
  *		wrap_no_count:
  *		roll_count:
  *		roll_no_count:
+ *  Note:
+ *	Add accept/wait() counts to run/bio4d.gyr.
  */
 static void
 gyr_rrd()
@@ -1370,6 +1396,13 @@ gyr_rrd()
 
 	if (rrd_duration == 0)
 		return;
+	/*
+	 *  Network process level stats.
+	 *  we want (accept - wait) to be smallish.
+	 */
+	static int	accept_count_prev =	0;
+	static int	wait_count_prev =	0;
+
 	/*
 	 *  Request summaries
 	 */
@@ -1419,7 +1452,12 @@ gyr_rrd()
 	static char rrd_format[] =
 		"%llu:"				/* time epoch */
 
+		"%llu:%llu:"			/* network accept:req exit */
+
 		"%llu:%llu:%llu:%llu:%llu:"	/* process exit class*/
+
+		//  detail of verbs
+
 		"%llu:%llu:"			/* eat: ok,no */
 		"%llu:%llu:"			/* get: ok,no */
 		"%llu:%llu:%llu:"		/* put: ok,no,no2 */
@@ -1436,6 +1474,9 @@ gyr_rrd()
 
 	snprintf(buf, sizeof buf, rrd_format,
 		now,
+
+		accept_count - accept_count_prev,
+		wait_count - wait_count_prev,
 
  		success_count - success_count_prev,
 		error_count - error_count_prev,
@@ -1473,6 +1514,8 @@ gyr_rrd()
 		panic2("write(rrd) failed", strerror(errno));
 	if (io_close(fd))
 		panic2("close(rrd) failed", strerror(errno));
+
+	//  Note: what about accept/wait counts?
 
 	u8 green_count = success_count - (no2_count+no3_count)+ eat_no_count;
 	u8 recent_green_count = green_count - green_count_prev;
@@ -1515,6 +1558,8 @@ gyr_rrd()
 	//  reset the samples
 	rrd_now_prev = now;
 
+	accept_count_prev = accept_count;
+	wait_count_prev = wait_count;
 	success_count_prev = success_count;
 	error_count_prev = error_count;
 	timeout_count_prev = timeout_count;
@@ -1561,6 +1606,7 @@ gyr_rrd_empty()
 	static char rrd_format[] =
 		"%llu:"			/* time epoch */
 
+		"0:0:"			/* accept:wait counts */
 		"0:0:0:0:0:"		/* process exit class*/
 		"0:0:"			/* eat: ok,no */
 		"0:0:"			/* get: ok,no */
@@ -1839,7 +1885,7 @@ fork_request()
 }
 
 /*
- *  Fork a process to handle accepted socket.
+ *  Fork a request process to handle an accepted socket.
  */
 static void
 fork_accept(struct request *rp)
@@ -2060,8 +2106,11 @@ main(int argc, char **argv, char **env)
 
 	if (!BLOBIO_ROOT)
 		die("option --root <directory-path> is required");
+
 	/*
 	 *  Goto $BLOBIO_ROOT directory.
+	 *
+	 *  Note: need jmscott_chdir() for restartability!
 	 */
 	if (chdir(BLOBIO_ROOT) < 0) {
 		snprintf(buf, sizeof buf, "chdir(%s) failed: %s", BLOBIO_ROOT,
@@ -2205,10 +2254,13 @@ accept_request:
 		/*NOTREACHED*/
 		break;
 	case 0:
-		connect_count++;
+		accept_count++;
 		fork_accept(&req);
 		break;
-	case 1:			//  timeout
+	/*
+	 *  Timeout, so log stats and go back to accepting.
+	 */
+	case 1:
 		break;
 	default:
 		panic("net_accept() returned impossible value");

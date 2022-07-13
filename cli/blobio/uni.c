@@ -77,7 +77,7 @@ ssize_t
 uni_read(int fd, void *buf, size_t count)
 {
 	if (timeout > 0)
-		return jmscott_read_timeout(fd, buf, count, timeout);
+		return jmscott_read_timeout(fd, buf, count, timeout * 1000);
 	return jmscott_read(fd, buf, count);
 }
 

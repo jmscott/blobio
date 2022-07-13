@@ -760,3 +760,19 @@ warn4(char *msg1, char *msg2, char *msg3, char *msg4)
 	} else
 		warn3(msg2, msg3, msg4);
 }
+
+static int	wtf_enabled = 0;
+
+void
+WTF(char *msg)
+{
+	if (wtf_enabled)
+		info2("WTF", msg);
+}
+
+void
+WTF2(char *msg1, char *msg2)
+{
+	if (wtf_enabled)
+		info3("WTF", msg1, msg2);
+}

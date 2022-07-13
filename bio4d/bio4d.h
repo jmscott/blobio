@@ -448,9 +448,12 @@ void		arbor_move(char *tmp_path, char *new_path);
 void		arbor_trim(char *blob_path);
 
 /*
- *  Map digest prefix ont temp directory on same file system as blob storage.
+ *  Map digest prefix onto temp directory on same file system as blob storage.
  */
 void		tmp_open();
 char *		tmp_get(char *algorithm, char *digest_prefix);
+
+void		WTF(char *msg);
+void		WTF2(char *msg1, char *msg2);
 
 #endif

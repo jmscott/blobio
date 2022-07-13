@@ -123,7 +123,7 @@ req_write(struct request *r, void *buf, size_t buf_size)
 	//  network error during read()
 
 	if (status == -1) {
-		snprintf(ebuf, sizeof ebuf, "write(%s) failed",
+		snprintf(ebuf, sizeof ebuf, "net_write(%s) failed",
 							r->transport_tiny);
 		if (r->verb) {
 			if (r->step)

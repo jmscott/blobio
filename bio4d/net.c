@@ -123,7 +123,7 @@ again:
 }
 
 /*
- *  Do a timed read of some bytes on the network.
+ *  Do a timed read in child process of some bytes on the network.
  *
  *	>= 0	=> read some bytes
  *	-1	=> read() error
@@ -138,6 +138,10 @@ net_read(int fd, void *buf, size_t buf_size, unsigned timeout)
 	int e;
 	struct sigaction a;
 	struct itimerval t;
+
+WTF("start sleep 11");
+sleep(11);
+WTF("end sleep 11");
 
 	/*
 	 *  Set the timeout alarm handler.
@@ -163,8 +167,14 @@ again:
 	if (setitimer(ITIMER_REAL, &t, (struct itimerval *)0))
 		panic3(n, "setitimer(REAL) failed", strerror(errno));
 
+WTF("start read");
+	errno = 0;
 	nread = read(fd, (void *)buf, buf_size);
 	e = errno;
+WTF2("end read", e > 0 ? strerror(e) : "no error");
+WTF2("nread", nread < 0 ? "negative" : (nread == 0 ? "zero" : ">0"));
+WTF2("alarm caught", alarm_caught ? "yes" : "no");
+
 
 	/*
 	 *  Disable timer.
@@ -180,7 +190,7 @@ again:
 	if (nread < 0) {
 		char tbuf[27];
 
-		if (e != EINTR) {
+		if (e > 0 && e != EINTR) {
 			error3(n, "read() failed", strerror(e));
 			errno = e;
 			return -1;
@@ -208,6 +218,7 @@ int
 net_write(int fd, void *buf, size_t buf_size, unsigned timeout)
 {
 	static char n[] = "net_write";
+WTF("net_write: entered");
 
 	int nwrite;
 	unsigned char *b, *b_end;
@@ -242,8 +253,13 @@ again:
 	 */
 	if (setitimer(ITIMER_REAL, &t, (struct itimerval *)0))
 		panic3(n, "write_buf: setitimer(REAL) failed", strerror(errno));
+WTF("start write()");
+	errno = 0;
 	nwrite = write(fd, (void *)b, b_end - b);
 	e = errno;
+WTF2("end write()", e > 0 ? strerror(e) : "no error");
+WTF2("end write()", nwrite < 0 ? "negative" : (nwrite == 0 ? "0" : ">0"));
+
 
 	/*
 	 *  Disable the timer.

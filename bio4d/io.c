@@ -196,20 +196,6 @@ again:
 	return -1;
 }
 
-pid_t
-io_waitpid(pid_t pid, int *stat_loc, int options)
-{
-	pid_t id;
-
-again:
-	id = waitpid(pid, stat_loc, options);
-	if (id >= 0)
-		return id;
-	if (errno == EINTR)
-		goto again;
-	return -1;
-}
-
 int
 io_rename(char *old_path, char *new_path)
 {

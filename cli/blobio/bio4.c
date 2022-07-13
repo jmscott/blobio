@@ -375,7 +375,7 @@ catch_write_ALRM(int sig)
 
 /*
  *  Synopsis:
- *	Write bytes with tracing and timeout
+ *	Write bytes with tracing and timeout.
  */
 static char *
 _write(int fd, unsigned char *buf, int buf_size)
@@ -396,9 +396,9 @@ _write(int fd, unsigned char *buf, int buf_size)
 	if (uni_write_buf(fd, (unsigned char *)buf, buf_size))
 		err = strerror(errno);
 	if (timeout > 0) {
+		alarm(0);
 		if (signal(SIGALRM, SIG_IGN) == SIG_ERR && !err)
 			err = strerror(errno);
-		alarm(0);
 	}
 	return err;
 }
@@ -416,10 +416,10 @@ _read(int fd, unsigned char *buf, int buf_size, int *nread)
 	_TRACE("request to read()");
 
 	if ((nr = uni_read(fd, (unsigned char *)buf, buf_size)) < 0) {
-		if (nr == -1)
-			err = strerror(errno);
-		else
+		if (nr == -2)
 			err = "read timeout";
+		else
+			err = strerror(errno);
 	}
 		
 #ifdef COMPILE_TRACE
