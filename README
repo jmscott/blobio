@@ -75,7 +75,7 @@ Description:
 	On the blob server, named "bio4d", for each correct client request a
 	single traffic record describing the request is written to the file
 
-		server:$BLOBIO_ROOT/spool/bio4d.brr
+		$BLOBIO_ROOT/spool/bio4d.brr
 
 	Those traffic records are named "Blob Request Records" and abbreviated
 	as BRR.  The BRR record format is modeled after the Call Detail Record
@@ -280,6 +280,8 @@ Billing Model Questions:
 	  start_time.
 
 Note:
+	- where is syntax for BLOBIO_SERVICE defined?
+
 	- should the digest match be changed to [[:graph:]]{32,128} to
 	  [[:graph:]]{32,128} for possible base 58 for newer digests?
 
