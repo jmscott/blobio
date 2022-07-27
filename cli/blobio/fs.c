@@ -54,7 +54,7 @@ extern struct service fs_service;
 
 /*
  *  The end point is the root directory of the source blobio file system.
- *  No non-ascii or '?' characters are allowed in root file path.
+ *  The query args (following '?') have already been removed.
  *
  *  Note:
  *	Eventually UTF8 will be allowed.
@@ -64,22 +64,9 @@ fs_end_point_syntax(char *root_dir)
 {
 	char *p = root_dir, c;
 
-	while ((c = *p++)) {
-		if (!isascii(c))
-			return "character in root directory path is not ascii";
-		if (c == '?')
-			return "? character not allowed in root directory path";
-		if (c == '~')
-			return "~ character not allowed in root directory path";
-		if (c == ':')
-			return ": character not allowed in root directory path";
-	}
 	/*
 	 *  root directory can't be too long.  Need room for
 	 *  trailing $BLOBIO_ROOT/data/fs_<algorithm>/path/to/blob.
-	 *
-	 *  Note:
-	 *	Seems like this code ought to be in the digest module.
 	 */
 	if (p - root_dir >= (PATH_MAX - 59))
 		return "too many chars in root directory path";
