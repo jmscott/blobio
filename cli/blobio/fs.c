@@ -62,12 +62,8 @@ extern struct service fs_service;
 static char *
 fs_end_point_syntax(char *root_dir)
 {
-	char *p = root_dir, c;
+	char *p = root_dir;
 
-	/*
-	 *  root directory can't be too long.  Need room for
-	 *  trailing $BLOBIO_ROOT/data/fs_<algorithm>/path/to/blob.
-	 */
 	if (p - root_dir >= (PATH_MAX - 59))
 		return "too many chars in root directory path";
 	return (char *)0;
@@ -88,7 +84,7 @@ fs_open()
 	if (*verb == 'w')
 		return "wrap verb not supported";
 
-	if (uni_access(end_point, X_OK)) {
+	if (jmscott_access(end_point, X_OK)) {
 		if (errno == ENOENT)
 			return "blob root directory does not exist";
 		if (errno == EPERM)
@@ -109,7 +105,7 @@ fs_open()
 
 	//  verify permissons on data/ directory
 
-	if (uni_access(fs_path, X_OK)) {
+	if (jmscott_access(fs_path, X_OK)) {
 		if (errno == ENOENT)
 			return "directory does not exit: data/fs_<algo>";
 		if (errno == EPERM)
@@ -173,7 +169,7 @@ fs_copy(char *in_path, char *out_path)
 		out = output_fd;
 
 	while ((nr = uni_read(in, buf, sizeof buf)) > 0) {
-		if (uni_write_buf(out, buf, nr) < 0)
+		if (uni_write(out, buf, nr) < 0)
 			break;
 		blob_size += nr;
 	}
@@ -280,7 +276,7 @@ fs_eat(int *ok_no)
 
 	//  insure we can read the file.
 
-	if (uni_access(fs_path, R_OK)) {
+	if (jmscott_access(fs_path, R_OK)) {
 		if (errno == ENOENT) {
 			*ok_no = 1;
 			return set_brr("no", (char *)0);
@@ -322,7 +318,7 @@ fs_put(int *ok_no)
 
 	//  if the blob file already exists then we are done
 
-	if (uni_access(fs_path, F_OK) == 0) {
+	if (jmscott_access(fs_path, F_OK) == 0) {
 		*ok_no = 0;
 
 		//  Note: what about draining the input not bound to a file?
@@ -370,7 +366,7 @@ fs_put(int *ok_no)
 	//  copy the blob to temporary path.
 
 	while ((nr = uni_read(in_fd, buf, sizeof buf)) > 0)
-		if (uni_write_buf(tmp_fd, buf, nr) < 0) {
+		if (uni_write(tmp_fd, buf, nr) < 0) {
 			err = strerror(errno);
 			break;
 		}

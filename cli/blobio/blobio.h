@@ -188,7 +188,6 @@ extern void	trace3(char *, char *, char *);
 extern void	trace4(char *, char *, char *, char *);
 extern void	hexdump(unsigned char *buf, int buf_size, char direction);
 
-extern int	uni_access(const char *path, int mode);
 extern int	uni_close(int fd);
 extern int	uni_link(const char *oldpath, const char *newpath);
 extern int	uni_mkdir(const char *path, mode_t mode);

@@ -393,7 +393,7 @@ _write(int fd, unsigned char *buf, int buf_size)
 		hexdump((unsigned char *)buf, buf_size, '>');
 	}
 #endif
-	if (uni_write_buf(fd, (unsigned char *)buf, buf_size))
+	if (uni_write(fd, (unsigned char *)buf, buf_size))
 		err = strerror(errno);
 	if (timeout > 0) {
 		alarm(0);

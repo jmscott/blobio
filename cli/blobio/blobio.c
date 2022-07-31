@@ -592,7 +592,10 @@ parse_argv(int argc, char **argv)
 			/*
 			 *  Extract query arguments from service: brr, tmo
 			 *
-			 *	fs:/home/jmscott/opt/blobio?tmp=20&brr=fs.brr
+			 *	BLOBIO_ROOT=/opt/jmscott/jmsdesk/blobio
+			 *	BR=$BLOBIO_ROOT
+			 *	BLOBIO_SERVICE=fs:$BR?brr=../../spool/fs
+			 *	BLOBIO_SERVICE=bio4:10.187.1.5:1797?tmo=10
 			 *
 			 *  Note:
 			 *	can we write to the service string, which is
@@ -761,7 +764,7 @@ brr_write()
 	if (!t)
 		die2("gmtime() failed", strerror(errno));
 	/*
-	 *  Record start time.
+	 *  Get end time.
 	 */
 	if (clock_gettime(CLOCK_REALTIME, &end_time) < 0)
 		die2("clock_gettime(end REALTIME) failed", strerror(errno));
@@ -986,7 +989,7 @@ main(int argc, char **argv)
 
 				buf[0] = 0;
 				buf2cat(buf, sizeof buf, ascii_digest, "\n");
-				if (uni_write_buf(output_fd, buf, strlen(buf)))
+				if (uni_write(output_fd, buf, strlen(buf)))
 					die2(
 						"write(ascii_digest) failed",
 						strerror(errno)

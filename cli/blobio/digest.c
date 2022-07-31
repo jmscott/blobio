@@ -63,7 +63,7 @@ digest_copy(int in_fd, int out_fd)
 		status = digest_module->get_update(buf, sizeof buf);
 		if (strlen(status) > 1)
 			return status;
-		if (uni_write_buf(out_fd, buf, nread))
+		if (uni_write(out_fd, buf, nread))
 			return strerror(errno);
 		if (status[0] == '0')
 			break;

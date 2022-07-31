@@ -50,17 +50,6 @@ uni_write(int fd, const void *buf, size_t count)
 }
 
 /*
- *  Write a full buffer or return error.
- *  Caller can depend on correct value of errno.
- *
- */
-int
-uni_write_buf(int fd, const void *buf, size_t count)
-{
-	return jmscott_write(fd, (void *)buf, count);
-}
-
-/*
  *  Make a directory path.
  */
 int
@@ -103,10 +92,4 @@ int
 uni_unlink(const char *path)
 {
 	return jmscott_unlink(path);
-}
-
-int
-uni_access(const char *path, int mode)
-{
-	return jmscott_access(path, mode);
 }
