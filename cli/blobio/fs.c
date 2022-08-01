@@ -189,7 +189,7 @@ set_brr(char *hist, char *fs_path) {
 
 	struct stat st;
 
-	if (!brr_path)
+	if (!brr_path[0])
 		return (char *)0;
 	if (fs_path && fs_path[0]) {
 		if (stat(fs_path, &st)) {
@@ -202,7 +202,7 @@ set_brr(char *hist, char *fs_path) {
 
 	snprintf(transport, sizeof transport, "fs~%d:", getpid());
 
-	//  disable incorrect warnings about size of transport buff.
+	//  disable incorrect warnings about size of transport buf.
 	//  we checked the length in fs_open().
 	strcat(transport, fs_service.end_point);
 	strcpy(chat_history, hist);
@@ -425,6 +425,12 @@ fs_roll(int *ok_no)
 static char *
 fs_wrap(int *ok_no)
 {
+	char fs_brr_path[PATH_MAX];
+
+	fs_brr_path[0] = 0;
+	jmscott_strcat(fs_brr_path, sizeof fs_brr_path, fs_path);
+	jmscott_strcat(fs_brr_path, sizeof fs_brr_path, "/spool/fs.brr");
+
 	(void)ok_no;
 	return "\"wrap\" not implemented (yet) in \"fs\" service";
 }
