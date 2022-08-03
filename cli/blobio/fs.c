@@ -425,14 +425,32 @@ fs_roll(int *ok_no)
 static char *
 fs_wrap(int *ok_no)
 {
-	char fs_brr_path[PATH_MAX];
+	int fd;
+	char now[21];
+	char wrap_brr_path[128];
 
-	fs_brr_path[0] = 0;
-	jmscott_strcat(fs_brr_path, sizeof fs_brr_path, fs_path);
-	jmscott_strcat(fs_brr_path, sizeof fs_brr_path, "/spool/fs.brr");
+	wrap_brr_path[0] = 0;
 
+	jmscott_strcat(wrap_brr_path, sizeof wrap_brr_path, brr_path);
+	jmscott_strcat(wrap_brr_path, sizeof wrap_brr_path, "-");
+
+	snprintf(now, sizeof now, "%d", (int)time((time_t *)0));
+	jmscott_strcat(wrap_brr_path, sizeof wrap_brr_path, now);
+	jmscott_strcat(wrap_brr_path, sizeof wrap_brr_path, ".brr");
+
+	//  Note: verify that brr file is NOT a sym link
+	fd = uni_open_mode(
+		wrap_brr_path,
+		O_RDONLY|O_CREAT|O_EXLOCK,
+		S_IRUSR|S_IWUSR|S_IRGRP
+	);
+	if (fd < 0)
+		return strerror(errno);
 	(void)ok_no;
-	return "\"wrap\" not implemented (yet) in \"fs\" service";
+
+	if (uni_close(fd))
+		return strerror(errno);
+	return (char *)0;
 }
 
 struct service fs_service =

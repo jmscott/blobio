@@ -750,13 +750,15 @@ brr_write()
 	long int sec, nsec;
 	size_t len;
 
+	//  Note: verify that brr file is NOT a sym link
 	fd = uni_open_mode(
 		brr_path,
-		O_WRONLY|O_CREAT|O_APPEND,
+		O_WRONLY|O_CREAT|O_APPEND|O_EXLOCK,
 		S_IRUSR|S_IWUSR|S_IRGRP
 	);
 	if (fd < 0)
 		die2("open(brr-path) failed", strerror(errno));
+
 	/*
 	 *  Build the ascii version of the start time.
 	 */

@@ -15,7 +15,7 @@
  *	$BLOBIO_SERVICE.
  *
  *		tmo=20			#  timeout in seconds <= 255
- *		brr=<file name>		#  path to brr log at spool/<name>.brr
+ *		brr=path/to/brr		#  path to brr log
  *
  *	Tis an error if args other than "tmo" or "brr" exist.
  *  Returns:
@@ -215,9 +215,9 @@ BLOBIO_SERVICE_get_tmo(char *query, int *tmo)
 char *
 BLOBIO_SERVICE_get_brr_path(char *query, char *path)
 {
-	char *q = query, c;
-
-	*path = 0;
+	char *q = query, c, *p = path;
+	
+	*p = 0;
 	while ((c = *q++)) {
 		if (c == '&')
 			continue;
@@ -244,9 +244,13 @@ BLOBIO_SERVICE_get_brr_path(char *query, char *path)
 		if (c != '=')
 			return "impossible: char '=' not after \"brr\"";
 		while ((c = *q++) && c != '&')
-			*path++ = c;
-		path = 0;
+			*p++ = c;
+		*p = 0;
 	}
-
+	/*
+	 *  brr path can not end with ".brr".
+	 */
+	if (p - 4>path && p[-4]=='.' && p[-3]=='b' && p[-2]=='r' && p[-1]=='r')
+		return "brr path ends with \".brr\"";
 	return (char *)0;
 }
