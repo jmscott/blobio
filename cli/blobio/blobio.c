@@ -14,6 +14,8 @@
  *	--output-path <path/to/file>
  *	--help
  *  Note:
+ *	brr_write() does not verify an existing *.brr is a symbolic link.
+ *
  *	Investigate linux system calls splice(), sendfile() and
  *	copy_file_range().
  *
@@ -750,10 +752,17 @@ brr_write()
 	long int sec, nsec;
 	size_t len;
 
-	//  Note: verify that brr file is NOT a sym link
+	/*
+	 *  Open brr file with shared lock, not exclusive.
+	 *  fs_wrap() opens with exclusive, to quickly rename
+	 *  to fs-<time()>.brr, for wrapping.
+	 *
+	 *  Note:
+	 *	verify that brr file is NOT a sym link
+	 */
 	fd = uni_open_mode(
 		brr_path,
-		O_WRONLY|O_CREAT|O_APPEND|O_EXLOCK,
+		O_WRONLY|O_CREAT|O_APPEND|O_SHLOCK,
 		S_IRUSR|S_IWUSR|S_IRGRP
 	);
 	if (fd < 0)

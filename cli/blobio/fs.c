@@ -438,7 +438,7 @@ fs_wrap(int *ok_no)
 	jmscott_strcat(wrap_brr_path, sizeof wrap_brr_path, now);
 	jmscott_strcat(wrap_brr_path, sizeof wrap_brr_path, ".brr");
 
-	//  Note: verify that brr file is NOT a sym link
+	//  Note: must verify that brr file is NOT a sym link
 	fd = uni_open_mode(
 		wrap_brr_path,
 		O_RDONLY|O_CREAT|O_EXLOCK,
@@ -446,10 +446,17 @@ fs_wrap(int *ok_no)
 	);
 	if (fd < 0)
 		return strerror(errno);
-	(void)ok_no;
-
-	if (uni_close(fd))
+	int status = rename(brr_path, wrap_brr_path);
+	char *err = (char *)0;
+	if (status)
+		err = strerror(status);
+	
+	if (uni_close(fd) && err == (char *)0)
 		return strerror(errno);
+	if (err)
+		return err;
+
+	(void)ok_no;
 	return (char *)0;
 }
 
