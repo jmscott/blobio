@@ -412,8 +412,6 @@ parse_argv(int argc, char **argv)
 	    strcmp("empty", argv[1]) != 0)
 	    	die2("unknown verb", argv[1]);
 
-	verb = argv[1];
-
 	//  parse command line arguments after the request verb
 
 	for (i = 2;  i < argc;  i++) {
@@ -745,28 +743,11 @@ xref_args()
 static void
 brr_write()
 {
-	int fd;
 	struct tm *t;
 	char brr[BRR_SIZE + 1];
 	struct timespec	end_time;
 	long int sec, nsec;
 	size_t len;
-
-	/*
-	 *  Open brr file with shared lock, not exclusive.
-	 *  fs_wrap() opens with exclusive, to quickly rename
-	 *  to fs-<time()>.brr, for wrapping.
-	 *
-	 *  Note:
-	 *	verify that brr file is NOT a sym link
-	 */
-	fd = uni_open_mode(
-		brr_path,
-		O_WRONLY|O_CREAT|O_APPEND|O_SHLOCK,
-		S_IRUSR|S_IWUSR|S_IRGRP
-	);
-	if (fd < 0)
-		die2("open(brr-path) failed", strerror(errno));
 
 	/*
 	 *  Build the ascii version of the start time.
@@ -826,6 +807,21 @@ brr_write()
 	);
 
 	len = strlen(brr);
+	/*
+	 *  Open brr file with shared lock, not exclusive.
+	 *  fs_wrap() opens with exclusive, to quickly rename
+	 *  to fs-<time()>.brr, for wrapping.
+	 *
+	 *  Note:
+	 *	verify that brr file is NOT a sym link
+	 */
+	int fd = uni_open_mode(
+		brr_path,
+		O_WRONLY|O_CREAT|O_APPEND|O_SHLOCK,
+		S_IRUSR|S_IWUSR|S_IRGRP
+	);
+	if (fd < 0)
+		die2("open(brr-path) failed", strerror(errno));
 	/*
 	 *  Write the entire blob request record in a single write().
 	 */

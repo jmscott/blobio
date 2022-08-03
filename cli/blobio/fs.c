@@ -419,7 +419,7 @@ static char *
 fs_roll(int *ok_no)
 {
 	(void)ok_no;
-	return "\"roll\" not implemented (yet) in \"fs\" service";
+	return "\"roll\" not implemented (yet) service";
 }
 
 static char *
@@ -428,6 +428,9 @@ fs_wrap(int *ok_no)
 	int fd;
 	char now[21];
 	char wrap_brr_path[128];
+
+	if (ok_no)
+		return "\"wrap\" not supported (yet)";
 
 	wrap_brr_path[0] = 0;
 
@@ -438,7 +441,11 @@ fs_wrap(int *ok_no)
 	jmscott_strcat(wrap_brr_path, sizeof wrap_brr_path, now);
 	jmscott_strcat(wrap_brr_path, sizeof wrap_brr_path, ".brr");
 
-	//  Note: must verify that brr file is NOT a sym link
+	/*
+	 *  Open brr file with exclusive lock, to block the other shared lock
+	 *  writers in blobio:main().  hold lock breifly to rename fs.brr to
+	 *  fs-<unix epoch>.brr
+	 */
 	fd = uni_open_mode(
 		wrap_brr_path,
 		O_RDONLY|O_CREAT|O_EXLOCK,

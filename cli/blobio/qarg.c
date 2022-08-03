@@ -25,13 +25,70 @@ char *
 BLOBIO_SERVICE_frisk_query(char *query)
 {
 	char *q = query, c;
-	char seen_tmo = 0, seen_brr = 0;
+	char seen_tmo = 0, seen_brr = 0, seen_algo = 0;
 	int count;
 
 	if (!query || !*query)
 		return (char *)0;
 	while ((c = *q++)) {
 		switch (c) {
+		case 'a':		//  match "algo"
+			c = *q++;
+			if (!c)
+				return "unexpected null after \"a\" query arg";
+			if (c != 'l')
+				return "unexpected char after \"a\" query arg";
+
+			c = *q++;
+			if (!c)
+				return "unexpected null after \"al\" query arg";
+			if (c != 'g')
+				return "unexpected char after \"al\" query arg";
+
+			c = *q++;
+			if (!c)
+				return "unexpected null after "
+				       "\"alg\" query arg";
+			if (c != 'o')
+				return "unexpected char after "
+				       "\"alg\" query arg";
+
+			c = *q++;
+			if (c != '=')
+				return "no char '=' after arg \"brr\"";
+			
+			//  at least one char
+			c = *q++;
+			if (!c || c == '&')
+				return "missing file path after arg algo=";
+			if (seen_algo)
+				return "\"algo\" specified more than once";
+			seen_algo = 1;
+
+			//  skip over path till we hit end of string or '&'
+			count = 0;
+			while ((c = *q++)) {
+				if (!c)
+					return (char *)0;
+				if (c == '&')
+					break;
+				if (!isascii(c))
+					return "non ascii char in \"algo\" arg";
+				if (count == 0) {
+					if (!islower(c) || !isalpha(c))
+						return "first char not "
+						       "lower alpha in \"algo\""
+						;
+				} else {
+					//  Note: wrong algo, fix!
+					if (!isalnum(c))
+						return "non alnum in \"algo\"";
+				}
+				count++;
+				if (count > 8)
+					return ">8 chars in \"algo\" arg";
+			}
+			break;
 		case 'b':		//  match "brr"
 			c = *q++;
 			if (!c)
