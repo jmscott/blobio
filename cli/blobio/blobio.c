@@ -14,6 +14,8 @@
  *	--output-path <path/to/file>
  *	--help
  *  Note:
+ *	need to rename variable "brr_path" to "brr" to match query arg name.
+ *
  *	brr_write() does not verify an existing *.brr is a symbolic link.
  *
  *	Investigate linux system calls splice(), sendfile() and
@@ -77,10 +79,14 @@ extern int	tracing;
  */
 char	*verb;
 char	algorithm[9] = {0};
+char	algo[9] = {0};
 char	ascii_digest[129] = {0};
 char	*output_path = 0;
 char	*input_path = 0;
+
+//  Note: need to rename variable "brr_path" to "brr" to match query path name.
 char	brr_path[64] = {0};
+
 char	*null_device = "/dev/null";
 char	chat_history[10] = {0};
 char	transport[129] = {0};
@@ -613,7 +619,7 @@ parse_argv(int argc, char **argv)
 				if (err)
 					eservice("query: timeout", err);
 
-				err = BLOBIO_SERVICE_get_brr_path(
+				err = BLOBIO_SERVICE_get_brr(
 					query,
 					brr_path
 				);

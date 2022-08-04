@@ -52,6 +52,7 @@ extern int	timeout;
 extern char	*verb;
 extern char	transport[129];
 extern char	algorithm[9];
+extern char	algo[9];		//  service query arg "algo"
 extern char	ascii_digest[129];
 extern char	end_point[129];
 extern char	brr_path[65];
@@ -276,6 +277,9 @@ bio4_open()
 	char *ep = bio4_service.end_point;
 
 	_TRACE2("request to open()", ep);
+
+	if (algo[0])
+		return "service query arg \"algo\" can not exist for bio4";
 
 	p = strchr(ep, ':');
 	memcpy(host, ep, p - ep);

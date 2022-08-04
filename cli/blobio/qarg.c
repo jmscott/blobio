@@ -1,6 +1,8 @@
 /*
  *  Synopsis:
  *	Frisk and extract query from uri: {tmo,brr}={\d{1,3}|<path>}
+ *  Note:
+ *	No escaping in query args, which is a serious bug!
  */
 #include <ctype.h>
 #include <stdlib.h>
@@ -259,7 +261,7 @@ BLOBIO_SERVICE_get_tmo(char *query, int *tmo)
  *	char *err;
  *	err =  BLOBIO_SERVICE_frisk_brr_path(query, path);
  *	if (err)
- *		return status;		//  error in a query arg
+ *		return err;		//  error in a query arg
  *
  *	...
  *
@@ -270,7 +272,7 @@ BLOBIO_SERVICE_get_tmo(char *query, int *tmo)
  *		die2("error parsing \"brr\" for path", err);
  */
 char *
-BLOBIO_SERVICE_get_brr_path(char *query, char *path)
+BLOBIO_SERVICE_get_brr(char *query, char *path)
 {
 	char *q = query, c, *p = path;
 	
@@ -309,5 +311,65 @@ BLOBIO_SERVICE_get_brr_path(char *query, char *path)
 	 */
 	if (p - 4>path && p[-4]=='.' && p[-3]=='b' && p[-2]=='r' && p[-1]=='r')
 		return "brr path ends with \".brr\"";
+	return (char *)0;
+}
+
+/*
+ *  Synopsis:
+ *  	Extract the "algo" value for use by service drivers.
+ *  Usage:
+ *	char *err;
+ *	err =  BLOBIO_SERVICE_frisk_algo(query, algo);
+ *	if (err)
+ *		return err;		//  error in a query arg
+ *
+ *	...
+ *
+ *	char algo[64];
+ *	algo[0] = 0;
+ *	err = BLOBIO_SERVICE_get_algo(query, char *algo);
+ *	if (err)
+ *		die2("error parsing \"algo\"", err);
+ */
+char *
+BLOBIO_SERVICE_get_algo(char *query, char *algo)
+{
+	char *q = query, c, *a = algo;
+	
+	*a = 0;
+	while ((c = *q++)) {
+		if (c == '&')
+			continue;
+
+		//  not arg "algo", so skip to next '&' or end of string 
+		if (c != 'a') {
+			while ((c = *q++) && c != '&')
+				;
+			if (!c)
+				return (char *)0;
+			continue;
+		}
+		c = *q++;
+		if (c != 'l')
+			return "impossible: char 'l' not after char \"a\"";
+
+		c = *q++;
+		if (c != 'g')
+			return "impossible: char 'g' not after \"al\"";
+
+		c = *q++;
+		if (c != 'o')
+			return "impossible: char 'o' not after \"alg\"";
+
+		c = *q++;
+		if (c != '=')
+			return "impossible: char '=' not after \"algo\"";
+
+		// already know algo matches [a-z][a-z]{0,7}
+		
+		while ((c = *q++) && c != '&')
+			*a++ = c;
+		*a = 0;
+	}
 	return (char *)0;
 }

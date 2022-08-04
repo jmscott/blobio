@@ -37,6 +37,7 @@
 
 extern char	*verb;
 extern char	algorithm[9];
+extern char	algo[9];		//  service query arg "algo"
 extern char	chat_history[129];
 extern char	transport[129];
 extern char	*brr_path;
