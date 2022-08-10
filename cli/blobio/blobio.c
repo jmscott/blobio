@@ -859,16 +859,18 @@ brr_write(char *path)
 static void
 _brr_write()
 {
-	if (brr_path[0])
+	if (brr_path[0]) {
 		brr_write(brr_path);
-	else if (brrp[0]) {
-		char path[PATH_MAX];
-
-		path[0] = 0;
-		jmscott_strcat(path, sizeof path, brrp);
-		jmscott_strcat(path, sizeof path, ".brr");
-		brr_write(path);
+		return;
 	}
+	if (!brrp[0])
+		return;
+	char path[PATH_MAX];
+
+	path[0] = 0;
+	jmscott_strcat(path, sizeof path, brrp);
+	jmscott_strcat(path, sizeof path, ".brr");
+	brr_write(path);
 }
 
 int
