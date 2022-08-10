@@ -856,6 +856,21 @@ brr_write(char *path)
 		die2("close(brr-path) failed", strerror(errno));
 }
 
+static void
+_brr_write()
+{
+	if (brr_path[0])
+		brr_write(brr_path);
+	else if (brrp[0]) {
+		char path[PATH_MAX];
+
+		path[0] = 0;
+		jmscott_strcat(path, sizeof path, brrp);
+		jmscott_strcat(path, sizeof path, ".brr");
+		brr_write(path);
+	}
+}
+
 int
 main(int argc, char **argv)
 {
@@ -1071,16 +1086,7 @@ main(int argc, char **argv)
 	if (output_fd > 1 && jmscott_close(output_fd))
 		die2("close(output-path) failed",strerror(errno));
 
-	if (brr_path[0])
-		brr_write(brr_path);
-	else if (brrp[0]) {
-		char path[PATH_MAX];
-
-		path[0] = 0;
-		jmscott_strcat(path, sizeof path, brrp);
-		jmscott_strcat(path, sizeof path, ".brr");
-		brr_write(path);
-	}
+	_brr_write();
 	cleanup(exit_status);
 
 	/*NOTREACHED*/
