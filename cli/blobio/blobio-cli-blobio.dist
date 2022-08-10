@@ -36,7 +36,6 @@ OBJs="
 	service.o
 	sha.o
 	trace.o
-	uni.o
 "
 
 #  Uncomment to override default mappings of VARs to target directory
@@ -92,7 +91,6 @@ SRCs="
 	service.c
 	sha.c
 	trace.c
-	uni.c
 "
 
 #  Uncomment to create attic/ directory

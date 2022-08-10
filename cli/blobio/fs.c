@@ -2,6 +2,8 @@
  *  Synopsis:
  *	A driver for a fast, trusting posix file system blobio service.
  *  Note:
+ *	Why does fs_wrap need to created the dir <brr-path>/wrap ?
+ *
  *	Need to properly use separator char in tmp_path.
  *
  *	Only ascii is acccepted in the file system path!
@@ -46,6 +48,8 @@ extern int	output_fd;
 extern char	*input_path;
 extern int	input_fd;
 extern char	*null_device;
+extern char	ascii_digest[];
+extern struct digest		*digests[];
 extern unsigned long long	blob_size;
 
 static char	fs_path[PATH_MAX + 1] = {0};
@@ -102,7 +106,14 @@ fs_open()
 	//  build the path to the $BLOBIO_ROOT/data/fs_<algo>/ directory
 
 	*fs_path = 0;
-	buf4cat(fs_path, sizeof fs_path, end_point, "/data/", "fs_", algorithm);
+	jmscott_strcat4(
+		fs_path,
+		sizeof fs_path,
+		end_point,
+		"/data/",
+		"fs_",
+		algorithm
+	);
 
 	//  verify permissons on data/ directory
 
@@ -125,7 +136,7 @@ fs_open()
 
 	if (IS_WRITE_VERB()) {
 		*tmp_path = 0;
-		buf2cat(tmp_path, sizeof tmp_path, fs_path, "/tmp");
+		jmscott_strcat2(tmp_path, sizeof tmp_path, fs_path, "/tmp");
 	}
 
 	return (char *)0;
@@ -154,7 +165,7 @@ fs_copy(char *in_path, char *out_path)
 	//  open input path or point to standard input
 
 	if (in_path) {
-		in = uni_open(in_path, O_RDONLY);
+		in = jmscott_open(in_path, O_RDONLY, 0);
 		if (in < 0)
 			return strerror(errno);
 	} else
@@ -163,22 +174,22 @@ fs_copy(char *in_path, char *out_path)
 	//  open output path or point to standard out
 
 	if (out_path) {
-		out = uni_open_mode(out_path, O_WRONLY|O_CREAT,S_IRUSR|S_IRGRP);
+		out = jmscott_open(out_path, O_WRONLY|O_CREAT,S_IRUSR|S_IRGRP);
 		if (out < 0)
 			return strerror(errno);
 	} else
 		out = output_fd;
 
-	while ((nr = uni_read(in, buf, sizeof buf)) > 0) {
-		if (uni_write(out, buf, nr) < 0)
+	while ((nr = jmscott_read(in, buf, sizeof buf)) > 0) {
+		if (jmscott_write(out, buf, nr) < 0)
 			break;
 		blob_size += nr;
 	}
 	e = errno;
 	if (in != -1)
-		uni_close(in);
+		jmscott_close(in);
 	if (out != -1)
-		uni_close(out);
+		jmscott_close(out);
 	errno = e;
 	if (e != 0)
 		return strerror(e);
@@ -237,7 +248,7 @@ fs_get(int *ok_no)
 	//  link output path to source blob file
 	
 	if (output_path && output_path != null_device) {
-		if (uni_link(fs_path, output_path) == 0) {
+		if (jmscott_link(fs_path, output_path) == 0) {
 			*ok_no = 0;
 			return set_brr("ok", fs_path);
 		}
@@ -331,7 +342,7 @@ fs_put(int *ok_no)
 	//  try to hard link the target blob to the existing source blob
 
 	if (input_path) {
-		if (uni_link(input_path, fs_path) == 0 || errno == EEXIST) {
+		if (jmscott_link(input_path, fs_path) == 0 || errno == EEXIST) {
 			*ok_no = 0;
 			return set_brr("ok,ok", fs_path);
 		}
@@ -348,7 +359,7 @@ fs_put(int *ok_no)
 	//  open input file.  may be standard input
 
 	if (input_path) {
-		in_fd = uni_open(input_path, O_RDONLY);
+		in_fd = jmscott_open(input_path, O_RDONLY, 0);
 		if (in_fd < 0)
 			return strerror(errno);
 	} else
@@ -356,7 +367,7 @@ fs_put(int *ok_no)
 
 	//  open tempory file to for incoming blob
 
-	tmp_fd = uni_open_mode(
+	tmp_fd = jmscott_open(
 			tmp_path,
 			O_WRONLY | O_CREAT, 
 			S_IRUSR | S_IRGRP
@@ -366,8 +377,8 @@ fs_put(int *ok_no)
 
 	//  copy the blob to temporary path.
 
-	while ((nr = uni_read(in_fd, buf, sizeof buf)) > 0)
-		if (uni_write(tmp_fd, buf, nr) < 0) {
+	while ((nr = jmscott_read(in_fd, buf, sizeof buf)) > 0)
+		if (jmscott_write(tmp_fd, buf, nr) < 0) {
 			err = strerror(errno);
 			break;
 		}
@@ -378,16 +389,16 @@ fs_put(int *ok_no)
 
 	if (err == (char *)0) {
 
-		if (uni_link(tmp_path, fs_path) && errno != EEXIST) {
+		if (jmscott_link(tmp_path, fs_path) && errno != EEXIST) {
 			err = strerror(errno);
 		} else
 			*ok_no = 0;
 	}
 
-	uni_close(tmp_fd);
-	uni_unlink(tmp_path);
-	if (err)
-		return err;
+	if (jmscott_close(tmp_fd) && err == (char *)0)
+		err = strerror(errno);
+	if (jmscott_unlink(tmp_path) && err == (char *)0)
+		err = strerror(errno);
 	return set_brr("ok,ok", fs_path);
 }
 
@@ -402,7 +413,7 @@ fs_take(int *ok_no)
 	if (*ok_no)
 		return set_brr("no", (char *)0);
 	set_brr("ok,ok,ok", fs_path);
-	if (uni_unlink(fs_path) != 0 && errno != ENOENT)
+	if (jmscott_unlink(fs_path) != 0 && errno != ENOENT)
 		return strerror(errno);
 	return (char *)0;
 }
@@ -428,26 +439,25 @@ fs_wrap(int *ok_no)
 {
 	int fd;
 	char now[21];
-	char wrap_brr_path[128];
-
-	if (ok_no)
-		return "\"wrap\" not supported (yet)";
-
-	wrap_brr_path[0] = 0;
-
-	jmscott_strcat(wrap_brr_path, sizeof wrap_brr_path, brr_path);
-	jmscott_strcat(wrap_brr_path, sizeof wrap_brr_path, "-");
+	char wrap_brr_path[PATH_MAX+1];
 
 	snprintf(now, sizeof now, "%d", (int)time((time_t *)0));
-	jmscott_strcat(wrap_brr_path, sizeof wrap_brr_path, now);
-	jmscott_strcat(wrap_brr_path, sizeof wrap_brr_path, ".brr");
+	wrap_brr_path[0] = 0;
+	jmscott_strcat4(
+		wrap_brr_path,
+		sizeof wrap_brr_path,
+		brr_path,
+		"-",
+		now,
+		".brr"
+	);
 
 	/*
 	 *  Open brr file with exclusive lock, to block the other shared lock
-	 *  writers in blobio:main().  hold lock breifly to rename fs.brr to
+	 *  writers in blobio:main().  hold lock briefly to rename fs.brr to
 	 *  fs-<unix epoch>.brr
 	 */
-	fd = uni_open_mode(
+	fd = jmscott_open(
 		wrap_brr_path,
 		O_RDONLY|O_CREAT|O_EXLOCK,
 		S_IRUSR|S_IWUSR|S_IRGRP
@@ -459,12 +469,49 @@ fs_wrap(int *ok_no)
 	if (status)
 		err = strerror(status);
 	
-	if (uni_close(fd) && err == (char *)0)
+	if (jmscott_close(fd) && err == (char *)0)
 		return strerror(errno);
 	if (err)
 		return err;
 
-	(void)ok_no;
+	//  Note: shouldn't wrap dir be created during install?
+	char wrap_dir_path[PATH_MAX];
+	wrap_dir_path[0] = 0;
+	jmscott_strcat2(wrap_dir_path, sizeof wrap_dir_path, brr_path, "/wrap");
+	if (jmscott_mkdirp(wrap_dir_path, S_IRUSR|S_IWUSR|S_IRGRP))
+		return strerror(errno);
+
+	strcpy(algorithm, algo);
+	ascii_digest[0] = 0;
+
+	int i;
+	for (i = 0;  digests[i];  i++)
+		if (strcmp(digests[i]->algorithm, algo) == 0)
+			break;
+	if (digests[i] == (struct digest *)0)
+		return "impossible: can not find digets for \"algo\" qarg";
+	struct digest *dig = digests[i];
+
+	input_fd = jmscott_open(wrap_brr_path, O_RDONLY, 0);
+	if (input_fd < 0)
+		return strerror(errno);
+	err = dig->eat_input();
+	if (jmscott_close(input_fd) && (err = (char *)0))
+		return strerror(errno);
+	if (err)
+		return err;
+
+	wrap_brr_path[0] = 0;
+	jmscott_strcat4(
+		wrap_brr_path,
+		sizeof wrap_brr_path,
+		brr_path,
+		"/wrap/",
+		algo,
+		".brr"
+	);
+
+	*ok_no = 0;
 	return (char *)0;
 }
 

@@ -27,7 +27,7 @@ char *
 BLOBIO_SERVICE_frisk_query(char *query)
 {
 	char *q = query, c;
-	char seen_tmo = 0, seen_brr = 0, seen_algo = 0;
+	char seen_tmo = 0, seen_brrp = 0, seen_algo = 0;
 	int count;
 
 	if (!query || !*query)
@@ -91,28 +91,33 @@ BLOBIO_SERVICE_frisk_query(char *query)
 					return ">8 chars in \"algo\" arg";
 			}
 			break;
-		case 'b':		//  match "brr"
+		case 'b':		//  match "brrp"
 			c = *q++;
 			if (!c)
-				return "unexpected null after \"b\" query arg";
+				return "unexpected null after \"b\"";
 			if (c != 'r')
-				return "unexpected char after \"b\" query arg";
+				return "unexpected char after \"b\"";
 			c = *q++;
 			if (!c)
-				return "unexpected null after \"br\" query arg";
+				return "unexpected null after \"br\"";
 			if (c != 'r')
-				return "unexpected char after \"br\" query arg";
+				return "unexpected char after \"br\"";
+			c = *q++;
+			if (!c)
+				return "unexpected null after \"brr\"";
+			if (c != 'p')
+				return "unexpected char after \"brr\"";
 			c = *q++;
 			if (c != '=')
-				return "no char '=' after arg \"brr\"";
+				return "no char '=' after arg \"brrp\"";
 			
 			//  at least one char
 			c = *q++;
 			if (!c || c == '&')
 				return "missing file path after arg brr=";
-			if (seen_brr)
-				return "\"brr\" specified more than once";
-			seen_brr = 1;
+			if (seen_brrp)
+				return "\"brrp\" specified more than once";
+			seen_brrp = 1;
 
 			//  skip over path till we hit end of string or '&'
 			count = 0;
@@ -122,12 +127,12 @@ BLOBIO_SERVICE_frisk_query(char *query)
 				if (c == '&')
 					break;
 				if (!isascii(c))
-					return "non ascii char in \"brr\" arg";
+					return "non ascii char in \"brrp\" arg";
 				if (!isgraph(c))
-					return "non graph char in \"brr\" arg";
+					return "non graph char in \"brrp\" arg";
 				count++;
 				if (count >= 64)
-					return "=>64 chars in \"brr\" arg";
+					return "=>64 chars in \"brrp\" arg";
 			}
 			break;
 		case 't':		//  match "tmo"
@@ -269,10 +274,10 @@ BLOBIO_SERVICE_get_tmo(char *query, int *tmo)
  *	brr_path[0] = 0;
  *	err = BLOBIO_SERVICE_get_brr_path(query, char *path);
  *	if (err)
- *		die2("error parsing \"brr\" for path", err);
+ *		die2("error parsing \"brrp\" for path", err);
  */
 char *
-BLOBIO_SERVICE_get_brr(char *query, char *path)
+BLOBIO_SERVICE_get_brrp(char *query, char *path)
 {
 	char *q = query, c, *p = path;
 	
@@ -281,7 +286,7 @@ BLOBIO_SERVICE_get_brr(char *query, char *path)
 		if (c == '&')
 			continue;
 
-		//  not arg "brr", so skip to next '&' or end of string 
+		//  not arg "brrp", so skip to next '&' or end of string 
 		if (c != 'b') {
 			while ((c = *q++) && c != '&')
 				;
@@ -300,8 +305,11 @@ BLOBIO_SERVICE_get_brr(char *query, char *path)
 		if (c != 'r')
 			return "impossible: char 'r' not after \"br\"";
 		c = *q++;
+		if (c != 'p')
+			return "impossible: char 'p' not after \"brr\"";
+		c = *q++;
 		if (c != '=')
-			return "impossible: char '=' not after \"brr\"";
+			return "impossible: char '=' not after \"brrp\"";
 		while ((c = *q++) && c != '&')
 			*p++ = c;
 		*p = 0;

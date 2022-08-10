@@ -183,7 +183,7 @@ _connect(char *host, int port, int *p_server_fd)
 	 *  Look up the host name, trying up to 5 times.
 	 */
 	trys = 0;
-again1:
+AGAIN1:
 	h = gethostbyname(host);
 	trys++;
 	if (!h) {
@@ -195,7 +195,7 @@ again1:
 		switch (h_errno) {
 		case TRY_AGAIN:
 			if (trys < 5)
-				goto again1;
+				goto AGAIN1;
 			return EAGAIN;
 		case HOST_NOT_FOUND:
 		case NO_DATA:
@@ -221,7 +221,7 @@ again1:
 	/*
 	 *  Open and connect to the remote blobio server.
 	 */
-again2:
+AGAIN2:
 	fd = socket(AF_INET, SOCK_STREAM, 0);
 	if (fd < 0) {
 		int e = errno;
@@ -229,7 +229,7 @@ again2:
 		_CTRACE2("socket() failed", strerror(e));
 
 		if (e == EAGAIN || e == EINTR)
-			goto again2;
+			goto AGAIN2;
 		return e;
 	}
 	_CTRACE("socket() created");
@@ -241,7 +241,7 @@ again2:
 	/*
 	 *  Need to timeout connect() !!
 	 */
-again3:
+AGAIN3:
 	_CTRACE("connecting to socket ...");
 
 	if (connect(fd, (const struct sockaddr *)&s, sizeof s) < 0) {
@@ -250,9 +250,9 @@ again3:
 		_CTRACE2("connect() failed", strerror(e));
 
 		if (e == EINTR || e == EAGAIN)
-			goto again3;
+			goto AGAIN3;
 
-		uni_close(fd);
+		jmscott_close(fd);
 		return e;
 	}
 	*p_server_fd = fd;
@@ -311,7 +311,7 @@ bio4_close()
 {
 	_TRACE("request to close()");
 
-	if (server_fd >= 0 && uni_close(server_fd))
+	if (server_fd >= 0 && jmscott_close(server_fd))
 		return strerror(errno);
 
 	_TRACE("close() done");
@@ -397,7 +397,7 @@ _write(int fd, unsigned char *buf, int buf_size)
 		hexdump((unsigned char *)buf, buf_size, '>');
 	}
 #endif
-	if (uni_write(fd, (unsigned char *)buf, buf_size))
+	if (jmscott_write(fd, (unsigned char *)buf, buf_size))
 		err = strerror(errno);
 	if (timeout > 0) {
 		alarm(0);
@@ -419,7 +419,7 @@ _read(int fd, unsigned char *buf, int buf_size, int *nread)
 
 	_TRACE("request to read()");
 
-	if ((nr = uni_read(fd, (unsigned char *)buf, buf_size)) < 0) {
+	if ((nr = jmscott_read(fd, (unsigned char *)buf, buf_size)) < 0) {
 		if (nr == -2)
 			err = "read timeout";
 		else
@@ -597,7 +597,7 @@ bio4_open_output()
 	if (output_path != null_device)
 		flag |= O_EXCL;		//  fail if file exists (and not null)
 
-	fd = uni_open_mode(output_path, flag, S_IRUSR | S_IRGRP);
+	fd = jmscott_open(output_path, flag, S_IRUSR | S_IRGRP);
 	if (fd < -1)
 		return strerror(errno);
 	output_fd = fd;
@@ -774,7 +774,7 @@ bio4_give(int *ok_no)
 	//  the local input.
 
 	if (input_path) {
-		int status = uni_unlink(input_path);
+		int status = jmscott_unlink(input_path);
 
 		if (status == -1 && errno != ENOENT) {
 

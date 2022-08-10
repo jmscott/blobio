@@ -67,8 +67,6 @@ service.o: service.c blobio.h
 	$(CC) $(CFLAGS) -c service.c
 trace.o: trace.c blobio.h
 	$(CC) $(CFLAGS) -c trace.c
-uni.o: uni.c blobio.h
-	$(CC) $(CFLAGS) -c uni.c
 qarg.o: qarg.c blobio.h
 	$(CC) $(CFLAGS) -c qarg.c
 

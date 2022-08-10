@@ -143,7 +143,7 @@ cleanup(int status)
 		service = (struct service *)0;
 	}
 
-	uni_close(input_fd);
+	jmscott_close(input_fd);
 
 	//  Note: what about closing the digest?
 
@@ -151,7 +151,7 @@ cleanup(int status)
 	//  grumbling if unlink() fails.
 	if (status > 1 && 
 	    output_path && output_path != null_device &&
-	    uni_unlink(output_path))
+	    jmscott_unlink(output_path))
 		if (errno != ENOENT) {
 			static char panic[] =
 				"PANIC: unlink(output_path) failed: ";
@@ -167,7 +167,7 @@ cleanup(int status)
 			ecat(buf, sizeof buf, panic);
 			buf2cat(buf, sizeof buf, err, "\n");
 
-			uni_write(2, buf, strlen(buf));
+			jmscott_write(2, buf, strlen(buf));
 		}
 	TRACE("good bye, cruel world");
 }
@@ -349,12 +349,19 @@ eopt2(char *option, char *why1, char *why2)
 //  a fatal error parsing the BLOBIO_SERVICE option.
 
 static void
-eservice(char *why1, char *why2)
+eservice2(char *why1, char *why2)
 {
 	if (why2 && why2[0])
 		eopt2("service", why1, why2);
 	else
 		eopt("service", why1);
+}
+//  a fatal error parsing the BLOBIO_SERVICE option.
+
+static void
+eservice(char *why)
+{
+	eopt("service", why);
 }
 
 //  a fatal error when an option is missing.
@@ -400,7 +407,7 @@ parse_argv(int argc, char **argv)
 	char *err;
 
 	if (argc == 1) {
-		uni_write(2, usage, strlen(usage));
+		jmscott_write(2, usage, strlen(usage));
 		die("no command line arguments");
 	}
 	if (strcmp("help", argv[1]) == 0 || strcmp("--help", argv[1]) == 0)
@@ -417,6 +424,7 @@ parse_argv(int argc, char **argv)
 	    strcmp("roll",  argv[1]) != 0 &&
 	    strcmp("empty", argv[1]) != 0)
 	    	die2("unknown verb", argv[1]);
+	verb = argv[1];
 
 	//  parse command line arguments after the request verb
 
@@ -549,18 +557,18 @@ parse_argv(int argc, char **argv)
 				emany("service");
 
 			if (++i == argc)
-				eservice("missing <name:end_point>", "");
+				eservice("missing <name:end_point>");
 			s = argv[i];
 
 			//  extract the ascii service name.
 
 			p = strchr(s, ':');
 			if (!p)
-				eservice("no colon in <name:end_point>", s);
+				eservice2("no colon in <name:end_point>", s);
 			if (p - s > 8)
-				eservice("name > 8 chars", s);
+				eservice2("name > 8 chars", s);
 			if (p - s == 0)
-				eservice("empty name", s);
+				eservice2("empty name", s);
 
 			//  find the service driver
 
@@ -570,7 +578,7 @@ parse_argv(int argc, char **argv)
 				if (strcmp(services[j]->name, name) == 0)
 					sp = services[j];
 			if (!sp)
-				eservice("unknown service", name);
+				eservice2("unknown service", name);
 
 			/*
 			 *  End point > 0 and < 128 characters,
@@ -578,22 +586,35 @@ parse_argv(int argc, char **argv)
 			 */
 			p++;
 			if (strlen(p) >= 128)
-				eservice("end point >= 128 characters", s);
+				eservice2("end point >= 128 characters", s);
 			if (!*p)
-				eservice("empty <end point>", s);
+				eservice2("empty <end point>", s);
 			if (*p == '?')
-				eservice("empty <end point> before ? char", s);
+				eservice2("empty <end point> before ? char", s);
 			endp = p;
 
 			/*
 			 *  Verify that the end point are all graphic
 			 *  characters.
 			 */
-			while (*p) {
-				if (!isgraph(*p))
-					eservice("non graph char", name);
-				p++;
+			char *query = (char *)0, c;
+			while ((c = *p++)) {
+				if (!isgraph(c))
+					eservice("non graph char in query arg");
+				if (c == '?') {
+					if (query)
+						eservice(
+							"multiple \"?\" "
+							"are forbidden"
+						);
+					else
+						query = p - 1;
+				} else if (c == '&' && !query)
+					eservice("missing \"?\" before \"&\"");
 			}
+
+			//  check for common error where '&' instead of '?'
+			//  is ued to introduce the query string.
 
 			/*
 			 *  Extract query arguments from service: brr, tmo
@@ -607,31 +628,30 @@ parse_argv(int argc, char **argv)
 			 *	can we write to the service string, which is
 			 *	part of argv?
 			 */
-			char *query;
 			if ((query = rindex(endp, '?'))) {
 				*query++ = 0;
 
 				char *err = BLOBIO_SERVICE_frisk_query(query);
 				if (err)
-					eservice("query", err);
+					eservice2("query arg: frisk", err);
 
 				err = BLOBIO_SERVICE_get_tmo(query, &timeout);
 				if (err)
-					eservice("query: timeout", err);
+					eservice2("query arg: timeout", err);
 
-				err = BLOBIO_SERVICE_get_brr(
+				err = BLOBIO_SERVICE_get_brrp(
 					query,
 					brr_path
 				);
 				if (err)
-					eservice("query: brr path", err);
+					eservice2("query arg: brrp", err);
 			}
 
 			//  validate the syntax of the specific end point
 
 			err = sp->end_point_syntax(endp);
 			if (err)
-				eservice(err, endp);
+				eservice2(err, endp);
 			service = sp;
 			strcpy(service->end_point, endp);
 		} else if (strcmp("trace", a) == 0) {
@@ -821,7 +841,7 @@ brr_write()
 	 *  Note:
 	 *	verify that brr file is NOT a sym link
 	 */
-	int fd = uni_open_mode(
+	int fd = jmscott_open(
 		brr_path,
 		O_WRONLY|O_CREAT|O_APPEND|O_SHLOCK,
 		S_IRUSR|S_IWUSR|S_IRGRP
@@ -831,9 +851,9 @@ brr_write()
 	/*
 	 *  Write the entire blob request record in a single write().
 	 */
-	if (uni_write(fd, brr, len) < 0)
+	if (jmscott_write(fd, brr, len) < 0)
 		die2("write(brr-path) failed", strerror(errno));
-	if (uni_close(fd) < 0)
+	if (jmscott_close(fd) < 0)
 		die2("close(brr-path) failed", strerror(errno));
 }
 
@@ -919,7 +939,7 @@ main(int argc, char **argv)
 	if (input_path) {
 		int fd;
 
-		fd = uni_open(input_path, O_RDONLY);
+		fd = jmscott_open(input_path, O_RDONLY, 0);
 		if (fd == -1)
 			die3("open(input) failed", err, strerror(errno));
 		input_fd = fd;
@@ -942,7 +962,7 @@ main(int argc, char **argv)
 
 			if (output_path != null_device)
 				flag |= O_EXCL;
-			fd = uni_open_mode(output_path, flag, S_IRUSR|S_IRGRP);
+			fd = jmscott_open(output_path, flag, S_IRUSR|S_IRGRP);
 			if (fd == -1)
 				die3(
 					"open(output) failed",
@@ -973,7 +993,7 @@ main(int argc, char **argv)
 			//  remove input path upon successful "give"
 
 			if (ok_no == 0 && input_path) {
-				int status = uni_unlink(input_path);
+				int status = jmscott_unlink(input_path);
 
 				if (status == -1 && errno != ENOENT)
 					die2(
@@ -1002,7 +1022,7 @@ main(int argc, char **argv)
 
 				buf[0] = 0;
 				buf2cat(buf, sizeof buf, ascii_digest, "\n");
-				if (uni_write(output_fd, buf, strlen(buf)))
+				if (jmscott_write(output_fd, buf, strlen(buf)))
 					die2(
 						"write(ascii_digest) failed",
 						strerror(errno)
@@ -1044,12 +1064,12 @@ main(int argc, char **argv)
 
 	//  close input file
 
-	if (input_fd > 0 && uni_close(input_fd))
+	if (input_fd > 0 && jmscott_close(input_fd))
 		die2("close(input-path) failed", strerror(errno));
 
 	//  close output file
 
-	if (output_fd > 1 && uni_close(output_fd))
+	if (output_fd > 1 && jmscott_close(output_fd))
 		die2("close(output-path) failed",strerror(errno));
 
 	if (brr_path[0])

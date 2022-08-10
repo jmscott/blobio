@@ -1,6 +1,9 @@
 /*
  *  Synopsis:
  *	Deprecated hash similar to bitcoin wallet hash.
+ *
+ *  Note:
+ *	mode needs to be a global variable "brr_mkdir_mode"?
  */
 #ifdef FS_BC160_MODULE    
 
@@ -265,7 +268,7 @@ bc160_eat_input()
 
 	_TRACE("request to bc160_eat_input()");
 
-	while ((nread = uni_read(input_fd, buf, sizeof buf)) > 0)
+	while ((nread = jmscott_read(input_fd, buf, sizeof buf)) > 0)
 		if (!SHA256_Update(&bc160_ctx.sha256, buf, nread))
 			return "SHA256_Update(chunk) failed";
 	if (nread < 0)
@@ -308,10 +311,11 @@ fs_bc160_name(char *name, int size)
 	return (char *)0;
 }
 
+//  Note: mode needs to be a global variable "brr_mkdir_mode"?
 static int
 _mkdir(char *path)
 {
-	return (uni_mkdir(path, 0777) == 0 || errno == EEXIST) ? 0 : -1;
+	return jmscott_mkdirp(path, 0710);
 }
 
 /*

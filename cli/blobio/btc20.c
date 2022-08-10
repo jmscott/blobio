@@ -281,7 +281,7 @@ btc20_eat_input()
 
 	_TRACE("request to btc20_eat_input()");
 
-	while ((nread = uni_read(input_fd, buf, sizeof buf)) > 0)
+	while ((nread = jmscott_read(input_fd, buf, sizeof buf)) > 0)
 		if (!SHA256_Update(&btc20_ctx.sha256, buf, nread))
 			return "SHA256_Update(chunk) failed";
 	if (nread < 0)
@@ -338,10 +338,11 @@ fs_btc20_name(char *name, int size)
 	return (char *)0;
 }
 
+//  Note: not sure about the mode: u=rwx,g=rx,o=
 static int
 _mkdir(char *path)
 {
-	return (uni_mkdir(path, 0777) == 0 || errno == EEXIST) ? 0 : -1;
+	return jmscott_mkdirp(path, 0710);
 }
 
 /*

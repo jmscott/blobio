@@ -66,9 +66,11 @@ trace(char *msg)
 		buf2cat(buf, sizeof buf, verb, ": ");
 	if (msg)
 		bufcat(buf, sizeof buf, msg);
+	else
+		bufcat(buf, sizeof buf, "<NULL>");
 	bufcat(buf, sizeof buf, "\n");
 
-	uni_write(trace_fd, buf, strlen(buf));
+	jmscott_write(trace_fd, buf, strlen(buf));
 }
 
 void
@@ -119,7 +121,7 @@ trace4(char *msg1, char *msg2, char *msg3, char *msg4)
 static void
 _write(char *buf)
 {
-	uni_write(trace_fd, buf, strlen(buf));
+	jmscott_write(trace_fd, buf, strlen(buf));
 }
 
 static short

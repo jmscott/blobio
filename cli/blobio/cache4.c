@@ -142,14 +142,14 @@ zap_temp(char *path, int fd)
 {
 	//  unlink first, so the temp file still is freed at process exit.
 
-	if (uni_unlink(path)) {
+	if (jmscott_unlink(path)) {
 		if (errno == ENOENT)
 			return (char *)0;
 		return strerror(errno);
 	}
 	if (fd > -1) {
 		output_fd = -1;
-		if (uni_close(fd))
+		if (jmscott_close(fd))
 			return strerror(errno);
 	}
 	return (char *)0;
@@ -203,7 +203,7 @@ cache4_get(int *ok_no)
 		getpid()
 	);
 	_TRACE2("copy bio4 blob to tmp", tmp_path);
-	int tmp_fd = uni_open_mode(tmp_path, O_WRONLY|O_CREAT,S_IRUSR|S_IRGRP);
+	int tmp_fd = jmscott_open(tmp_path, O_WRONLY|O_CREAT,S_IRUSR|S_IRGRP);
 	if (tmp_fd < 0)
 		return strerror(errno);
 	int cli_output_fd = output_fd;
@@ -224,7 +224,7 @@ cache4_get(int *ok_no)
 	 *	data/fs_<algo>/<path to blob>
 	 */
 	output_fd = -1;
-	if (uni_close(tmp_fd))
+	if (jmscott_close(tmp_fd))
 		return strerror(errno);
 	tmp_fd = -1;
 

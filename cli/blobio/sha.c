@@ -238,7 +238,7 @@ sha_eat_input()
 
 	_TRACE("request to sha_eat_input()");
 
-	while ((nread = uni_read(input_fd, buf, sizeof buf)) > 0)
+	while ((nread = jmscott_read(input_fd, buf, sizeof buf)) > 0)
 		if (!SHA1_Update(&sha_ctx, buf, nread))
 			return "SHA1_Update(chunk) failed";
 	if (nread < 0)
@@ -278,7 +278,7 @@ fs_sha_name(char *name, int size)
 static int
 _mkdir(char *path)
 {
-	return (uni_mkdir(path, 0777) == 0 || errno == EEXIST) ? 0 : -1;
+	return jmscott_mkdirp(path, 0710);	// g=rwx,g=x,o=
 }
 
 /*
