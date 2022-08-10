@@ -14,8 +14,6 @@
  *	--output-path <path/to/file>
  *	--help
  *  Note:
- *	need to rename variable "brr_path" to "brr" to match query arg name.
- *
  *	brr_write() does not verify an existing *.brr is a symbolic link.
  *
  *	Investigate linux system calls splice(), sendfile() and
@@ -53,6 +51,7 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <sys/socket.h>
+#include <limits.h>
 #include <fcntl.h>
 #include <errno.h>
 #include <string.h>
@@ -86,6 +85,7 @@ char	*input_path = 0;
 
 //  Note: need to rename variable "brr_path" to "brr" to match query path name.
 char	brr_path[64] = {0};
+char	brrp[PATH_MAX] = {0};
 
 char	*null_device = "/dev/null";
 char	chat_history[10] = {0};
@@ -641,7 +641,7 @@ parse_argv(int argc, char **argv)
 
 				err = BLOBIO_SERVICE_get_brrp(
 					query,
-					brr_path
+					brrp
 				);
 				if (err)
 					eservice2("query arg: brrp", err);

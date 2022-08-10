@@ -263,16 +263,9 @@ BLOBIO_SERVICE_get_tmo(char *query, int *tmo)
  *  Synopsis:
  *  	Get the brr path in the query portion of $BLOBIO_SERCICE
  *  Usage:
- *	char *err;
- *	err =  BLOBIO_SERVICE_frisk_brr_path(query, path);
- *	if (err)
- *		return err;		//  error in a query arg
- *
- *	...
- *
- *	char brr_path[64];
- *	brr_path[0] = 0;
- *	err = BLOBIO_SERVICE_get_brr_path(query, char *path);
+ *	char brrp[64];
+ *	brrp[0] = 0;
+ *	err = BLOBIO_SERVICE_get_brrp(query, char *brrp);
  *	if (err)
  *		die2("error parsing \"brrp\" for path", err);
  */

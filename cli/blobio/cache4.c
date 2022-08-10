@@ -196,7 +196,7 @@ cache4_get(int *ok_no)
 	 */
 
 	char *right_colon = strrchr(cache4_service.end_point, ':');
-	char tmp_path[PATH_MAX+1];
+	char tmp_path[PATH_MAX];
 	snprintf(tmp_path, sizeof tmp_path, "%s/tmp/cache4-%s-%ul",
 		right_colon + 1,
 		ascii_digest,
@@ -228,7 +228,7 @@ cache4_get(int *ok_no)
 		return strerror(errno);
 	tmp_fd = -1;
 
-	char cache_path[PATH_MAX+1];
+	char cache_path[PATH_MAX];
 	cache_path[0] = 0;
 	snprintf(cache_path, sizeof cache_path,
 		"%s/data/fs_%s",

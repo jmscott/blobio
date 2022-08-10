@@ -52,8 +52,8 @@ extern char	ascii_digest[];
 extern struct digest		*digests[];
 extern unsigned long long	blob_size;
 
-static char	fs_path[PATH_MAX + 1] = {0};
-static char	tmp_path[PATH_MAX + 1] = {0};
+static char	fs_path[PATH_MAX] = {0};
+static char	tmp_path[PATH_MAX] = {0};
 
 extern struct service fs_service;
 
@@ -439,7 +439,7 @@ fs_wrap(int *ok_no)
 {
 	int fd;
 	char now[21];
-	char wrap_brr_path[PATH_MAX+1];
+	char wrap_brr_path[PATH_MAX];
 
 	snprintf(now, sizeof now, "%d", (int)time((time_t *)0));
 	wrap_brr_path[0] = 0;
