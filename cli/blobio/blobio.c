@@ -83,9 +83,8 @@ char	ascii_digest[129] = {0};
 char	*output_path = 0;
 char	*input_path = 0;
 
-//  Note: need to rename variable "brr_path" to "brr" to match query path name.
-char	brr_path[64] = {0};
-char	brrp[PATH_MAX] = {0};
+char	brr_path[PATH_MAX] = {0};
+char	brrp[PATH_MAX] = {0};		//  service query arg brrp=fs...
 
 char	*null_device = "/dev/null";
 char	chat_history[10] = {0};
@@ -1074,9 +1073,14 @@ main(int argc, char **argv)
 
 	if (brr_path[0])
 		brr_write(brr_path);
-	else if (brrp[0])
-		brr_write(brrp);
+	else if (brrp[0]) {
+		char path[PATH_MAX];
 
+		path[0] = 0;
+		jmscott_strcat(path, sizeof path, brrp);
+		jmscott_strcat(path, sizeof path, ".brr");
+		brr_write(path);
+	}
 	cleanup(exit_status);
 
 	/*NOTREACHED*/
