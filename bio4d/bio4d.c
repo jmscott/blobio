@@ -1941,6 +1941,27 @@ fork_accept(struct request *rp)
 	panic2(n, "unexpected return from request()");
 }
 
+static int
+help()
+{
+	static char *_help = "\
+Synopsis:\n\
+	Server for bio4 protocol\n\
+Options:\n\
+	--root <path/to/dir>\n\
+	--rrd-duration <secs>\n\
+	--wrap-algorithm <algorithn>\n\
+	--port <port>\n\
+	--in-foreground\n\
+	--net-timeout\n\
+	--trust-fs\n\
+	--ps-title-XXXXXXXXXXX\n\
+";
+
+	write(1, _help, strlen(_help));
+	exit(0);
+}
+
 int
 main(int argc, char **argv, char **env)
 {
@@ -1951,13 +1972,19 @@ main(int argc, char **argv, char **env)
 
 	time(&start_time);
 
+	if (argc == 2 && (
+	    strcmp("--help", argv[1]) == 0 || strcmp("--help", argv[1]) == 0))
+		help();
+
 	strcpy(wrap_digest_algorithm, DEFAULT_WRAP_DIGEST_ALGORITHM);
+
 	/*
 	 *  Parse verb line arguments.
 	 */
 	for (i = 1;  i < argc;  i++) {
 		/*
 		 *  --ps-title-XXXXXXXXXXX is an ugly hack.  see ps_title.c
+		 *  ps_title_init() is passed argv[].  
 		 */
 		if (strncmp("--ps-title-", argv[i], 11) == 0)
 			continue;
