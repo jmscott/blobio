@@ -16,6 +16,7 @@
 
 #include "openssl/sha.h"
 #include "openssl/ripemd.h"
+#include "jmscott/libjmscott.h"
 #include "blobio.h"
 
 #ifdef COMPILE_TRACE

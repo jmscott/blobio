@@ -767,7 +767,7 @@ xref_args()
 }
 
 static void
-brr_write()
+brr_write(char *path)
 {
 	struct tm *t;
 	char brr[BRR_SIZE + 1];
@@ -842,7 +842,7 @@ brr_write()
 	 *	verify that brr file is NOT a sym link
 	 */
 	int fd = jmscott_open(
-		brr_path,
+		path,
 		O_WRONLY|O_CREAT|O_APPEND|O_SHLOCK,
 		S_IRUSR|S_IWUSR|S_IRGRP
 	);
@@ -1073,7 +1073,9 @@ main(int argc, char **argv)
 		die2("close(output-path) failed",strerror(errno));
 
 	if (brr_path[0])
-		brr_write();
+		brr_write(brr_path);
+	else if (brrp[0])
+		brr_write(brrp);
 
 	cleanup(exit_status);
 
