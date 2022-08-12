@@ -2,6 +2,10 @@
  *  Synopsis:
  *  	Trace/debug service flow with --trace command line option.
  *  Note:
+ *	Replace macros _TRACE with new TRACE using __FUNCTION__
+ *
+ *	Replace bufcat with jmscott_strcat*.
+ *
  *	Only trace.c refers to stdio, I (jmscott) believe.
  */
 #include <errno.h>
@@ -116,6 +120,21 @@ trace4(char *msg1, char *msg2, char *msg3, char *msg4)
 		trace3(buf, msg3, msg4);
 	} else 
 		trace3(msg2, msg3, msg4);
+}
+
+void
+trace5(char *msg1, char *msg2, char *msg3, char *msg4)
+{
+	if (msg1) {
+		char buf[MAX_ATOMIC_MSG];
+
+		buf[0] = 0;
+		bufcat(buf, sizeof buf, msg1);
+		if (msg2)
+			buf2cat(buf, sizeof buf, ": ", msg2);
+		trace4(buf, msg2, msg3, msg4);
+	} else 
+		trace4(msg2, msg2, msg3, msg4);
 }
 
 static void

@@ -86,9 +86,14 @@ fs_open()
 	struct stat st;
 	char *end_point = fs_service.end_point;
 
-	if (*verb == 'w')
-		return "wrap verb not supported";
+	//  Note:  need some testing for wrap.
+	if (*verb == 'w') {
+		if (!brrd[0])
+			return "query arg \"brrd\" not defined";
+		return (char *)0;
+	}
 
+	TRACE2("end point", end_point);
 	if (jmscott_access(end_point, X_OK)) {
 		if (errno == ENOENT)
 			return "blob root directory does not exist";
@@ -114,6 +119,7 @@ fs_open()
 		"fs_",
 		algorithm
 	);
+	TRACE2("fs path", fs_path);
 
 	//  verify permissons on data/ directory
 
@@ -448,18 +454,21 @@ fs_wrap(int *ok_no)
 		"/fs.brr"
 	);
 
+	TRACE2("brr path", brr_path);
+
 	char now[21];
 	snprintf(now, sizeof now, "%d", (int)time((time_t *)0));
 
 	//  build path to soon to be frozen brr file
 	char frozen_brr_path[PATH_MAX];
 	frozen_brr_path[0] = 0;
-	jmscott_strcat4(brr_path, sizeof brr_path,
+	jmscott_strcat4(frozen_brr_path, sizeof brr_path,
 		brrd,
 		"/fs-",
 		now,
 		".brr"
 	);
+	TRACE2("frozen brr path", frozen_brr_path);
 
 	/*
 	 *  Open brr file with exclusive lock, to block the other shared lock
@@ -489,6 +498,7 @@ fs_wrap(int *ok_no)
 	char wrap_dir_path[PATH_MAX];
 	wrap_dir_path[0] = 0;
 	jmscott_strcat2(wrap_dir_path, sizeof wrap_dir_path, brrd, "/wrap");
+	TRACE2("wrap dir path", wrap_dir_path);
 	if (jmscott_mkdirp(wrap_dir_path, S_IRUSR|S_IWUSR|S_IXUSR|S_IXGRP))
 		return strerror(errno);
 
@@ -499,25 +509,36 @@ fs_wrap(int *ok_no)
 	int frozen_fd = jmscott_open(frozen_brr_path, O_RDONLY, 0);
 	if (frozen_fd < 0)
 		return strerror(errno);
+	TRACE2("algo", algo);
 	err = find_digest(algo)->eat_input(frozen_fd);
+	if (err)
+		return err;
+
+	//  sanity test.  really, really need to refactor code
 	if (!algorithm[0])
 		return "impossible: null algo after frozen digest";
+	if (!ascii_digest[0])
+		return "empty ascii digest after eat_input()";
+	TRACE2("ascii digest", ascii_digest);
+
 	if (jmscott_close(frozen_fd) && err == (char *)0)
 		return strerror(errno);
-	if (err)
-		return err;	//  first error has higher priority
 
 	//  move frozen brr file into wrap/<wrap udig>.brr
 	char wrap_brr_path[PATH_MAX];
-	jmscott_strcat5(
+
+	wrap_brr_path[0] = 0;
+	jmscott_strcat6(
 		wrap_brr_path,
 		sizeof wrap_brr_path,
 		brrd,
 		"/wrap/",
 		algo,
+		":",
 		ascii_digest,
 		".brr"
 	);
+	TRACE2("wrap brr path", wrap_brr_path);
 	if (rename(frozen_brr_path, wrap_brr_path))
 		return strerror(errno);
 

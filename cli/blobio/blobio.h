@@ -19,13 +19,31 @@
 
 #ifdef COMPILE_TRACE
 
-#define TRACE(msg) if (tracing) trace(msg);
-#define TRACE2(msg1,msg2) if (tracing) trace2(msg1, msg2);
-#define TRACE3(msg1,msg2,msg3) if (tracing) trace2(msg1, msg2, msg3);
-#define TRACE4(msg1,msg2,msg3,msg4) if (tracing) trace2(msg1, msg2, msg3, msg4);
+#define TRACE(msg)		if (tracing) trace2(			\
+					(char *)__FUNCTION__, (char *)msg\
+				);
+#define TRACE2(msg1,msg2) 	if (tracing) trace3(			\
+					(char *)__FUNCTION__,		\
+					(char *)msg1,			\
+					(char *)msg2			\
+				);
+#define TRACE3(msg1,msg2,msg3)	if (tracing) trace4(			\
+					(char *)__FUNCTION__,		\
+					(char *)msg1,			\
+					(char *)msg2,			\
+					(char *)msg3			\
+				);
+#define TRACE4(msg1,msg2,msg3,msg4) if (tracing) trace5(		\
+					(char *)__FUNCTION__,		\
+					(char *)msg1,			\
+					(char *)msg2,			\
+					(char *)msg3,			\
+					(char *)msg4			\
+				);
 
 #else
 
+/*  compile out any vestiage of traceing */
 #define TRACE(msg)
 #define TRACE2(msg1,msg2)
 #define TRACE3(msg1,msg2,msg3)
@@ -201,6 +219,8 @@ extern ssize_t	uni_write(int fd, const void *buf, size_t count);
 extern char	*BLOBIO_SERVICE_frisk_query(char *query);
 extern char	*BLOBIO_SERVICE_get_tmo(char *query, int *tmo);
 extern char	*BLOBIO_SERVICE_get_brrd(char *query, char *brr_path);
+extern char	*BLOBIO_SERVICE_get_algo(char *query, char *brr_path);
+
 extern void	brr_write();
 
 extern struct digest	*find_digest(char *algorithm);

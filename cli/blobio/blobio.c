@@ -621,12 +621,13 @@ parse_argv(int argc, char **argv)
 				if (err)
 					eservice2("query arg: timeout", err);
 
-				err = BLOBIO_SERVICE_get_brrd(
-					query,
-					brrd
-				);
+				err = BLOBIO_SERVICE_get_brrd(query, brrd);
 				if (err)
 					eservice2("query arg: brrd", err);
+
+				err = BLOBIO_SERVICE_get_algo(query, algo);
+				if (err)
+					eservice2("query arg: algo", err);
 			}
 
 			//  validate the syntax of the specific end point
