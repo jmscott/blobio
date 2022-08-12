@@ -19,18 +19,6 @@
 #include "jmscott/libjmscott.h"
 #include "blobio.h"
 
-#ifdef COMPILE_TRACE
-
-#define _TRACE(msg)		if (tracing) _trace(msg)
-#define _TRACE2(msg1,msg2)	if (tracing) _trace2(msg1,msg2)
-
-#else
-
-#define _TRACE(msg)
-#define _TRACE2(msg1,msg2)
-
-#endif
-
 extern char	verb[];
 extern char	ascii_digest[];
 extern int	input_fd;
@@ -53,7 +41,6 @@ bc160_init()
 	char *d40, c;
 	unsigned char *d20;
 	unsigned int i;
-	static char n[] = "bc160: init";
 
 	if (strcmp("roll", verb)) {
 		if (!SHA256_Init(&bc160_ctx.sha256))
@@ -85,7 +72,7 @@ bc160_init()
 			}
 #ifdef COMPILE_TRACE
 			if (tracing) {
-				trace2(n, "hex dump of 20 byte bin digest:");
+				TRACE("hex dump of 20 byte bin digest ...");
 				hexdump(d20, 20, '=');
 			}
 #endif
@@ -104,12 +91,9 @@ bc160_init()
  *	"..."	error
  */
 static char *
-chew(unsigned char *chunk, int size)
+bc160_chew(unsigned char *chunk, int size)
 {
-	static char n[] = "bc160: chew";
-
-	TRACE2(n, "request to chew()");
-
+	TRACE("entered");
 	if (!SHA256_Update(&bc160_ctx.sha256, chunk, size))
 		return "SHA256_Update(chunk) failed";
 
@@ -135,13 +119,11 @@ chew(unsigned char *chunk, int size)
 		return "RIPEMD160_Update(tmp SHA256) failed";
 	if (!RIPEMD160_Final(tmp_ripemd_digest, &tmp_ripemd_ctx))
 		return "RIPEMD160_Final(tmp SHA256) failed";
-#ifdef COMPILE_TRACE
 	if (tracing) {
-		trace2(n, "hex dump of 20 byte RIPEMD160 follows ...");
+		TRACE("hex dump of 20 byte RIPEMD160 follows ...");
 		hexdump(tmp_ripemd_digest, 20, '=');
-		trace2(n, "chew(tmp_ripemd) done");
+		TRACE("chew(tmp_ripemd) done");
 	}
-#endif
 	return memcmp(tmp_ripemd_digest, bin_digest, 20) == 0 ? "0" : "1";
 }
 
@@ -156,13 +138,13 @@ chew(unsigned char *chunk, int size)
 static char *
 bc160_get_update(unsigned char *src, int src_size)
 {
-	return chew(src, src_size);
+	return bc160_chew(src, src_size);
 }
 
 static char *
 bc160_take_update(unsigned char *src, int src_size)
 {
-	return chew(src, src_size);
+	return bc160_chew(src, src_size);
 }
 
 static char *
@@ -183,7 +165,7 @@ bc160_took(char *reply)
 static char *
 bc160_put_update(unsigned char *src, int src_size)
 {
-	return chew(src, src_size);
+	return bc160_chew(src, src_size);
 }
 
 static char *
@@ -240,18 +222,6 @@ static char nib2hex[] =
 	'a', 'b', 'c', 'd', 'e', 'f'
 };
 
-static void
-_trace(char *msg)
-{
-	trace2("bc160", msg);
-}
-
-static void
-_trace2(char *msg1, char *msg2)
-{
-	trace3("bc160", msg1, msg2);
-}
-
 /*
  *  Digest data on input and update the global ascii_digest[129] array.
  *
@@ -267,7 +237,7 @@ bc160_eat_input(int fd)
 	int nread;
 	unsigned char sha_digest[32];
 
-	_TRACE("request to bc160_eat_input()");
+	TRACE("entered");
 
 	while ((nread = jmscott_read(fd, buf, sizeof buf)) > 0)
 		if (!SHA256_Update(&bc160_ctx.sha256, buf, nread))
@@ -293,7 +263,7 @@ bc160_eat_input(int fd)
 	}
 	*p = 0;
 
-	_TRACE("bc160_eat_input() done");
+	TRACE("done");
 	return (char *)0;
 }
 
@@ -330,7 +300,7 @@ fs_bc160_mkdir(char *path, int size)
 	if (size < 10)
 		return "size < 10 bytes";
 
-	_TRACE2("fs_mkdir: path", path);
+	TRACE2("path", path);
 	dp = ascii_digest;
 
 	p = bufcat(path, size, "/");

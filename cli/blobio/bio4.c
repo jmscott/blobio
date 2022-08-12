@@ -34,19 +34,13 @@ extern char	brrd[];
 
 #ifdef COMPILE_TRACE
 
-#define _TRACE(msg)		if (tracing) _trace(msg)
-#define _TRACE2(msg1,msg2)	if (tracing) _trace2(msg1,msg2)
-#define _TRACE3(msg1,msg2,msg3)	if (tracing) _trace3(msg1,msg2,msg3)
-#define _TRACE3(msg1,msg2,msg3)	if (tracing) _trace3(msg1,msg2,msg3)
-#define _CTRACE(msg)		if (tracing) ctrace(msg)
-#define _CTRACE2(msg1,msg2)	if (tracing) ctrace2(msg1,msg2)
+#define _CTRACE(msg)		TRACE2("connect", msg);
+#define _CTRACE2(msg1,msg2)	TRACE3("connect",msg1,msg2);
 
 #else
 
-#define _TRACE(msg)
-#define _TRACE2(msg1,msg2)
-#define _TRACE3(msg1,msg2,msg3)
-#define _TRACE3(msg1,msg2,msg3)
+#define _CTRACE
+#define _CTRACE2
 
 #endif
 
@@ -67,36 +61,6 @@ static int server_fd = -1;
 
 extern struct service bio4_service;		//  initialized below
 
-static void
-_trace(char *msg)
-{
-	trace2("bio4", msg);
-}
-
-static void
-_trace2(char *msg1, char *msg2)
-{
-	trace3("bio4", msg1, msg2);
-}
-
-static void
-_trace3(char *msg1, char *msg2, char *msg3)
-{
-	trace4("bio4", msg1, msg2, msg3);
-}
-
-static void
-ctrace(char *msg)
-{
-	_trace2("connect", msg);
-}
-
-static void
-ctrace2(char *msg1, char *msg2)
-{
-	_trace3("connect", msg1, msg2);
-}
-
 /*
  *  Parse the host name/ip4, port and optional timeout and trust file
  *  system options from the end point.
@@ -107,7 +71,7 @@ bio4_end_point_syntax(char *endp)
 	char *ep, c;
 	char buf[6], *bp;
 
-	_TRACE2("end point syntax", endp);
+	TRACE2("end point syntax", endp);
 
 	/*
 	 *  Extract the ascii DNS host or ip4 address.
@@ -276,7 +240,7 @@ bio4_open()
 	int port = 0;
 	char *ep = bio4_service.end_point;
 
-	_TRACE2("request to open()", ep);
+	TRACE2("request to open()", ep);
 
 	if (algo[0])
 		return "service query arg \"algo\" can not exist for bio4";
@@ -285,7 +249,7 @@ bio4_open()
 	memcpy(host, ep, p - ep);
 	host[p - ep] = 0;
 	p++;
-	_TRACE2("port fragment", p);
+	TRACE2("port fragment", p);
 	strcpy(pbuf, p);
 
 	port = atoi(pbuf);
@@ -301,7 +265,7 @@ bio4_open()
 	default:
 		return strerror(status);
 	}
-	_TRACE("open() done");
+	TRACE("open() done");
 
 	return (char *)0;
 }
@@ -309,12 +273,8 @@ bio4_open()
 static char *
 bio4_close()
 {
-	_TRACE("request to close()");
-
 	if (server_fd >= 0 && jmscott_close(server_fd))
 		return strerror(errno);
-
-	_TRACE("close() done");
 
 	return (char *)0;
 }
@@ -360,7 +320,7 @@ die_ALRM(char *func)
 {
 	char buf[MAX_ATOMIC_MSG];
 
-	_TRACE2(func, "caught timeout alarm");
+	TRACE2(func, "caught timeout alarm");
 
 	buf[0] = 0;
 	buf2cat(buf, sizeof buf, func, "() timed out");
@@ -371,7 +331,7 @@ die_ALRM(char *func)
 static void
 catch_write_ALRM(int sig)
 {
-	_TRACE("catch_write_ALRM");
+	TRACE("catch_write_ALRM");
 
 	(void)sig;
 	die_ALRM("write");
@@ -393,7 +353,7 @@ _write(int fd, unsigned char *buf, int buf_size)
 	}
 #ifdef COMPILE_TRACE
 	if (tracing) {
-		_TRACE("_write(): ");
+		TRACE("hex dump bytes written");
 		hexdump((unsigned char *)buf, buf_size, '>');
 	}
 #endif
@@ -417,7 +377,7 @@ _read(int fd, unsigned char *buf, int buf_size, int *nread)
 	char *err = 0;
 	int nr;
 
-	_TRACE("request to read()");
+	TRACE("request to read()");
 
 	if ((nr = jmscott_read(fd, (unsigned char *)buf, buf_size)) < 0) {
 		if (nr == -2)
@@ -428,18 +388,21 @@ _read(int fd, unsigned char *buf, int buf_size, int *nread)
 		
 #ifdef COMPILE_TRACE
 	if (err) {
-		_TRACE2("ERROR", err);
+		TRACE2("ERROR", err);
 	} else if (tracing) {
 		if (nr > 0) {
-			_TRACE("read() ok, hex dump follows ...");
+			TRACE("hex dump bytes read");
 			hexdump((unsigned char *)buf, nr, '>');
-		} else
-			_TRACE("read() returned 0 bytes");
+		} else if (nr == 0) {
+			TRACE("read() returned 0 bytes");
+		} else {
+			TRACE("imposible: read error and err==null");
+		}
 	}
 #endif
 	if (err == (char *)0)
 		*nread = nr;
-	_TRACE("read() done");
+	TRACE("read() done");
 	return err;
 }
 
@@ -564,9 +527,9 @@ _get(int *ok_no, int in_take)
 			return err;
 #ifdef COMPILE_TRACE
 		if (tracing) {
-			_trace("write ok");
+			TRACE("write ok");
 			if (more)
-				_TRACE("more data to digest");
+				TRACE("more data to digest");
 		}
 #endif
 	}
@@ -575,8 +538,8 @@ _get(int *ok_no, int in_take)
 	if (more)
 		return "blob does not match digest";
 
-	_TRACE("ok, got blob that matched digest");
-	_TRACE("get() done");
+	TRACE("ok, got blob that matched digest");
+	TRACE("get() done");
 	return (char *)0;
 }
 
@@ -592,7 +555,7 @@ bio4_open_output()
 	int fd;
 	int flag = O_WRONLY | O_CREAT;
 
-	_TRACE("bio4_open_output: entered");
+	TRACE("bio4_open_output: entered");
 
 	if (output_path != null_device)
 		flag |= O_EXCL;		//  fail if file exists (and not null)
@@ -609,20 +572,20 @@ bio4_eat(int *ok_no)
 {
 	char *err;
 
-	_TRACE("request to eat()");
+	TRACE("request to eat()");
 
 	err = request(ok_no);
 	if (err)
 		return err;
 
-	_TRACE("eat() done");
+	TRACE("eat() done");
 	return (char *)0;
 }
 
 static char *
 _put_untrusted()
 {
-	_TRACE("_put_untrusted");
+	TRACE("_put_untrusted");
 
 	char *err;
 	int nread, more;
@@ -651,9 +614,9 @@ _put_untrusted()
 			return err;
 #ifdef COMPILE_TRACE
 		if (tracing) {
-			_trace("write ok");
+			TRACE("write ok");
 			if (more)
-				_TRACE("more data to digest");
+				TRACE("more data to digest");
 		}
 #endif
 	}
@@ -665,7 +628,7 @@ _put_untrusted()
 static char *
 _put_trusted()
 {
-	_TRACE("_put_trusted");
+	TRACE("_put_trusted");
 
 	char *err;
 	int nread;
@@ -689,7 +652,7 @@ bio4_put(int *ok_no)
 	char *err;
 	char req[5 + 8 + 1 + 128 + 1 + 1];
 
-	_TRACE("request to put()");
+	TRACE("request to put()");
 
 	//  write the put request to the remote server
 
@@ -718,7 +681,7 @@ bio4_put(int *ok_no)
 	if ((err = read_ok_no(ok_no)))
 		return err;
 
-	_TRACE("put() done");
+	TRACE("put() done");
 	return (char *)0;
 }
 
@@ -727,7 +690,7 @@ bio4_take(int *ok_no)
 {
 	char *err;
 
-	_TRACE("request to take()");
+	TRACE("request to take()");
 
 	//  write "take <udig>\n and read back reply and possibly the blob
 
@@ -747,7 +710,7 @@ bio4_take(int *ok_no)
 	if((err = read_ok_no(ok_no)))
 		return err;
 
-	_TRACE("take() done");
+	TRACE("take() done");
 	return (char *)0;
 }
 
@@ -756,7 +719,7 @@ bio4_give(int *ok_no)
 {
 	char *err;
 
-	_TRACE("request to give()");
+	TRACE("request to give()");
 
 	//  write "give <udig>\n and read back reply and possibly the blob
 
@@ -768,7 +731,7 @@ bio4_give(int *ok_no)
 	if (*ok_no == 1)
 		return (char *)0;
 
-	_TRACE("blob sent to server");
+	TRACE("blob sent to server");
 
 	//  server replied "ok", which implies the blob was accepted, so remove
 	//  the local input.
@@ -787,7 +750,7 @@ bio4_give(int *ok_no)
 	} else if (_write(server_fd, (unsigned char *)"ok\n", 3))
 		return strerror(errno);
 
-	_TRACE("give() done");
+	TRACE("give() done");
 	return (char *)0;
 }
 
@@ -796,10 +759,10 @@ bio4_roll(int *ok_no)
 {
 	char *err;
 
-	_TRACE("request to roll()");
+	TRACE("request to roll()");
 	if ((err = request(ok_no)))
 		return err;
-	_TRACE("roll() done");
+	TRACE("roll() done");
 
 	return (char *)0;
 }
@@ -811,7 +774,7 @@ bio4_wrap(int *ok_no)
 	char udig[8+1+128+1+1];
 	unsigned int nread = 0;
 
-	_TRACE("request to wrap()");
+	TRACE("request to wrap()");
 
 	if ((err = request(ok_no)))
 		return err;
@@ -843,7 +806,7 @@ bio4_wrap(int *ok_no)
 	if (_write(output_fd, (unsigned char *)udig, nread))
 		return strerror(errno);
 
-	_TRACE("wrap() done");
+	TRACE("wrap() done");
 
 	return (char *)0;
 }

@@ -15,18 +15,6 @@
 #include "openssl/ripemd.h"
 #include "blobio.h"
 
-#ifdef COMPILE_TRACE
-
-#define _TRACE(msg)		if (tracing) _trace(msg)
-#define _TRACE2(msg1,msg2)	if (tracing) _trace2(msg1,msg2)
-
-#else
-
-#define _TRACE(msg)
-#define _TRACE2(msg1,msg2)
-
-#endif
-
 extern char	verb[];
 extern char	ascii_digest[];
 extern int	input_fd;
@@ -50,7 +38,6 @@ btc20_init()
 	char *d40, c;
 	unsigned char *d20;
 	unsigned int i;
-	static char n[] = "btc20: init";
 
 	if (strcmp("roll", verb)) {
 		if (!SHA256_Init(&btc20_ctx.sha256))
@@ -84,7 +71,7 @@ btc20_init()
 			}
 #ifdef COMPILE_TRACE
 			if (tracing) {
-				trace2(n, "hex dump of 20 byte bin digest:");
+				TRACE("hex dump of 20 byte bin digest ...");
 				hexdump(d20, 20, '=');
 			}
 #endif
@@ -107,9 +94,7 @@ btc20_init()
 static char *
 chew(unsigned char *chunk, int size)
 {
-	static char n[] = "btc20: chew";
-
-	TRACE2(n, "request to chew()");
+	TRACE("request to chew()");
 
 	if (!SHA256_Update(&btc20_ctx.sha256, chunk, size))
 		return "SHA256_Update(chunk) failed";
@@ -150,9 +135,9 @@ chew(unsigned char *chunk, int size)
 		return "RIPEMD160_Final(tmp sha256 sha256) failed";
 #ifdef COMPILE_TRACE
 	if (tracing) {
-		trace2(n, "hex dump of 20 byte RIPEMD160 follows ...");
+		TRACE("hex dump of 20 byte RIPEMD160 follows ...");
 		hexdump(tmp_ripemd_digest, 20, '=');
-		trace2(n, "chew(tmp_ripemd) done");
+		TRACE("chew(tmp_ripemd) done");
 	}
 #endif
 	return memcmp(tmp_ripemd_digest, bin_digest, 20) == 0 ? "0" : "1";
@@ -252,19 +237,6 @@ static char nib2hex[] =
 	'0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
 	'a', 'b', 'c', 'd', 'e', 'f'
 };
-
-static void
-_trace(char *msg)
-{
-	trace2("btc20", msg);
-}
-
-static void
-_trace2(char *msg1, char *msg2)
-{
-	trace3("btc20", msg1, msg2);
-}
-
 /*
  *  Digest data on input and update the global ascii_digest[129] array.
  *
@@ -279,7 +251,7 @@ btc20_eat_input(int fd)
 	char *p;
 	int nread;
 
-	_TRACE("request to btc20_eat_input()");
+	TRACE("entered");
 
 	while ((nread = jmscott_read(fd, buf, sizeof buf)) > 0)
 		if (!SHA256_Update(&btc20_ctx.sha256, buf, nread))
@@ -319,7 +291,7 @@ btc20_eat_input(int fd)
 	}
 	*p = 0;
 
-	_TRACE("btc20_eat_input() done");
+	TRACE("done");
 	return (char *)0;
 }
 
@@ -356,7 +328,7 @@ fs_btc20_mkdir(char *path, int size)
 	if (size < 10)
 		return "size < 10 bytes";
 
-	_TRACE2("fs_mkdir: path", path);
+	TRACE2("path", path);
 	dp = ascii_digest;
 
 	p = bufcat(path, size, "/");

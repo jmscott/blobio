@@ -27,20 +27,6 @@
 
 #include "blobio.h"
 
-#ifdef COMPILE_TRACE
-
-#define _TRACE(msg)		if (tracing) _trace(msg)
-#define _TRACE2(msg1,msg2)	if (tracing) _trace2(msg1,msg2)
-
-#else
-
-#define _TRACE(msg)
-#define _TRACE2(msg1,msg2)
-#define _TRACE3(msg1,msg2,msg3)
-#define _TRACE3(msg1,msg2,msg3)
-
-#endif
-
 extern char		verb[];
 extern char		ascii_digest[];
 extern int		output_fd;
@@ -48,24 +34,6 @@ extern struct service	bio4_service;
 extern struct service	fs_service;
 
 struct service		cache4_service;
-
-static void
-_trace(char *msg)
-{
-	if (verb[0])
-		trace3("cache4", verb, msg);
-	else
-		trace2("cache4", msg);
-}
-
-static void
-_trace2(char *msg1, char *msg2)
-{
-	if (verb[0])
-		trace4("cache4", verb, msg1, msg2);
-	else
-		trace3("cache4", msg1, msg2);
-}
 
 /*
  *  The end point is a concatenation of the bio4 service and file system
@@ -182,7 +150,7 @@ cache4_get(int *ok_no)
 	if (err || *ok_no == 0)
 		return err;
 
-	_TRACE("blob not in fs, so query bio4");
+	TRACE("blob not in fs, so query bio4");
 	//  blob not in file cache so do the delayed open of bio4 service.
 	if ((err = _bio4_open()))
 		return err;
@@ -202,7 +170,7 @@ cache4_get(int *ok_no)
 		ascii_digest,
 		getpid()
 	);
-	_TRACE2("copy bio4 blob to tmp", tmp_path);
+	TRACE2("copy bio4 blob to tmp", tmp_path);
 	int tmp_fd = jmscott_open(tmp_path, O_WRONLY|O_CREAT,S_IRUSR|S_IRGRP);
 	if (tmp_fd < 0)
 		return strerror(errno);
@@ -235,7 +203,7 @@ cache4_get(int *ok_no)
 		right_colon + 1,
 		bio4_service.digest->algorithm
 	);
-	_TRACE2("pre cache_path", cache_path);
+	TRACE2("cache path", cache_path);
 
 	/*
 	 *  Note:
@@ -266,7 +234,7 @@ cache4_get(int *ok_no)
 	}
 	if((err = fs_service.open()))
 		return err;
-	_TRACE("calling fs_service.get again");
+	TRACE("calling fs_service.get again");
 	output_fd = cli_output_fd;
 	return fs_service.get(ok_no);
 }

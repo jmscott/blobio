@@ -17,16 +17,6 @@
 
 #include "blobio.h"
 
-#ifdef COMPILE_TRACE
-
-#define _TRACE(msg)	if (tracing) _trace(msg)
-
-#else
-
-#define _TRACE(msg)
-
-#endif
-
 extern char	verb[];
 extern char	ascii_digest[];
 extern int	input_fd;
@@ -42,7 +32,6 @@ sha_init()
 	char *d40, c;
 	unsigned char *d20;
 	unsigned int i;
-	static char nm[] = "sha: init";
 
 	if (strcmp("roll", verb)) {
 		if (!SHA1_Init(&sha_ctx))
@@ -72,7 +61,7 @@ sha_init()
 			}
 #ifdef COMPILE_TRACE
 			if (tracing) {
-				trace2(nm, "hex dump of 20 byte bin digest:");
+				TRACE("hex dump of 20 byte bin digest ...");
 				hexdump(d20, 20, '=');
 			}
 #endif
@@ -92,9 +81,7 @@ sha_init()
 static char *
 chew(unsigned char *chunk, int size)
 {
-	static char nm[] = "sha: chew";
-
-	TRACE2(nm, "request to chew()");
+	TRACE("request to chew()");
 
 	/*
 	 *  Incremental digest.
@@ -114,9 +101,9 @@ chew(unsigned char *chunk, int size)
 
 #ifdef COMPILE_TRACE
 	if (tracing) {
-		trace2(nm, "hex dump of 20 byte bin digest follows ...");
+		TRACE("hex dump of 20 byte bin digest ...");
 		hexdump(tmp_digest, 20, '=');
-		trace2(nm, "chew() done");
+		TRACE("chew() done");
 	}
 #endif
 	return memcmp(tmp_digest, bin_digest, 20) == 0 ? "0" : "1";
@@ -217,12 +204,6 @@ static char nib2hex[] =
 	'a', 'b', 'c', 'd', 'e', 'f'
 };
 
-static void
-_trace(char *msg)
-{
-	trace2("sha", msg);
-}
-
 /*
  *  Digest data on input and update the global ascii_digest[129] array.
  *
@@ -236,7 +217,7 @@ sha_eat_input(int fd)
 	char *p;
 	int nread;
 
-	_TRACE("request to sha_eat_input()");
+	TRACE("request to sha_eat_input()");
 
 	while ((nread = jmscott_read(fd, buf, sizeof buf)) > 0)
 		if (!SHA1_Update(&sha_ctx, buf, nread))
@@ -257,7 +238,7 @@ sha_eat_input(int fd)
 	}
 	*p = 0;
 
-	_TRACE("sha_eat_input() done");
+	TRACE("sha_eat_input() done");
 	return (char *)0;
 }
 
