@@ -441,6 +441,17 @@ fs_roll(int *ok_no)
 }
 
 static char *
+make_wrap_dir(char *dir_path, dir_path_size)
+{
+	dir_path[0] = 0;
+	jmscott_strcat2(dir_path, dir_path_size, brrd, "/wrap");
+	TRACE2("dir path", dir_path);
+	if (jmscott_mkdirp(dir_path, S_IRUSR|S_IWUSR|S_IXUSR|S_IXGRP))
+		return strerror(errno);
+	return (char *)0;
+}
+
+static char *
 fs_wrap(int *ok_no)
 {
 	char brr_path[PATH_MAX];
@@ -496,11 +507,10 @@ fs_wrap(int *ok_no)
 	//  will be moved after digesting.
 
 	char wrap_dir_path[PATH_MAX];
-	wrap_dir_path[0] = 0;
-	jmscott_strcat2(wrap_dir_path, sizeof wrap_dir_path, brrd, "/wrap");
-	TRACE2("wrap dir path", wrap_dir_path);
-	if (jmscott_mkdirp(wrap_dir_path, S_IRUSR|S_IWUSR|S_IXUSR|S_IXGRP))
-		return strerror(errno);
+
+	err = make_wrap_dir(wrap_dir_path);
+	if (err)
+		return err;
 
 	//  Note: hack to fool digest code.  really, really need refactor!
 	strcpy(algorithm, algo);
