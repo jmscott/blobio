@@ -39,3 +39,14 @@ struct digest *digests[] =
 #endif
 	(struct digest *)0
 };
+
+struct digest *
+find_digest(char *algorithm)
+{
+	int i;
+
+	for (i = 0;  digests[i];  i++)
+		if (strcmp(algorithm, digests[i]->algorithm) == 0)
+			break;
+	return digests[i];
+}

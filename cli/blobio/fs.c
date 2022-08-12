@@ -37,12 +37,12 @@
 
 #define IS_WRITE_VERB()	(*verb == 'p' || (*verb == 'g' && *verb == 'i'))
 
-extern char	*verb;
-extern char	algorithm[9];
-extern char	algo[9];		//  service query arg "algo"
-extern char	chat_history[129];
+extern char	verb[];
+extern char	brrd[];
+extern char	algorithm[];
+extern char	algo[];			//  service query arg "algo"
+extern char	chat_history[9];
 extern char	transport[129];
-extern char	*brr_path;
 extern char	*output_path;
 extern int	output_fd;
 extern char	*input_path;
@@ -201,7 +201,7 @@ set_brr(char *hist, char *fs_path) {
 
 	struct stat st;
 
-	if (!brr_path[0])
+	if (!brrd[0])
 		return (char *)0;
 	if (fs_path && fs_path[0]) {
 		if (stat(fs_path, &st)) {
@@ -437,79 +437,89 @@ fs_roll(int *ok_no)
 static char *
 fs_wrap(int *ok_no)
 {
-	int fd;
-	char now[21];
-	char wrap_brr_path[PATH_MAX];
+	char brr_path[PATH_MAX];
 
-	snprintf(now, sizeof now, "%d", (int)time((time_t *)0));
-	wrap_brr_path[0] = 0;
-	jmscott_strcat4(
-		wrap_brr_path,
-		sizeof wrap_brr_path,
+	//  path to brr file to wrap
+	brr_path[0] = 0;
+	jmscott_strcat2(
 		brr_path,
-		"-",
+		sizeof brr_path,
+		brrd,
+		"/fs.brr"
+	);
+
+	char now[21];
+	snprintf(now, sizeof now, "%d", (int)time((time_t *)0));
+
+	//  build path to soon to be frozen brr file
+	char frozen_brr_path[PATH_MAX];
+	frozen_brr_path[0] = 0;
+	jmscott_strcat4(brr_path, sizeof brr_path,
+		brrd,
+		"/fs-",
 		now,
 		".brr"
 	);
 
 	/*
 	 *  Open brr file with exclusive lock, to block the other shared lock
-	 *  writers in blobio:main().  hold lock briefly to rename fs.brr to
+	 *  writers in brr_write().  hold lock briefly to rename fs.brr to
 	 *  fs-<unix epoch>.brr
 	 */
-	fd = jmscott_open(
-		wrap_brr_path,
+	int brr_fd = jmscott_open(
+		brr_path,
 		O_RDONLY|O_CREAT|O_EXLOCK,
 		S_IRUSR|S_IWUSR|S_IRGRP
 	);
-	if (fd < 0)
-		return strerror(errno);
-	int status = rename(brr_path, wrap_brr_path);
+	if (brr_fd < 0)
+		return strerror(errno);			//  lock freed on exit
+	int status = rename(brr_path, frozen_brr_path);
 	char *err = (char *)0;
 	if (status)
 		err = strerror(status);
 	
-	if (jmscott_close(fd) && err == (char *)0)
+	if (jmscott_close(brr_fd) && err == (char *)0)	//  release the lock
 		return strerror(errno);
 	if (err)
 		return err;
 
-	//  Note: shouldn't wrap dir be created during install?
+	//  make the wrap directory, where the frozen brr file
+	//  will be moved after digesting.
+
 	char wrap_dir_path[PATH_MAX];
 	wrap_dir_path[0] = 0;
-	jmscott_strcat2(wrap_dir_path, sizeof wrap_dir_path, brr_path, "/wrap");
-	if (jmscott_mkdirp(wrap_dir_path, S_IRUSR|S_IWUSR|S_IRGRP))
+	jmscott_strcat2(wrap_dir_path, sizeof wrap_dir_path, brrd, "/wrap");
+	if (jmscott_mkdirp(wrap_dir_path, S_IRUSR|S_IWUSR|S_IXUSR|S_IXGRP))
 		return strerror(errno);
 
+	//  Note: hack to fool digest code.  really, really need refactor!
 	strcpy(algorithm, algo);
 	ascii_digest[0] = 0;
 
-	int i;
-	for (i = 0;  digests[i];  i++)
-		if (strcmp(digests[i]->algorithm, algo) == 0)
-			break;
-	if (digests[i] == (struct digest *)0)
-		return "impossible: can not find digets for \"algo\" qarg";
-	struct digest *dig = digests[i];
-
-	input_fd = jmscott_open(wrap_brr_path, O_RDONLY, 0);
-	if (input_fd < 0)
+	int frozen_fd = jmscott_open(frozen_brr_path, O_RDONLY, 0);
+	if (frozen_fd < 0)
 		return strerror(errno);
-	err = dig->eat_input();
-	if (jmscott_close(input_fd) && (err = (char *)0))
+	err = find_digest(algo)->eat_input(frozen_fd);
+	if (!algorithm[0])
+		return "impossible: null algo after frozen digest";
+	if (jmscott_close(frozen_fd) && err == (char *)0)
 		return strerror(errno);
 	if (err)
-		return err;
+		return err;	//  first error has higher priority
 
-	wrap_brr_path[0] = 0;
-	jmscott_strcat4(
+	//  move frozen brr file into wrap/<wrap udig>.brr
+	char wrap_brr_path[PATH_MAX];
+	jmscott_strcat5(
 		wrap_brr_path,
 		sizeof wrap_brr_path,
-		brr_path,
+		brrd,
 		"/wrap/",
 		algo,
+		ascii_digest,
 		".brr"
 	);
+	if (rename(frozen_brr_path, wrap_brr_path))
+		return strerror(errno);
 
 	*ok_no = 0;
 	return (char *)0;

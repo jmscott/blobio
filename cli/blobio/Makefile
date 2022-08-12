@@ -43,6 +43,8 @@ blobio: $(OBJs)
 		$(OPENSSL_LIB)						\
 		-L$(JMSCOTT_ROOT)/lib -ljmscott
 
+brr.o: brr.c blobio.h
+	$(CC) $(CFLAGS) -c brr.c
 bio4.o: bio4.c blobio.h
 	$(CC) $(CFLAGS) -c bio4.c
 cache4.o: cache4.c blobio.h

@@ -9,11 +9,10 @@
 
 #include "blobio.h"
 
-extern char	*verb;
+extern char	verb[];
 extern char	algorithm[9];
 extern char	chat_history[129];
 extern char	transport[129];
-extern char	*brr_path;
 extern char	*output_path;
 extern int	output_fd;
 extern char	*input_path;

@@ -27,7 +27,7 @@
 
 #endif
 
-extern char	*verb;
+extern char	verb[];
 extern char	ascii_digest[];
 extern int	input_fd;
 
@@ -230,7 +230,7 @@ _trace(char *msg)
  *	Not a timed read(), since assumed to be local file.
  */
 static char *
-sha_eat_input()
+sha_eat_input(int fd)
 {
 	unsigned char buf[MAX_ATOMIC_MSG], *q, *q_end;
 	char *p;
@@ -238,7 +238,7 @@ sha_eat_input()
 
 	_TRACE("request to sha_eat_input()");
 
-	while ((nread = jmscott_read(input_fd, buf, sizeof buf)) > 0)
+	while ((nread = jmscott_read(fd, buf, sizeof buf)) > 0)
 		if (!SHA1_Update(&sha_ctx, buf, nread))
 			return "SHA1_Update(chunk) failed";
 	if (nread < 0)

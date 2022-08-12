@@ -13,7 +13,7 @@
 
 #include "blobio.h"
 
-extern char	*verb;
+extern char	verb[];
 int		tracing = 0;
 
 static int	trace_fd = 2;
@@ -58,18 +58,18 @@ trace(char *msg)
 	char buf[MAX_ATOMIC_MSG];
 
 	buf[0] = 0;
-
-	bufcat(buf, sizeof buf, "TRACE: ");
-	bufcat(buf, sizeof buf, RFC3339Nano_time());
-	bufcat(buf, sizeof buf, ": ");
-	if (verb)
-		buf2cat(buf, sizeof buf, verb, ": ");
+	jmscott_strcat3(buf, sizeof buf,
+		"TRACE: ",
+		RFC3339Nano_time(),
+		": "
+	);
+	if (verb[0])
+		jmscott_strcat2(buf, sizeof buf, verb, ": ");
 	if (msg)
-		bufcat(buf, sizeof buf, msg);
+		jmscott_strcat(buf, sizeof buf, msg);
 	else
-		bufcat(buf, sizeof buf, "<NULL>");
-	bufcat(buf, sizeof buf, "\n");
-
+		jmscott_strcat(buf, sizeof buf, "<NULL>");
+	jmscott_strcat(buf, sizeof buf, "\n");
 	jmscott_write(trace_fd, buf, strlen(buf));
 }
 

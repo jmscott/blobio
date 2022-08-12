@@ -41,7 +41,7 @@
 
 #endif
 
-extern char		*verb;
+extern char		verb[];
 extern char		ascii_digest[];
 extern int		output_fd;
 extern struct service	bio4_service;
@@ -52,7 +52,7 @@ struct service		cache4_service;
 static void
 _trace(char *msg)
 {
-	if (verb)
+	if (verb[0])
 		trace3("cache4", verb, msg);
 	else
 		trace2("cache4", msg);
@@ -61,7 +61,7 @@ _trace(char *msg)
 static void
 _trace2(char *msg1, char *msg2)
 {
-	if (verb)
+	if (verb[0])
 		trace4("cache4", verb, msg1, msg2);
 	else
 		trace3("cache4", msg1, msg2);

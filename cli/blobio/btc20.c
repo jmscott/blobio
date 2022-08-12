@@ -27,7 +27,7 @@
 
 #endif
 
-extern char	*verb;
+extern char	verb[];
 extern char	ascii_digest[];
 extern int	input_fd;
 
@@ -273,7 +273,7 @@ _trace2(char *msg1, char *msg2)
  *	"..."		error message.
  */
 static char *
-btc20_eat_input()
+btc20_eat_input(int fd)
 {
 	unsigned char buf[MAX_ATOMIC_MSG], *q, *q_end;
 	char *p;
@@ -281,7 +281,7 @@ btc20_eat_input()
 
 	_TRACE("request to btc20_eat_input()");
 
-	while ((nread = jmscott_read(input_fd, buf, sizeof buf)) > 0)
+	while ((nread = jmscott_read(fd, buf, sizeof buf)) > 0)
 		if (!SHA256_Update(&btc20_ctx.sha256, buf, nread))
 			return "SHA256_Update(chunk) failed";
 	if (nread < 0)

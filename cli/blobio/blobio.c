@@ -76,15 +76,14 @@ extern int	tracing;
 /*
  *  The global request.
  */
-char	*verb;
+char	verb[6];
 char	algorithm[9] = {0};
 char	algo[9] = {0};
 char	ascii_digest[129] = {0};
 char	*output_path = 0;
 char	*input_path = 0;
 
-char	brr_path[PATH_MAX] = {0};
-char	brrp[PATH_MAX] = {0};		//  service query arg brrp=fs...
+char	brrd[PATH_MAX] = {0};		//  service query arg brrd=fs...
 
 char	*null_device = "/dev/null";
 char	chat_history[10] = {0};
@@ -113,21 +112,11 @@ static char		usage[] =
 	"[options]\n"
 ;
 
-static char	*brr_format =
-	"%04d-%02d-%02dT%02d:%02d:%02d.%09ld+00:00\t"	//  RFC3339Nano time
-	"%s\t"						//  transport
-	"%s\t"						//  verb
-	"%s%s%s\t"					//  algorithm(:digest)?	
-	"%s\t"						//  chat history
-	"%llu\t"					//  byte count
-	"%ld.%09ld\n"					//  wall duration
-;
-
 static void
 ecat(char *buf, int size, char *msg)
 {
 	bufcat(buf, size, jmscott_progname);
-	if (verb)
+	if (verb[0])
 		buf2cat(buf, size, ": ", verb);
 	if (service)
 		buf2cat(buf, size, ": ", service->name);
@@ -162,6 +151,7 @@ cleanup(int status)
 			//  assemble error message about failed
 			//  unlink()
 
+			//  Note: replace with jmscott_strcat()!
 			buf[0] = 0;
 			ecat(buf, sizeof buf, panic);
 			buf2cat(buf, sizeof buf, err, "\n");
@@ -423,12 +413,13 @@ parse_argv(int argc, char **argv)
 	    strcmp("roll",  argv[1]) != 0 &&
 	    strcmp("empty", argv[1]) != 0)
 	    	die2("unknown verb", argv[1]);
-	verb = argv[1];
+	strcpy(verb, argv[1]);
 
 	//  parse command line arguments after the request verb
 
 	for (i = 2;  i < argc;  i++) {
 		char *a = argv[i];
+		TRACE2("argv", a);
 
 		//  all options start with --
 
@@ -454,7 +445,6 @@ parse_argv(int argc, char **argv)
 			//	^[a-z][a-z0-9]{0,7}:[[:isgraph:]]{32,128}$
 
 			char *ud;
-			int j;
 			struct digest *d;
 
 			//  option --udig given more than once.
@@ -476,11 +466,7 @@ parse_argv(int argc, char **argv)
 
 			//  find the digest module for algorithm.
 
-			for (j = 0;  digests[j];  j++)
-				if (strcmp(algorithm,
-				      digests[j]->algorithm) == 0)
-					break;
-			d = digests[j];
+			d = find_digest(algorithm);
 			if (!d)
 				eopt2("udig", "unknown algorithm", algorithm);
 
@@ -497,7 +483,6 @@ parse_argv(int argc, char **argv)
 		//  --algorithm [a-z][a-z0-9]{0,7}
 
 		} else if (strcmp("algorithm", a) == 0) {
-			int j;
 			char *n;
 
 			if (ascii_digest[0])
@@ -511,13 +496,11 @@ parse_argv(int argc, char **argv)
 			n = argv[i];
 			if (!*n)
 				eopt("algorithm", "empty name");
-			for (j = 0;  digests[j];  j++)
-				if (strcmp(n, digests[j]->algorithm)==0)
-					break;
-			if (!digests[j])
+			struct digest *d = find_digest(n);
+			if (!d)
 				eopt2("algorithm", "unknown algorithm", n);
-			strcpy(algorithm, digests[j]->algorithm);
-			digest_module = digests[j];
+			strcpy(algorithm, d->algorithm);
+			digest_module = d;
 
 		//  --input-path path/to/file
 
@@ -638,12 +621,12 @@ parse_argv(int argc, char **argv)
 				if (err)
 					eservice2("query arg: timeout", err);
 
-				err = BLOBIO_SERVICE_get_brrp(
+				err = BLOBIO_SERVICE_get_brrd(
 					query,
-					brrp
+					brrd
 				);
 				if (err)
-					eservice2("query arg: brrp", err);
+					eservice2("query arg: brrd", err);
 			}
 
 			//  validate the syntax of the specific end point
@@ -765,114 +748,6 @@ xref_args()
 	}
 }
 
-static void
-brr_write(char *path)
-{
-	struct tm *t;
-	char brr[BRR_SIZE + 1];
-	struct timespec	end_time;
-	long int sec, nsec;
-	size_t len;
-
-	/*
-	 *  Build the ascii version of the start time.
-	 */
-	t = gmtime(&start_time.tv_sec);
-	if (!t)
-		die2("gmtime() failed", strerror(errno));
-	/*
-	 *  Get end time.
-	 */
-	if (clock_gettime(CLOCK_REALTIME, &end_time) < 0)
-		die2("clock_gettime(end REALTIME) failed", strerror(errno));
-	/*
-	 *  Calculate the elapsed time in seconds and
-	 *  nano seconds.  The trick of adding 1000000000
-	 *  is the same as "borrowing" a one in grade school
-	 *  subtraction.
-	 */
-	if (end_time.tv_nsec - start_time.tv_nsec < 0) {
-		sec = end_time.tv_sec - start_time.tv_sec - 1;
-		nsec = 1000000000 + end_time.tv_nsec - start_time.tv_nsec;
-	} else {
-		sec = end_time.tv_sec - start_time.tv_sec;
-		nsec = end_time.tv_nsec - start_time.tv_nsec;
-	}
-
-	/*
-	 *  Verify that seconds and nanoseconds are positive values.
-	 *  This test is added until I (jmscott) can determine why
-	 *  I peridocally see negative times on Linux hosted by VirtualBox
-	 *  under Mac OSX.
-	 */
-	if (sec < 0)
-		sec = 0;
-	if (nsec < 0)
-		nsec = 0;
-
-	/*
-	 *  Format the record buffer.
-	 */
-	snprintf(brr, BRR_SIZE + 1, brr_format,
-		t->tm_year + 1900,
-		t->tm_mon + 1,
-		t->tm_mday,
-		t->tm_hour,
-		t->tm_min,
-		t->tm_sec,
-		start_time.tv_nsec,
-		transport,
-		verb,
-		algorithm[0] ? algorithm : "",
-		algorithm[0] && ascii_digest[0] ? ":" : "",
-		ascii_digest[0] ? ascii_digest : "",
-		chat_history,
-		blob_size,
-		sec, nsec
-	);
-
-	len = strlen(brr);
-	/*
-	 *  Open brr file with shared lock, not exclusive.
-	 *  fs_wrap() opens with exclusive, to quickly rename
-	 *  to fs-<time()>.brr, for wrapping.
-	 *
-	 *  Note:
-	 *	verify that brr file is NOT a sym link
-	 */
-	int fd = jmscott_open(
-		path,
-		O_WRONLY|O_CREAT|O_APPEND|O_SHLOCK,
-		S_IRUSR|S_IWUSR|S_IRGRP
-	);
-	if (fd < 0)
-		die2("open(brr-path) failed", strerror(errno));
-	/*
-	 *  Write the entire blob request record in a single write().
-	 */
-	if (jmscott_write(fd, brr, len) < 0)
-		die2("write(brr-path) failed", strerror(errno));
-	if (jmscott_close(fd) < 0)
-		die2("close(brr-path) failed", strerror(errno));
-}
-
-static void
-_brr_write()
-{
-	if (brr_path[0]) {
-		brr_write(brr_path);
-		return;
-	}
-	if (!brrp[0])
-		return;
-	char path[PATH_MAX];
-
-	path[0] = 0;
-	jmscott_strcat(path, sizeof path, brrp);
-	jmscott_strcat(path, sizeof path, ".brr");
-	brr_write(path);
-}
-
 int
 main(int argc, char **argv)
 {
@@ -884,7 +759,6 @@ main(int argc, char **argv)
 			"clock_gettime(start REALTIME) failed",
 			strerror(errno)
 		);
-
 	parse_argv(argc, argv);
 
 #ifndef COMPILE_TRACE
@@ -898,7 +772,7 @@ main(int argc, char **argv)
 		snprintf(buf, sizeof buf, "timeout: %d", timeout);
 		TRACE(buf);
 
-		snprintf(buf, sizeof buf, "brr path: %s", brr_path);
+		snprintf(buf, sizeof buf, "brr directory path: %s", brrd);
 		TRACE(buf);
 	}
 
@@ -1031,7 +905,7 @@ main(int argc, char **argv)
 			} else {
 				char buf[128 + 1];
 
-				if ((err = digest_module->eat_input()))
+				if ((err = digest_module->eat_input(input_fd)))
 					die2("eat(input) failed", err);
 
 				//  write the ascii digest
@@ -1088,7 +962,8 @@ main(int argc, char **argv)
 	if (output_fd > 1 && jmscott_close(output_fd))
 		die2("close(output-path) failed",strerror(errno));
 
-	_brr_write();
+	if (brrd[0])
+		brr_write(service->name);
 	cleanup(exit_status);
 
 	/*NOTREACHED*/
