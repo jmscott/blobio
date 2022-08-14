@@ -31,6 +31,7 @@
 #include <fcntl.h>
 #include <stdio.h>
 
+#include "jmscott/libjmscott.h"
 #include "blobio.h"
 
 //  does the verb imply a possible write to the file system?
@@ -86,6 +87,13 @@ fs_open()
 	struct stat st;
 	char *end_point = fs_service.end_point;
 
+
+	//  tidle shorhand for the file system root in end point
+	if (strcmp("~", brrd) == 0) {
+		brrd[0] = 0;
+		jmscott_strcat(brrd, PATH_MAX, end_point);
+		TRACE2("brrd reset", brrd);
+	}
 	//  Note:  need some testing for wrap.
 	if (*verb == 'w') {
 		if (!brrd[0])
@@ -555,6 +563,51 @@ fs_wrap(int *ok_no)
 	TRACE2("wrap brr path", wrap_brr_path);
 	if (rename(frozen_brr_path, wrap_brr_path))
 		return strerror(errno);
+
+	//  put the frozen wrap file in data/fs_algo
+	//  by forking another blobio cli
+
+	char cli_srv[256];
+	strcpy(cli_srv, " --service 'fs:");
+	jmscott_strcat(cli_srv, sizeof cli_srv, fs_service.end_point);
+	if (fs_service.query[0])
+		jmscott_strcat2(cli_srv, sizeof cli_srv,
+			"?",
+			fs_service.query
+		);
+	jmscott_strcat(cli_srv, sizeof cli_srv, "'");
+
+	char cli_udig[256];
+	cli_udig[0] = 0;
+	jmscott_strcat4(cli_udig, sizeof cli_udig,
+		" --udig ",
+		algo,
+		":",
+		ascii_digest
+	);
+
+	char cli_input[PATH_MAX+10];
+	cli_input[0] = 0;
+	jmscott_strcat2(cli_input, sizeof cli_input,
+		" --input-path ",
+		wrap_brr_path
+	);
+
+	char put_cli[1024];
+	put_cli[0] = 0;
+	jmscott_strcat4(put_cli, sizeof put_cli,
+		"blobio put",
+		cli_srv,
+		cli_udig,
+		cli_input
+	);
+	TRACE2("put command line", put_cli);
+	status = system(put_cli);
+	if (status == 127)
+		return "could not execute blobio put command for wrap set";
+	if (status != 0)
+		return "put(wrap blob) failed";
+	TRACE("put command: exit 0");
 
 	*ok_no = 0;
 	return (char *)0;

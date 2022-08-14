@@ -612,6 +612,10 @@ parse_argv(int argc, char **argv)
 			 */
 			if ((query = rindex(endp, '?'))) {
 				*query++ = 0;
+				sp->query[0] = 0;
+				jmscott_strcat(sp->query, sizeof sp->query,
+						query
+				);
 
 				char *err = BLOBIO_SERVICE_frisk_query(query);
 				if (err)

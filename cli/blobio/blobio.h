@@ -167,6 +167,7 @@ struct service
 {
 	char		*name;
 	char		end_point[256];
+	char		query[256];
 
 	char		*(*end_point_syntax)(char *end_point);
 
