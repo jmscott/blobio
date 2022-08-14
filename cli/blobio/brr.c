@@ -44,7 +44,7 @@ brr_write(char *srv_name)
 	struct timespec	end_time;
 	long int sec, nsec;
 
-	TRACE2("brr_write: service name", srv_name);
+	TRACE2("service name", srv_name);
 
 	/*
 	 *  Build the ascii version of the start time.
