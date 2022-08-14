@@ -56,6 +56,7 @@ BINs="
 	bio-put
 	bio-put-file
 	bio-put-stdin
+	bio-sha
 	bio-take
 	bio-udig2fs
 	bio-unroll
