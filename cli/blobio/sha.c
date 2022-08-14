@@ -33,40 +33,38 @@ sha_init()
 	unsigned char *d20;
 	unsigned int i;
 
-	if (strcmp("roll", verb)) {
-		if (!SHA1_Init(&sha_ctx))
-			return "SHA1_Init() failed";
+	if (!SHA1_Init(&sha_ctx))
+		return "SHA1_Init() failed";
+	if (!ascii_digest[0])
+		return (char *)0;
 
-		/*
-		 *  Convert the 40 character hex signature to 20 byte binary.
-		 *  The ascii, hex version has already been scanned for 
-		 *  syntactic correctness.
-		 */
-		if (ascii_digest[0]) {
-			d40 = ascii_digest;
-			d20 = bin_digest;
+	/*
+	 *  Convert the 40 character hex signature to 20 byte binary.
+	 *  The ascii, hex version has already been scanned for 
+	 *  syntactic correctness.
+	 */
+	d40 = ascii_digest;
+	d20 = bin_digest;
 
-			memset(d20, 0, 20);	/*  since nibs are or'ed in */
-			for (i = 0;  i < 40;  i++) {
-				unsigned char nib;
+	memset(d20, 0, 20);	/*  since nibs are or'ed in */
+	for (i = 0;  i < 40;  i++) {
+		unsigned char nib;
 
-				c = *d40++;
-				if (c >= '0' && c <= '9')
-					nib = c - '0';
-				else
-					nib = c - 'a' + 10;
-				if ((i & 1) == 0)
-					nib <<= 4;
-				d20[i >> 1] |= nib;
-			}
-#ifdef COMPILE_TRACE
-			if (tracing) {
-				TRACE("hex dump of 20 byte bin digest ...");
-				hexdump(d20, 20, '=');
-			}
-#endif
-		}
+		c = *d40++;
+		if (c >= '0' && c <= '9')
+			nib = c - '0';
+		else
+			nib = c - 'a' + 10;
+		if ((i & 1) == 0)
+			nib <<= 4;
+		d20[i >> 1] |= nib;
 	}
+#ifdef COMPILE_TRACE
+	if (tracing) {
+		TRACE("hex dump of 20 byte bin digest ...");
+		hexdump(d20, 20, '=');
+	}
+#endif
 	return (char *)0;
 }
 

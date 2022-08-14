@@ -441,7 +441,7 @@ fs_roll(int *ok_no)
 }
 
 static char *
-make_wrap_dir(char *dir_path, dir_path_size)
+make_wrap_dir(char *dir_path, int dir_path_size)
 {
 	dir_path[0] = 0;
 	jmscott_strcat2(dir_path, dir_path_size, brrd, "/wrap");
@@ -508,27 +508,31 @@ fs_wrap(int *ok_no)
 
 	char wrap_dir_path[PATH_MAX];
 
-	err = make_wrap_dir(wrap_dir_path);
+	err = make_wrap_dir(wrap_dir_path, sizeof wrap_dir_path);
 	if (err)
 		return err;
 
 	//  Note: hack to fool digest code.  really, really need refactor!
 	strcpy(algorithm, algo);
-	ascii_digest[0] = 0;
 
 	int frozen_fd = jmscott_open(frozen_brr_path, O_RDONLY, 0);
 	if (frozen_fd < 0)
 		return strerror(errno);
 	TRACE2("algo", algo);
-	err = find_digest(algo)->eat_input(frozen_fd);
-	if (err)
+
+	struct digest *d = find_digest(algo);
+	if (!d)
+		return "impossible: unknown digest";
+	if ((err = d->init()))
+		return err;
+
+	ascii_digest[0] = 0;
+	if ((err = d->eat_input(frozen_fd)))
 		return err;
 
 	//  sanity test.  really, really need to refactor code
-	if (!algorithm[0])
-		return "impossible: null algo after frozen digest";
 	if (!ascii_digest[0])
-		return "empty ascii digest after eat_input()";
+		return "impossible: null algo after frozen digest";
 	TRACE2("ascii digest", ascii_digest);
 
 	if (jmscott_close(frozen_fd) && err == (char *)0)
