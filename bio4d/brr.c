@@ -915,12 +915,12 @@ put_wrap_set(int fd, char *path, char *udig)
  *		sha:f768865fe672543ebfac08220925054db3aa9465\n
  *
  * 	and then digest THAT set into a blob.  The udig of THAT set is returned
- * 	to the client.
+ * 	to the client and the set is moved to spool/roll/<udig>.uset.
  *  Return:
- *	0	sucess
+ *	0	success
  *	1	error
  *  Note:
- *	Wraps do NOT appear to be sequential.  The protocol insures
+ *	Wraps do NOT appear to be sequential.  The protocol implies
  *	each wrapped brr blob starts with a "wrap" record and no other
  *	wrap exists after the first line.  Can this be guaranteed?
  *
