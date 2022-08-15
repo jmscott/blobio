@@ -11,16 +11,48 @@
 #include "blobio.h"
 
 /*
+ *  A prosaic frisker of query arguments in BLOBIO_SERVICE.
+ */
+char *
+frisk_qarg(char *expect, char *given, char **p_equal)
+{
+	char *e = expect, ce;
+	char *g = given, cg;
+
+	while ((ce = *e++)) {
+		cg = *g++;
+		if (cg == 0)
+			return "unexpected null char in value";
+		if (!isascii(cg))
+			return "char in value is not ascii";
+		if (cg != ce)
+			return "unexpected char in value";
+	}
+	if (*g++ != '=')
+		return "equal char \"=\" not terminating query arg variable";
+	*equal = g;
+
+	//  insure value of query arg is roughly kosher
+	while ((cg = *g++)) {
+		if (!isgraphic(cg))
+			return "char in value is not graphic";
+		if (cg == '&')
+			break;
+	}
+	return (char *)0;
+}
+/*
  *  Synopsis:
  *	Frisk (but not extract) query args in a uri of $BLOBIO_SERVICE.
  *  Description:
  *	Brute force frisk (but not extract) of query args in a uri
  *	$BLOBIO_SERVICE.
  *
- *		tmo=20			#  timeout in seconds <= 255
- *		brr=path/to/brr		#  path to brr log
+ *		algo=[sha|btc20]	#  algorithm for service wrap
+ *		brr=0|1			#  write brr record
+ #		BR=path/to/blobio	#  explict path
  *
- *	Tis an error if args other than "tmo" or "brr" exist.
+ *	Tis an error if args other than the three aboce exist in query string.
  *  Returns:
  *	An error string or (char *)0 if no unexpected args exist.
  */
@@ -28,37 +60,67 @@ char *
 BLOBIO_SERVICE_frisk_query(char *query)
 {
 	char *q = query, c;
-	char seen_tmo = 0, seen_BR = 0, seen_algo = 0;
+	char seen_brr = 0, seen_BR = 0, seen_algo = 0;
 	int count;
+	char *equal, *err;
 
 	if (!query || !*query)
 		return (char *)0;
 	while ((c = *q++)) {
 		switch (c) {
 		case 'a':		//  match "algo"
+			err = peek_qarg("algo", q - 1, &q);
+			if (err)
+				return err;
+			
+			//  at least one char
+			c = *q++;
+			if (!c || c == '&')
+				return "missing file path after arg \"algo=\"";
+			if (seen_algo)
+				return "\"algo\" specified more than once";
+			seen_algo = 1;
+
+			//  skip over path till we hit end of string or '&'
+			count = 0;
+			while ((c = *q++)) {
+				if (!c)
+					return (char *)0;
+				if (c == '&')
+					break;
+				if (!isascii(c))
+					return "non ascii char in \"algo\" arg";
+				if (count == 0) {
+					if (!islower(c) || !isalpha(c))
+						return "first char not "
+						       "lower alpha in \"algo\""
+						;
+				} else {
+					//  Note: wrong algo, fix!
+					if (!isalnum(c))
+						return "non alnum in \"algo\"";
+				}
+				count++;
+				if (count > 8)
+					return ">8 chars in \"algo\" arg";
+			}
+			break;
+		case 'b':		//  match "brr=[01]"
 			c = *q++;
 			if (!c)
-				return "unexpected null after \"a\" query arg";
-			if (c != 'l')
-				return "unexpected char after \"a\" query arg";
+				return "unexpected null after \"b\" query arg";
+			if (c != 'r')
+				return "unexpected char after \"r\" query arg";
 
 			c = *q++;
 			if (!c)
-				return "unexpected null after \"al\" query arg";
-			if (c != 'g')
-				return "unexpected char after \"al\" query arg";
-
-			c = *q++;
-			if (!c)
-				return "unexpected null after "
-				       "\"alg\" query arg";
-			if (c != 'o')
-				return "unexpected char after "
-				       "\"alg\" query arg";
+				return "unexpected null after \"br\" query arg";
+			if (c != 'r')
+				return "unexpected char after \"br\" query arg";
 
 			c = *q++;
 			if (c != '=')
-				return "no char '=' after arg \"brr\"";
+				return "no char \"=\" after arg \"brr\"";
 			
 			//  at least one char
 			c = *q++;
@@ -92,38 +154,6 @@ BLOBIO_SERVICE_frisk_query(char *query)
 					return ">8 chars in \"algo\" arg";
 			}
 			break;
-		case 't':		//  match "tmo"
-			c = *q++;
-			if (!c)
-				return "unexpected null after 't' query arg";
-			if (c != 'm')
-				return "unexpected char after 't' query arg";
-			c = *q++;
-			if (!c)
-				return "unexpected null after 'tm' query arg";
-			if (c != 'o')
-				return "unexpected char after 'tm' query arg";
-			c = *q++;
-			if (c != '=')
-				return "no char '=' after arg 'tmo'";
-			if (seen_tmo)
-				return "arg 'tmo' given more than once";
-			seen_tmo = 1;
-			
-			//  skip over timeout till we hit end of string or '&'
-			count = 0;
-			while ((c = *q++)) {
-				if (c == '&')
-					break;
-				count++;
-				if (count >= 4)
-					return "too many chars in arg \"tmo=\"";
-				if (!isdigit(c))
-					return "non-digit in arg \"tmo=\"";
-			}
-			if (count == 0)
-				return "tmo: no digits";
-			break;
 		case 'B':
 			c = *q++;
 			if (!c)
@@ -132,7 +162,7 @@ BLOBIO_SERVICE_frisk_query(char *query)
 				return "unexpected char after \"B\" query arg";
 			c = *q++;
 			if (c != '=')
-				return "no char '=' after arg 'BR'";
+				return "no char \"=\" after arg \"BR\"";
 			if (seen_BR)
 				return "arg \"BR\" given more than once";
 			seen_BR = 1;
