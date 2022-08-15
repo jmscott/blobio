@@ -219,7 +219,8 @@ extern ssize_t	uni_write(int fd, const void *buf, size_t count);
 
 extern char	*BLOBIO_SERVICE_frisk_query(char *query);
 extern char	*BLOBIO_SERVICE_get_tmo(char *query, int *tmo);
-extern char	*BLOBIO_SERVICE_get_brrd(char *query, char *brr_path);
+extern char	*BLOBIO_SERVICE_get_BR(char *query, char *BR);
+extern char	*BLOBIO_SERVICE_get_brr(char *query, char *brr);
 extern char	*BLOBIO_SERVICE_get_algo(char *query, char *brr_path);
 
 extern void	brr_write();

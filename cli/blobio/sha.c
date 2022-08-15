@@ -257,7 +257,7 @@ fs_sha_name(char *name, int size)
 static int
 _mkdir(char *path)
 {
-	return jmscott_mkdirp(path, 0710);	// g=rwx,g=x,o=
+	return jmscott_mkdir_EEXISTS(path, 0710);	// g=rwx,g=x,o=
 }
 
 /*
@@ -274,7 +274,8 @@ fs_sha_mkdir(char *path, int size)
 
 	dp = ascii_digest;
 
-	p = bufcat(path, size, "/");
+	jmscott_strcat(path, size, "/");
+	p = path + 1;
 
 	*p++ = *dp++;    *p++ = *dp++;    *p++ = *dp++; 
 	*p = 0;

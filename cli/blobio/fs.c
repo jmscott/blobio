@@ -294,7 +294,7 @@ fs_eat(int *ok_no)
 	char *err;
 	int len;
 
-	bufcat(fs_path, sizeof fs_path, "/");
+	jmscott_strcat(fs_path, sizeof fs_path, "/");
 	len = strlen(fs_path);
 	err = fs_service.digest->fs_path(fs_path + len, PATH_MAX - len);
 	if (err)
@@ -337,7 +337,8 @@ fs_put(int *ok_no)
 
 	//  append /<blob-file-name> to the path to the blob
 
-	np = bufcat(fs_path, sizeof fs_path, "/");
+	jmscott_strcat(fs_path, sizeof fs_path, "/");
+	np = fs_path + 1;
 	err = fs_service.digest->fs_name(np, PATH_MAX - (np - fs_path));
 	if (err)
 		return err;
@@ -368,7 +369,7 @@ fs_put(int *ok_no)
 	//  build path to temporary file which will accumulate the blob.
 
 	snprintf(tmp_name, sizeof tmp_name, "/%s.%ul", verb, getpid());
-	bufcat(tmp_path, sizeof tmp_path, tmp_name);
+	jmscott_strcat(tmp_path, sizeof tmp_path, tmp_name);
 
 	//  open input file.  may be standard input
 
@@ -454,7 +455,7 @@ make_wrap_dir(char *dir_path, int dir_path_size)
 	dir_path[0] = 0;
 	jmscott_strcat2(dir_path, dir_path_size, brrd, "/wrap");
 	TRACE2("dir path", dir_path);
-	if (jmscott_mkdirp(dir_path, S_IRUSR|S_IWUSR|S_IXUSR|S_IXGRP))
+	if (jmscott_mkdir_EEXISTS(dir_path, S_IRUSR|S_IWUSR|S_IXUSR|S_IXGRP))
 		return strerror(errno);
 	return (char *)0;
 }

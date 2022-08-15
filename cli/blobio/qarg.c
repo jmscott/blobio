@@ -5,6 +5,7 @@
  *	No escaping in query args, which is a serious bug!
  */
 #include <ctype.h>
+#include <limits.h>
 #include <stdlib.h>
 
 #include "blobio.h"
@@ -27,7 +28,7 @@ char *
 BLOBIO_SERVICE_frisk_query(char *query)
 {
 	char *q = query, c;
-	char seen_tmo = 0, seen_brrd = 0, seen_algo = 0;
+	char seen_tmo = 0, seen_BR = 0, seen_algo = 0;
 	int count;
 
 	if (!query || !*query)
@@ -91,50 +92,6 @@ BLOBIO_SERVICE_frisk_query(char *query)
 					return ">8 chars in \"algo\" arg";
 			}
 			break;
-		case 'b':		//  match "brrd"
-			c = *q++;
-			if (!c)
-				return "unexpected null after \"b\"";
-			if (c != 'r')
-				return "unexpected char after \"b\"";
-			c = *q++;
-			if (!c)
-				return "unexpected null after \"br\"";
-			if (c != 'r')
-				return "unexpected char after \"br\"";
-			c = *q++;
-			if (!c)
-				return "unexpected null after \"brr\"";
-			if (c != 'd')
-				return "unexpected char after \"brr\"";
-			c = *q++;
-			if (c != '=')
-				return "no char '=' after arg \"brrd\"";
-			
-			//  at least one char
-			c = *q++;
-			if (!c || c == '&')
-				return "missing file path after arg brr=";
-			if (seen_brrd)
-				return "\"brrd\" specified more than once";
-			seen_brrd = 1;
-
-			//  skip over path till we hit end of string or '&'
-			count = 0;
-			while ((c = *q++)) {
-				if (!c)
-					return (char *)0;
-				if (c == '&')
-					break;
-				if (!isascii(c))
-					return "non ascii char in \"brrd\" arg";
-				if (!isgraph(c))
-					return "non graph char in \"brrd\" arg";
-				count++;
-				if (count >= 64)
-					return "=>64 chars in \"brrd\" arg";
-			}
-			break;
 		case 't':		//  match "tmo"
 			c = *q++;
 			if (!c)
@@ -166,6 +123,35 @@ BLOBIO_SERVICE_frisk_query(char *query)
 			}
 			if (count == 0)
 				return "tmo: no digits";
+			break;
+		case 'B':
+			c = *q++;
+			if (!c)
+				return "unexpected null after \"B\" query arg";
+			if (c != 'R')
+				return "unexpected char after \"B\" query arg";
+			c = *q++;
+			if (c != '=')
+				return "no char '=' after arg 'BR'";
+			if (seen_BR)
+				return "arg \"BR\" given more than once";
+			seen_BR = 1;
+			
+			//  skip over blobio root path till we hit end of string
+			//  or '&'
+			count = 0;
+			while ((c = *q++)) {
+				if (c == '&')
+					break;
+				if (!isgraph(c))
+					return "non-graph char in \"BR\""
+					       " query arg";
+				count++;
+				if (count >= PATH_MAX)
+					return "too many chars in arg \"BR=\"";
+			}
+			if (count == 0)
+				return "empty path in \"BR\" query arg";
 			break;
 		default:
 			return "unexpected char in query arg";
@@ -261,57 +247,61 @@ BLOBIO_SERVICE_get_tmo(char *query, int *tmo)
 
 /*
  *  Synopsis:
- *  	Get the brr path in the query portion of $BLOBIO_SERCICE
+ *  	Extract the "algo" value for use by service drivers.
  *  Usage:
- *	char brrd[64];
- *	brrd[0] = 0;
- *	err = BLOBIO_SERVICE_get_brrd(query, char *brrd);
+ *	char *err;
+ *	err =  BLOBIO_SERVICE_frisk_algo(query, algo);
  *	if (err)
- *		die2("error parsing \"brrd\" for path", err);
+ *		return err;		//  error in a query arg
+ *
+ *	...
+ *
+ *	char algo[64];
+ *	algo[0] = 0;
+ *	err = BLOBIO_SERVICE_get_algo(query, char *algo);
+ *	if (err)
+ *		die2("error parsing \"algo\"", err);
  */
 char *
-BLOBIO_SERVICE_get_brrd(char *query, char *path)
+BLOBIO_SERVICE_get_algo(char *query, char *algo)
 {
-	char *q = query, c, *p = path;
+	char *q = query, c, *a = algo;
 	
-	*p = 0;
+	*a = 0;
 	while ((c = *q++)) {
 		if (c == '&')
 			continue;
 
-		//  not arg "brrd", so skip to next '&' or end of string 
-		if (c != 'b') {
+		//  not arg "algo", so skip to next '&' or end of string 
+		if (c != 'a') {
 			while ((c = *q++) && c != '&')
 				;
 			if (!c)
 				return (char *)0;
 			continue;
 		}
-		/*
-		 *  extract file name matching [[:ascii:]]+ and
-		 *  [[:graph:]]+ and {1,64} and [^&].
-		 */
 		c = *q++;
-		if (c != 'r')
-			return "impossible: char 'r' not after char 'b'";
+		if (c != 'l')
+			return "impossible: char 'l' not after char \"a\"";
+
 		c = *q++;
-		if (c != 'r')
-			return "impossible: char 'r' not after \"br\"";
+		if (c != 'g')
+			return "impossible: char 'g' not after \"al\"";
+
 		c = *q++;
-		if (c != 'd')
-			return "impossible: char 'd' not after \"brr\"";
+		if (c != 'o')
+			return "impossible: char 'o' not after \"alg\"";
+
 		c = *q++;
 		if (c != '=')
-			return "impossible: char '=' not after \"brrd\"";
+			return "impossible: char '=' not after \"algo\"";
+
+		// already know algo matches [a-z][a-z]{0,7}
+		
 		while ((c = *q++) && c != '&')
-			*p++ = c;
-		*p = 0;
+			*a++ = c;
+		*a = 0;
 	}
-	/*
-	 *  brr path can not end with ".brr".
-	 */
-	if (p - 4>path && p[-4]=='.' && p[-3]=='b' && p[-2]=='r' && p[-1]=='r')
-		return "brr path ends with \".brr\"";
 	return (char *)0;
 }
 
@@ -333,7 +323,7 @@ BLOBIO_SERVICE_get_brrd(char *query, char *path)
  *		die2("error parsing \"algo\"", err);
  */
 char *
-BLOBIO_SERVICE_get_algo(char *query, char *algo)
+BLOBIO_SERVICE_get_BR(char *query, char *path)
 {
 	char *q = query, c, *a = algo;
 	

@@ -83,7 +83,8 @@ char	ascii_digest[129] = {0};
 char	*output_path = 0;
 char	*input_path = 0;
 
-char	brrd[PATH_MAX] = {0};		//  service query arg brrd=fs...
+char	BR[PATH_MAX] = {0};		//  service query arg brrd=fs...
+char	brr[2];				//  write a brr record: [01]
 
 char	*null_device = "/dev/null";
 char	chat_history[10] = {0};
@@ -115,12 +116,12 @@ static char		usage[] =
 static void
 ecat(char *buf, int size, char *msg)
 {
-	bufcat(buf, size, jmscott_progname);
+	jmscott_strcat(buf, size, jmscott_progname);
 	if (verb[0])
-		buf2cat(buf, size, ": ", verb);
+		jmscott_strcat2(buf, size, ": ", verb);
 	if (service)
-		buf2cat(buf, size, ": ", service->name);
-	buf2cat(buf, size, ": ERROR: ", msg);
+		jmscott_strcat2(buf, size, ": ", service->name);
+	jmscott_strcat2(buf, size, ": ERROR: ", msg);
 }
 
 static void
@@ -149,12 +150,11 @@ cleanup(int status)
 			err = strerror(errno);
 
 			//  assemble error message about failed
-			//  unlink()
+			//  unlink() and burp out
 
-			//  Note: replace with jmscott_strcat()!
 			buf[0] = 0;
 			ecat(buf, sizeof buf, panic);
-			buf2cat(buf, sizeof buf, err, "\n");
+			jmscott_strcat2(buf, sizeof buf, err, "\n");
 
 			jmscott_write(2, buf, strlen(buf));
 		}
@@ -308,12 +308,12 @@ eopt(const char *option, char *why)
 
 	buf[0] = 0;
 
-	buf2cat(buf, sizeof buf, "option --", option);
+	jmscott_strcat2(buf, sizeof buf, "option --", option);
 
 	if (why)
-		buf2cat(buf, sizeof buf, ": ", why);
+		jmscott_strcat2(buf, sizeof buf, ": ", why);
 	else
-		bufcat(buf, sizeof buf, "<null why message>");
+		jmscott_strcat(buf, sizeof buf, "<null why message>");
 	die(buf);
 }
 
@@ -326,11 +326,11 @@ eopt2(char *option, char *why1, char *why2)
 
 	buf[0] = 0;
 	if (why1)
-		bufcat(buf, sizeof buf, why1);
+		jmscott_strcat(buf, sizeof buf, why1);
 	if (why2) {
 		if (buf[0])
-			bufcat(buf, sizeof buf, ": ");
-		bufcat(buf, sizeof buf, why2);
+			jmscott_strcat(buf, sizeof buf, ": ");
+		jmscott_strcat(buf, sizeof buf, why2);
 	}
 	eopt(option, buf);
 }
@@ -345,8 +345,8 @@ eservice2(char *why1, char *why2)
 	else
 		eopt("service", why1);
 }
-//  a fatal error parsing the BLOBIO_SERVICE option.
 
+//  a fatal error parsing the blobio --service option.
 static void
 eservice(char *why)
 {
@@ -361,8 +361,10 @@ no_opt(char *option)
 	char buf[MAX_ATOMIC_MSG];
 
 	buf[0] = 0;
-	buf2cat(buf, sizeof buf, "missing required option: --", option);
-
+	jmscott_strcat2(buf, sizeof buf,
+		"missing required option: --",
+		option
+	);
 	die(buf);
 }
 
@@ -374,7 +376,10 @@ emany(char *option)
 	char buf[MAX_ATOMIC_MSG];
 
 	buf[0] = 0;
-	buf2cat(buf, sizeof buf, "option given more than once: --", option);
+	jmscott_strcat2(buf, sizeof buf,
+		"option given more than once: --",
+		option
+	);
 	die(buf);
 }
 
@@ -599,16 +604,12 @@ parse_argv(int argc, char **argv)
 			//  is ued to introduce the query string.
 
 			/*
-			 *  Extract query arguments from service: brr, tmo
+			 *  Extract query arguments from service:
 			 *
-			 *	BLOBIO_ROOT=/opt/jmscott/jmsdesk/blobio
-			 *	BR=$BLOBIO_ROOT
-			 *	BLOBIO_SERVICE=fs:$BR?brr=../../spool/fs
-			 *	BLOBIO_SERVICE=bio4:10.187.1.5:1797?tmo=10
-			 *
-			 *  Note:
-			 *	can we write to the service string, which is
-			 *	part of argv?
+			 *	BR	path/to/blobio/root
+			 *	brr	write a brr record [01]
+			 *	algo	algorithm for wrap
+			 *	tmo	per i/o timeout
 			 */
 			if ((query = rindex(endp, '?'))) {
 				*query++ = 0;
@@ -625,9 +626,13 @@ parse_argv(int argc, char **argv)
 				if (err)
 					eservice2("query arg: timeout", err);
 
-				err = BLOBIO_SERVICE_get_brrd(query, brrd);
+				err = BLOBIO_SERVICE_get_BR(query, BR);
 				if (err)
-					eservice2("query arg: brrd", err);
+					eservice2("query arg: BR", err);
+
+				err = BLOBIO_SERVICE_get_brr(query, brr);
+				if (err)
+					eservice2("query arg: brr", err);
 
 				err = BLOBIO_SERVICE_get_algo(query, algo);
 				if (err)
@@ -771,15 +776,9 @@ main(int argc, char **argv)
 #endif
 	xref_args();
 
-	if (tracing) {
-		char buf[MAX_ATOMIC_MSG];
-
-		snprintf(buf, sizeof buf, "timeout: %d", timeout);
-		TRACE(buf);
-
-		snprintf(buf, sizeof buf, "brr directory path: %s", brrd);
-		TRACE(buf);
-	}
+	TRACE2("query arg: BR", BR);
+	TRACE2("query arg: brr", brr);
+	TRACE2("query arg: algo", algo);
 
 	//  the input path must always exist in the file system.
 
@@ -967,7 +966,7 @@ main(int argc, char **argv)
 	if (output_fd > 1 && jmscott_close(output_fd))
 		die2("close(output-path) failed",strerror(errno));
 
-	if (brrd[0])
+	if (brr[0] == '1')
 		brr_write(service->name);
 	cleanup(exit_status);
 
