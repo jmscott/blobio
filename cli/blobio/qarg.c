@@ -10,11 +10,21 @@
 
 #include "blobio.h"
 
+#define _QARG_MAX_VALUE		64
+
 /*
  *  A prosaic frisker of query arguments in BLOBIO_SERVICE.
+ *
+ *  Return:
+ *	(char *)0:	no error and updates *p_equal to first char after '='
+ *	error:		english error string
+ *  Note:
+ *	Add an arg for length of the value!
+ *
+ *	Correctness of escaped chars, etc, not frisked!
  */
 char *
-frisk_qarg(char *expect, char *given, char **p_equal)
+frisk_qarg(char *expect, char *given, char **p_equal, int max_vlen)
 {
 	char *e = expect, ce;
 	char *g = given, cg;
@@ -30,15 +40,21 @@ frisk_qarg(char *expect, char *given, char **p_equal)
 	}
 	if (*g++ != '=')
 		return "equal char \"=\" not terminating query arg variable";
-	*equal = g;
+	*p_equal = g;
 
-	//  insure value of query arg is roughly kosher
+	//  insure value of query arg is the correct length
 	while ((cg = *g++)) {
-		if (!isgraphic(cg))
+		if (g - given >= max_vlen)
+			return "value too large";
+		if (!isascii(cg))
+			return "char in value is not ascii";
+		if (!isgraph(cg))
 			return "char in value is not graphic";
 		if (cg == '&')
 			break;
 	}
+	if (g - given == 1)
+		return "empty value";
 	return (char *)0;
 }
 /*
@@ -50,9 +66,9 @@ frisk_qarg(char *expect, char *given, char **p_equal)
  *
  *		algo=[sha|btc20]	#  algorithm for service wrap
  *		brr=0|1			#  write brr record
- #		BR=path/to/blobio	#  explict path
+ *		BR=path/to/blobio	#  explict path to blobio root
  *
- *	Tis an error if args other than the three aboce exist in query string.
+ *	Tis an error if args other than the three above exist in query string.
  *  Returns:
  *	An error string or (char *)0 if no unexpected args exist.
  */
@@ -60,138 +76,81 @@ char *
 BLOBIO_SERVICE_frisk_query(char *query)
 {
 	char *q = query, c;
-	char seen_brr = 0, seen_BR = 0, seen_algo = 0;
+	char *equal;
+	char seen_BR = 0, seen_algo = 0, seen_brr = 0;
 	int count;
-	char *equal, *err;
+	char *err;
 
 	if (!query || !*query)
 		return (char *)0;
 	while ((c = *q++)) {
 		switch (c) {
-		case 'a':		//  match "algo"
-			err = peek_qarg("algo", q - 1, &q);
+
+		//  match: algo=[a-z][a-z0-9]{0,7}[&\000]
+
+		case 'a':
+			err = frisk_qarg("algo", q - 1, &equal, 8);
 			if (err)
 				return err;
-			
-			//  at least one char
-			c = *q++;
-			if (!c || c == '&')
-				return "missing file path after arg \"algo=\"";
 			if (seen_algo)
-				return "\"algo\" specified more than once";
-			seen_algo = 1;
+				return "algo: specified more than once";
 
-			//  skip over path till we hit end of string or '&'
-			count = 0;
+			//  insure the algorithm matches [a-z][a-z0-9]{0,7}
+			q = equal;
+			c = *q++;
+			if (!islower(c) || !isalpha(c))
+				return "algo: "
+				       "first char in value "
+				       "not lower alpha"
+				;
+				
+			//  scan [a-z0-9]{0,7}[&\000]
 			while ((c = *q++)) {
 				if (!c)
 					return (char *)0;
 				if (c == '&')
 					break;
-				if (!isascii(c))
-					return "non ascii char in \"algo\" arg";
-				if (count == 0) {
-					if (!islower(c) || !isalpha(c))
-						return "first char not "
-						       "lower alpha in \"algo\""
-						;
-				} else {
-					//  Note: wrong algo, fix!
-					if (!isalnum(c))
-						return "non alnum in \"algo\"";
-				}
-				count++;
-				if (count > 8)
-					return ">8 chars in \"algo\" arg";
+				if (!isdigit(c) ||
+				    (islower(c) && isalpha(c)))
+					return "algo: non alnum in value";
 			}
+			seen_algo = 1;
 			break;
-		case 'b':		//  match "brr=[01]"
-			c = *q++;
-			if (!c)
-				return "unexpected null after \"b\" query arg";
-			if (c != 'r')
-				return "unexpected char after \"r\" query arg";
 
+		//  match: brr=[tf]
+		case 'b':
+			err = frisk_qarg("brr", q - 1, &equal, 1);
+			if (err)
+				return err;
+			if (seen_brr)
+				return "brr: specified more than once";
+			q = equal;
 			c = *q++;
-			if (!c)
-				return "unexpected null after \"br\" query arg";
-			if (c != 'r')
-				return "unexpected char after \"br\" query arg";
-
-			c = *q++;
-			if (c != '=')
-				return "no char \"=\" after arg \"brr\"";
-			
-			//  at least one char
-			c = *q++;
-			if (!c || c == '&')
-				return "missing file path after arg algo=";
-			if (seen_algo)
-				return "\"algo\" specified more than once";
-			seen_algo = 1;
-
-			//  skip over path till we hit end of string or '&'
-			count = 0;
-			while ((c = *q++)) {
-				if (!c)
-					return (char *)0;
-				if (c == '&')
-					break;
-				if (!isascii(c))
-					return "non ascii char in \"algo\" arg";
-				if (count == 0) {
-					if (!islower(c) || !isalpha(c))
-						return "first char not "
-						       "lower alpha in \"algo\""
-						;
-				} else {
-					//  Note: wrong algo, fix!
-					if (!isalnum(c))
-						return "non alnum in \"algo\"";
-				}
-				count++;
-				if (count > 8)
-					return ">8 chars in \"algo\" arg";
-			}
+			if (c != 't' && c != 'f')
+				return "brr: value not \"t\" or \"f\"";
+			seen_brr = 1;
 			break;
 		case 'B':
-			c = *q++;
-			if (!c)
-				return "unexpected null after \"B\" query arg";
-			if (c != 'R')
-				return "unexpected char after \"B\" query arg";
-			c = *q++;
-			if (c != '=')
-				return "no char \"=\" after arg \"BR\"";
+			err = frisk_qarg("BR", q - 1, &equal, 64);
+			if (err)
+				return err;
 			if (seen_BR)
-				return "arg \"BR\" given more than once";
-			seen_BR = 1;
-			
+				return "BR: specified more than once";
 			//  skip over blobio root path till we hit end of string
 			//  or '&'
 			count = 0;
-			while ((c = *q++)) {
-				if (c == '&')
-					break;
-				if (!isgraph(c))
-					return "non-graph char in \"BR\""
-					       " query arg";
-				count++;
-				if (count >= PATH_MAX)
-					return "too many chars in arg \"BR=\"";
-			}
-			if (count == 0)
-				return "empty path in \"BR\" query arg";
+			while ((c = *q++))
+				if (!c)
+					return (char *)0;
 			break;
 		default:
 			return "unexpected char in query arg";
 		}
 		if (c == 0)
 			break;
-		if (c == '&') {
+		if (c == '&')
 			if (!*q)
 				return "no query argument after \"&\"";
-		}
 	}
 	return (char *)0;
 }
@@ -355,9 +314,9 @@ BLOBIO_SERVICE_get_algo(char *query, char *algo)
 char *
 BLOBIO_SERVICE_get_BR(char *query, char *path)
 {
-	char *q = query, c, *a = algo;
+	char *q = query, c, *p = path;
 	
-	*a = 0;
+	*p = 0;
 	while ((c = *q++)) {
 		if (c == '&')
 			continue;
@@ -386,11 +345,11 @@ BLOBIO_SERVICE_get_BR(char *query, char *path)
 		if (c != '=')
 			return "impossible: char '=' not after \"algo\"";
 
-		// already know algo matches [a-z][a-z]{0,7}
+		// already know path matches [[:isgraph:]] with proper length.
 		
 		while ((c = *q++) && c != '&')
-			*a++ = c;
-		*a = 0;
+			*p++ = c;
+		*p = 0;
 	}
 	return (char *)0;
 }
