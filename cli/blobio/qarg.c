@@ -23,7 +23,7 @@
  *
  *	Correctness of escaped chars, etc, not frisked!
  */
-char *
+static char *
 frisk_qarg(char *expect, char *given, char **p_equal, int max_vlen)
 {
 	char *e = expect, ce;
@@ -157,86 +157,7 @@ BLOBIO_SERVICE_frisk_query(char *query)
 
 /*
  *  Synopsis:
- *  	Extract timeout (tmo < 256) ) from a frisked $BLOBIO_SERVICE uri.
- *  Usage:
- *	char *status;
- *	status =  BLOBIO_SERVICE_frisk_query(query);
- *	if (status)
- *		return status;		//  error in query arg
- *
- *	...
- *
- *	status = BLOBIO_SERVICE_get_tmo(query, int &tmo);
- *	if (status)
- *		die2("error parsing \"tmo\" query arg", status);
- *	if (tmo == -1)
- *		tmo = 20;	//  no query arg, so set to default 20 seconds
- */
-char *
-BLOBIO_SERVICE_get_tmo(char *query, int *tmo)
-{
-	char *q = query, c;
-
-	*tmo = -1;
-	while ((c = *q++)) {
-		if (c == '&')
-			continue;
-
-		//  not arg "tmo", so skip to next '&' or end of string 
-		if (c != 't') {
-			while ((c = *q++) && c != '&')
-				;
-			if (!c)
-				return (char *)0;
-			continue;
-		}
-		/*
-		 *  extract unsigned timeout as int matching \d{1,3}.
-		 *  god bless frisking, but we still do a few cheap sanity
-		 *  tests.
-		 */
-		c = *q++;
-		if (c != 'm')
-			return "impossible: char 'm' not after char 't'";
-		c = *q++;
-		if (c != 'o')
-			return "impossible: char 'o' not after \"tm\"";
-		c = *q++;
-		if (c != '=')
-			return "impossible: char '=' not after \"tm\"";
-
-		 //  extract 1-3 digits from frisked "tmo=" query arg.
-
-		char digits[4];
-		digits[0] = *q++;
-		c = *q++;
-		if (isdigit(c)) {
-			digits[1] = c;
-			c = *q++;
-			if (isdigit(c)) {
-				digits[2] = c;
-				digits[3] = 0;
-			} else
-				digits[2] = 0;
-		} else
-			digits[1] = 0;
-
-		unsigned long long t;
-		char *status = jmscott_a2ui63(digits, &t);
-		if (status)
-			return status;		//  impossible
-		if (t > 255)
-			return "query arg \"tmo\" > 255";	//  possible
-		*tmo = (int)t;
-		return (char *)0;
-	}
-
-	return (char *)0;
-}
-
-/*
- *  Synopsis:
- *  	Extract the "algo" value for use by service drivers.
+ *  	Extract the "algo" value from a frisked query string.
  *  Usage:
  *	char *err;
  *	err =  BLOBIO_SERVICE_frisk_algo(query, algo);
@@ -269,21 +190,7 @@ BLOBIO_SERVICE_get_algo(char *query, char *algo)
 				return (char *)0;
 			continue;
 		}
-		c = *q++;
-		if (c != 'l')
-			return "impossible: char 'l' not after char \"a\"";
-
-		c = *q++;
-		if (c != 'g')
-			return "impossible: char 'g' not after \"al\"";
-
-		c = *q++;
-		if (c != 'o')
-			return "impossible: char 'o' not after \"alg\"";
-
-		c = *q++;
-		if (c != '=')
-			return "impossible: char '=' not after \"algo\"";
+		q += 4;		// skip over "lgo="
 
 		// already know algo matches [a-z][a-z]{0,7}
 		
@@ -296,20 +203,12 @@ BLOBIO_SERVICE_get_algo(char *query, char *algo)
 
 /*
  *  Synopsis:
- *  	Extract the "algo" value for use by service drivers.
+ *  	Extract the "BRR" file path from the frisked query string.
  *  Usage:
  *	char *err;
- *	err =  BLOBIO_SERVICE_frisk_algo(query, algo);
+ *	err =  BLOBIO_SERVICE_frisk_algo(query, path);
  *	if (err)
  *		return err;		//  error in a query arg
- *
- *	...
- *
- *	char algo[64];
- *	algo[0] = 0;
- *	err = BLOBIO_SERVICE_get_algo(query, char *algo);
- *	if (err)
- *		die2("error parsing \"algo\"", err);
  */
 char *
 BLOBIO_SERVICE_get_BR(char *query, char *path)
@@ -321,32 +220,17 @@ BLOBIO_SERVICE_get_BR(char *query, char *path)
 		if (c == '&')
 			continue;
 
-		//  not arg "algo", so skip to next '&' or end of string 
-		if (c != 'a') {
+		//  not arg "BRR", so skip to next '&' or end of string 
+		if (c != 'B') {
 			while ((c = *q++) && c != '&')
 				;
 			if (!c)
 				return (char *)0;
 			continue;
 		}
-		c = *q++;
-		if (c != 'l')
-			return "impossible: char 'l' not after char \"a\"";
+		q += 3;			//  skip "RR="
 
-		c = *q++;
-		if (c != 'g')
-			return "impossible: char 'g' not after \"al\"";
-
-		c = *q++;
-		if (c != 'o')
-			return "impossible: char 'o' not after \"alg\"";
-
-		c = *q++;
-		if (c != '=')
-			return "impossible: char '=' not after \"algo\"";
-
-		// already know path matches [[:isgraph:]] with proper length.
-		
+		//  extgract the frisked path
 		while ((c = *q++) && c != '&')
 			*p++ = c;
 		*p = 0;
