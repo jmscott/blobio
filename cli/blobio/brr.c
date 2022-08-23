@@ -13,6 +13,7 @@
 
 #define BRR_SIZE	370		//  terminating null NOT counted
 
+extern char			BR[];
 extern struct timespec		start_time;
 extern void			die(char *msg);
 extern void			die2(char *msg1, char *msg2);
@@ -23,7 +24,6 @@ extern char			ascii_digest[];
 extern char			transport[];
 extern char			verb[];
 extern char			chat_history[];
-extern char			brrd[];
 extern unsigned long long	blob_size;
 
 static char		*brr_format =
@@ -115,7 +115,7 @@ brr_write(char *srv_name)
 
 	brr_path[0] = 0;
 	jmscott_strcat4(brr_path, sizeof brr_path,
-		brrd,
+		BR,
 		"/",
 		srv_name,
 		".brr"

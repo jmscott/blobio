@@ -39,7 +39,7 @@
 #define IS_WRITE_VERB()	(*verb == 'p' || (*verb == 'g' && *verb == 'i'))
 
 extern char	verb[];
-extern char	brrd[];
+extern char	BR[];
 extern char	algorithm[];
 extern char	algo[];			//  service query arg "algo"
 extern char	chat_history[9];
@@ -89,15 +89,15 @@ fs_open()
 
 
 	//  tidle shorhand for the file system root in end point
-	if (strcmp("~", brrd) == 0) {
-		brrd[0] = 0;
-		jmscott_strcat(brrd, PATH_MAX, end_point);
-		TRACE2("brrd reset", brrd);
+	if (strcmp("~", BR) == 0) {
+		BR[0] = 0;
+		jmscott_strcat(BR, PATH_MAX, end_point);
+		TRACE2("BR reset", BR);
 	}
 	//  Note:  need some testing for wrap.
 	if (*verb == 'w') {
-		if (!brrd[0])
-			return "query arg \"brrd\" not defined";
+		if (!BR[0])
+			return "query arg \"BR\" not defined";
 		return (char *)0;
 	}
 
@@ -215,7 +215,7 @@ set_brr(char *hist, char *fs_path) {
 
 	struct stat st;
 
-	if (!brrd[0])
+	if (!BR[0])
 		return (char *)0;
 	if (fs_path && fs_path[0]) {
 		if (stat(fs_path, &st)) {
@@ -453,9 +453,9 @@ static char *
 make_wrap_dir(char *dir_path, int dir_path_size)
 {
 	dir_path[0] = 0;
-	jmscott_strcat2(dir_path, dir_path_size, brrd, "/wrap");
+	jmscott_strcat2(dir_path, dir_path_size, BR, "/wrap");
 	TRACE2("dir path", dir_path);
-	if (jmscott_mkdir_EEXISTS(dir_path, S_IRUSR|S_IWUSR|S_IXUSR|S_IXGRP))
+	if (jmscott_mkdir_EEXIST(dir_path, S_IRUSR|S_IWUSR|S_IXUSR|S_IXGRP))
 		return strerror(errno);
 	return (char *)0;
 }
@@ -470,7 +470,7 @@ fs_wrap(int *ok_no)
 	jmscott_strcat2(
 		brr_path,
 		sizeof brr_path,
-		brrd,
+		BR,
 		"/fs.brr"
 	);
 
@@ -483,7 +483,7 @@ fs_wrap(int *ok_no)
 	char frozen_brr_path[PATH_MAX];
 	frozen_brr_path[0] = 0;
 	jmscott_strcat4(frozen_brr_path, sizeof brr_path,
-		brrd,
+		BR,
 		"/fs-",
 		now,
 		".brr"
@@ -554,7 +554,7 @@ fs_wrap(int *ok_no)
 	jmscott_strcat6(
 		wrap_brr_path,
 		sizeof wrap_brr_path,
-		brrd,
+		BR,
 		"/wrap/",
 		algo,
 		":",

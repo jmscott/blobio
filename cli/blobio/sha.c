@@ -257,7 +257,7 @@ fs_sha_name(char *name, int size)
 static int
 _mkdir(char *path)
 {
-	return jmscott_mkdir_EEXISTS(path, 0710);	// g=rwx,g=x,o=
+	return jmscott_mkdir_EEXIST(path, 0710);	// g=rwx,g=x,o=
 }
 
 /*

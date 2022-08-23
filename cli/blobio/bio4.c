@@ -24,7 +24,6 @@
 #include "blobio.h"
 
 extern int	timeout;
-extern char	brrd[];
 
 //  Note: where is HOST_NAME_MAX defined on OS X?
 
@@ -222,12 +221,11 @@ AGAIN3:
 	*p_server_fd = fd;
 	_CTRACE("done");
 
-	if (brrd[0])
-		snprintf(transport, sizeof transport,
-			"tcp4~%s:%d",
-			inet_ntoa(s.sin_addr),
-			port
-		);
+	snprintf(transport, sizeof transport,
+		"tcp4~%s:%d",
+		inet_ntoa(s.sin_addr),
+		port
+	);
 	return 0;
 }
 

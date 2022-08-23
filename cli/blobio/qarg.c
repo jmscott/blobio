@@ -8,6 +8,7 @@
 #include <limits.h>
 #include <stdlib.h>
 
+#include "jmscott/libjmscott.h"
 #include "blobio.h"
 
 #define _QARG_MAX_VALUE		64
@@ -29,6 +30,9 @@ frisk_qarg(char *expect, char *given, char **p_equal, int max_vlen)
 	char *e = expect, ce;
 	char *g = given, cg;
 
+	TRACE2("expect", expect);
+	TRACE2("given", given);
+
 	while ((ce = *e++)) {
 		cg = *g++;
 		if (cg == 0)
@@ -42,7 +46,8 @@ frisk_qarg(char *expect, char *given, char **p_equal, int max_vlen)
 		return "equal char \"=\" not terminating query arg variable";
 	*p_equal = g;
 
-	//  insure value of query arg is the correct length
+	//  insure value of query arg is copacetic.
+
 	while ((cg = *g++)) {
 		if (g - given >= max_vlen)
 			return "value too large";
@@ -57,15 +62,32 @@ frisk_qarg(char *expect, char *given, char **p_equal, int max_vlen)
 		return "empty value";
 	return (char *)0;
 }
+
+//  a memory unsafe concatentor of error messages regarding query args.
+
+static char *
+qae(char *qarg, char *err)
+{
+	static char msg[MAX_ATOMIC_MSG];
+
+	msg[0] = 0;
+	jmscott_strcat3(msg, sizeof msg,
+			qarg,
+			": ",
+			err
+	);
+	return msg;
+}
+
 /*
  *  Synopsis:
- *	Frisk (but not extract) query args in a uri of $BLOBIO_SERVICE.
+ *	Frisk (but not extract) query args in a uri from $BLOBIO_SERVICE.
  *  Description:
  *	Brute force frisk (but not extract) of query args in a uri
  *	$BLOBIO_SERVICE.
  *
- *		algo=[sha|btc20]	#  algorithm for service wrap
- *		brr=0|1			#  write brr record
+ *		algo=[a-z][a-z0-9]{0,7}	#  algorithm for service wrap
+ *		brr=[01]		#  write brr record
  *		BR=path/to/blobio	#  explict path to blobio root
  *
  *	Tis an error if args other than the three above exist in query string.
@@ -73,7 +95,7 @@ frisk_qarg(char *expect, char *given, char **p_equal, int max_vlen)
  *	An error string or (char *)0 if no unexpected args exist.
  */
 char *
-BLOBIO_SERVICE_frisk_query(char *query)
+BLOBIO_SERVICE_frisk_qargs(char *query)
 {
 	char *q = query, c;
 	char *equal;
@@ -91,7 +113,7 @@ BLOBIO_SERVICE_frisk_query(char *query)
 		case 'a':
 			err = frisk_qarg("algo", q - 1, &equal, 8);
 			if (err)
-				return err;
+				return qae("algo", err);
 			if (seen_algo)
 				return "algo: specified more than once";
 
@@ -121,21 +143,22 @@ BLOBIO_SERVICE_frisk_query(char *query)
 		case 'b':
 			err = frisk_qarg("brr", q - 1, &equal, 1);
 			if (err)
-				return err;
+				return qae("brr", err);
 			if (seen_brr)
 				return "brr: specified more than once";
 			q = equal;
 			c = *q++;
-			if (c != 't' && c != 'f')
-				return "brr: value not \"t\" or \"f\"";
+			if (c != '1' && c != '0')
+				return "brr: value not \"0\" or \"1\"";
 			seen_brr = 1;
 			break;
 		case 'B':
 			err = frisk_qarg("BR", q - 1, &equal, 64);
 			if (err)
-				return err;
+				return qae("BR", err);
 			if (seen_BR)
 				return "BR: specified more than once";
+
 			//  skip over blobio root path till we hit end of string
 			//  or '&'
 			count = 0;
@@ -158,21 +181,8 @@ BLOBIO_SERVICE_frisk_query(char *query)
 /*
  *  Synopsis:
  *  	Extract the "algo" value from a frisked query string.
- *  Usage:
- *	char *err;
- *	err =  BLOBIO_SERVICE_frisk_algo(query, algo);
- *	if (err)
- *		return err;		//  error in a query arg
- *
- *	...
- *
- *	char algo[64];
- *	algo[0] = 0;
- *	err = BLOBIO_SERVICE_get_algo(query, char *algo);
- *	if (err)
- *		die2("error parsing \"algo\"", err);
  */
-char *
+void
 BLOBIO_SERVICE_get_algo(char *query, char *algo)
 {
 	char *q = query, c, *a = algo;
@@ -181,36 +191,28 @@ BLOBIO_SERVICE_get_algo(char *query, char *algo)
 	while ((c = *q++)) {
 		if (c == '&')
 			continue;
+		if (c == 'a') {
+			q += 4;		// skip over "lgo="
 
-		//  not arg "algo", so skip to next '&' or end of string 
-		if (c != 'a') {
+			// already know algo matches [a-z][a-z]{0,7}
 			while ((c = *q++) && c != '&')
-				;
-			if (!c)
-				return (char *)0;
-			continue;
+				*a++ = c;
+			*a = 0;
+			return;
 		}
-		q += 4;		// skip over "lgo="
 
-		// already know algo matches [a-z][a-z]{0,7}
-		
 		while ((c = *q++) && c != '&')
-			*a++ = c;
-		*a = 0;
+			;
+		if (!c)
+			return;
 	}
-	return (char *)0;
 }
 
 /*
  *  Synopsis:
- *  	Extract the "BRR" file path from the frisked query string.
- *  Usage:
- *	char *err;
- *	err =  BLOBIO_SERVICE_frisk_algo(query, path);
- *	if (err)
- *		return err;		//  error in a query arg
+ *  	Extract the "BLOBIO_ROOT" file path from a frisked query string.
  */
-char *
+void
 BLOBIO_SERVICE_get_BR(char *query, char *path)
 {
 	char *q = query, c, *p = path;
@@ -220,20 +222,42 @@ BLOBIO_SERVICE_get_BR(char *query, char *path)
 		if (c == '&')
 			continue;
 
-		//  not arg "BRR", so skip to next '&' or end of string 
-		if (c != 'B') {
-			while ((c = *q++) && c != '&')
-				;
-			if (!c)
-				return (char *)0;
-			continue;
-		}
-		q += 3;			//  skip "RR="
+		if (c == 'B') {
+			q += 2;			//  skip "R="
 
-		//  extgract the frisked path
+			//  extract the frisked path
+			while ((c = *q++) && c != '&')
+				*p++ = c;
+			*p = 0;
+			return;
+		}
 		while ((c = *q++) && c != '&')
-			*p++ = c;
-		*p = 0;
+			;
+		if (!c)
+			return;
 	}
-	return (char *)0;
+}
+
+/*
+ *  Synopsis:
+ *  	Extract the "brr" boolean [01] from a frisked query string.
+ */
+void
+BLOBIO_SERVICE_get_brr(char *query, char *put_brr)
+{
+	char *q = query, c;
+	
+	while ((c = *q++)) {
+		if (c == '&')
+			continue;
+
+		if (c == 'b') {
+			*put_brr = q[4];
+			return;
+		}
+		while ((c = *q++) && c != '&')
+			;
+		if (!c)
+			return;
+	}
 }

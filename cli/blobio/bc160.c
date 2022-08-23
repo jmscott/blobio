@@ -284,7 +284,7 @@ fs_bc160_name(char *name, int size)
 static int
 _mkdir(char *path)
 {
-	return jmscott_mkdir_EEXISTS(path, 0710);
+	return jmscott_mkdir_EEXIST(path, 0710);
 }
 
 /*

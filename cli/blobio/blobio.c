@@ -83,7 +83,7 @@ char	ascii_digest[129] = {0};
 char	*output_path = 0;
 char	*input_path = 0;
 
-char	BR[PATH_MAX] = {0};		//  service query arg brrd=fs...
+char	BR[PATH_MAX] = {0};		//  service query arg BR=/path/to/blobio
 char	brr[2];				//  write a brr record: [01]
 
 char	*null_device = "/dev/null";
@@ -127,6 +127,8 @@ ecat(char *buf, int size, char *msg)
 static void
 cleanup(int status)
 {
+	TRACE("entered");
+
 	if (service) {
 		service->close();
 		service = (struct service *)0;
@@ -618,25 +620,13 @@ parse_argv(int argc, char **argv)
 						query
 				);
 
-				char *err = BLOBIO_SERVICE_frisk_query(query);
+				char *err = BLOBIO_SERVICE_frisk_qargs(query);
 				if (err)
 					eservice2("query arg: frisk", err);
 
-				err = BLOBIO_SERVICE_get_tmo(query, &timeout);
-				if (err)
-					eservice2("query arg: timeout", err);
-
-				err = BLOBIO_SERVICE_get_BR(query, BR);
-				if (err)
-					eservice2("query arg: BR", err);
-
-				err = BLOBIO_SERVICE_get_brr(query, brr);
-				if (err)
-					eservice2("query arg: brr", err);
-
-				err = BLOBIO_SERVICE_get_algo(query, algo);
-				if (err)
-					eservice2("query arg: algo", err);
+				BLOBIO_SERVICE_get_BR(query, BR);
+				BLOBIO_SERVICE_get_brr(query, brr);
+				BLOBIO_SERVICE_get_algo(query, algo);
 			}
 
 			//  validate the syntax of the specific end point
