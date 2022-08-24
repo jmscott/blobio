@@ -87,12 +87,11 @@ fs_open()
 	struct stat st;
 	char *end_point = fs_service.end_point;
 
-
 	//  tidle shorhand for the file system root in end point
 	if (strcmp("~", BR) == 0) {
 		BR[0] = 0;
 		jmscott_strcat(BR, PATH_MAX, end_point);
-		TRACE2("BR reset", BR);
+		TRACE2("BR ~ reset to fs path", BR);
 	}
 	//  Note:  need some testing for wrap.
 	if (*verb == 'w') {
@@ -211,16 +210,15 @@ fs_copy(char *in_path, char *out_path)
 }
 
 static char *
-set_brr(char *hist, char *fs_path) {
+fs_set_brr(char *hist, char *fs_path) {
 
 	struct stat st;
 
-	if (!BR[0])
-		return (char *)0;
+	TRACE2("fs_path", fs_path);
 	if (fs_path && fs_path[0]) {
 		if (stat(fs_path, &st)) {
 			if (errno == ENOENT)
-				return "set_brr: stat(): file gone";
+				return "stat(fs_path): file gone";
 			return strerror(errno);
 		}
 		blob_size = st.st_size;
@@ -264,13 +262,13 @@ fs_get(int *ok_no)
 	if (output_path && output_path != null_device) {
 		if (jmscott_link(fs_path, output_path) == 0) {
 			*ok_no = 0;
-			return set_brr("ok", fs_path);
+			return fs_set_brr("ok", fs_path);
 		}
 
 		//  blob file does not exist
 
 		if (errno == ENOENT)
-			return set_brr("no", (char *)0);
+			return fs_set_brr("no", (char *)0);
 
 		//  linking not allowed, either cross link or permissions
 		if (errno != EXDEV && errno != EPERM)
@@ -278,11 +276,11 @@ fs_get(int *ok_no)
 	}
 	if ((err = fs_copy(fs_path, output_path))) {
 		if (errno == ENOENT)
-			return set_brr("no", (char *)0);
+			return fs_set_brr("no", (char *)0);
 		return err;
 	}
 	*ok_no = 0;
-	return set_brr("ok", fs_path);
+	return fs_set_brr("ok", fs_path);
 }
 
 /*
@@ -305,12 +303,12 @@ fs_eat(int *ok_no)
 	if (jmscott_access(fs_path, R_OK)) {
 		if (errno == ENOENT) {
 			*ok_no = 1;
-			return set_brr("no", (char *)0);
+			return fs_set_brr("no", (char *)0);
 		}
 		return strerror(errno);
 	}
 	*ok_no = 0;
-	return set_brr("ok", (char *)0);
+	return fs_set_brr("ok", (char *)0);
 }
 
 static char *
@@ -322,6 +320,8 @@ fs_put(int *ok_no)
 	int nr;
 	unsigned char buf[MAX_ATOMIC_MSG];
 
+	TRACE("entered");
+
 	//  Name of temporary file
 	//  size: 1 + 8 + 1 + 21 + 1 + 21 + 1
 
@@ -331,14 +331,16 @@ fs_put(int *ok_no)
 
 	//  make the full directory path to the blob
 
+	TRACE2("fs_path", fs_path);
 	err = fs_service.digest->fs_mkdir(fs_path, PATH_MAX - strlen(fs_path));
 	if (err)
 		return err;
+	TRACE2("fs_path", fs_path);
 
 	//  append /<blob-file-name> to the path to the blob
 
 	jmscott_strcat(fs_path, sizeof fs_path, "/");
-	np = fs_path + 1;
+	np = fs_path + strlen(fs_path);
 	err = fs_service.digest->fs_name(np, PATH_MAX - (np - fs_path));
 	if (err)
 		return err;
@@ -349,7 +351,7 @@ fs_put(int *ok_no)
 		*ok_no = 0;
 
 		//  Note: what about draining the input not bound to a file?
-		return set_brr("ok,ok", fs_path);
+		return fs_set_brr("ok,ok", fs_path);
 	}
 	if (errno != ENOENT)
 		return strerror(errno);
@@ -359,7 +361,7 @@ fs_put(int *ok_no)
 	if (input_path) {
 		if (jmscott_link(input_path, fs_path) == 0 || errno == EEXIST) {
 			*ok_no = 0;
-			return set_brr("ok,ok", fs_path);
+			return fs_set_brr("ok,ok", fs_path);
 		}
 
 		if (errno != EXDEV)
@@ -414,7 +416,7 @@ fs_put(int *ok_no)
 		err = strerror(errno);
 	if (jmscott_unlink(tmp_path) && err == (char *)0)
 		err = strerror(errno);
-	return set_brr("ok,ok", fs_path);
+	return fs_set_brr("ok,ok", fs_path);
 }
 
 static char *
@@ -426,8 +428,8 @@ fs_take(int *ok_no)
 	if (err)
 		return err;
 	if (*ok_no)
-		return set_brr("no", (char *)0);
-	set_brr("ok,ok,ok", fs_path);
+		return fs_set_brr("no", (char *)0);
+	fs_set_brr("ok,ok,ok", fs_path);
 	if (jmscott_unlink(fs_path) != 0 && errno != ENOENT)
 		return strerror(errno);
 	return (char *)0;
@@ -439,7 +441,7 @@ fs_give(int *ok_no)
 	char *err = fs_put(ok_no);
 	if (err)
 		return err;
-	return set_brr("ok,ok,ok", fs_path);
+	return fs_set_brr("ok,ok,ok", fs_path);
 }
 
 static char *
@@ -602,6 +604,8 @@ fs_wrap(int *ok_no)
 		cli_udig,
 		cli_input
 	);
+	if (tracing)
+		jmscott_strcat(put_cli, sizeof put_cli, " --trace");
 	TRACE2("put command line", put_cli);
 	status = system(put_cli);
 	if (status == 127)

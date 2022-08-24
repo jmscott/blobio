@@ -253,6 +253,8 @@ die_timeout(char *msg)
  *  Returns:
  *	(char *)0	upon success
  *	error string	upon failure
+ *  Note:
+ *	replace with libjmscott/jmscott_frisk_udig()
  */
 static char *
 parse_udig(char *udig)

@@ -49,7 +49,7 @@ frisk_qarg(char *expect, char *given, char **p_equal, int max_vlen)
 	//  insure value of query arg is copacetic.
 
 	while ((cg = *g++)) {
-		if (g - given >= max_vlen)
+		if (g - *p_equal >= max_vlen)
 			return "value too large";
 		if (!isascii(cg))
 			return "char in value is not ascii";
@@ -119,6 +119,7 @@ BLOBIO_SERVICE_frisk_qargs(char *query)
 
 			//  insure the algorithm matches [a-z][a-z0-9]{0,7}
 			q = equal;
+
 			c = *q++;
 			if (!islower(c) || !isalpha(c))
 				return "algo: "
@@ -132,8 +133,8 @@ BLOBIO_SERVICE_frisk_qargs(char *query)
 					return (char *)0;
 				if (c == '&')
 					break;
-				if (!isdigit(c) ||
-				    (islower(c) && isalpha(c)))
+				if (!isdigit(c) &&
+				    !(islower(c) && isalpha(c)))
 					return "algo: non alnum in value";
 			}
 			seen_algo = 1;

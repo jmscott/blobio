@@ -317,7 +317,7 @@ _mkdir(char *path)
 }
 
 /*
- *  Make the directory path to a file system blob, appending "/" at end.
+ *  Assemble a full path to a blob and do "mkdir -p" to the blob.
  */
 static char *
 fs_btc20_mkdir(char *path, int size)
@@ -329,11 +329,14 @@ fs_btc20_mkdir(char *path, int size)
 
 	TRACE2("path", path);
 	dp = ascii_digest;
+	TRACE2("ascii digest", dp);
 
-	jmscott_strcat(path, size, "/");
-	p = path + 1;
+	p = path + strlen(path);
+	*p++ = '/';
 	*p++ = *dp++;    *p++ = *dp++;    *p++ = *dp++; 
 	*p = 0;
+
+	TRACE2("path1", path);
 	if (_mkdir(path))
 		return strerror(errno);
 
@@ -341,6 +344,8 @@ fs_btc20_mkdir(char *path, int size)
 	*p++ = *dp++;    *p++ = *dp++;    *p++ = *dp++;  
 	*p++ = '/';
 	*p = 0;
+
+	TRACE2("path2", path);
 	if (_mkdir(path))
 		return strerror(errno);
 	return (char *)0;

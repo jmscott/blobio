@@ -62,10 +62,15 @@ void
 trace(char *msg)
 {
 	char buf[MAX_ATOMIC_MSG];
+	char pid[21];
+
+	snprintf(pid, sizeof pid, "%lld", (long long)getpid());
 
 	buf[0] = 0;
-	jmscott_strcat3(buf, sizeof buf,
-		"TRACE: ",
+	jmscott_strcat5(buf, sizeof buf,
+		"TRACE#",
+		pid,
+		": ",
 		RFC3339Nano_time(),
 		": "
 	);
