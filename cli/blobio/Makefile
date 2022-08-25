@@ -7,7 +7,7 @@
 include ../../local.mk
 include ../../blobio.mk
 
-_MAKE=$(MAKE) $(MFLAGS)
+_MAKE=$(MAKE) $(MFLAGS) COMPILE_TRACE=1
 
 DIST=blobio-cli-blobio.dist
 BINs := $(shell  (. ./$(DIST) && echo $$BINs))

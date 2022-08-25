@@ -445,13 +445,6 @@ fs_give(int *ok_no)
 }
 
 static char *
-fs_roll(int *ok_no)
-{
-	(void)ok_no;
-	return "\"roll\" not implemented (yet) service";
-}
-
-static char *
 make_wrap_dir(char *dir_path, int dir_path_size)
 {
 	dir_path[0] = 0;
@@ -460,6 +453,19 @@ make_wrap_dir(char *dir_path, int dir_path_size)
 	if (jmscott_mkdir_EEXIST(dir_path, S_IRUSR|S_IWUSR|S_IXUSR|S_IXGRP))
 		return strerror(errno);
 	return (char *)0;
+}
+
+static char *
+fs_roll(int *ok_no)
+{
+	(void)ok_no;
+	char wrap_dir_path[PATH_MAX];
+
+	char *err = make_wrap_dir(wrap_dir_path, sizeof wrap_dir_path);
+	if (err)
+		return err;
+	TRACE2("wrap dir path", wrap_dir_path);
+	return "\"roll\" not implemented (yet) service";
 }
 
 static char *
