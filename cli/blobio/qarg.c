@@ -43,13 +43,13 @@ frisk_qarg(char *expect, char *given, char **p_equal, int max_vlen)
 			return "unexpected char in value";
 	}
 	if (*g++ != '=')
-		return "equal char \"=\" not terminating query arg variable";
+		return "no \"=\" at end of arg";
 	*p_equal = g;
 
 	//  insure value of query arg is copacetic.
 
 	while ((cg = *g++)) {
-		if (g - *p_equal >= max_vlen)
+		if (g - *p_equal > max_vlen)
 			return "value too large";
 		if (!isascii(cg))
 			return "char in value is not ascii";
