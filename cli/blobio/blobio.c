@@ -83,7 +83,7 @@ char	ascii_digest[129] = {0};
 char	*output_path = 0;
 char	*input_path = 0;
 
-char	BR[PATH_MAX] = {0};		//  service query arg BR=/path/to/blobio
+char	BR[PATH_MAX] = {'.', 0};	//  service query arg BR=/path/to/blobio
 char	brr[2];				//  write a brr record: [01]
 
 char	*null_device = "/dev/null";
@@ -625,10 +625,6 @@ parse_argv(int argc, char **argv)
 				char *err = BLOBIO_SERVICE_frisk_qargs(query);
 				if (err)
 					eservice2("query arg: frisk", err);
-
-				BLOBIO_SERVICE_get_BR(query, BR);
-				BLOBIO_SERVICE_get_brr(query, brr);
-				BLOBIO_SERVICE_get_algo(query, algo);
 			}
 
 			//  validate the syntax of the specific end point

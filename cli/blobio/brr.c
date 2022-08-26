@@ -120,6 +120,7 @@ brr_write(char *srv_name)
 		srv_name,
 		".brr"
 	);
+	TRACE2("brr path", brr_path);
 	int fd = jmscott_open(
 		brr_path,
 		O_WRONLY|O_CREAT|O_APPEND|O_SHLOCK,

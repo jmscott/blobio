@@ -253,7 +253,7 @@ BLOBIO_SERVICE_get_brr(char *query, char *put_brr)
 			continue;
 
 		if (c == 'b') {
-			*put_brr = q[4];
+			*put_brr = q[3];
 			return;
 		}
 		while ((c = *q++) && c != '&')

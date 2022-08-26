@@ -456,15 +456,33 @@ make_wrap_dir(char *dir_path, int dir_path_size)
 }
 
 static char *
+make_roll_dir(char *dir_path, int dir_path_size)
+{
+	dir_path[0] = 0;
+	jmscott_strcat2(dir_path, dir_path_size, BR, "/roll");
+	TRACE2("dir path", dir_path);
+	if (jmscott_mkdir_EEXIST(dir_path, S_IRUSR|S_IWUSR|S_IXUSR|S_IXGRP))
+		return strerror(errno);
+	return (char *)0;
+}
+
+static char *
 fs_roll(int *ok_no)
 {
 	(void)ok_no;
 	char wrap_dir_path[PATH_MAX];
+	char roll_dir_path[PATH_MAX];
 
 	char *err = make_wrap_dir(wrap_dir_path, sizeof wrap_dir_path);
 	if (err)
 		return err;
-	TRACE2("wrap dir path", wrap_dir_path);
+	int wrap_fd = jmscott_open(wrap_dir_path, O_RDONLY, 0);
+	if (wrap_fd < 0)
+		return strerror(errno);
+
+	err = make_roll_dir(roll_dir_path, sizeof roll_dir_path);
+	if (err)
+		return err;
 	return "\"roll\" not implemented (yet) service";
 }
 
