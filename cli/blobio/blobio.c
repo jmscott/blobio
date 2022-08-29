@@ -243,66 +243,6 @@ die_timeout(char *msg)
 	jmscott_die(2, msg);
 }
 
-/*
- *  Synopsis:
- *	Parse out the algorithm and digest from a text uniform digest (udig).
- *  Args:
- *	udig:		null terminated udig string to parse
- *	algorithm:	at least 9 bytes for extracted algorithm. 
- *	digest:		at least 129 bytes for extracted digest
- *  Returns:
- *	(char *)0	upon success
- *	error string	upon failure
- *  Note:
- *	replace with libjmscott/jmscott_frisk_udig()
- */
-static char *
-parse_udig(char *udig)
-{
-	char *u, *a, *d;
-	int in_algorithm = 1;
-
-	if (!udig[0])
-		return "empty udig";
-
-	a = algorithm;
-	d = ascii_digest;
-
-	for (u = udig;  *u;  u++) {
-		char c = *u;
-
-		if (!isascii(c) || !isgraph(c))
-			return "non ascii or graph char";
-		/*
-		 *  Scanning algorithm.
-		 */
-		if (in_algorithm) {
-			if (c == ':') {
-				if (a == algorithm)
-					return "missing <algorithm>";
-				*a = 0;
-				in_algorithm = 0;
-			}
-			else {
-				if (a - algorithm >= 8)
-					return "no colon at end of <algorithm>";
-				*a++ = c;
-			}
-		} else {
-			/*
-			 *  Scanning digest.
-			 */
-			if (d - ascii_digest > 128)
-				return "digest > 128 chars";
-			*d++ = c;
-		}
-	}
-	*d = 0;
-	if (d - ascii_digest < 32)
-		return "digest < 32 characters";
-	return (char *)0;
-}
-
 //  a fatal error parsing command line options.
 
 static void
@@ -311,7 +251,6 @@ eopt(const char *option, char *why)
 	char buf[MAX_ATOMIC_MSG];
 
 	buf[0] = 0;
-
 	jmscott_strcat2(buf, sizeof buf, "option --", option);
 
 	if (why)
@@ -462,6 +401,8 @@ parse_argv(int argc, char **argv)
 				emany("udig");
 
 			// both --udig and --algorithm can't be defined at once
+			//
+			//  Note: move to xref_argv()?
 
 			if (algorithm[0])
 				eopt("udig", "option --algorithm conflicts");
@@ -469,7 +410,7 @@ parse_argv(int argc, char **argv)
 				eopt("udig", "missing <algorithm:digest>");
 			ud = argv[i];
 
-			err = parse_udig(ud);
+			err = jmscott_frisk_udig(ud);
 			if (err)
 				eopt2("udig", err, ud);
 
@@ -625,6 +566,10 @@ parse_argv(int argc, char **argv)
 				char *err = BLOBIO_SERVICE_frisk_qargs(query);
 				if (err)
 					eservice2("query arg: frisk", err);
+
+				BLOBIO_SERVICE_get_algo(query, algo);
+				BLOBIO_SERVICE_get_brr(query, brr);
+				BLOBIO_SERVICE_get_BR(query, BR);
 			}
 
 			//  validate the syntax of the specific end point
@@ -652,7 +597,7 @@ parse_argv(int argc, char **argv)
  *  verb "put".
  */
 static void
-xref_args()
+xref_argv()
 {
 	/*
 	 *  verb: get/give/put/take/roll
@@ -762,7 +707,7 @@ main(int argc, char **argv)
 #ifndef COMPILE_TRACE
 	tracing = 0;
 #endif
-	xref_args();
+	xref_argv();
 
 	TRACE2("query arg: BR", BR);
 	TRACE2("query arg: brr", brr);

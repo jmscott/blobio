@@ -12,12 +12,18 @@
 
 /*
  *  compile code to include network/fs tracing option --trace
+ *
+ *  Note:
+ *	consider adding query argument to enable tracing:
+ *	&trace=[0|1|<path/to/output>
  */
 #define COMPILE_TRACE
 
 #define MAX_ATOMIC_MSG	JMSCOTT_ATOMIC_WRITE_SIZE
 
 #ifdef COMPILE_TRACE
+
+//  Note: change TRACE to expression: (tracing && trace(...))
 
 #define TRACE(msg)		if (tracing) trace2(			\
 					(char *)__FUNCTION__, (char *)msg\

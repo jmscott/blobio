@@ -77,8 +77,10 @@ brr_write(char *srv_name)
 	 *  I peridocally see negative times on Linux hosted by VirtualBox
 	 *  under Mac OSX.
 	 */
-	if (sec < 0)
+	if (sec < 0) {
 		sec = 0;
+		nsec = 0;
+	}
 	if (nsec < 0)
 		nsec = 0;
 
@@ -116,7 +118,7 @@ brr_write(char *srv_name)
 	brr_path[0] = 0;
 	jmscott_strcat4(brr_path, sizeof brr_path,
 		BR,
-		"/",
+		"/spool/",
 		srv_name,
 		".brr"
 	);

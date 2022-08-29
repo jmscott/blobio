@@ -30,6 +30,7 @@
 #include <stdlib.h>
 #include <fcntl.h>
 #include <stdio.h>
+#include <sys/wait.h>
 
 #include "jmscott/libjmscott.h"
 #include "blobio.h"
@@ -87,13 +88,16 @@ fs_open()
 	struct stat st;
 	char *end_point = fs_service.end_point;
 
+	if (algo[0] && !find_digest(algo))
+		return "unknown digest algorithm in query arg \"algo\"";
+	
 	//  tidle shorhand for the file system root in end point
 	if (strcmp("~", BR) == 0) {
 		BR[0] = 0;
 		jmscott_strcat(BR, PATH_MAX, end_point);
 		TRACE2("BR ~ reset to fs path", BR);
 	}
-	//  Note:  need some testing for wrap.
+	//  Note: should this test be in blobio.c:xref_argv()?
 	if (*verb == 'w') {
 		if (!BR[0])
 			return "query arg \"BR\" not defined";
@@ -229,7 +233,11 @@ fs_set_brr(char *hist, char *fs_path) {
 	//  disable incorrect warnings about size of transport buf.
 	//  we checked the length in fs_open().
 	strcat(transport, fs_service.end_point);
+	TRACE2("transport", transport);
+
 	strcpy(chat_history, hist);
+	TRACE2("char history", hist);
+
 	return (char *)0;
 }
 
@@ -448,8 +456,7 @@ static char *
 make_wrap_dir(char *dir_path, int dir_path_size)
 {
 	dir_path[0] = 0;
-	jmscott_strcat2(dir_path, dir_path_size, BR, "/wrap");
-	TRACE2("dir path", dir_path);
+	jmscott_strcat2(dir_path, dir_path_size, BR, "/spool/wrap");
 	if (jmscott_mkdir_EEXIST(dir_path, S_IRUSR|S_IWUSR|S_IXUSR|S_IXGRP))
 		return strerror(errno);
 	return (char *)0;
@@ -459,7 +466,7 @@ static char *
 make_roll_dir(char *dir_path, int dir_path_size)
 {
 	dir_path[0] = 0;
-	jmscott_strcat2(dir_path, dir_path_size, BR, "/roll");
+	jmscott_strcat2(dir_path, dir_path_size, BR, "/spool/roll");
 	TRACE2("dir path", dir_path);
 	if (jmscott_mkdir_EEXIST(dir_path, S_IRUSR|S_IWUSR|S_IXUSR|S_IXGRP))
 		return strerror(errno);
@@ -486,17 +493,85 @@ fs_roll(int *ok_no)
 	return "\"roll\" not implemented (yet) service";
 }
 
+/*
+ *  exec "blobio put" for a given input path.
+ *
+ *  Note:
+ *	why derive the udig, since we are given the input path?
+ */
+static char *
+fs_exec_put(char *udig, char *input_path)
+{
+	if (tracing) {
+		TRACE2("udig", udig);
+		TRACE2("input path", input_path);
+	}
+
+AGAIN:
+	pid_t put_pid = fork();
+	if (put_pid < 0) {
+		if (errno == EAGAIN)
+			goto AGAIN;
+		return strerror(errno);
+	}
+
+	//  wait for the "blobio put" child to exit
+	if (put_pid > 0) {
+		int status;
+		
+		if (waitpid(put_pid, &status, 0) < 0)
+			return strerror(errno);
+
+		if (WIFEXITED(status))
+			return (char *)0;
+		if (WIFSIGNALED(status))
+			return "\"blobio put\" exit due to signal";
+		if (WCOREDUMP(status))
+			return "\"blobio put\" core dumped";
+		if (WSTOPSIG(status))
+			return "\"blobio put\" STOPPED";
+		return "unexpected status from waitpid";
+	}
+
+	char srv[PATH_MAX * 2];
+	srv[0] = 0;
+	jmscott_cat2(srv, sizeof srv,
+			"fs:",
+			fs_service.end_point
+	);
+	if (fs_service.query[0])
+		jmscott_cat2(srv, sizeof srv, "?", fs_service.query);
+
+	//  in the child, so exec the "blobio put"
+	execlp("blobio",
+		"blobio", "put",
+		"--udig", udig,
+		"--service", srv,
+		"--input-path", input_path,
+		(char *)0
+	);
+	return strerror(errno);
+}
+
 static char *
 fs_wrap(int *ok_no)
 {
 	char brr_path[PATH_MAX];
+	char spool_path[PATH_MAX];
+
+	if (!algo[0])
+		return "qarg \"algo\" is missing";
+
+	spool_path[0] = 0;
+	jmscott_strcat2(spool_path, sizeof spool_path, BR, "/spool");
+	TRACE2("spool path", spool_path);
 
 	//  path to brr file to wrap
 	brr_path[0] = 0;
 	jmscott_strcat2(
 		brr_path,
 		sizeof brr_path,
-		BR,
+		spool_path,
 		"/fs.brr"
 	);
 
@@ -509,7 +584,7 @@ fs_wrap(int *ok_no)
 	char frozen_brr_path[PATH_MAX];
 	frozen_brr_path[0] = 0;
 	jmscott_strcat4(frozen_brr_path, sizeof brr_path,
-		BR,
+		spool_path,
 		"/fs-",
 		now,
 		".brr"
@@ -519,7 +594,8 @@ fs_wrap(int *ok_no)
 	/*
 	 *  Open brr file with exclusive lock, to block the other shared lock
 	 *  writers in brr_write().  hold lock briefly to rename fs.brr to
-	 *  fs-<unix epoch>.brr
+	 *  fs-<unix epoch>.brr.  if no brr file exists then an empty brr
+	 *  is created and renamed to fs-<epoch> empty, due to exclusive lock.
 	 */
 	int brr_fd = jmscott_open(
 		brr_path,
@@ -533,27 +609,24 @@ fs_wrap(int *ok_no)
 	if (status)
 		err = strerror(status);
 	
-	if (jmscott_close(brr_fd) && err == (char *)0)	//  release the lock
+	//  close, regardless of error, to release exclusive lock.
+
+	if (jmscott_close(brr_fd) && err == (char *)0)
 		return strerror(errno);
 	if (err)
-		return err;
+		return err;		//  earlier error has higher priority
 
 	//  make the wrap directory, where the frozen brr file
 	//  will be moved after digesting.
 
-	char wrap_dir_path[PATH_MAX];
-
-	err = make_wrap_dir(wrap_dir_path, sizeof wrap_dir_path);
-	if (err)
-		return err;
-
-	//  Note: hack to fool digest code.  really, really need refactor!
+	//  Note:
+	//	hack to fool digest code.
+	//	really, really, really, really need to refactor code!
 	strcpy(algorithm, algo);
 
 	int frozen_fd = jmscott_open(frozen_brr_path, O_RDONLY, 0);
 	if (frozen_fd < 0)
 		return strerror(errno);
-	TRACE2("algo", algo);
 
 	struct digest *d = find_digest(algo);
 	if (!d)
@@ -564,7 +637,6 @@ fs_wrap(int *ok_no)
 	ascii_digest[0] = 0;
 	if ((err = d->eat_input(frozen_fd)))
 		return err;
-
 	//  sanity test.  really, really need to refactor code
 	if (!ascii_digest[0])
 		return "impossible: null algo after frozen digest";
@@ -573,6 +645,22 @@ fs_wrap(int *ok_no)
 	if (jmscott_close(frozen_fd) && err == (char *)0)
 		return strerror(errno);
 
+	char put_udig[8 + 1 + 128 + 1];
+	put_udig[0] = 0;
+	jmscott_strcat3(put_udig, sizeof put_udig,
+			algorithm,
+			":",
+			ascii_digest
+	);
+	TRACE2("put udig", put_udig);
+
+	//  make the wrap dir
+	char wrap_dir_path[PATH_MAX];
+	err = make_wrap_dir(wrap_dir_path, sizeof wrap_dir_path);
+	if (err)
+		return err;
+	TRACE2("wrap dir path", wrap_dir_path);
+
 	//  move frozen brr file into wrap/<wrap udig>.brr
 	char wrap_brr_path[PATH_MAX];
 
@@ -580,8 +668,8 @@ fs_wrap(int *ok_no)
 	jmscott_strcat6(
 		wrap_brr_path,
 		sizeof wrap_brr_path,
-		BR,
-		"/wrap/",
+		wrap_dir_path,
+		"/",
 		algo,
 		":",
 		ascii_digest,
@@ -591,55 +679,10 @@ fs_wrap(int *ok_no)
 	if (rename(frozen_brr_path, wrap_brr_path))
 		return strerror(errno);
 
-	//  put the frozen wrap file in data/fs_algo
-	//  by forking another blobio cli
-
-	char cli_srv[256];
-	strcpy(cli_srv, " --service 'fs:");
-	jmscott_strcat(cli_srv, sizeof cli_srv, fs_service.end_point);
-	if (fs_service.query[0])
-		jmscott_strcat2(cli_srv, sizeof cli_srv,
-			"?",
-			fs_service.query
-		);
-	jmscott_strcat(cli_srv, sizeof cli_srv, "'");
-
-	char cli_udig[256];
-	cli_udig[0] = 0;
-	jmscott_strcat4(cli_udig, sizeof cli_udig,
-		" --udig ",
-		algo,
-		":",
-		ascii_digest
-	);
-
-	char cli_input[PATH_MAX+10];
-	cli_input[0] = 0;
-	jmscott_strcat2(cli_input, sizeof cli_input,
-		" --input-path ",
-		wrap_brr_path
-	);
-
-	char put_cli[1024];
-	put_cli[0] = 0;
-	jmscott_strcat4(put_cli, sizeof put_cli,
-		"blobio put",
-		cli_srv,
-		cli_udig,
-		cli_input
-	);
-	if (tracing)
-		jmscott_strcat(put_cli, sizeof put_cli, " --trace");
-	TRACE2("put command line", put_cli);
-	status = system(put_cli);
-	if (status == 127)
-		return "could not execute blobio put command for wrap set";
-	if (status != 0)
-		return "put(wrap blob) failed";
-	TRACE("put command: exit 0");
+	//  exec a "blobio put" of the frozen wrapped file.
 
 	*ok_no = 0;
-	return (char *)0;
+	return fs_set_brr("ok", fs_path);
 }
 
 struct service fs_service =
@@ -655,5 +698,7 @@ struct service fs_service =
 	.take			=	fs_take,
 	.give			=	fs_give,
 	.roll			=	fs_roll,
-	.wrap			=	fs_wrap
+	.wrap			=	fs_wrap,
+	.end_point		=	{0},
+	.query			=	{0}
 };
