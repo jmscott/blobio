@@ -23,6 +23,8 @@
  */
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <sys/wait.h>
+#include <unistd.h>
 #include <ctype.h>
 #include <limits.h>
 #include <errno.h>
@@ -30,7 +32,6 @@
 #include <stdlib.h>
 #include <fcntl.h>
 #include <stdio.h>
-#include <sys/wait.h>
 
 #include "jmscott/libjmscott.h"
 #include "blobio.h"
@@ -493,6 +494,7 @@ fs_roll(int *ok_no)
 	return "\"roll\" not implemented (yet) service";
 }
 
+#ifdef NO_COMPILE
 /*
  *  exec "blobio put" for a given input path.
  *
@@ -506,9 +508,10 @@ fs_exec_put(char *udig, char *input_path)
 		TRACE2("udig", udig);
 		TRACE2("input path", input_path);
 	}
+	pid_t put_pid;
 
 AGAIN:
-	pid_t put_pid = fork();
+	put_pid = fork();
 	if (put_pid < 0) {
 		if (errno == EAGAIN)
 			goto AGAIN;
@@ -535,12 +538,12 @@ AGAIN:
 
 	char srv[PATH_MAX * 2];
 	srv[0] = 0;
-	jmscott_cat2(srv, sizeof srv,
+	jmscott_strcat2(srv, sizeof srv,
 			"fs:",
 			fs_service.end_point
 	);
 	if (fs_service.query[0])
-		jmscott_cat2(srv, sizeof srv, "?", fs_service.query);
+		jmscott_strcat2(srv, sizeof srv, "?", fs_service.query);
 
 	//  in the child, so exec the "blobio put"
 	execlp("blobio",
@@ -552,6 +555,7 @@ AGAIN:
 	);
 	return strerror(errno);
 }
+#endif
 
 static char *
 fs_wrap(int *ok_no)
