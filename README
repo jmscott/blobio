@@ -170,7 +170,7 @@ Protocol Flow:
 	>roll udig		# udig set of traffic logs to forget
 	    <ok\n[close]	# logs forgotten by server.  typically
 	    			# a wrap set.
-	    <no\n[close]	# not all logs in set forgotten
+	    <no\n[close]	# not all logs in set forgotten, or other error
 
 	WARNING: the protocol is ambiguous about how the end of the blob stream
 	is physically interpreted.  This may turn out to be a serious design
