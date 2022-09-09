@@ -457,7 +457,7 @@ static char *
 make_wrap_dir(char *dir_path, int dir_path_size)
 {
 	dir_path[0] = 0;
-	jmscott_strcat2(dir_path, dir_path_size, BR, "/spool/wrap");
+	jmscott_strcat2(dir_path, dir_path_size, BR, "spool/wrap");
 	if (jmscott_mkdir_EEXIST(dir_path, S_IRUSR|S_IWUSR|S_IXUSR|S_IXGRP))
 		return strerror(errno);
 	return (char *)0;
@@ -467,31 +467,10 @@ static char *
 make_roll_dir(char *dir_path, int dir_path_size)
 {
 	dir_path[0] = 0;
-	jmscott_strcat2(dir_path, dir_path_size, BR, "/spool/roll");
-	TRACE2("dir path", dir_path);
+	jmscott_strcat2(dir_path, dir_path_size, BR, "spool/roll");
 	if (jmscott_mkdir_EEXIST(dir_path, S_IRUSR|S_IWUSR|S_IXUSR|S_IXGRP))
 		return strerror(errno);
 	return (char *)0;
-}
-
-static char *
-fs_roll(int *ok_no)
-{
-	(void)ok_no;
-	char wrap_dir_path[PATH_MAX];
-	char roll_dir_path[PATH_MAX];
-
-	char *err = make_wrap_dir(wrap_dir_path, sizeof wrap_dir_path);
-	if (err)
-		return err;
-	int wrap_fd = jmscott_open(wrap_dir_path, O_RDONLY, 0);
-	if (wrap_fd < 0)
-		return strerror(errno);
-
-	err = make_roll_dir(roll_dir_path, sizeof roll_dir_path);
-	if (err)
-		return err;
-	return "\"roll\" not implemented (yet) service";
 }
 
 #ifdef NO_COMPILE
@@ -556,6 +535,7 @@ AGAIN:
 	return strerror(errno);
 }
 #endif
+
 
 static char *
 fs_wrap(int *ok_no)
@@ -687,6 +667,119 @@ fs_wrap(int *ok_no)
 
 	*ok_no = 0;
 	return fs_set_brr("ok", fs_path);
+}
+/*
+ *  exec "blobio get" for a given udig.
+ */
+static char *
+fs_exec_get(char *udig, char *output_path)
+{
+	if (tracing) {
+		TRACE2("udig", udig);
+		TRACE2("input path", input_path);
+	}
+	pid_t get_pid;
+AGAIN:
+	get_pid = fork();
+	if (get_pid < 0) {
+		if (errno == EAGAIN)
+			goto AGAIN;
+		return strerror(errno);
+	}
+
+	//  wait for the "blobio get" child to exit
+	if (get_pid > 0) {
+		int status;
+		
+		if (waitpid(get_pid, &status, 0) < 0)
+			return strerror(errno);
+
+		if (WIFEXITED(status))
+			return (char *)0;
+		if (WIFSIGNALED(status))
+			return "\"blobio get\" exit due to signal";
+		if (WCOREDUMP(status))
+			return "\"blobio get\" core dumped";
+		if (WSTOPSIG(status))
+			return "\"blobio get\" STOPPED";
+		return "unexpected status from waitpid";
+	}
+
+	char srv[PATH_MAX * 2];
+	srv[0] = 0;
+	jmscott_strcat2(srv, sizeof srv,
+			"fs:",
+			fs_service.end_point
+	);
+	if (fs_service.query[0])
+		jmscott_strcat2(srv, sizeof srv, "?", fs_service.query);
+
+	//  in the child, so exec the "blobio get"
+	execlp("blobio",
+		"blobio", "get",
+		"--udig", udig,
+		"--service", srv,
+		"--output-path", output_path,
+		(char *)0
+	);
+
+	//  not reached
+	return strerror(errno);
+}
+
+/*
+ *  Remove wrap sets from spool/wrap/ as contained in udig set
+ */
+static char *
+fs_roll(int *ok_no)
+{
+	(void)ok_no;
+	char wrap_dir_path[PATH_MAX];
+	char roll_dir_path[PATH_MAX];
+
+	char *err = make_wrap_dir(wrap_dir_path, sizeof wrap_dir_path);
+	if (err)
+		return err;
+
+	int wrap_dir_fd = jmscott_open(wrap_dir_path, O_RDONLY, 0);
+	if (wrap_dir_fd < 0)
+		return strerror(errno);
+
+	err = make_roll_dir(roll_dir_path, sizeof roll_dir_path);
+	if (err)
+		return err;
+
+	if (jmscott_mkdir_EEXIST("tmp", S_IRUSR|S_IWUSR|S_IXUSR|S_IXGRP))
+		return strerror(errno);
+
+	char udig[8 + 128 + 1 + 1];
+	udig[0] = 0;
+	jmscott_strcat3(udig, sizeof udig, algo, ":", ascii_digest);
+		
+	char wrap_set[PATH_MAX];
+	snprintf(wrap_set, sizeof wrap_set,
+		"tmp/wrap-%s.%ld_%d",
+		udig,
+		time((time_t *)0),
+		getpid()
+	);
+	err = fs_exec_get(udig, wrap_set);
+	if (err)
+		return err;
+	int wrap_fd = jmscott_open(wrap_set, O_RDONLY, 0);
+	if (wrap_fd < 0) {
+		if (errno == ENOENT)
+			return "can not fetch wrap set";
+		return strerror(errno);
+	}
+
+	/*
+	 *  unlink the temp put file so upon process exit the file is gone.
+	 */
+	if (unlink(wrap_set) < 0)
+		return strerror(errno);
+
+	return "\"roll\" not implemented (yet) service";
 }
 
 struct service fs_service =
