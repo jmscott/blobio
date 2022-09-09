@@ -232,7 +232,9 @@ Protocol Flow:
 	will sit in front of the bio4 services, such as http or a REST api.
 
 Protocol Questions:
-	- should wrap send the algorithm?
+	-  clarify the meaning of "transport" field in blob request record.
+	   for networks, trransport are roughly the protocol, request endpoint
+	   and the negotiated endpoint.
 
 	- what about forbidding ':' as a digest character?
 
@@ -286,8 +288,6 @@ Note:
 	  [[:graph:]]{32,128} for possible base 58 for newer digests?
 
 	- should the term "fault" be replaced with "panic", in the code?
-
-	- in brr should transport be called endpoint?
 
 	- on a brr record, should transport+start_time be required to be unique?
 
