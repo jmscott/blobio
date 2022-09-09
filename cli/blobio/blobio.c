@@ -91,7 +91,7 @@ char	chat_history[10] = {0};
 char	transport[129] = {0};
 int	timeout = 20;
 
-unsigned long long	blob_size;
+unsigned long long	blob_size = 0;
 
 struct timespec	start_time;
 int trust_fd = -1;
@@ -229,7 +229,7 @@ die2(char *msg1, char *msg2)
 	jmscott_die2(3, msg1, msg2);
 }
 
-static void
+void
 die3(char *msg1, char *msg2, char *msg3)
 {
 	cleanup(2);
@@ -899,6 +899,7 @@ main(int argc, char **argv)
 	if (output_fd > 1 && jmscott_close(output_fd))
 		die2("close(output-path) failed",strerror(errno));
 
+	//  we had a successful transactions
 	if (brr[0] == '1')
 		brr_write(service->name);
 	cleanup(exit_status);

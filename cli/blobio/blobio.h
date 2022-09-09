@@ -205,6 +205,7 @@ extern char	*buf4cat(char *tgt, int tgtsize,
 
 extern void	die(char *msg);
 extern void	die2(char *msg1, char *msg2);
+extern void	die3(char *msg1, char *msg2, char *msg3);
 extern void	die_timeout(char *msg);
 extern int	tracing;
 extern void	trace(char *);

@@ -140,7 +140,7 @@ BLOBIO_SERVICE_frisk_qargs(char *query)
 			seen_algo = 1;
 			break;
 
-		//  match: brr=[tf]
+		//  match: brr=[01]
 		case 'b':
 			err = frisk_qarg("brr", q - 1, &equal, 1);
 			if (err)

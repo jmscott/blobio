@@ -31,23 +31,13 @@ extern int	timeout;
 #define HOST_NAME_MAX	64
 #endif
 
-#ifdef COMPILE_TRACE
-
-#define _CTRACE(msg)		TRACE2("connect", msg);
-#define _CTRACE2(msg1,msg2)	TRACE3("connect",msg1,msg2);
-
-#else
-
-#define _CTRACE
-#define _CTRACE2
-
-#endif
-
 extern char	verb[];
 extern char	transport[129];
 extern char	algorithm[9];
 extern char	algo[9];		//  service query arg "algo"
 extern char	ascii_digest[129];
+extern char	chat_history[9];
+extern char	brr[2];
 extern char	end_point[129];
 extern char	*output_path;
 extern char	*null_device;
@@ -60,6 +50,7 @@ static int server_fd = -1;
 
 extern struct service bio4_service;		//  initialized below
 
+
 /*
  *  Parse the host name/ip4, port and optional timeout and trust file
  *  system options from the end point.
@@ -70,10 +61,13 @@ bio4_end_point_syntax(char *endp)
 	char *ep, c;
 	char buf[6], *bp;
 
-	TRACE2("end point syntax", endp);
+	TRACE2("end point", endp);
 
 	/*
 	 *  Extract the ascii DNS host or ip4 address.
+	 *
+	 *  Note:
+	 *	Do we need to recheck isascii()?
 	 */
 	ep = endp;
 	while ((c = *ep++) && c != ':') {
@@ -114,6 +108,50 @@ bio4_end_point_syntax(char *endp)
 	 */
 	return (char *)0;
 }
+/*
+ *  Convert 32 bit internet address to dotted text, rotating through
+ *  static buffer pool.
+ *
+ *  Note:
+ *	Need to replace with buffer rotator in libjmscott.
+ */
+static char *
+net_32addr2text(u_long addr)
+{
+#define SHOW_IP_BUFS	4
+#define SHOW_IP_BUFSIZE	20
+
+	char *cp, *buf;
+	u_int byte;
+	int n;
+	static char bufs[SHOW_IP_BUFS][SHOW_IP_BUFSIZE];
+	static int curbuf = 0;
+
+	buf = bufs[curbuf++];
+	if (curbuf >= SHOW_IP_BUFS)
+		curbuf = 0;
+
+	cp = buf + SHOW_IP_BUFSIZE;
+	*--cp = '\0';
+
+	n = 4;
+	do {
+		byte = addr & 0xff;
+		*--cp = byte % 10 + '0';
+		byte /= 10;
+		if (byte > 0) {
+			*--cp = byte % 10 + '0';
+			byte /= 10;
+			if (byte > 0)
+				*--cp = byte + '0';
+		}
+		*--cp = '.';
+		addr >>= 8;
+	} while (--n > 0);
+
+	cp++;
+	return cp;
+}
 
 /*
  *  Synopsis:
@@ -133,14 +171,12 @@ bio4_end_point_syntax(char *endp)
  *		NO_RECOVERY	->	EREMOTEIO
  */
 static int
-_connect(char *host, int port, int *p_server_fd)
+bio4_connect(char *host, int port, int *p_server_fd)
 {
 	struct hostent *h;
 	struct sockaddr_in s;
 	int trys;
 	int fd;
-
-	_CTRACE2("request connect() to remote host", host);
 
 	/*
 	 *  Look up the host name, trying up to 5 times.
@@ -150,7 +186,7 @@ AGAIN1:
 	h = gethostbyname(host);
 	trys++;
 	if (!h) {
-		_CTRACE2("gethostbyname() failed", host);
+		TRACE2("gethostbyname() failed", host);
 		/*
 		 *  Map the h_errno value set by gethostbyname() onto
 		 *  something reasonable.
@@ -180,22 +216,21 @@ AGAIN1:
 		return EINVAL;			/* wtf?? */
 	}
 
-	_CTRACE("creating socket to remote ...");
 	/*
 	 *  Open and connect to the remote blobio server.
 	 */
 AGAIN2:
+	TRACE("creating socket to remote ...");
 	fd = socket(AF_INET, SOCK_STREAM, 0);
 	if (fd < 0) {
 		int e = errno;
 
-		_CTRACE2("socket() failed", strerror(e));
-
 		if (e == EAGAIN || e == EINTR)
 			goto AGAIN2;
+		TRACE2("socket(remote) failed", strerror(e));
 		return e;
 	}
-	_CTRACE("socket() created");
+	TRACE("socket() created");
 	memset(&s, 0, sizeof s);
 	s.sin_family = AF_INET;
 	memmove((void *)&s.sin_addr.s_addr, (void *)h->h_addr, h->h_length);
@@ -205,12 +240,12 @@ AGAIN2:
 	 *  Need to timeout connect() !!
 	 */
 AGAIN3:
-	_CTRACE("connecting to socket ...");
+	TRACE("connecting to socket ...");
 
 	if (connect(fd, (const struct sockaddr *)&s, sizeof s) < 0) {
 		int e = errno;
 
-		_CTRACE2("connect() failed", strerror(e));
+		TRACE2("connect(remote) failed", strerror(e));
 
 		if (e == EINTR || e == EAGAIN)
 			goto AGAIN3;
@@ -219,13 +254,15 @@ AGAIN3:
 		return e;
 	}
 	*p_server_fd = fd;
-	_CTRACE("done");
 
-	snprintf(transport, sizeof transport,
-		"tcp4~%s:%d",
-		inet_ntoa(s.sin_addr),
-		port
+	snprintf(transport, sizeof transport - 1,
+		"tcp4~%s:%u;%s:%u",
+		h->h_addr,
+		port,
+		net_32addr2text(ntohl(s.sin_addr.s_addr)),
+		(unsigned int)ntohs(s.sin_port)
 	);
+	TRACE("done");
 	return 0;
 }
 
@@ -238,7 +275,7 @@ bio4_open()
 	int port = 0;
 	char *ep = bio4_service.end_point;
 
-	TRACE2("request to open()", ep);
+	TRACE2("entered", ep);
 
 	if (algo[0])
 		return "service query arg \"algo\" can not exist for bio4";
@@ -255,7 +292,7 @@ bio4_open()
 	/*
 	 *  Connect to service.
 	 */
-	switch (status = _connect(host, port, &server_fd)) {
+	switch (status = bio4_connect(host, port, &server_fd)) {
 	case 0:
 		break;
 	case ENOENT:
@@ -769,16 +806,17 @@ static char *
 bio4_wrap(int *ok_no)
 {
 	char *err;
-	char udig[8+1+128+1+1];
+	char udig[8+1+128+1+1];		//  <algo>:<digest>\n
 	unsigned int nread = 0;
 
-	TRACE("request to wrap()");
+	TRACE("entered");
 
-	if ((err = request(ok_no)))
+	if ((err = request(ok_no)))	//  read chat history: ok|no
 		return err;
 	if (*ok_no)
 		return (char *)0;
 
+	//  read back 
 	while (nread < sizeof udig -1) {
 		int nr;
 		char *err;
@@ -798,13 +836,35 @@ bio4_wrap(int *ok_no)
 		if (udig[nread - 1] == '\n')
 			break;
 	}
+
+	//  reply udig must be <= 35 ascii chars
+	if (nread < (1 + 1 + 32 + 1))
+		return "udig from server < 35 chars";
 	if (nread >= sizeof udig - 1)
 		return "failed to read udig from server";
+
+	//  zap the newline and frisk the wrap udig
+	udig[nread - 1] = 0;
+	err = jmscott_frisk_udig(udig);
+	if (err)
+		return err;
+
+	if (brr[0] == '1') {
+		//  update vars algorithm[] and ascii_digest[] for a the
+		//  client side blob request record.
+		if (!memccpy(algorithm, udig, ':', 8))
+			return "memccpy(algo) return unexpected null";
+		char *colon = index(udig, ':');
+		if (!colon)
+			return "index(colon) is null";
+		colon++;
+		strcpy(ascii_digest, colon);
+	}
 
 	if (_write(output_fd, (unsigned char *)udig, nread))
 		return strerror(errno);
 
-	TRACE("wrap() done");
+	TRACE("done");
 
 	return (char *)0;
 }

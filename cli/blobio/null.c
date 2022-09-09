@@ -11,7 +11,7 @@
 
 extern char	verb[];
 extern char	algorithm[9];
-extern char	chat_history[129];
+extern char	chat_history[9];
 extern char	transport[129];
 extern char	*output_path;
 extern int	output_fd;

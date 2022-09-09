@@ -36,6 +36,18 @@ static char		*brr_format =
 	"%ld.%09ld\n"					//  wall duration
 ;
 
+static void
+bdie(char *msg)
+{
+	die2("brr_write", msg);
+}
+
+static void
+bdie2(char *msg1, char *msg2)
+{
+	die3("brr_write", msg1, msg2);
+}
+
 void
 brr_write(char *srv_name)
 {
@@ -51,12 +63,12 @@ brr_write(char *srv_name)
 	 */
 	t = gmtime(&start_time.tv_sec);
 	if (!t)
-		die2("gmtime() failed", strerror(errno));
+		bdie2("gmtime() failed", strerror(errno));
 	/*
 	 *  Get end time.
 	 */
 	if (clock_gettime(CLOCK_REALTIME, &end_time) < 0)
-		die2("clock_gettime(end REALTIME) failed", strerror(errno));
+		bdie2("clock_gettime(end REALTIME) failed", strerror(errno));
 	/*
 	 *  Calculate the elapsed time in seconds and
 	 *  nano seconds.  The trick of adding 1000000000
@@ -84,6 +96,16 @@ brr_write(char *srv_name)
 	if (nsec < 0)
 		nsec = 0;
 
+	//  cheap sanity tests
+
+	if (!transport[0])
+		bdie("transport is empty");
+	if (!algorithm[0])
+		bdie("digest algorithm is empty");
+	if (!ascii_digest[0])
+		bdie("ascii digest is empty");
+	if (!chat_history[0])
+		bdie("chat history is empty");
 	/*
 	 *  Format the record buffer.
 	 */
@@ -97,9 +119,8 @@ brr_write(char *srv_name)
 		start_time.tv_nsec,
 		transport,
 		verb,
-		algorithm[0] ? algorithm : "",
-		algorithm[0] && ascii_digest[0] ? ":" : "",
-		ascii_digest[0] ? ascii_digest : "",
+		algorithm,
+		ascii_digest,
 		chat_history,
 		blob_size,
 		sec, nsec
@@ -116,12 +137,18 @@ brr_write(char *srv_name)
 	char brr_path[PATH_MAX];
 
 	brr_path[0] = 0;
-	jmscott_strcat4(brr_path, sizeof brr_path,
-		BR,
-		"/spool/",
-		srv_name,
-		".brr"
-	);
+	if (BR[0])
+		jmscott_strcat4(brr_path, sizeof brr_path,
+			BR,
+			"/spool/",
+			srv_name,
+			".brr"
+		);
+	else
+		jmscott_strcat2(brr_path, sizeof brr_path,
+			srv_name,
+			".brr"
+		);
 	TRACE2("brr path", brr_path);
 	int fd = jmscott_open(
 		brr_path,
