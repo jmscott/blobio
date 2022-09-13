@@ -32,6 +32,7 @@
 #include <stdlib.h>
 #include <fcntl.h>
 #include <stdio.h>
+#include <dirent.h>
 
 #include "jmscott/libjmscott.h"
 #include "blobio.h"
@@ -726,6 +727,22 @@ AGAIN:
 	//  not reached
 	return strerror(errno);
 }
+
+#ifdef NO_COMPILE
+static char *
+fs_slurp_wrap(char *path, char *ent[PATH_MAX], int ent_size)
+{
+	(void)ent;
+
+	TRACE2("path", path);
+	if (tracing) {
+		char buf[21];
+
+		snprintf(buf, sizeof buf, "%d", ent_size);
+	}
+	return (char *)0;
+}
+#endif
 
 /*
  *  Remove wrap sets from spool/wrap/ as contained in udig set
