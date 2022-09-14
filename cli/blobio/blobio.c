@@ -34,7 +34,7 @@
  *	not matching the digest, which is confusing.
  *
  *  	Options desperately need to be folding into a data structure.
- *  	We refuse to use getopts.
+ *  	We refuse to use getopts().
  *
  *	Also, the take&give exit statuses ought to reflect the various ok/no
  *	chat histories or perhaps the exit status ought to also store the
