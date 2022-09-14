@@ -132,7 +132,7 @@ fs_open()
 		"fs_",
 		algorithm
 	);
-	TRACE2("fs path", fs_path);
+	TRACE2("path", fs_path);
 
 	//  verify permissons on data/ directory
 
@@ -215,11 +215,19 @@ fs_copy(char *in_path, char *out_path)
 	return (char *)0;
 }
 
+/*
+ *  Set global variables related to blog request records.
+ *
+ *  Note:
+ *	Really, really need to push this code about the service level.
+ *	Too much replication between services "fs" and "bio4".
+ */
 static char *
 fs_set_brr(char *hist, char *fs_path) {
 
 	struct stat st;
 
+	blob_size = 0;
 	TRACE2("fs_path", fs_path);
 	if (fs_path && fs_path[0]) {
 		if (stat(fs_path, &st)) {
@@ -232,13 +240,11 @@ fs_set_brr(char *hist, char *fs_path) {
 
 	snprintf(transport, sizeof transport, "fs~%d:", getpid());
 
-	//  disable incorrect warnings about size of transport buf.
-	//  we checked the length in fs_open().
 	strcat(transport, fs_service.end_point);
 	TRACE2("transport", transport);
 
 	strcpy(chat_history, hist);
-	TRACE2("char history", hist);
+	TRACE2("chat history", hist);
 
 	return (char *)0;
 }
@@ -341,11 +347,11 @@ fs_put(int *ok_no)
 
 	//  make the full directory path to the blob
 
-	TRACE2("fs_path", fs_path);
+	TRACE2("path", fs_path);
 	err = fs_service.digest->fs_mkdir(fs_path, PATH_MAX - strlen(fs_path));
 	if (err)
 		return err;
-	TRACE2("fs_path", fs_path);
+	TRACE2("path", fs_path);
 
 	//  append /<blob-file-name> to the path to the blob
 
@@ -474,7 +480,6 @@ make_roll_dir(char *dir_path, int dir_path_size)
 	return (char *)0;
 }
 
-#ifdef NO_COMPILE
 /*
  *  exec "blobio put" for a given input path.
  *
@@ -535,8 +540,6 @@ AGAIN:
 	);
 	return strerror(errno);
 }
-#endif
-
 
 static char *
 fs_wrap(int *ok_no)
@@ -565,7 +568,7 @@ fs_wrap(int *ok_no)
 	char now[21];
 	snprintf(now, sizeof now, "%d", (int)time((time_t *)0));
 
-	//  build path to soon to be frozen brr file
+	//  build path frozen brr file
 	char frozen_brr_path[PATH_MAX];
 	frozen_brr_path[0] = 0;
 	jmscott_strcat4(frozen_brr_path, sizeof brr_path,
@@ -594,8 +597,13 @@ fs_wrap(int *ok_no)
 	if (status)
 		err = strerror(status);
 	
-	//  close, regardless of error, to release exclusive lock.
-
+	/*
+	 *  close, regardless of error, to release exclusive lock.
+	 *
+	 *  Note:
+	 *	what to do with the frozen brr file?
+	 *	This is a bug.
+	 */
 	if (jmscott_close(brr_fd) && err == (char *)0)
 		return strerror(errno);
 	if (err)
@@ -665,6 +673,9 @@ fs_wrap(int *ok_no)
 		return strerror(errno);
 
 	//  exec a "blobio put" of the frozen wrapped file.
+
+	if ((err = fs_exec_put(put_udig, wrap_brr_path)))
+		return err;
 
 	*ok_no = 0;
 	return fs_set_brr("ok", fs_path);
@@ -740,6 +751,36 @@ fs_slurp_wrap(char *path, char *ent[PATH_MAX], int ent_size)
 
 		snprintf(buf, sizeof buf, "%d", ent_size);
 	}
+
+	DIR *dirp = opendir(path);
+	if (dirp == (DIR *)0)
+		return "opendir(wrap) failed";
+
+	struct dirent *ep;
+	errno = 0;
+	int ent_count = 0;
+	char *err = 0;
+	while (err == NULL && (ep = readdir(dirp)) != NULL) {
+		if (ent_count > ent_size) {
+			err = "too many entries in wrap dir";
+			break;
+		}
+		if (jmscott_frisk_udig(ep->d_name))
+			continue;
+		ent[ent_count][0] = 0;
+		jmscott_strcat(ent[ent_count], PATH_MAX, ep->d_name);
+		ent_count++;
+	}
+	if (closedir(dirp) && err == NULL)
+		err = strerror(errno);
+	if (err)
+		return err;
+	if (tracing) {
+		char buf[21];
+
+		snprintf(buf, sizeof buf, "%d", ent_count);
+		TRACE2("dir entry count", buf);
+	}
 	return (char *)0;
 }
 #endif
@@ -791,7 +832,7 @@ fs_roll(int *ok_no)
 	}
 
 	/*
-	 *  unlink the temp put file so upon process exit the file is gone.
+	 *  unlink wrap set now, to insure disappears upon process exit.
 	 */
 	if (unlink(wrap_set) < 0)
 		return strerror(errno);
