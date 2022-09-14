@@ -50,7 +50,6 @@ static int server_fd = -1;
 
 extern struct service bio4_service;		//  initialized below
 
-
 /*
  *  Parse the host name/ip4, port and optional timeout and trust file
  *  system options from the end point.
@@ -67,7 +66,7 @@ bio4_end_point_syntax(char *endp)
 	 *  Extract the ascii DNS host or ip4 address.
 	 *
 	 *  Note:
-	 *	Do we need to recheck isascii()?
+	 *	Incorrectly we assume DNS host names are ascii!!!!
 	 */
 	ep = endp;
 	while ((c = *ep++) && c != ':') {
@@ -107,50 +106,6 @@ bio4_end_point_syntax(char *endp)
 	 *	?tfs=true
 	 */
 	return (char *)0;
-}
-/*
- *  Convert 32 bit internet address to dotted text, rotating through
- *  static buffer pool.
- *
- *  Note:
- *	Need to replace with buffer rotator in libjmscott.
- */
-static char *
-net_32addr2text(u_long addr)
-{
-#define SHOW_IP_BUFS	4
-#define SHOW_IP_BUFSIZE	20
-
-	char *cp, *buf;
-	u_int byte;
-	int n;
-	static char bufs[SHOW_IP_BUFS][SHOW_IP_BUFSIZE];
-	static int curbuf = 0;
-
-	buf = bufs[curbuf++];
-	if (curbuf >= SHOW_IP_BUFS)
-		curbuf = 0;
-
-	cp = buf + SHOW_IP_BUFSIZE;
-	*--cp = '\0';
-
-	n = 4;
-	do {
-		byte = addr & 0xff;
-		*--cp = byte % 10 + '0';
-		byte /= 10;
-		if (byte > 0) {
-			*--cp = byte % 10 + '0';
-			byte /= 10;
-			if (byte > 0)
-				*--cp = byte + '0';
-		}
-		*--cp = '.';
-		addr >>= 8;
-	} while (--n > 0);
-
-	cp++;
-	return cp;
 }
 
 /*
@@ -259,7 +214,7 @@ AGAIN3:
 		"tcp4~%s:%u;%s:%u",
 		h->h_addr,
 		port,
-		net_32addr2text(ntohl(s.sin_addr.s_addr)),
+		jmscott_net_32addr2text(ntohl(s.sin_addr.s_addr)),
 		(unsigned int)ntohs(s.sin_port)
 	);
 	TRACE("done");
@@ -275,7 +230,7 @@ bio4_open()
 	int port = 0;
 	char *ep = bio4_service.end_point;
 
-	TRACE2("entered", ep);
+	TRACE2("entered: end point", bio4_service.end_point);
 
 	if (algo[0])
 		return "service query arg \"algo\" can not exist for bio4";
@@ -515,10 +470,29 @@ request(int *ok_no)
 }
 
 /*
+ *  Set global variables related to blog request records.
+ *
+ *  Note:
+ *	Really, really need to push this code about the service level.
+ *	Too much replication between services "fs" and "bio4".
+ */
+static char *
+bio4_set_brr(char *hist)
+{
+	snprintf(transport, sizeof transport, "bio4~%d:", getpid());
+	TRACE2("transport", transport);
+
+	TRACE2("chat history", hist);
+	strcpy(chat_history, hist);
+
+	return (char *)0;
+}
+
+/*
  *  Get a blob from the server.
  */
 static char *
-_get(int *ok_no, int in_take)
+_bio4_get(int *ok_no, int in_take)
 {
 	unsigned char buf[MAX_ATOMIC_MSG];
 	char *err;
@@ -575,13 +549,13 @@ _get(int *ok_no, int in_take)
 
 	TRACE("ok, got blob that matched digest");
 	TRACE("get() done");
-	return (char *)0;
+	return bio4_set_brr("ok");
 }
 
 static char *
 bio4_get(int *ok_no)
 {
-	return _get(ok_no, 0);
+	return _bio4_get(ok_no, 0);
 }
 
 static char *
@@ -614,7 +588,7 @@ bio4_eat(int *ok_no)
 		return err;
 
 	TRACE("eat() done");
-	return (char *)0;
+	return bio4_set_brr(*ok_no == 0 ? "ok" : "no");
 }
 
 static char *
@@ -717,7 +691,7 @@ bio4_put(int *ok_no)
 		return err;
 
 	TRACE("put() done");
-	return (char *)0;
+	return bio4_set_brr(*ok_no == 0 ? "ok" : "no");
 }
 
 static char *
@@ -729,7 +703,7 @@ bio4_take(int *ok_no)
 
 	//  write "take <udig>\n and read back reply and possibly the blob
 
-	if ((err = _get(ok_no, 1)))
+	if ((err = _bio4_get(ok_no, 1)))
 		return err;
 
 	//  server replied no
@@ -745,8 +719,7 @@ bio4_take(int *ok_no)
 	if((err = read_ok_no(ok_no)))
 		return err;
 
-	TRACE("take() done");
-	return (char *)0;
+	return bio4_set_brr("ok,ok,ok");
 }
 
 static char *
@@ -785,8 +758,7 @@ bio4_give(int *ok_no)
 	} else if (_write(server_fd, (unsigned char *)"ok\n", 3))
 		return strerror(errno);
 
-	TRACE("give() done");
-	return (char *)0;
+	return bio4_set_brr("ok,ok,ok");
 }
 
 static char *
@@ -797,9 +769,7 @@ bio4_roll(int *ok_no)
 	TRACE("request to roll()");
 	if ((err = request(ok_no)))
 		return err;
-	TRACE("roll() done");
-
-	return (char *)0;
+	return bio4_set_brr("ok");
 }
 
 static char *
@@ -864,9 +834,7 @@ bio4_wrap(int *ok_no)
 	if (_write(output_fd, (unsigned char *)udig, nread))
 		return strerror(errno);
 
-	TRACE("done");
-
-	return (char *)0;
+	return bio4_set_brr("ok");
 }
 
 struct service bio4_service =
