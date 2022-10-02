@@ -17,6 +17,8 @@
 #	0	ok
 #	1	error
 #  Note:
+#	script depends upon RFC3339Nano before PATH includes JMSCOTT_ROOT/bin
+#
 #	Add an "all" time interval, to cover all blobs in rummy.
 #
 
