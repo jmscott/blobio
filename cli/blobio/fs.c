@@ -93,7 +93,7 @@ fs_open()
 	if (algo[0] && !find_digest(algo))
 		return "unknown digest algorithm in query arg \"algo\"";
 	
-	//  tidle shorhand for the file system root in end point
+	//  tilde shorthand for the file system root in end point
 	if (strcmp("~", BR) == 0) {
 		BR[0] = 0;
 		jmscott_strcat(BR, PATH_MAX, end_point);

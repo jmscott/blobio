@@ -40,7 +40,7 @@ frisk_qarg(char *expect, char *given, char **p_equal, int max_vlen)
 		if (!isascii(cg))
 			return "char in value is not ascii";
 		if (cg != ce)
-			return "unexpected char in value";
+			return "unexpected char in arg";
 	}
 	if (*g++ != '=')
 		return "no \"=\" at end of arg";

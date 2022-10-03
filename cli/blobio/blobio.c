@@ -388,7 +388,6 @@ parse_argv(int argc, char **argv)
 		//  --udig <udig>
 
 		if (strcmp("udig", a) == 0) {
-
 			//  udig syntax:
 			//	^[a-z][a-z0-9]{0,7}:[[:isgraph:]]{32,128}$
 
@@ -415,6 +414,9 @@ parse_argv(int argc, char **argv)
 				eopt2("udig", err, ud);
 
 			//  find the digest module for algorithm.
+			int colon = index(ud, ':') - ud;
+			algorithm[colon] = 0;
+			memmove(algorithm, ud, colon);
 
 			d = find_digest(algorithm);
 			if (!d)
@@ -422,7 +424,13 @@ parse_argv(int argc, char **argv)
 
 			//  verify the digest is syntactically well formed
 
-			if (ascii_digest[0] && d->syntax() == 0)
+			ascii_digest[0] = 0;
+			jmscott_strcat(
+				ascii_digest,
+				sizeof ascii_digest,
+				&ud[colon + 1]
+			);
+			if (d->syntax() == 0)
 				eopt2(
 					"udig",
 					"bad syntax for digest",
