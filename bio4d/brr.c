@@ -57,7 +57,7 @@ static char	*RFC3339Nano =
  *	1	+	<tab>
  *	20		wall duration: sec32.ns9, sec32 >= 0 && ns9 <= 999999999
  */
-#define BRR_SIZE		370		//  terminating null NOT counted
+#define BRR_SIZE		371		//  terminating null NOT counted
 
 /*
  *  Answer a wrap request from a child process.
@@ -353,7 +353,7 @@ brr_close()
 void
 brr_send(struct request *r)
 {
-	char brr[BRR_SIZE + 1];
+	char brr[BRR_SIZE + 1 + 1];	//  max brr + new-line + null
 	long int sec, nsec;
 	size_t len;
 	struct tm *t;
@@ -414,7 +414,7 @@ brr_send(struct request *r)
 	/*
 	 *  Format the record buffer.
 	 */
-	snprintf(brr, BRR_SIZE + 1, RFC3339Nano,
+	snprintf(brr, sizeof brr, RFC3339Nano,
 		t->tm_year + 1900,
 		t->tm_mon + 1,
 		t->tm_mday,

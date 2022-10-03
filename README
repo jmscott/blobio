@@ -86,14 +86,15 @@ Description:
 	The format of a single BRR record is a line of seven tab separated
 	fields: i.e, the typical unixy ascii record:
 
-		start_time		#  YYYY-MM-DDThh:mm:ss.ns[+-]HH:MM
+		start_time		#  RFC3339 nanosec:		\
+					#	YYYY-MM-DDThh:mm:ss.ns[+-]HH:MM
 		transport		#  [a-z][a-z0-9]{0,7}~[[:graph:]]{1,128}
 		verb			#  get/put/take/give/eat/wrap/roll
 		algorithm:digest	#  [a-z][a-z0-9]{0,7}:		\
 					#	[[:graph:]]{32,128}
 		chat_history		#  ok/no handshake between server&client
 		blob_size		#  unsigned 63 bit long <= 2^63
-		wall_duration		#  request wall duration in sec.ns>=0
+		wall_duration		#  wall duration in 32 bit sec.ns>=0
 
 	All characters are ascii.  Most important is that each client request
 	is associated with a request for a single blob described by a udig.
@@ -101,33 +102,32 @@ Description:
 	In other words, a request for a syntactically incorrect udig or an
 	unknown verb will not generate a BRR record.
 
-	The minimum size of a brr record is 95 bytes.
+	The minimum size of a brr record is 95 bytes
 
-		(10+1+8+1+9+1+5) + 1	==  start_time
-		(1 + 1 + 1) + 1		>=  transport
-		(2) + 1			>=  verb
-		(1 + 1 + 32) + 1	>=  udig
-		(2) + 1			>=  chat history 
-		(1) + 1			>=  seen blob size
-		(1+1+9) + 1		>=  wall duration
+		(19+1+9+6)	+ 1 +	=   start time<tab>
+		(1+1+1)		+ 1 +	>=  transport<tab>
+		(3)		+ 1 +	>=  verb<tab>
+		(1+1+32)	+ 1 +	>=  udig<tab>
+		(2)		+ 1 +	>=  chat history<tab> 
+		(1)		+ 1 +	>=  blob size<tab>
+		(1+1+9)			>=  wall duration
 
 	where nanoseconds in start_time and wall_duration is always 9 digits.
 	Seconds in wall duration is <= 10 digits (2^31).
 
-	The maximum size of a blob request record is 370 bytes.
-	
-		(10+1+8+1+9+1+5) + 1 +	=   start request time
-		(8+1+128) + 1 +		>=  transport
-		(8) + 1 +		>=  verb
-		(8+1+128) + 1 +		>=  algorithm:digest
-		(8) + 1 + 		>=  chat history: max=ok,ok,ok
-		(19) + 1 +		>=  blob size
-		(10+1+9)		>=  wall duration
+	The maximum size of a blob request record is 371 bytes
 
-		<= 370 bytes
+		(19+1+9+6)	+ 1 +	=   start time<tab>
+		(8+1+128)	+ 1 +	<=  transport<tab>
+		(8)		+ 1 +	<=  verb<tab>
+		(8+1+128)	+ 1 +	<=  udig<tab>
+		(8)		+ 1 +	<=  chat history<tab>
+		(19)		+ 1 +	<=  blob size<tab>
+		(10+1+10)		<=  wall duration
 
-	not including a trailing new-line or terminating null character.
-	Since the length is <= 370 bytes, a BRR record can be broadcast in an
+		<= 371 bytes
+
+	Since the length is <= 371 bytes, a BRR record can be broadcast in an
 	UDP packet.  The BRR record format is cast in stone.
 
 Protocol Flow:
