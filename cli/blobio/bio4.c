@@ -210,14 +210,22 @@ AGAIN3:
 	}
 	*p_server_fd = fd;
 
+	//  grab the remote socket for the transport brr field
+	struct sockaddr_in peer;
+	socklen_t peer_len;
+	if (getsockname(fd, (struct sockaddr *)&peer, &peer_len) != 0) {
+		int e = errno;
+		TRACE2("getpeername(remote) failed", strerror(e));
+		return e;
+	}
 	snprintf(transport, sizeof transport - 1,
 		"tcp4~%s:%u;%s:%u",
-		h->h_addr,
-		port,
 		jmscott_net_32addr2text(ntohl(s.sin_addr.s_addr)),
-		(unsigned int)ntohs(s.sin_port)
+		(unsigned int)ntohs(s.sin_port),
+		jmscott_net_32addr2text(ntohl(peer.sin_addr.s_addr)),
+		(unsigned int)ntohs(peer.sin_port)
 	);
-	TRACE("done");
+	TRACE2("transport", transport);
 	return 0;
 }
 
@@ -230,7 +238,7 @@ bio4_open()
 	int port = 0;
 	char *ep = bio4_service.end_point;
 
-	TRACE2("entered: end point", bio4_service.end_point);
+	TRACE2("end point", bio4_service.end_point);
 
 	if (algo[0])
 		return "service query arg \"algo\" can not exist for bio4";
@@ -479,9 +487,6 @@ request(int *ok_no)
 static char *
 bio4_set_brr(char *hist)
 {
-	snprintf(transport, sizeof transport, "bio4~%d:", getpid());
-	TRACE2("transport", transport);
-
 	TRACE2("chat history", hist);
 	strcpy(chat_history, hist);
 
@@ -564,7 +569,7 @@ bio4_open_output()
 	int fd;
 	int flag = O_WRONLY | O_CREAT;
 
-	TRACE("bio4_open_output: entered");
+	TRACE("entered");
 
 	if (output_path != null_device)
 		flag |= O_EXCL;		//  fail if file exists (and not null)

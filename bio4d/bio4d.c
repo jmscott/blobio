@@ -1930,10 +1930,10 @@ fork_accept(struct request *rp)
 		net_32addr2text(ntohl(rp->remote_address.sin_addr.s_addr)));
 	snprintf(rp->transport, sizeof rp->transport - 1,
 		"tcp4~%s:%u;%s:%u",
-		net_32addr2text(ntohl(rp->remote_address.sin_addr.s_addr)),
-		(unsigned int)ntohs(rp->remote_address.sin_port),
 		net_32addr2text(ntohl(rp->bind_address.sin_addr.s_addr)),
-		(unsigned int)ntohs(rp->bind_address.sin_port)
+		(unsigned int)ntohs(rp->bind_address.sin_port),
+		net_32addr2text(ntohl(rp->remote_address.sin_addr.s_addr)),
+		(unsigned int)ntohs(rp->remote_address.sin_port)
 	);
 
 	request();
