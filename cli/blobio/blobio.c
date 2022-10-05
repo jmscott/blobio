@@ -28,7 +28,7 @@
  *			--service fs:/usr/local/blobio
  *
  *	Under OSX 10.9, an exit status 141 in various shells can indicate a
- *	SIGPIPE interupted the execution.  blobio does not exit 141.
+ *	SIGPIPE interupted the execution:  blobio does not exists 141.
  *	A SIGPIPE when reading from stdin probably out to be considered a
  *	cancel.  Currently a SIGPIPE generated an error about the input
  *	not matching the digest, which is confusing.

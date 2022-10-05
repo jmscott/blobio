@@ -138,7 +138,7 @@ fs_open()
 
 	if (jmscott_access(fs_path, X_OK)) {
 		if (errno == ENOENT)
-			return "directory does not exit: data/fs_<algo>";
+			return "directory does not exist: data/fs_<algo>";
 		if (errno == EPERM)
 			return "no permission for directory: data/fs_<algo>/";
 		return strerror(errno);
@@ -464,7 +464,8 @@ static char *
 make_wrap_dir(char *dir_path, int dir_path_size)
 {
 	dir_path[0] = 0;
-	jmscott_strcat2(dir_path, dir_path_size, BR, "spool/wrap");
+	jmscott_strcat2(dir_path, dir_path_size, BR, "/spool/wrap");
+	TRACE2("dir path", dir_path);
 	if (jmscott_mkdir_EEXIST(dir_path, S_IRUSR|S_IWUSR|S_IXUSR|S_IXGRP))
 		return strerror(errno);
 	return (char *)0;
@@ -494,7 +495,6 @@ fs_exec_put(char *udig, char *input_path)
 		TRACE2("input path", input_path);
 	}
 	pid_t put_pid;
-
 AGAIN:
 	put_pid = fork();
 	if (put_pid < 0) {
@@ -507,18 +507,26 @@ AGAIN:
 	if (put_pid > 0) {
 		int status;
 		
-		if (waitpid(put_pid, &status, 0) < 0)
-			return strerror(errno);
+		if (waitpid(put_pid, &status, 0) < 0) {
+			int e = errno;
 
-		if (WIFEXITED(status))
+			TRACE2("waitpid() failed", strerror(e));
+			return strerror(e);
+		}
+
+		if (WIFEXITED(status)) {
+			TRACE("waitpid() ok");
+			if (WEXITSTATUS(status) != 0)
+				return "blobio put wrap failed";
 			return (char *)0;
+		}
 		if (WIFSIGNALED(status))
 			return "\"blobio put\" exit due to signal";
 		if (WCOREDUMP(status))
 			return "\"blobio put\" core dumped";
 		if (WSTOPSIG(status))
 			return "\"blobio put\" STOPPED";
-		return "unexpected status from waitpid";
+		return "unexpected status from waitpid()";
 	}
 
 	char srv[PATH_MAX * 2];
@@ -531,6 +539,11 @@ AGAIN:
 		jmscott_strcat2(srv, sizeof srv, "?", fs_service.query);
 
 	//  in the child, so exec the "blobio put"
+	if (tracing) {
+		TRACE2("child: udig", udig);
+		TRACE2("child: service", srv);
+		TRACE2("child: input path", input_path);
+	}
 	execlp("blobio",
 		"blobio", "put",
 		"--udig", udig,
