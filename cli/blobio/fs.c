@@ -466,7 +466,7 @@ make_wrap_dir(char *dir_path, int dir_path_size)
 	dir_path[0] = 0;
 	jmscott_strcat2(dir_path, dir_path_size, BR, "/spool/wrap");
 	TRACE2("dir path", dir_path);
-	if (jmscott_mkdir_EEXIST(dir_path, S_IRUSR|S_IWUSR|S_IXUSR|S_IXGRP))
+	if (jmscott_mkdir_p(dir_path))
 		return strerror(errno);
 	return (char *)0;
 }
@@ -476,7 +476,7 @@ make_roll_dir(char *dir_path, int dir_path_size)
 {
 	dir_path[0] = 0;
 	jmscott_strcat2(dir_path, dir_path_size, BR, "spool/roll");
-	if (jmscott_mkdir_EEXIST(dir_path, S_IRUSR|S_IWUSR|S_IXUSR|S_IXGRP))
+	if (jmscott_mkdir_p(dir_path))
 		return strerror(errno);
 	return (char *)0;
 }
@@ -820,7 +820,7 @@ fs_roll(int *ok_no)
 	if (err)
 		return err;
 
-	if (jmscott_mkdir_EEXIST("tmp", S_IRUSR|S_IWUSR|S_IXUSR|S_IXGRP))
+	if (jmscott_mkdir_p("tmp"))
 		return strerror(errno);
 
 	char udig[8 + 128 + 1 + 1];
