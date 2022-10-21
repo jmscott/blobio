@@ -22,6 +22,8 @@
  *  See:
  *	https://github.com/jmscott/work/blob/master/RFC3339Nano.c
  *  Note:
+ *	Need to rewrite using $JMSCOTT_ROOT/lib/libjmscott.a!
+ *
  *  	No syntax checking is done on the fields of the blob request record.
  *  	Only field sizes are checked.
  *
