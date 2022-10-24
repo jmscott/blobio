@@ -12,8 +12,9 @@ DIST=blobio-cli.dist
 COMPILEs := $(shell  (. ./$(DIST) && echo $$COMPILEs))
 BINs := $(shell  (. ./$(DIST) && echo $$BINs))
 LIBs := $(shell  (. ./$(DIST) && echo $$LIBs))
+SRCs := $(shell  (. ./$(DIST) && echo $$SRCs))
 
-all:
+all: $(COMPILEs)
 	cd blobio && $(_MAKE) all
 
 install-dirs:
@@ -28,12 +29,16 @@ install: all
 		$(LIBs)							\
 		$(DIST_ROOT)/lib
 	install -g $(DIST_GROUP) -o $(DIST_USER) -m ugo=rx		\
+		$(SRCs)							\
+		$(DIST_ROOT)/src/cli
+	install -g $(DIST_GROUP) -o $(DIST_USER) -m ugo=rx		\
 		$(BINs)							\
 		$(DIST_ROOT)/bin
 
 	cd blobio && $(_MAKE) install
 clean:
 	cd blobio && $(_MAKE) clean
+	rm -fv $(COMPILEs)
 distclean:
 	cd blobio && $(_MAKE) distclean
 	test -d $(DIST_ROOT)/bin && (cd $(DIST_ROOT)/bin && rm -f $(BINs))
@@ -48,3 +53,6 @@ world:
 	$(_MAKE) all
 	$(_MAKE) distclean
 	$(_MAKE) install
+
+bio-frisk-brr.o: bio-frisk-brr.c
+	$(CC) $(CFLAGS) -c bio-frisk-brr.c
