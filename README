@@ -238,7 +238,7 @@ Protocol Questions:
 
 	- what about forbidding ':' as a digest character?
 
-        - think about a "prove" command that allows the server to formally prove
+        - think about a "sum" command that allows the server to formally prove
 	  the existence of a set of blobs, thus verifying the server is not
 	  lying about storage.  the obvious technique would be for the client
 	  to send the udig of a randomly selected set of blobs for which the
