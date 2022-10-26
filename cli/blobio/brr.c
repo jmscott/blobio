@@ -13,6 +13,14 @@
 
 #define BRR_SIZE	371 + 1 + 1	//  brr size + new-line + null
 
+/*
+ *  Note:
+ *	No O_SHLOCK on linux.  wtf?
+ */
+#ifndef O_SHLOCK
+#define O_SHLOCK	0
+#endif
+
 extern char			BR[];
 extern struct timespec		start_time;
 extern void			die(char *msg);
