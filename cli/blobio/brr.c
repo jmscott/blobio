@@ -7,6 +7,7 @@
 #include <string.h>
 #include <fcntl.h>
 #include <stdio.h>
+#include <errno.h>		//  quiets gcc and wierd tls link error
 
 #include "jmscott/libjmscott.h"
 #include "blobio.h"
