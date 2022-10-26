@@ -35,6 +35,9 @@
  *  Blame:
  *  	jmscott@setspace.com
  *  Note:
+ *	Would be interesting to compare this code to a versiosn matching
+ *	with posix regexp library (and perl lib).
+ *
  *	Would be nice to remove dependency upon stdio library.
  */
 
@@ -46,7 +49,10 @@
 #include <ctype.h>
 #include <limits.h>
 
-static char *jmscott_program =	"bio-frisk-brr";
+#include "jmscott/libjmscott.h"
+
+char *jmscott_progname =	"bio-frisk-brr";
+
 static char digits[] = "0123456789";
 static char lower_alnum[] = "abcdefghijklmnopqrstuvwxyz0123456789";
 
@@ -115,24 +121,28 @@ in_range(char **src, int upper, int lower, char *set)
 
 /*
  *  Scan up to 'limit' chars that are in set
- *  and set src to first char not in the set.
- *  Null character in the 'src' fails.
+ *  and set src to first char after the end char.
+ *  non-ascii always fails.
+ *
+ *  Note:
+ *	what happens when zero chars are in the set?
  */
 static void 
-scan_set(char **src, int limit, char *set)
+scan_set(char **src, int limit, char *set, char end)
 {
 	char *s, *s_end;
 
 	s = *src;
 	s_end = s + limit;
 	while (s < s_end) {
-		char c = *s;
+		char c = *s++;
 
-		if (c == 0)
+		if (!isascii(c))
 			exit(1);
-		if (strchr(set, c) == NULL)
+		if (c == end)
 			break;
-		s++;
+		if (strchr(set, c) == NULL)
+			exit(1);
 	}
 	*src = s;
 }
@@ -254,20 +264,19 @@ scan_transport(char **src)
 	char c, *p = *src;
 
 	/*
-	 *  Scan the network flow field which matches this perl5 regex:
+	 *  Scan the trqnsport field which matches this perl5 regex:
 	 *
-	 *	[a-z][a-z0-9]{0,7}([[:graph:]{1,128})
+	 *	[a-z][a-z0-9]{0,7}~([[:graph:]{1,128})
 	 */
 	c = *p++;
 	if ('a' > c || c > 'z')
 		exit(1);
 
-	scan_set(&p, 7, lower_alnum);
-	if (*p++ != '~')
-		exit(1);
-	scan_set(&p, 128, graph_set);
-	if (*p++ != '\t')
-		exit(1);
+	scan_set(&p, 7, lower_alnum, '~');
+
+	//  Note: does at least one char exist?
+	scan_set(&p, 128, graph_set, '\t');
+
 	*src = p;
 }
 
@@ -339,18 +348,8 @@ scan_udig(char **src)
 	/*
 	 *  Up to 7 alphnum chars before colon.
 	 */
-	scan_set(&p, 7, lower_alnum);
-
-	/*
-	 *  Expect colon between algorithm and digest.
-	 */
-	if (*p++ != ':')
-		exit(1);	/* first char in algo not : */
-
-	scan_set(&p, 128, graph_set);
-
-	if (*p++ != '\t')
-		exit(1);
+	scan_set(&p, 7, lower_alnum, ':');
+	scan_set(&p, 128, graph_set, '\t');
 	*src = p;
 }
 
@@ -374,48 +373,82 @@ scan_udig(char **src)
 static void
 scan_chat_history(char *verb, char **src)
 {
-	char *p, *q, ch[9], v1, v2;
+	char *p, *end, ch[9], v1, v2;
 	int len;
 
 	p = *src;
-	q = p;
+	end = p;
 
-	scan_set(&q, 8, "nok,");
-	len = q - p;
+	scan_set(&end, 8, "nok,", '\t');
+	len = end - p - 1;
 	if (len < 2)
 		exit(1);
 	memcpy(ch, p, len);
-	p = q;
 	ch[len] = 0;
+
+	/*
+	 *  Konwing the verb is valid (get/put/give/take/eat/wrap/roll),
+	 *  implies that the first two chars determine uniquess of verb.
+	 */
 	v1 = verb[0];
 	v2 = verb[1];
 
-	/*
-	 *  Only verbs: get/put/eat/wrap/roll ca
-	 *  Remember, the chat history is the observed value during the
-	 *  network flow from the server's point of view.
-	 */
-	if (strcmp("no", ch) == 0 || strcmp("ok", ch) == 0)
+	if (strcmp("no", ch) == 0)	//  any verb can reply "no"
 		goto done;
+	if (strcmp("ok", ch) == 0) {
+		if (
+			//  "get"
+			(v1 == 'g' && v2 == 'e')		||
 
-	/*
-	 *  Both "give" and "take" can chat either "ok,ok" or "ok,no"
-	 */
-	if (strcmp("ok,ok", ch) == 0 || strcmp("ok,no", ch) == 0) {
-		if ((v1 == 'g' && v2 == 'i') || v1 == 't')
+			//  "eat"
+			v1 == 'e'				||
+
+			//  "wrap"
+			v1 == 'w'				||
+
+			//  "roll"
+			v1 == 'r'
+		)
 			goto done;
 		exit(1);
 	}
+
 	/*
-	 *  Only a "take" can do "ok,ok,ok" or "ok,ok,no".
+	 *  chat history must start with "ok,"
+	 *
+	 *  Note:
+	 *	One day i (jmscott) will optimize away strcmp()
 	 */
-	if ((strcmp("ok,ok,ok",ch)==0 || strcmp("ok,ok,no", ch)==0) && v1=='t')
+
+	/*
+	 *  Verbs that reply with: ok,ok or ok,no: give, take, put.
+	 */
+	if (strcmp("ok,ok", ch) == 0 || strcmp("ok,no", ch) == 0) {
+		if (
+			//  "give"
+			(v1 == 'g' && v2 == 'i')			||
+
+			//  "take"
+			v1 == 't'					||
+
+			//  "put"
+			v1 == 'p'
+		)
+			goto done;
+		exit(1);
+	}
+
+	/*
+	 *  Only verbs "give" and "take" can do "ok,ok,ok" or "ok,ok,no".
+	 */
+	if (
+		(strcmp("ok,ok,ok",ch)==0 || strcmp("ok,ok,no", ch)==0)	&&
+		(v1=='t' || (v1=='g' && v1=='i'))
+	)
 		goto done;
 	exit(1);
 done:
-	if (*p++ != '\t')
-		exit(1);
-	*src = p;
+	*src = end;
 }
 
 /*
@@ -425,11 +458,9 @@ done:
  *  	Need a compile time pragma to insure the
  *
  *  		sizeof long long int == 8
- *
- *  	is true.
  */
 static void
-scan_uint63(char **src, char c_end)
+scan_byte_count(char **src)
 {
 	char *p, *q;
 	long long v;
@@ -437,7 +468,7 @@ scan_uint63(char **src, char c_end)
 	p = *src;
 	q = p;
 
-	scan_set(&p, 21, digits);
+	scan_set(&p, 21, digits, '\t');
 
 	errno = 0;
 	v = strtoll(q, (char **)0, 10);
@@ -445,8 +476,6 @@ scan_uint63(char **src, char c_end)
 	if ((v == LLONG_MAX && errno == ERANGE) ||
 	    (LLONG_MAX > 9223372036854775807 &&
 	     v > 9223372036854775807))
-		exit(1);
-	if (*p++ != c_end)
 		exit(1);
 	*src = p;
 }
@@ -457,7 +486,7 @@ scan_uint63(char **src, char c_end)
  *  	      and seconds <= 2147483647
  */
 static void
-scan_duration(char **src, char c_end)
+scan_duration(char **src)
 {
 	char *p, *q;
 	long v;
@@ -465,7 +494,7 @@ scan_duration(char **src, char c_end)
 	p = *src;
 	q = p;
 
-	scan_set(&p, 10, digits);
+	scan_set(&p, 10, digits, '.');
 
 	errno = 0;
 	v = strtoll(q, (char **)0, 10);
@@ -473,10 +502,8 @@ scan_duration(char **src, char c_end)
 	if ((v == LONG_MAX && errno == ERANGE) ||
 	    (LONG_MAX > 2147483647 && v > 2147483647))
 		exit(1);
-	if (*p++ != '.')
-		exit(1);
 	in_range(&p, 9, 1, digits);
-	if (*p++ != c_end)
+	if (*p++ != '\n')
 		exit(1);
 	*src = p;
 }
@@ -499,20 +526,22 @@ main()
 
 		//  start time of request
 		scan_rfc399nano(&p);
+
 		scan_transport(&p);
+
 		verb = scan_verb(&p);
 
 		scan_udig(&p);
+
 		scan_chat_history(verb, &p);
 
 		//  byte count
-		scan_uint63(&p, '\t');
+		scan_byte_count(&p);
 
 		//  wall duration
-		scan_duration(&p, '\n');
-
+		scan_duration(&p);
 	}
-	if (ferror(stdin))
+	if (ferror(stderr))
 		die("ferror(stdin) returned true");
 	if (read_input)
 		exit(feof(stdin) ? 0 : 1);

@@ -46,6 +46,7 @@ BINs="
 	bio-cat
 	bio-eat
 	bio-file 
+	bio-frisk-brr
 	bio-fs-stat
 	bio-fs2udig
 	bio-get

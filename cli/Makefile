@@ -55,4 +55,7 @@ world:
 	$(_MAKE) install
 
 bio-frisk-brr.o: bio-frisk-brr.c
-	$(CC) $(CFLAGS) -c bio-frisk-brr.c
+	$(CC) $(CFLAGS) -c bio-frisk-brr.c 
+
+bio-frisk-brr: bio-frisk-brr.o
+	$(CC) -o bio-frisk-brr bio-frisk-brr.o -L$(JMSCOTT_ROOT)/lib -ljmscott
