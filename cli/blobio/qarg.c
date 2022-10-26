@@ -100,7 +100,6 @@ BLOBIO_SERVICE_frisk_qargs(char *query)
 	char *q = query, c;
 	char *equal;
 	char seen_BR = 0, seen_algo = 0, seen_brr = 0;
-	int count;
 	char *err;
 
 	if (!query || !*query)
@@ -162,7 +161,6 @@ BLOBIO_SERVICE_frisk_qargs(char *query)
 
 			//  skip over blobio root path till we hit end of string
 			//  or '&'
-			count = 0;
 			while ((c = *q++))
 				if (!c)
 					return (char *)0;
