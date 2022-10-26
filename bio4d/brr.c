@@ -812,7 +812,19 @@ roll(struct request *r, struct digest_module *mp)
 			continue;
 		}
 		if (blob_set_exists(udig_set, (u1 *)udig, strlen(udig))) {
-			char path[MAX_FILE_PATH_LEN];
+
+
+			/*
+			 *  Note:
+			 *	WTF: clang says the followign error when size
+			 *	is MAX_FILE_PATH_LEN:
+			 *
+			 *	‘%s’ directive output may be truncated writing
+			 *	up to 255 bytes into a region of size 245
+			 *
+			 *	why?
+			 */
+			char path[MAX_FILE_PATH_LEN*2];
 
 			snprintf(path, sizeof path, "spool/wrap/%s", n);
 			/*
