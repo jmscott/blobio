@@ -164,7 +164,7 @@ brr_write(char *srv_name)
 	TRACE2("brr path", brr_path);
 	int fd = jmscott_open(
 		brr_path,
-		O_WRONLY|O_CREAT|O_APPEND|O_SHLOCK,
+		O_WRONLY|O_CREAT|O_APPEND,
 		S_IRUSR|S_IWUSR|S_IRGRP
 	);
 	if (fd < 0)

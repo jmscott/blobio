@@ -600,11 +600,13 @@ fs_wrap(int *ok_no)
 	 */
 	int brr_fd = jmscott_open(
 		brr_path,
-		O_RDONLY|O_CREAT|O_EXLOCK,
+		O_RDONLY|O_CREAT,
 		S_IRUSR|S_IWUSR|S_IRGRP
 	);
 	if (brr_fd < 0)
 		return strerror(errno);			//  lock freed on exit
+	if (jmscott_flock(brr_fd, LOCK_EX))
+		die2("flock(brr:lock_ex) failed", strerror(errno));
 	int status = rename(brr_path, frozen_brr_path);
 	char *err = (char *)0;
 	if (status)
@@ -617,6 +619,8 @@ fs_wrap(int *ok_no)
 	 *	what to do with the frozen brr file?
 	 *	This is a bug.
 	 */
+	if (jmscott_flock(brr_fd, LOCK_UN))
+		die2("flock(brr:lock_un) failed", strerror(errno));
 	if (jmscott_close(brr_fd) && err == (char *)0)
 		return strerror(errno);
 	if (err)
