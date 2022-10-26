@@ -233,17 +233,4 @@ extern void	brr_write();
 
 extern struct digest	*find_digest(char *algorithm);
 
-/*
- *  Note:
- *	No O_SHLOCK on open(linux).  wtf?
- */
-#ifndef O_SHLOCK
-#define O_SHLOCK	0
-#endif
-
-#ifndef O_EXLOCK
-#define O_EXLOCK	0
-#endif
-
-
 #endif

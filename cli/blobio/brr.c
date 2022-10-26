@@ -169,11 +169,15 @@ brr_write(char *srv_name)
 	);
 	if (fd < 0)
 		die2("open(brr-path) failed", strerror(errno));
+	if (jmscott_flock(fd, LOCK_EX))
+		die2("flock(brr-path:LOCK_EX) failed", strerror(errno));
 	/*
 	 *  Write the entire blob request record in a single write().
 	 */
 	if (jmscott_write(fd, brr, strlen(brr)) < 0)
 		die2("write(brr-path) failed", strerror(errno));
+	if (jmscott_flock(fd, LOCK_UN))
+		die2("flock(brr-path:LOCK_UN) failed", strerror(errno));
 	if (jmscott_close(fd) < 0)
 		die2("close(brr-path) failed", strerror(errno));
 }
