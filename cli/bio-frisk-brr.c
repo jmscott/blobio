@@ -35,7 +35,7 @@
  *  Blame:
  *  	jmscott@setspace.com
  *  Note:
- *	Replace eexit(func) with macro SCAN_EXIT() that references _funcname
+ *	Replace sexit(func) with macro SCAN_EXIT() that references _funcname
  *
  *	Would be interesting to compare this code to a versiosn matching
  *	with posix regexp library (and perl lib).
@@ -76,7 +76,7 @@ static char graph_set[] =
 ;
 
 static void
-eexit(char *what)
+sexit(char *what)
 {
 	if (tracing) {
 		if (line_no == 0)
@@ -136,7 +136,7 @@ in_set(char **src, int n, char *set)
 		char c = *s++;
 
 		if (c == 0 || strchr(set, c) == NULL)
-			eexit("in_set");
+			sexit("in_set");
 	}
 	*src = s_end;
 }
@@ -158,7 +158,7 @@ in_range(char **src, int upper, int lower, char *set)
 		if (strchr(set, c) != NULL)
 			continue;
 		if (s - *src <= lower)	//  too few characters
-			eexit("in_range");
+			sexit("in_range");
 		--s;
 		break;
 	}
@@ -184,11 +184,11 @@ scan_set(char **src, int limit, char *set, char end)
 		char c = *s++;
 
 		if (!isascii(c))
-			eexit("scan_set");
+			sexit("scan_set");
 		if (c == end)
 			break;
 		if (strchr(set, c) == NULL)
-			eexit("scan_set");
+			sexit("scan_set");
 	}
 	*src = s;
 }
@@ -199,8 +199,11 @@ err_399(char *what)
 	char msg[JMSCOTT_ATOMIC_WRITE_SIZE];
 
 	msg[0] = 0;
-	snprintf(msg, sizeof msg, "scan_rfc399nano: %s", what);
-	eexit(msg);
+	jmscott_strcat2(msg, sizeof msg,
+		"scan_rfc399nano: ",
+		what
+	);
+	sexit(msg);
 }
 
 static void
@@ -209,8 +212,11 @@ err_399r(char *what)
 	char msg[JMSCOTT_ATOMIC_WRITE_SIZE];
 
 	msg[0] = 0;
-	snprintf(msg, sizeof msg, "digit out of range: %s", what);
-	err_399(msg);
+	jmscott_strcat2(msg, sizeof msg,
+		"digit out of range: ",
+		what
+	);
+	sexit(msg);
 }
 
 /*
@@ -317,7 +323,7 @@ scan_rfc399nano(char **src)
 		err_399("no plus or minus in timezone");
 	}
 	if (*p++ != '\t')
-		eexit("scan_rfc399nano");
+		sexit("scan_rfc399nano");
 	*src = p;
 }
 
@@ -338,7 +344,7 @@ scan_transport(char **src)
 	 */
 	c = *p++;
 	if ('a' > c || c > 'z')
-		eexit("scan_transport");
+		sexit("scan_transport: first char not in [a-z]");
 
 	scan_set(&p, 7, lower_alnum, '~');
 
@@ -348,6 +354,19 @@ scan_transport(char **src)
 	*src = p;
 }
 
+static void
+errv(char *what, char *verb)
+{
+	char msg[JMSCOTT_ATOMIC_WRITE_SIZE];
+
+	msg[0] = 0;
+	jmscott_strcat(msg, sizeof msg, "scan_verb");
+	if (verb)
+		jmscott_strcat2(msg, sizeof msg, ": ", verb);
+	jmscott_strcat2(msg, sizeof msg, ": ", what);
+
+	sexit(msg);
+}
 /*
  *  Blobio verb: get|put|give|take|eat|what.
  */
@@ -359,41 +378,46 @@ scan_verb(char **src)
 	c = *p++;
 	if (c == 'g') {			/* get|give */
 		c = *p++;
-		if (c == 'e') {			/* get */
+		if (c == 'e') {
 			if (*p++ != 't')
-				eexit("scan_verb");	/* give */
+				errv("expected 't'", "get");
 			verb = "get";
 
 		} else if (c == 'i') {
 			if (*p++ != 'v' || *p++ != 'e')
-				eexit("scan_verb");
+				errv("expected 'v' or 'e'", "give");
 			verb = "give";
 		} else
-			eexit("scan_verb");
-	} else if (c == 'p') {		/* put */
+			sexit("scan_verb");
+	} else if (c == 'p') {
 		if (*p++ != 'u' || *p++ != 't')
-			eexit("scan_verb");
+			errv("expected 'u' or 't'", "put");
 		verb = "put";
-	} else if (c == 't') {		/* take */
+	} else if (c == 't') {
 		if (*p++ != 'a' || *p++ != 'k' || *p++ != 'e')
-			eexit("scan_verb");
+			errv("expected 'a' or 'k' or 'e'", "take");
 		verb = "take";
-	} else if (c == 'e') {		/* eat */
+	} else if (c == 'e') {
 		if (*p++ != 'a' || *p++ != 't')
-			eexit("scan_verb");
+			errv("expected 'a' or 't'", "eat");
 		verb = "eat";
 	} else if (c == 'w') {		/* wrap */
 		if (*p++ != 'r' || *p++ != 'a' || *p++ != 'p')
-			eexit("scan_verb");
+			errv("expected 'r' or 'a'", "wrap");
 		verb = "wrap";
 	} else if (c == 'r') {		/* roll */
 		if (*p++ != 'o' || *p++ != 'l' || *p++ != 'l')
-			eexit("scan_verb");
+			errv("expected 'o' or 'l'", "roll");
 		verb = "roll";
-	} else
-		eexit("scan_verb");
+	} else {
+		char buf[2];
+
+		buf[0] = c;
+		buf[1] = 0;
+		errv("unexpected char", buf);
+	}
 	if (*p++ != '\t')
-		eexit("scan_verb");
+		errv("no tab char", (char *)0);
 	*src = p;
 	return verb;
 }
@@ -413,7 +437,7 @@ scan_udig(char **src)
 	 *  First char of algorithm must be lower case alpha.
 	 */
 	if ('a' > *p || *p > 'z')
-		eexit("scan_udig");
+		sexit("scan_udig");
 	p++;
 	/*
 	 *  Up to 7 alphnum chars before colon.
@@ -452,7 +476,7 @@ scan_chat_history(char *verb, char **src)
 	scan_set(&end, 8, "nok,", '\t');
 	len = end - p - 1;
 	if (len < 2)
-		eexit("scan_chat_history");
+		sexit("scan_chat_history");
 	memcpy(ch, p, len);
 	ch[len] = 0;
 
@@ -480,7 +504,7 @@ scan_chat_history(char *verb, char **src)
 			v1 == 'r'
 		)
 			goto done;
-		eexit("scan_chat_history");
+		sexit("scan_chat_history");
 	}
 
 	/*
@@ -505,7 +529,7 @@ scan_chat_history(char *verb, char **src)
 			v1 == 'p'
 		)
 			goto done;
-		eexit("scan_chat_history");
+		sexit("scan_chat_history");
 	}
 
 	/*
@@ -516,7 +540,7 @@ scan_chat_history(char *verb, char **src)
 		(v1=='t' || (v1=='g' && v1=='i'))
 	)
 		goto done;
-	eexit("scan_chat_history");
+	sexit("scan_chat_history");
 done:
 	*src = end;
 }
@@ -546,7 +570,7 @@ scan_byte_count(char **src)
 	if ((v == LLONG_MAX && errno == ERANGE) ||
 	    (LLONG_MAX > 9223372036854775807 &&
 	     v > 9223372036854775807))
-		eexit("scan_byte_count");
+		sexit("scan_byte_count");
 	*src = p;
 }
 
@@ -571,10 +595,10 @@ scan_wall_duration(char **src)
 
 	if ((v == LONG_MAX && errno == ERANGE) ||
 	    (LONG_MAX > 2147483647 && v > 2147483647))
-		eexit("scan_wall_duration");
+		sexit("scan_wall_duration");
 	in_range(&p, 9, 1, digits);
 	if (*p++ != '\n')
-		eexit("scan_wall_duration");
+		sexit("scan_wall_duration");
 	*src = p;
 }
 
