@@ -643,17 +643,17 @@ scan_wall_duration(char **src)
 	p = *src;
 	q = p;
 
-	scan_set(&p, 10, digits, '.', "wall duration");
+	scan_set(&p, 10, digits, '.', "wall duration: sec");
 
 	errno = 0;
 	v = strtoll(q, (char **)0, 10);
 
 	if ((v == LONG_MAX && errno == ERANGE) ||
 	    (LONG_MAX > 2147483647 && v > 2147483647))
-		sexit("scan_wall_duration");
+		sexit("scan_wall_duration: sec of range");
 	in_range(&p, 9, 1, digits);
 	if (*p++ != '\n')
-		sexit("scan_wall_duration");
+		sexit("scan_wall_duration: no new-line terminator");
 	*src = p;
 }
 
