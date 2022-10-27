@@ -481,6 +481,19 @@ scan_udig(char **src)
 	*src = tab + 1;
 }
 
+static void
+errch(char *err)
+{
+	char msg[JMSCOTT_ATOMIC_WRITE_SIZE];
+
+	msg[0] = 0;
+	jmscott_strcat2(msg, sizeof msg,
+		"scan_chat_history",
+		err
+	);
+	sexit(msg);
+}
+
 /*
  *  Chat History:
  *	ok		->	verb in {get,put,eat,wrap,roll}
@@ -510,7 +523,7 @@ scan_chat_history(char *verb, char **src)
 	scan_set(&end, 8, "nok,", '\t', "chat history");
 	len = end - p - 1;
 	if (len < 2)
-		sexit("scan_chat_history");
+		errch("len < 2");
 	memcpy(ch, p, len);
 	ch[len] = 0;
 
@@ -538,7 +551,7 @@ scan_chat_history(char *verb, char **src)
 			v1 == 'r'
 		)
 			goto done;
-		sexit("scan_chat_history");
+		errch("ok: expected char: [gewr]");
 	}
 
 	/*
@@ -563,7 +576,7 @@ scan_chat_history(char *verb, char **src)
 			v1 == 'p'
 		)
 			goto done;
-		sexit("scan_chat_history");
+		errch("ok,ok: char not in [gtp]");
 	}
 
 	/*
@@ -574,7 +587,13 @@ scan_chat_history(char *verb, char **src)
 		(v1=='t' || (v1=='g' && v1=='i'))
 	)
 		goto done;
-	sexit("scan_chat_history");
+	char err[JMSCOTT_ATOMIC_WRITE_SIZE];
+	err[0] = 0;
+	jmscott_strcat2(err, sizeof err,
+		"unknown chat history: ",
+		ch
+	);
+	errch(err);
 done:
 	*src = end;
 }
