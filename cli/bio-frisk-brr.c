@@ -75,17 +75,18 @@ static char graph_set[] =
 		"pqrstuvwxyz{|}~"	//  0x70 -> 0x7e
 ;
 
+//  scan exit 1
 static void
-sexit(char *what)
+sexit(char *msg)
 {
 	if (tracing) {
 		if (line_no == 0)
-			jmscott_die(1, what);
+			jmscott_die(1, msg);
 
 		char u64_digits[21];
 
 		*jmscott_ulltoa(line_no, u64_digits) = 0;
-		jmscott_die4(1, what, "line number", u64_digits, line);
+		jmscott_die4(1, msg, "line number", u64_digits, line);
 	}
 	exit(1);
 }
@@ -174,7 +175,7 @@ in_range(char **src, int upper, int lower, char *set)
  *	what happens when zero chars are in the set?
  */
 static void 
-scan_set(char **src, int limit, char *set, char end)
+scan_set(char **src, int limit, char *set, char end, char *what)
 {
 	char *s, *s_end;
 
@@ -182,13 +183,34 @@ scan_set(char **src, int limit, char *set, char end)
 	s_end = s + limit;
 	while (s < s_end) {
 		char c = *s++;
+		char msg[JMSCOTT_ATOMIC_WRITE_SIZE];
+		msg[0] = 0;
 
-		if (!isascii(c))
-			sexit("scan_set");
+		if (!isascii(c)) {
+			jmscott_strcat3(msg, sizeof msg,
+				"scan_set: ",
+				what,
+				": non ascii char"
+			);
+			sexit(msg);
+		}
 		if (c == end)
 			break;
-		if (strchr(set, c) == NULL)
-			sexit("scan_set");
+		if (strchr(set, c) == NULL) {
+			char tc[2];
+
+			tc[0] = c;
+			tc[1] = 0;
+			jmscott_strcat6(msg, sizeof msg,
+				"scan_set: ",
+				what,
+				": char not in set: ",
+				set,
+				": ",
+				tc
+			);
+			sexit(msg);
+		}
 	}
 	*src = s;
 }
@@ -346,10 +368,10 @@ scan_transport(char **src)
 	if ('a' > c || c > 'z')
 		sexit("scan_transport: first char not in [a-z]");
 
-	scan_set(&p, 7, lower_alnum, '~');
+	scan_set(&p, 7, lower_alnum, '~', "transport");
 
 	//  Note: does at least one char exist?
-	scan_set(&p, 128, graph_set, '\t');
+	scan_set(&p, 128, graph_set, '\t', "transport");
 
 	*src = p;
 }
@@ -432,19 +454,31 @@ static void
 scan_udig(char **src)
 {
 	char *p = *src;
+	char *err;
+	char *tab;
 
-	/*
-	 *  First char of algorithm must be lower case alpha.
-	 */
-	if ('a' > *p || *p > 'z')
-		sexit("scan_udig");
-	p++;
-	/*
-	 *  Up to 7 alphnum chars before colon.
-	 */
-	scan_set(&p, 7, lower_alnum, ':');
-	scan_set(&p, 128, graph_set, '\t');
-	*src = p;
+	tab = strchr(p, '\t');
+	if (!tab)
+		sexit("scan_udig: no terminating tab");
+	if (tab - p > 95)
+		sexit("scan_udig: len < 95");
+	if (tab - p > 371)
+		sexit("scan_udig: len > 371");
+
+	*tab = 0;
+	err = jmscott_frisk_udig(p);
+	*tab = '\t';
+	if (err) {
+		char msg[JMSCOTT_ATOMIC_WRITE_SIZE];
+
+		msg[0] = 0;
+		jmscott_strcat2(msg, sizeof msg,
+			"scan_udig: syntax error: ",
+			err
+		);
+		sexit(msg);
+	}
+	*src = tab + 1;
 }
 
 /*
@@ -473,7 +507,7 @@ scan_chat_history(char *verb, char **src)
 	p = *src;
 	end = p;
 
-	scan_set(&end, 8, "nok,", '\t');
+	scan_set(&end, 8, "nok,", '\t', "chat history");
 	len = end - p - 1;
 	if (len < 2)
 		sexit("scan_chat_history");
@@ -562,7 +596,7 @@ scan_byte_count(char **src)
 	p = *src;
 	q = p;
 
-	scan_set(&p, 21, digits, '\t');
+	scan_set(&p, 21, digits, '\t', "byte count");
 
 	errno = 0;
 	v = strtoll(q, (char **)0, 10);
@@ -588,7 +622,7 @@ scan_wall_duration(char **src)
 	p = *src;
 	q = p;
 
-	scan_set(&p, 10, digits, '.');
+	scan_set(&p, 10, digits, '.', "wall duration");
 
 	errno = 0;
 	v = strtoll(q, (char **)0, 10);
