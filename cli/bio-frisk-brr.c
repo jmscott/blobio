@@ -35,6 +35,8 @@
  *  Blame:
  *  	jmscott@setspace.com
  *  Note:
+ *	Replace eexit(func) with macro SCAN_EXIT() that references _funcname
+ *
  *	Would be interesting to compare this code to a versiosn matching
  *	with posix regexp library (and perl lib).
  *
@@ -56,6 +58,11 @@ char *jmscott_progname =	"bio-frisk-brr";
 static char digits[] = "0123456789";
 static char lower_alnum[] = "abcdefghijklmnopqrstuvwxyz0123456789";
 
+static int			tracing = 0;
+static unsigned long long	line_no = 0;
+
+static char line[371 + 1] = {};
+
 /*
  *  ASCII graphical characters allowed in brr transport and udig.
  */
@@ -69,9 +76,48 @@ static char graph_set[] =
 ;
 
 static void
+eexit(char *what)
+{
+	if (tracing) {
+		if (line_no == 0)
+			jmscott_die(1, what);
+
+		char u64_digits[21];
+
+		*jmscott_ulltoa(line_no, u64_digits) = 0;
+		jmscott_die4(1, what, "line number", u64_digits, line);
+	}
+	exit(1);
+}
+
+static void
 die(char *msg)
 {
+	if (tracing) {
+		if (line_no == 0)
+			jmscott_die(3, msg);
+
+		char u64_digits[21];
+
+		*jmscott_ulltoa(line_no, u64_digits) = 0;
+		jmscott_die4(1, msg, "line number", u64_digits, line);
+	}
 	jmscott_die(3, msg);
+}
+
+static void
+die2(char *msg1, char *msg2)
+{
+	if (tracing) {
+		if (line_no == 0)
+			jmscott_die2(3, msg1, msg2);
+
+		char u64_digits[21];
+
+		*jmscott_ulltoa(line_no, u64_digits) = 0;
+		jmscott_die5(1, msg1, msg2, "line number", u64_digits, line);
+	}
+	jmscott_die2(3, msg1, msg2);
 }
 
 /*
@@ -90,7 +136,7 @@ in_set(char **src, int n, char *set)
 		char c = *s++;
 
 		if (c == 0 || strchr(set, c) == NULL)
-			exit(1);
+			eexit("in_set");
 	}
 	*src = s_end;
 }
@@ -112,7 +158,7 @@ in_range(char **src, int upper, int lower, char *set)
 		if (strchr(set, c) != NULL)
 			continue;
 		if (s - *src <= lower)	//  too few characters
-			exit(1);
+			eexit("in_range");
 		--s;
 		break;
 	}
@@ -138,13 +184,33 @@ scan_set(char **src, int limit, char *set, char end)
 		char c = *s++;
 
 		if (!isascii(c))
-			exit(1);
+			eexit("scan_set");
 		if (c == end)
 			break;
 		if (strchr(set, c) == NULL)
-			exit(1);
+			eexit("scan_set");
 	}
 	*src = s;
+}
+
+static void
+err_399(char *what)
+{
+	char msg[JMSCOTT_ATOMIC_WRITE_SIZE];
+
+	msg[0] = 0;
+	snprintf(msg, sizeof msg, "scan_rfc399nano: %s", what);
+	eexit(msg);
+}
+
+static void
+err_399r(char *what)
+{
+	char msg[JMSCOTT_ATOMIC_WRITE_SIZE];
+
+	msg[0] = 0;
+	snprintf(msg, sizeof msg, "digit out of range: %s", what);
+	err_399(msg);
 }
 
 /*
@@ -164,7 +230,7 @@ scan_rfc399nano(char **src)
 	 *	match [2345]YYY
 	 */
 	if ('2' > *p || *p > '5')
-		exit(1);
+		err_399r("year: first either < 2 or > 5");
 	p++;
 	in_set(&p, 3, digits);
 
@@ -173,12 +239,12 @@ scan_rfc399nano(char **src)
 	 *	match -[01][0-9]
 	 */
 	if (*p++ != '-')
-		exit(1);
+		err_399("no dash: YYYY-MM");
 	if (*p != '0' && *p != '1')
-		exit(1);
+		err_399r("month: first not 0 or 1");
 	p++;
 	if ('0' > *p || *p > '9')
-		exit(1);
+		err_399r("month: sec < 0 or > 9");
 	p++;
 
 	/*
@@ -186,12 +252,12 @@ scan_rfc399nano(char **src)
 	 *	match -[0123][0-9]
 	 */
 	if (*p++ != '-')
-		exit(1);
+		err_399("no dash: MM-DD");
 	if ('0' > *p || *p > '3')
-		exit(1);
+		err_399r("day: first < 0 or > 3");
 	p++;
 	if ('0' > *p || *p > '9')
-		exit(1);
+		err_399r("day: first < 0 or > 9");
 	p++;
 
 	/*
@@ -199,12 +265,12 @@ scan_rfc399nano(char **src)
 	 *	match T[012][0-9]
 	 */
 	if (*p++ != 'T')
-		exit(1);
+		err_399("no dayTtime separator");
 	if ('0' > *p || *p > '2')
-		exit(1);
+		err_399r("hour: first < 0 or > 2");
 	p++;
 	if ('0' > *p || *p > '9')
-		exit(1);
+		err_399r("hour: sec < 0 or > 9");
 	p++;
 
 	/*
@@ -212,12 +278,12 @@ scan_rfc399nano(char **src)
 	 *	match :[0-5][0-9]
 	 */
 	if (*p++ != ':')
-		exit(1);
+		err_399("missing colon: HH:MM");
 	if ('0' > *p || *p > '5')
-		exit(1);
+		err_399r("min: first < 0 or > 5");
 	p++;
 	if ('0' > *p || *p > '9')
-		exit(1);
+		err_399r("min: first < 0 or > 9");
 	p++;
 
 	/*
@@ -225,31 +291,33 @@ scan_rfc399nano(char **src)
 	 *	match :[0-5][0-9]
 	 */
 	if (*p++ != ':')
-		exit(1);
+		err_399("missing colon: MM:SS");
 	if ('0' > *p || *p > '5')
-		exit(1);
+		err_399r("sec: first < 0 or > 5");
 	p++;
 	if ('0' > *p || *p > '9')
-		exit(1);
+		err_399r("sec: sec < 0 or > 9");
 	p++;
+
 	if (*p++ != '.')
-		exit(1);
+		err_399("no dot: SS.");
 	in_range(&p, 9, 1, digits);
 
 	switch (*p++) {
 	case 'Z':
+		err_399r("Z not allowed as time zone");
 		break;
 	case '+': case '-':
 		in_set(&p, 2, digits);
 		if (*p++ != ':')
-			exit(1);
+			err_399r("no colon: timezone: MM:SS");
 		in_set(&p, 2, digits);
 		break;
 	default:
-		exit(1);
+		err_399("no plus or minus in timezone");
 	}
 	if (*p++ != '\t')
-		exit(1);
+		eexit("scan_rfc399nano");
 	*src = p;
 }
 
@@ -270,7 +338,7 @@ scan_transport(char **src)
 	 */
 	c = *p++;
 	if ('a' > c || c > 'z')
-		exit(1);
+		eexit("scan_transport");
 
 	scan_set(&p, 7, lower_alnum, '~');
 
@@ -286,46 +354,46 @@ scan_transport(char **src)
 static char *
 scan_verb(char **src)
 {
-	char c, *p = *src, *verb;
+	char c, *p = *src, *verb = 0;
 
 	c = *p++;
 	if (c == 'g') {			/* get|give */
 		c = *p++;
 		if (c == 'e') {			/* get */
 			if (*p++ != 't')
-				exit(1);	/* give */
+				eexit("scan_verb");	/* give */
 			verb = "get";
 
 		} else if (c == 'i') {
 			if (*p++ != 'v' || *p++ != 'e')
-				exit(1);
+				eexit("scan_verb");
 			verb = "give";
 		} else
-			exit(1);
+			eexit("scan_verb");
 	} else if (c == 'p') {		/* put */
 		if (*p++ != 'u' || *p++ != 't')
-			exit(1);
+			eexit("scan_verb");
 		verb = "put";
 	} else if (c == 't') {		/* take */
 		if (*p++ != 'a' || *p++ != 'k' || *p++ != 'e')
-			exit(1);
+			eexit("scan_verb");
 		verb = "take";
 	} else if (c == 'e') {		/* eat */
 		if (*p++ != 'a' || *p++ != 't')
-			exit(1);
+			eexit("scan_verb");
 		verb = "eat";
 	} else if (c == 'w') {		/* wrap */
 		if (*p++ != 'r' || *p++ != 'a' || *p++ != 'p')
-			exit(1);
+			eexit("scan_verb");
 		verb = "wrap";
 	} else if (c == 'r') {		/* roll */
 		if (*p++ != 'o' || *p++ != 'l' || *p++ != 'l')
-			exit(1);
+			eexit("scan_verb");
 		verb = "roll";
 	} else
-		exit(1);
+		eexit("scan_verb");
 	if (*p++ != '\t')
-		exit(1);
+		eexit("scan_verb");
 	*src = p;
 	return verb;
 }
@@ -333,6 +401,8 @@ scan_verb(char **src)
  *  Scan the uniform digest that looks like:
  *
  *  	algorithm:hash-digest
+ *  Note:
+ *	replace with jmscott_is_udig
  */
 static void
 scan_udig(char **src)
@@ -343,7 +413,7 @@ scan_udig(char **src)
 	 *  First char of algorithm must be lower case alpha.
 	 */
 	if ('a' > *p || *p > 'z')
-		exit(1);
+		eexit("scan_udig");
 	p++;
 	/*
 	 *  Up to 7 alphnum chars before colon.
@@ -382,7 +452,7 @@ scan_chat_history(char *verb, char **src)
 	scan_set(&end, 8, "nok,", '\t');
 	len = end - p - 1;
 	if (len < 2)
-		exit(1);
+		eexit("scan_chat_history");
 	memcpy(ch, p, len);
 	ch[len] = 0;
 
@@ -410,7 +480,7 @@ scan_chat_history(char *verb, char **src)
 			v1 == 'r'
 		)
 			goto done;
-		exit(1);
+		eexit("scan_chat_history");
 	}
 
 	/*
@@ -435,7 +505,7 @@ scan_chat_history(char *verb, char **src)
 			v1 == 'p'
 		)
 			goto done;
-		exit(1);
+		eexit("scan_chat_history");
 	}
 
 	/*
@@ -446,7 +516,7 @@ scan_chat_history(char *verb, char **src)
 		(v1=='t' || (v1=='g' && v1=='i'))
 	)
 		goto done;
-	exit(1);
+	eexit("scan_chat_history");
 done:
 	*src = end;
 }
@@ -476,7 +546,7 @@ scan_byte_count(char **src)
 	if ((v == LLONG_MAX && errno == ERANGE) ||
 	    (LLONG_MAX > 9223372036854775807 &&
 	     v > 9223372036854775807))
-		exit(1);
+		eexit("scan_byte_count");
 	*src = p;
 }
 
@@ -486,7 +556,7 @@ scan_byte_count(char **src)
  *  	      and seconds <= 2147483647
  */
 static void
-scan_duration(char **src)
+scan_wall_duration(char **src)
 {
 	char *p, *q;
 	long v;
@@ -501,28 +571,34 @@ scan_duration(char **src)
 
 	if ((v == LONG_MAX && errno == ERANGE) ||
 	    (LONG_MAX > 2147483647 && v > 2147483647))
-		exit(1);
+		eexit("scan_wall_duration");
 	in_range(&p, 9, 1, digits);
 	if (*p++ != '\n')
-		exit(1);
+		eexit("scan_wall_duration");
 	*src = p;
 }
 
 int
-main()
+main(int argc, char **argv)
 {
-	char buf[10 * 1024], *p;
 	char *verb;
 	int read_input = 0;
 
-	/*
-	 *  Note:
-	 *	Please replace with read().
-	 */
-	while (fgets(buf, sizeof buf, stdin)) {
+	if (argc > 2)
+		die("too many cli args: expected 0 or 1");
+	if (argc == 2) {
+		if (strcmp(argv[1], "--trace"))
+			die2("unknown cli arg", argv[1]);
+		tracing = 1;
+	}
+		
+	while (fgets(line, sizeof line, stdin)) {
+		if (tracing)
+			line_no++;
+			
 		read_input = 1;
 
-		p = buf;
+		char *p = line;
 
 		//  start time of request
 		scan_rfc399nano(&p);
@@ -539,15 +615,18 @@ main()
 		scan_byte_count(&p);
 
 		//  wall duration
-		scan_duration(&p);
+		scan_wall_duration(&p);
+
+		line[0] = 0;
 	}
+	line_no = 0;
 	if (ferror(stderr))
 		die("ferror(stdin) returned true");
-	if (read_input)
-		exit(feof(stdin) ? 0 : 1);
-
-	/*
-	 *  Empty set.
-	 */
-	exit(2);
+	if (read_input) {
+		line_no = 0;
+		if (feof(stdin))
+			exit(0);
+		die("premature end of stdin");
+	}
+	exit(2);		//  empty list
 }
