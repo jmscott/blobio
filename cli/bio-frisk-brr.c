@@ -183,9 +183,12 @@ scan_set(char **src, int limit, char *set, char end, char *what)
 	s_end = s + limit;
 	while (s < s_end) {
 		char c = *s++;
+
 		char msg[JMSCOTT_ATOMIC_WRITE_SIZE];
 		msg[0] = 0;
 
+		if (c == end)
+			break;
 		if (!isascii(c)) {
 			jmscott_strcat3(msg, sizeof msg,
 				"scan_set: ",
@@ -194,8 +197,6 @@ scan_set(char **src, int limit, char *set, char end, char *what)
 			);
 			sexit(msg);
 		}
-		if (c == end)
-			break;
 		if (strchr(set, c) == NULL) {
 			char tc[2];
 
@@ -521,14 +522,14 @@ scan_chat_history(char *verb, char **src)
 	end = p;
 
 	scan_set(&end, 8, "nok,", '\t', "chat history");
-	len = end - p - 1;
-	if (len < 2)
-		errch("len < 2");
+	len = --end - p;
+	if (len != 2 && len != 5 && len != 8)
+		errch("length not 2 or 5 or 8");
 	memcpy(ch, p, len);
 	ch[len] = 0;
 
 	/*
-	 *  Konwing the verb is valid (get/put/give/take/eat/wrap/roll),
+	 *  Knowing the verb is valid (get/put/give/take/eat/wrap/roll),
 	 *  implies that the first two chars determine uniquess of verb.
 	 */
 	v1 = verb[0];
@@ -587,6 +588,7 @@ scan_chat_history(char *verb, char **src)
 		(v1=='t' || (v1=='g' && v1=='i'))
 	)
 		goto done;
+
 	char err[JMSCOTT_ATOMIC_WRITE_SIZE];
 	err[0] = 0;
 	jmscott_strcat2(err, sizeof err,
