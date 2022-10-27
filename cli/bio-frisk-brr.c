@@ -488,7 +488,7 @@ errch(char *err)
 
 	msg[0] = 0;
 	jmscott_strcat2(msg, sizeof msg,
-		"scan_chat_history",
+		"scan_chat_history: ",
 		err
 	);
 	sexit(msg);
