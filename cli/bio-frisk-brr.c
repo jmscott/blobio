@@ -184,34 +184,29 @@ scan_set(char **src, int limit, char *set, char end, char *what)
 	while (s < s_end) {
 		char c = *s++;
 
+		if (c == end)
+			break;
+		if (isascii(c) && strchr(set, c) != NULL)
+			continue;
+
+		//  error, so format message and croak
+		char hex[4];
 		char msg[JMSCOTT_ATOMIC_WRITE_SIZE];
 		msg[0] = 0;
 
-		if (c == end)
-			break;
-		if (!isascii(c)) {
-			jmscott_strcat3(msg, sizeof msg,
-				"scan_set: ",
-				what,
-				": non ascii char"
-			);
-			sexit(msg);
-		}
-		if (strchr(set, c) == NULL) {
-			char tc[2];
+		snprintf(hex, sizeof hex, "0x%x", c);
 
-			tc[0] = c;
-			tc[1] = 0;
-			jmscott_strcat6(msg, sizeof msg,
-				"scan_set: ",
-				what,
+		jmscott_strcat2(msg, sizeof msg, "scan_set: ", what);
+
+		if (isascii(c))
+			jmscott_strcat2(msg, sizeof msg,
 				": char not in set: ",
-				set,
-				": ",
-				tc
+				set
 			);
-			sexit(msg);
-		}
+		else
+			jmscott_strcat(msg, sizeof msg, ": non ascii char");
+		jmscott_strcat2(msg, sizeof msg, ": ", hex);
+		sexit(msg);
 	}
 	*src = s;
 }
@@ -617,7 +612,9 @@ scan_byte_count(char **src)
 	p = *src;
 	q = p;
 
-	scan_set(&p, 21, digits, '\t', "byte count");
+fprintf(stderr, "WTF1: *p=%c(0x%x)\n", *p, *p);
+	scan_set(&p, 20, digits, '\t', "byte count");
+fprintf(stderr, "WTF2: *p=%c(0x%x)\n", *p, *p);
 
 	errno = 0;
 	v = strtoll(q, (char **)0, 10);
