@@ -35,6 +35,10 @@
  *  Blame:
  *  	jmscott@setspace.com
  *  Note:
+ *  	Need a compile time pragma to insure the
+ *
+ *  		sizeof long long int == 8
+ *
  *	Replace sexit(func) with macro SCAN_EXIT() that references _funcname
  *
  *	Would be interesting to compare this code to a versiosn matching
@@ -52,6 +56,11 @@
 #include <limits.h>
 
 #include "jmscott/libjmscott.h"
+
+#define EXIT_IS_BRR	0
+#define EXIT_IS_NOT_BRR	1
+#define EXIT_IS_EMPTY	2
+#define EXIT_ERROR	3
 
 char *jmscott_progname =	"bio-frisk-brr";
 
@@ -75,7 +84,8 @@ static char graph_set[] =
 		"pqrstuvwxyz{|}~"	//  0x70 -> 0x7e
 ;
 
-//  scan exit 1
+//  exit due to a failure in scan.
+
 static void
 sexit(char *msg)
 {
@@ -88,7 +98,7 @@ sexit(char *msg)
 		*jmscott_ulltoa(line_no, u64_digits) = 0;
 		jmscott_die4(1, msg, "line number", u64_digits, line);
 	}
-	exit(1);
+	exit(EXIT_IS_NOT_BRR);
 }
 
 static void
@@ -96,29 +106,34 @@ die(char *msg)
 {
 	if (tracing) {
 		if (line_no == 0)
-			jmscott_die(3, msg);
+			jmscott_die(EXIT_ERROR, msg);
 
 		char u64_digits[21];
 
 		*jmscott_ulltoa(line_no, u64_digits) = 0;
 		jmscott_die4(1, msg, "line number", u64_digits, line);
 	}
-	jmscott_die(3, msg);
+	jmscott_die(EXIT_ERROR, msg);
 }
 
 static void
 die2(char *msg1, char *msg2)
 {
-	if (tracing) {
-		if (line_no == 0)
-			jmscott_die2(3, msg1, msg2);
+	char msg[JMSCOTT_ATOMIC_WRITE_SIZE];
 
-		char u64_digits[21];
+	msg[0] = 0;
+	jmscott_strcat3(msg, sizeof msg, msg1, ": ", msg2);
+	die(msg);
+}
 
-		*jmscott_ulltoa(line_no, u64_digits) = 0;
-		jmscott_die5(1, msg1, msg2, "line number", u64_digits, line);
-	}
-	jmscott_die2(3, msg1, msg2);
+static void
+die3(char *msg1, char *msg2, char *msg3)
+{
+	char msg[JMSCOTT_ATOMIC_WRITE_SIZE];
+
+	msg[0] = 0;
+	jmscott_strcat3(msg, sizeof msg, msg1, ": ", msg2);
+	die2(msg, msg3);
 }
 
 /*
@@ -175,27 +190,28 @@ in_range(char **src, int upper, int lower, char *set)
  *	what happens when zero chars are in the set?
  */
 static void 
-scan_set(char **src, int limit, char *set, char end, char *what)
+scan_set(char **src, int limit, char *set, char end_fld, char *what)
 {
 	char *s, *s_end;
 
 	s = *src;
 	s_end = s + limit;
+fprintf(stderr, "WTF: entered: %s: end_fld=0x%x\n", what, end_fld);
 	while (s < s_end) {
 		char c = *s++;
+fprintf(stderr, "WTF: %s: c=0x%x\n", what, c);
 
-		if (c == end)
+		if (c == end_fld)
 			break;
-		if (isascii(c) && strchr(set, c) != NULL)
+		if (!isascii(c))
+			die3("scan_set", "char not ascii", what);
+		if (strchr(set, c) != NULL)
 			continue;
 
 		//  error, so format message and croak
-		char hex[4];
+
 		char msg[JMSCOTT_ATOMIC_WRITE_SIZE];
 		msg[0] = 0;
-
-		snprintf(hex, sizeof hex, "0x%x", c);
-
 		jmscott_strcat2(msg, sizeof msg, "scan_set: ", what);
 
 		if (isascii(c))
@@ -205,9 +221,16 @@ scan_set(char **src, int limit, char *set, char end, char *what)
 			);
 		else
 			jmscott_strcat(msg, sizeof msg, ": non ascii char");
+
+		char hex[5];
+		snprintf(hex, sizeof hex, "0x%x", c);
 		jmscott_strcat2(msg, sizeof msg, ": ", hex);
 		sexit(msg);
 	}
+
+	//  at least one char in set must be seen
+	if (s_end - s == limit - 1)
+		die3("scan_set", what, "only field separator seen");
 	*src = s;
 }
 
@@ -504,7 +527,7 @@ errch(char *err)
  *	ok,ok,no	->	verb in {take}
  *
  *  All chat histories start with character 'o' or 'n'.
- *  Scan the chat history, verifying the reposnse
+ *  Scan the chat history first, and then verify the reposnse
  *  is correct for the verb.
  */
 static void
@@ -517,21 +540,20 @@ scan_chat_history(char *verb, char **src)
 	end = p;
 
 	scan_set(&end, 8, "nok,", '\t', "chat history");
+
 	len = --end - p;
 	if (len != 2 && len != 5 && len != 8)
-		errch("length not 2 or 5 or 8");
+		errch("length not 2 and 5 and 8");
 	memcpy(ch, p, len);
 	ch[len] = 0;
 
-	/*
-	 *  Knowing the verb is valid (get/put/give/take/eat/wrap/roll),
-	 *  implies that the first two chars determine uniquess of verb.
-	 */
+	//  first and second char of the verb is unique.
 	v1 = verb[0];
 	v2 = verb[1];
 
 	if (strcmp("no", ch) == 0)	//  any verb can reply "no"
 		goto done;
+
 	if (strcmp("ok", ch) == 0) {
 		if (
 			//  "get"
@@ -558,7 +580,9 @@ scan_chat_history(char *verb, char **src)
 	 */
 
 	/*
-	 *  Verbs that reply with: ok,ok or ok,no: give, take, put.
+	 *  Verbs that reply with: ok,ok or ok,no are only the following:
+	 *
+	 *	give, take, put
 	 */
 	if (strcmp("ok,ok", ch) == 0 || strcmp("ok,no", ch) == 0) {
 		if (
@@ -572,7 +596,7 @@ scan_chat_history(char *verb, char **src)
 			v1 == 'p'
 		)
 			goto done;
-		errch("ok,ok: char not in [gtp]");
+		errch("verb: not in {give,take,put}");
 	}
 
 	/*
@@ -612,9 +636,7 @@ scan_byte_count(char **src)
 	p = *src;
 	q = p;
 
-fprintf(stderr, "WTF1: *p=%c(0x%x)\n", *p, *p);
 	scan_set(&p, 20, digits, '\t', "byte count");
-fprintf(stderr, "WTF2: *p=%c(0x%x)\n", *p, *p);
 
 	errno = 0;
 	v = strtoll(q, (char **)0, 10);
@@ -622,7 +644,7 @@ fprintf(stderr, "WTF2: *p=%c(0x%x)\n", *p, *p);
 	if ((v == LLONG_MAX && errno == ERANGE) ||
 	    (LLONG_MAX > 9223372036854775807 &&
 	     v > 9223372036854775807))
-		sexit("scan_byte_count");
+		sexit("scan_byte_count: out of range");
 	*src = p;
 }
 
@@ -669,6 +691,8 @@ main(int argc, char **argv)
 	}
 		
 	while (fgets(line, sizeof line, stdin)) {
+		if (ferror(stdin))
+			die("fgets(stdin) error");
 		if (tracing)
 			line_no++;
 			
@@ -687,22 +711,20 @@ main(int argc, char **argv)
 
 		scan_chat_history(verb, &p);
 
-		//  byte count
 		scan_byte_count(&p);
 
 		//  wall duration
 		scan_wall_duration(&p);
-
-		line[0] = 0;
 	}
-	line_no = 0;
+	line_no = 0;		// disable die() putting line no in ERROR
 	if (ferror(stderr))
 		die("ferror(stdin) returned true");
 	if (read_input) {
-		line_no = 0;
 		if (feof(stdin))
-			exit(0);
+			exit(EXIT_IS_BRR);
 		die("premature end of stdin");
 	}
-	exit(2);		//  empty list
+	if (fclose(stdin))
+		die("fclose(stdin) failed");
+	exit(EXIT_IS_EMPTY);		//  empty file
 }
