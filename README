@@ -112,8 +112,9 @@ Description:
 		(1)		+ 1 +	>=  blob size<tab>
 		(1+1+9)			>=  wall duration
 
-	where nanoseconds in start_time and wall_duration is always 9 digits.
-	Seconds in wall duration is <= 10 digits (2^31).
+	where nanoseconds in start_time and wall_duration is always 9 digits
+	(why, the RFC says not!?).  Seconds in wall duration is <= 10 digits
+	(2^31).
 
 	The maximum size of a blob request record is 371 bytes
 
@@ -282,6 +283,11 @@ Billing Model Questions:
 	  start_time.
 
 Note:
+	- also, what about leap-seconds (:23:59:60) in starttime.
+
+	- requiring nanosecs to always be 9digits does not agree with
+	  the RFC.
+
 	- a "wrap" -> "no" has no <udig> in brr, implying the minimum is too
 	  big.
 
