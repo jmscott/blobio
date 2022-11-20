@@ -1,8 +1,8 @@
 /*
  *  Synopsis:
- *	Is a stream of data a well formed brr log file: yes or no or empty?
- *  Description:
- *  	A blob request record log file consists of lines of ascii text
+ *	Is a stream blob request records: yes or no or empty?
+ *  Description
+ *  	A stream of blob request records consists of lines of ascii text
  *  	with 7 tab separated fields matching
  *
  *		start time: YYYY-MM-DDTHH:MM:SS.NS9(([-+]hh:mm)|Z)
@@ -87,18 +87,27 @@ static char graph_set[] =
 //  exit due to a failure in scan.
 
 static void
-sexit(char *msg)
+sexit(char *msg, char *what)
 {
-	if (tracing) {
-		if (line_no == 0)
-			jmscott_die(1, msg);
+	if (!tracing)
+		exit(EXIT_IS_NOT_BRR);
+	if (line_no == 0)
+		jmscott_die3(EXIT_IS_NOT_BRR, "scan", msg, what);
 
-		char u64_digits[21];
+	char u64_digits[21];
 
-		*jmscott_ulltoa(line_no, u64_digits) = 0;
-		jmscott_die4(1, msg, "line number", u64_digits, line);
-	}
-	exit(EXIT_IS_NOT_BRR);
+	//  tack on the line number when tracing
+
+	*jmscott_ulltoa(line_no, u64_digits) = 0;
+	jmscott_die6(
+		EXIT_IS_NOT_BRR,
+		"scan",
+		msg,
+		what,
+		"line number",
+		u64_digits,
+		line
+	);
 }
 
 static void
@@ -126,16 +135,6 @@ die2(char *msg1, char *msg2)
 	die(msg);
 }
 
-static void
-die3(char *msg1, char *msg2, char *msg3)
-{
-	char msg[JMSCOTT_ATOMIC_WRITE_SIZE];
-
-	msg[0] = 0;
-	jmscott_strcat3(msg, sizeof msg, msg1, ": ", msg2);
-	die2(msg, msg3);
-}
-
 /*
  *  Verify that exactly the first 'n' characters in a string are in a 
  *  set.  If a char is not in the set, then exit this process falsely;
@@ -152,7 +151,7 @@ in_set(char **src, int n, char *set)
 		char c = *s++;
 
 		if (c == 0 || strchr(set, c) == NULL)
-			sexit("in_set");
+			sexit("in_set", set);
 	}
 	*src = s_end;
 }
@@ -174,7 +173,7 @@ in_range(char **src, int upper, int lower, char *set)
 		if (strchr(set, c) != NULL)
 			continue;
 		if (s - *src <= lower)	//  too few characters
-			sexit("in_range");
+			sexit("to few chars", "in_range");
 		--s;
 		break;
 	}
@@ -184,7 +183,7 @@ in_range(char **src, int upper, int lower, char *set)
 /*
  *  Scan up to 'limit' chars that are in set
  *  and set src to first char after the end char.
- *  non-ascii always fails.
+ *  non-ascii always fails. also assume char 'end_fld' not in the scan set.
  *
  *  Note:
  *	what happens when zero chars are in the set?
@@ -196,27 +195,31 @@ scan_set(char **src, int limit, char *set, char end_fld, char *what)
 
 	s = *src;
 	s_end = s + limit;
-fprintf(stderr, "WTF: entered: %s: end_fld=0x%x\n", what, end_fld);
 	while (s < s_end) {
-		char c = *s++;
-fprintf(stderr, "WTF: %s: c=0x%x\n", what, c);
+		char c = *s;
 
-		if (c == end_fld)
+		if (c == end_fld) {
+			if (s++ == *src)
+				sexit("no chars seen in set", what);
 			break;
+		}
+		if (!c)
+			sexit("null char", what); 
 		if (!isascii(c))
-			die3("scan_set", "char not ascii", what);
-		if (strchr(set, c) != NULL)
+			sexit("char not ascii", what);
+		if (strchr(set, c) != NULL) {
+			s++;
 			continue;
+		}
 
 		//  error, so format message and croak
 
 		char msg[JMSCOTT_ATOMIC_WRITE_SIZE];
 		msg[0] = 0;
-		jmscott_strcat2(msg, sizeof msg, "scan_set: ", what);
 
 		if (isascii(c))
 			jmscott_strcat2(msg, sizeof msg,
-				": char not in set: ",
+				"char not in set: ",
 				set
 			);
 		else
@@ -225,39 +228,33 @@ fprintf(stderr, "WTF: %s: c=0x%x\n", what, c);
 		char hex[5];
 		snprintf(hex, sizeof hex, "0x%x", c);
 		jmscott_strcat2(msg, sizeof msg, ": ", hex);
-		sexit(msg);
+		sexit(msg, what);
 	}
-
-	//  at least one char in set must be seen
-	if (s_end - s == limit - 1)
-		die3("scan_set", what, "only field separator seen");
+	if (s == s_end) {
+		if (*s != end_fld)
+			sexit("no end of fld char seen", what);
+		s++;
+	}
 	*src = s;
 }
 
 static void
-err_399(char *what)
+err_399(char *msg)
 {
-	char msg[JMSCOTT_ATOMIC_WRITE_SIZE];
-
-	msg[0] = 0;
-	jmscott_strcat2(msg, sizeof msg,
-		"scan_rfc399nano: ",
-		what
-	);
-	sexit(msg);
+	sexit(msg, "start time");
 }
 
 static void
-err_399r(char *what)
+err_399r(char *rmsg)
 {
 	char msg[JMSCOTT_ATOMIC_WRITE_SIZE];
-
 	msg[0] = 0;
+
 	jmscott_strcat2(msg, sizeof msg,
 		"digit out of range: ",
-		what
+		rmsg
 	);
-	sexit(msg);
+	sexit(msg, "start time");
 }
 
 /*
@@ -364,7 +361,7 @@ scan_rfc399nano(char **src)
 		err_399("no plus or minus in timezone");
 	}
 	if (*p++ != '\t')
-		sexit("scan_rfc399nano");
+		sexit("tab end char not seen", "start_time");
 	*src = p;
 }
 
@@ -385,9 +382,12 @@ scan_transport(char **src)
 	 */
 	c = *p++;
 	if ('a' > c || c > 'z')
-		sexit("scan_transport: first char not in [a-z]");
+		sexit("first char not in [a-z]", "transport");
 
-	scan_set(&p, 7, lower_alnum, '~', "transport");
+	if (*p == '~')		//  transport protocol single char in [a-z]
+		p++;
+	else
+		scan_set(&p, 7, lower_alnum, '~', "transport");
 
 	//  Note: does at least one char exist?
 	scan_set(&p, 128, graph_set, '\t', "transport");
@@ -396,18 +396,15 @@ scan_transport(char **src)
 }
 
 static void
-errv(char *what, char *verb)
+vexit(char *err, char *verb)
 {
 	char msg[JMSCOTT_ATOMIC_WRITE_SIZE];
-
 	msg[0] = 0;
-	jmscott_strcat(msg, sizeof msg, "scan_verb");
-	if (verb)
-		jmscott_strcat2(msg, sizeof msg, ": ", verb);
-	jmscott_strcat2(msg, sizeof msg, ": ", what);
 
-	sexit(msg);
+	jmscott_strcat2(msg, sizeof msg, "verb: ", err);
+	sexit(msg, verb);
 }
+
 /*
  *  Blobio verb: get|put|give|take|eat|what.
  */
@@ -417,51 +414,68 @@ scan_verb(char **src)
 	char c, *p = *src, *verb = 0;
 
 	c = *p++;
-	if (c == 'g') {			/* get|give */
+
+	switch (c) {
+	case 'g':
 		c = *p++;
 		if (c == 'e') {
 			if (*p++ != 't')
-				errv("expected 't'", "get");
+				vexit("expected 't'", "get");
 			verb = "get";
 
 		} else if (c == 'i') {
 			if (*p++ != 'v' || *p++ != 'e')
-				errv("expected 'v' or 'e'", "give");
+				vexit("expected 'v' or 'e'", "give");
 			verb = "give";
 		} else
-			sexit("scan_verb");
-	} else if (c == 'p') {
-		if (*p++ != 'u' || *p++ != 't')
-			errv("expected 'u' or 't'", "put");
-		verb = "put";
-	} else if (c == 't') {
-		if (*p++ != 'a' || *p++ != 'k' || *p++ != 'e')
-			errv("expected 'a' or 'k' or 'e'", "take");
-		verb = "take";
-	} else if (c == 'e') {
-		if (*p++ != 'a' || *p++ != 't')
-			errv("expected 'a' or 't'", "eat");
-		verb = "eat";
-	} else if (c == 'w') {		/* wrap */
-		if (*p++ != 'r' || *p++ != 'a' || *p++ != 'p')
-			errv("expected 'r' or 'a'", "wrap");
-		verb = "wrap";
-	} else if (c == 'r') {		/* roll */
-		if (*p++ != 'o' || *p++ != 'l' || *p++ != 'l')
-			errv("expected 'o' or 'l'", "roll");
-		verb = "roll";
-	} else {
-		char buf[2];
+			vexit("expected char 'e' or 'i'", "{get, give}");
+		break;
 
-		buf[0] = c;
-		buf[1] = 0;
-		errv("unexpected char", buf);
-	}
+	case 'p':
+		if (*p++ != 'u' || *p++ != 't')
+			vexit("expected 'u' or 't'", "put");
+		verb = "put";
+		break;
+	case 't':
+		if (*p++ != 'a' || *p++ != 'k' || *p++ != 'e')
+			vexit("expected 'a' or 'k' or 'e'", "take");
+		verb = "take";
+		break;
+	case 'e':
+		if (*p++ != 'a' || *p++ != 't')
+			vexit("expected 'a' or 't'", "eat");
+		verb = "eat";
+		break;
+	case 'w':
+		if (*p++ != 'r' || *p++ != 'a' || *p++ != 'p')
+			vexit("expected 'r' or 'a'", "wrap");
+		verb = "wrap";
+		break;
+	case 'r':
+		if (*p++ != 'o' || *p++ != 'l' || *p++ != 'l')
+			vexit("expected 'o' or 'l'", "roll");
+		verb = "roll";
+		break;
+	default: {
+		static char errfc[] = "unexpected first char";
+
+		if (c == '\t')
+			vexit(errfc, "tab");
+		if (c == '\n')
+			vexit(errfc, "newline");
+
+		char hex[5];
+
+		snprintf(hex, sizeof hex, "0x%x", c);
+		vexit(errfc, hex);
+		/*NOTREACHED*/
+	}}
 	if (*p++ != '\t')
-		errv("no tab char", (char *)0);
+		vexit("no tab field sep char", verb);
 	*src = p;
 	return verb;
 }
+
 /*
  *  Scan the uniform digest that looks like:
  *
@@ -478,11 +492,11 @@ scan_udig(char **src)
 
 	tab = strchr(p, '\t');
 	if (!tab)
-		sexit("scan_udig: no terminating tab");
+		sexit("no terminating tab", "udig");
 	if (tab - p > 95)
-		sexit("scan_udig: len < 95");
+		sexit("len < 95", "udig");
 	if (tab - p > 371)
-		sexit("scan_udig: len > 371");
+		sexit("len > 371", "udig");
 
 	*tab = 0;
 	err = jmscott_frisk_udig(p);
@@ -492,10 +506,10 @@ scan_udig(char **src)
 
 		msg[0] = 0;
 		jmscott_strcat2(msg, sizeof msg,
-			"scan_udig: syntax error: ",
+			"syntax error: ",
 			err
 		);
-		sexit(msg);
+		sexit(msg, "udig");
 	}
 	*src = tab + 1;
 }
@@ -503,14 +517,7 @@ scan_udig(char **src)
 static void
 errch(char *err)
 {
-	char msg[JMSCOTT_ATOMIC_WRITE_SIZE];
-
-	msg[0] = 0;
-	jmscott_strcat2(msg, sizeof msg,
-		"scan_chat_history: ",
-		err
-	);
-	sexit(msg);
+	sexit(err, "chat history");
 }
 
 /*
@@ -533,7 +540,7 @@ errch(char *err)
 static void
 scan_chat_history(char *verb, char **src)
 {
-	char *p, *end, ch[9], v1, v2;
+	char *p, *end, ch[9];
 	int len;
 
 	p = *src;
@@ -541,18 +548,19 @@ scan_chat_history(char *verb, char **src)
 
 	scan_set(&end, 8, "nok,", '\t', "chat history");
 
-	len = --end - p;
+	len = (end - 1) - p;
+
 	if (len != 2 && len != 5 && len != 8)
 		errch("length not 2 and 5 and 8");
 	memcpy(ch, p, len);
 	ch[len] = 0;
 
-	//  first and second char of the verb is unique.
-	v1 = verb[0];
-	v2 = verb[1];
-
 	if (strcmp("no", ch) == 0)	//  any verb can reply "no"
 		goto done;
+
+	//  first and second chars of the verb is unique.
+	char v1 = verb[0];
+	char v2 = verb[1];
 
 	if (strcmp("ok", ch) == 0) {
 		if (
@@ -569,7 +577,7 @@ scan_chat_history(char *verb, char **src)
 			v1 == 'r'
 		)
 			goto done;
-		errch("ok: expected char: [gewr]");
+		errch("ok: verb: expected first char: [gewr]");
 	}
 
 	/*
@@ -603,8 +611,8 @@ scan_chat_history(char *verb, char **src)
 	 *  Only verbs "give" and "take" can do "ok,ok,ok" or "ok,ok,no".
 	 */
 	if (
-		(strcmp("ok,ok,ok",ch)==0 || strcmp("ok,ok,no", ch)==0)	&&
-		(v1=='t' || (v1=='g' && v1=='i'))
+		(strcmp("ok,ok,ok",ch)==0 || strcmp("ok,ok,no", ch)==0)&&
+		(v1=='t' || (v1=='g' && v2=='i'))
 	)
 		goto done;
 
@@ -644,7 +652,7 @@ scan_byte_count(char **src)
 	if ((v == LLONG_MAX && errno == ERANGE) ||
 	    (LLONG_MAX > 9223372036854775807 &&
 	     v > 9223372036854775807))
-		sexit("scan_byte_count: out of range");
+		sexit("out of range", "byte count");
 	*src = p;
 }
 
@@ -669,17 +677,16 @@ scan_wall_duration(char **src)
 
 	if ((v == LONG_MAX && errno == ERANGE) ||
 	    (LONG_MAX > 2147483647 && v > 2147483647))
-		sexit("scan_wall_duration: sec of range");
+		sexit("sec of range", "wall duration");
 	in_range(&p, 9, 1, digits);
 	if (*p++ != '\n')
-		sexit("scan_wall_duration: no new-line terminator");
+		sexit("no new-line terminator", "wall durtion");
 	*src = p;
 }
 
 int
 main(int argc, char **argv)
 {
-	char *verb;
 	int read_input = 0;
 
 	if (argc > 2)
@@ -703,9 +710,10 @@ main(int argc, char **argv)
 		//  start time of request
 		scan_rfc399nano(&p);
 
+		//  network transport
 		scan_transport(&p);
 
-		verb = scan_verb(&p);
+		char *verb = scan_verb(&p);
 
 		scan_udig(&p);
 
