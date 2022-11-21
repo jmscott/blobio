@@ -273,8 +273,21 @@ scan_rfc399nano(char **src)
 	 *  Year:
 	 *	match [2345]YYY
 	 */
-	if ('2' > *p || *p > '5')
+	if ('2' > *p || *p > '5') {
+		if (!*p)
+			err_399r("null char");
+
+		//  catch common error patterns, to help tracing
+		if (*p == '\t')
+			err_399r("unexpected tab");
+		if (*p == '\n')
+			err_399r("unexpected newline");
+		if (isalpha(*p))
+			err_399r("unexpected alpha char");
+		if (!isascii(*p))
+			err_399r("char not ascii");
 		err_399r("year: first either < 2 or > 5");
+	}
 	p++;
 	in_set(&p, 3, digits);
 
