@@ -236,7 +236,8 @@ while read U;  do
 		log "?$U"
 		;;
 	*)
-		die "blobio eat $UDIG $BLOBIO_SERVICE failed"
+		die "blobio eat $U $BLOBIO_SERVICE failed:"		\
+			"exit status=$STATUS"
 		;;
 	esac
 done <$NO_FS
