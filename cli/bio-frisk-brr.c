@@ -27,14 +27,14 @@
  *		\t
  *		wall duration: sec.ns where
  *			       0<=sec&&sec <= 2^31 -1 && 0<=ns&&ns <=999999999
- *  Exit:
+ *  Exit Status:
  *  	0	-> is a brr log
  *  	1	-> is not a brr log
  *	2	-> is empty
  *  	3	-> unexpected error
- *  Blame:
- *  	jmscott@setspace.com
  *  Note:
+ *	What about leap second?
+ *
  *  	Need a compile time pragma to insure the
  *
  *  		sizeof long long int == 8
@@ -239,7 +239,7 @@ scan_set(char **src, int limit, char *set, char end_fld, char *what)
 }
 
 static void
-err_399(char *msg)
+err_3339(char *msg)
 {
 	sexit(msg, "start time");
 }
@@ -296,7 +296,7 @@ scan_rfc399nano(char **src)
 	 *	match -[01][0-9]
 	 */
 	if (*p++ != '-')
-		err_399("no dash: YYYY-MM");
+		err_3339("no dash: YYYY-MM");
 	if (*p != '0' && *p != '1')
 		err_399r("month: first not 0 or 1");
 	p++;
@@ -309,7 +309,7 @@ scan_rfc399nano(char **src)
 	 *	match -[0123][0-9]
 	 */
 	if (*p++ != '-')
-		err_399("no dash: MM-DD");
+		err_3339("no dash: MM-DD");
 	if ('0' > *p || *p > '3')
 		err_399r("day: first < 0 or > 3");
 	p++;
@@ -322,7 +322,7 @@ scan_rfc399nano(char **src)
 	 *	match T[012][0-9]
 	 */
 	if (*p++ != 'T')
-		err_399("no dayTtime separator");
+		err_3339("no dayTtime separator");
 	if ('0' > *p || *p > '2')
 		err_399r("hour: first < 0 or > 2");
 	p++;
@@ -335,7 +335,7 @@ scan_rfc399nano(char **src)
 	 *	match :[0-5][0-9]
 	 */
 	if (*p++ != ':')
-		err_399("missing colon: HH:MM");
+		err_3339("missing colon: HH:MM");
 	if ('0' > *p || *p > '5')
 		err_399r("min: first < 0 or > 5");
 	p++;
@@ -348,7 +348,7 @@ scan_rfc399nano(char **src)
 	 *	match :[0-5][0-9]
 	 */
 	if (*p++ != ':')
-		err_399("missing colon: MM:SS");
+		err_3339("missing colon: MM:SS");
 	if ('0' > *p || *p > '5')
 		err_399r("sec: first < 0 or > 5");
 	p++;
@@ -357,7 +357,7 @@ scan_rfc399nano(char **src)
 	p++;
 
 	if (*p++ != '.')
-		err_399("no dot: SS.");
+		err_3339("no dot: SS.");
 	in_range(&p, 9, 1, digits);
 
 	switch (*p++) {
@@ -371,7 +371,7 @@ scan_rfc399nano(char **src)
 		in_set(&p, 2, digits);
 		break;
 	default:
-		err_399("no plus or minus in timezone");
+		err_3339("no plus or minus in timezone");
 	}
 	if (*p++ != '\t')
 		sexit("tab end char not seen", "start_time");
