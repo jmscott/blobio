@@ -436,6 +436,8 @@ COMMENT ON TABLE brr_roll_ok
  *  Fetchable blobs with regard to the blobio network service.
  *
  *  Note:
+ *	tis not true that recent_verify_time >= discover_time.
+ *
  *	I have seen service tuples when more recent entries
  *	existed in brr_no_recent.
  */
