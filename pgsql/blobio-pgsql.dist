@@ -54,7 +54,7 @@ SBINs="
 	cron-rummy
 	cron-rummy-yesterday
 	eat-unroll.sql
-	fs-eat
+	fs-get
 	fs-xor-service
 	minus-service
 	rummy-txn
