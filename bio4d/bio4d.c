@@ -5,6 +5,10 @@
  *	cd /usr/local/blobio
  *	sbin/bio4d
  *  Note:
+ *	upon boot the bio4d process should create {data/fs_*} dirs,
+ *	since, technically, only bio4d knows the supported algorithms for
+ *	fs_* storage.
+ *
  *	Having GYR stats in bio4d is problematic.  The observer
  *	should defined green/yellow/red, not the performer!
  *
