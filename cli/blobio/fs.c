@@ -581,13 +581,20 @@ fs_wrap(int *ok_no)
 	char now[21];
 	snprintf(now, sizeof now, "%d", (int)time((time_t *)0));
 
-	//  build path frozen brr file
+	/*
+	 *  build "unique" path to frozen brr file.
+	 */
+	char pid[21];
+	jmscott_ulltoa((unsigned long long)getpid(), pid);
+
 	char frozen_brr_path[PATH_MAX];
 	frozen_brr_path[0] = 0;
-	jmscott_strcat4(frozen_brr_path, sizeof brr_path,
+	jmscott_strcat6(frozen_brr_path, sizeof brr_path,
 		spool_path,
 		"/fs-",
 		now,
+		"-",
+		pid,
 		".brr"
 	);
 	TRACE2("frozen brr path", frozen_brr_path);
@@ -596,7 +603,11 @@ fs_wrap(int *ok_no)
 	 *  Open brr file with exclusive lock, to block the other shared lock
 	 *  writers in brr_write().  hold lock briefly to rename fs.brr to
 	 *  fs-<unix epoch>.brr.  if no brr file exists then an empty brr
-	 *  is created and renamed to fs-<epoch> empty, due to exclusive lock.
+	 *  is created and renamed to fs-<epoch> empty.
+	 *
+	 *  Note:
+	 *	exclusive lock is not posix for open() syscall.
+	 *	i (jmscott) still not conviced that a race does not exist.
 	 */
 	int brr_fd = jmscott_open(
 		brr_path,
@@ -606,28 +617,28 @@ fs_wrap(int *ok_no)
 	if (brr_fd < 0)
 		return strerror(errno);			//  lock freed on exit
 	if (jmscott_flock(brr_fd, LOCK_EX))
-		die2("flock(brr:lock_ex) failed", strerror(errno));
+		die2("flock(brr:LOCK_EX) failed", strerror(errno));
 	int status = rename(brr_path, frozen_brr_path);
 	char *err = (char *)0;
 	if (status)
 		err = strerror(status);
 	
 	/*
-	 *  close, regardless of error, to release exclusive lock.
+	 *  close(), regardless of error, to release exclusive lock.
 	 *
 	 *  Note:
-	 *	what to do with the frozen brr file?
-	 *	This is a bug.
+	 *	what to do with the existing, frozen brr file?
 	 */
 	if (jmscott_flock(brr_fd, LOCK_UN))
-		die2("flock(brr:lock_un) failed", strerror(errno));
+		die2("flock(brr:LOCK_UN) failed", strerror(errno));
 	if (jmscott_close(brr_fd) && err == (char *)0)
 		return strerror(errno);
 	if (err)
 		return err;		//  earlier error has higher priority
 
-	//  make the wrap directory, where the frozen brr file
-	//  will be moved after digesting.
+	/*
+	 *  make the wrap/ dir, where the digested, frozen brr file be moved to.
+	 */
 
 	//  Note:
 	//	hack to fool digest code.
