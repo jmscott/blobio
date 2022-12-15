@@ -14,6 +14,10 @@
  *	--output-path <path/to/file>
  *	--help
  *  Note:
+ *	the wrap driver must write the digest to stdout.  that is incorrect
+ *	layering.  this level should write the udig, since the behavior
+ *	is the same regardless of thhe digest algorithm
+ *
  *	brr_write() does not verify an existing *.brr is a symbolic link.
  *
  *	Investigate linux system calls splice(), sendfile() and
