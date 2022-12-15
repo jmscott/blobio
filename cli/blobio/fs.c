@@ -705,6 +705,9 @@ fs_wrap(int *ok_no)
 	if ((err = fs_exec_put(put_udig, wrap_brr_path)))
 		return err;
 
+	if (jmscott_write(output_fd, (unsigned char*)put_udig,strlen(put_udig)))
+		return strerror(errno);
+
 	*ok_no = 0;
 	return fs_set_brr("ok", fs_path);
 }
