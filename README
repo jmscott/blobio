@@ -60,10 +60,11 @@ Description:
 
 		roll <udig>		#  forget all wrapped blob traffic logs
 					#  in the udig set described by <udig>.
-					#  subsequent wrap/rolls will probably
-					#  never see these blob sets again.
+					#  subsequent wrap/rolls will never see 
+					#  these blob sets again.
+					#
 					#  however, the blobs themselves will
-					#  exist and probably be gettable.  the
+					#  exist and probably be gettable.   the
 					#  <udig> of the rolled udig will be in
 					#  the next wrap set as a "roll" blob
 					#  request record.
