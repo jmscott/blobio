@@ -100,6 +100,24 @@ trace2(char *msg1, char *msg2)
 }
 
 void
+trace_ull(char *msg, unsigned long long ull)
+{
+	char dec[21];
+
+	*jmscott_ulltoa(ull, dec) = 0;
+	trace2(msg, dec);
+}
+
+void
+trace_ll(char *msg, long long ll)
+{
+	char dec[22];
+
+	*jmscott_lltoa(ll, dec) = 0;
+	trace2(msg, dec);
+}
+
+void
 trace3(char *msg1, char *msg2, char *msg3)
 {
 	if (msg1) {
