@@ -46,14 +46,19 @@
 					(char *)msg3,			\
 					(char *)msg4			\
 				);
+#define TRACE_ULL(msg,ull)	if (tracing) trace_ull(msg,(unsigned long long)ull);
+#define TRACE_LL(msg,ll)	if (tracing) trace_ll(msg,(long long)ll);
+
 
 #else
 
-/*  compile out any vestiage of traceing */
+/*  compile out any vestiage of tracing */
 #define TRACE(msg)
 #define TRACE2(msg1,msg2)
 #define TRACE3(msg1,msg2,msg3)
 #define TRACE4(msg1,msg2,msg3,msg4)
+#define TRACE_ULL(msg1,ull)
+#define TRACE_LL(msg1,ll)
 
 #endif
 
@@ -212,6 +217,8 @@ extern void	trace(char *);
 extern void	trace2(char *, char *);
 extern void	trace3(char *, char *, char *);
 extern void	trace4(char *, char *, char *, char *);
+extern void	trace_ull(char *, unsigned long long);
+extern void	trace_ll(char *, long long);
 extern void	hexdump(unsigned char *buf, int buf_size, char direction);
 
 extern int	uni_close(int fd);

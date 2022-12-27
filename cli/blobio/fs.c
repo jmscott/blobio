@@ -475,7 +475,7 @@ static char *
 make_roll_dir(char *dir_path, int dir_path_size)
 {
 	dir_path[0] = 0;
-	jmscott_strcat2(dir_path, dir_path_size, BR, "spool/roll");
+	jmscott_strcat2(dir_path, dir_path_size, BR, "/spool/roll");
 	if (jmscott_mkdir_p(dir_path))
 		return strerror(errno);
 	return (char *)0;
@@ -560,14 +560,19 @@ fs_wrap(int *ok_no)
 	char brr_path[PATH_MAX];
 	char spool_path[PATH_MAX];
 
+	//  fs: requires algo in query arg, unlike bio4
+
 	if (!algo[0])
 		return "qarg \"algo\" is missing";
+
+	//  path to $BLOBIO_ROOT/spool
 
 	spool_path[0] = 0;
 	jmscott_strcat2(spool_path, sizeof spool_path, BR, "/spool");
 	TRACE2("spool path", spool_path);
 
-	//  path to brr file to wrap
+	//  path to $BLOBIO/spool/fs.brr
+
 	brr_path[0] = 0;
 	jmscott_strcat2(
 		brr_path,
@@ -575,14 +580,14 @@ fs_wrap(int *ok_no)
 		spool_path,
 		"/fs.brr"
 	);
-
 	TRACE2("brr path", brr_path);
 
 	char now[21];
 	snprintf(now, sizeof now, "%d", (int)time((time_t *)0));
 
 	/*
-	 *  build "unique" path to frozen brr file.
+	 *  build a "unique" path for freezing brr file,
+	 *  named $BLOBIO_ROOT/spool/fs-<unix-epoch>-<pid>.brr
 	 */
 	char pid[21];
 	jmscott_ulltoa((unsigned long long)getpid(), pid);
@@ -602,12 +607,14 @@ fs_wrap(int *ok_no)
 	/*
 	 *  Open brr file with exclusive lock, to block the other shared lock
 	 *  writers in brr_write().  hold lock briefly to rename fs.brr to
-	 *  fs-<unix epoch>.brr.  if no brr file exists then an empty brr
+	 *  fs-<unix epoch>-<pid>.brr.  if no brr file exists then an empty brr
 	 *  is created and renamed to fs-<epoch> empty.
 	 *
 	 *  Note:
 	 *	exclusive lock is not posix for open() syscall.
-	 *	i (jmscott) still not conviced that a race does not exist.
+	 *	macos DOES support xlock on open(), linux does not.
+	 *
+	 *	a race still exists
 	 */
 	int brr_fd = jmscott_open(
 		brr_path,
@@ -705,12 +712,14 @@ fs_wrap(int *ok_no)
 	if ((err = fs_exec_put(put_udig, wrap_brr_path)))
 		return err;
 
+	TRACE2("put udig", put_udig);
 	if (jmscott_write(output_fd, (unsigned char*)put_udig,strlen(put_udig)))
 		return strerror(errno);
 
 	*ok_no = 0;
 	return fs_set_brr("ok", fs_path);
 }
+
 /*
  *  exec "blobio get" for a given udig.
  */
@@ -770,54 +779,20 @@ AGAIN:
 	return strerror(errno);
 }
 
-#ifdef NO_COMPILE
-static char *
-fs_slurp_wrap(char *path, char *ent[PATH_MAX], int ent_size)
-{
-	(void)ent;
-
-	TRACE2("path", path);
-	if (tracing) {
-		char buf[21];
-
-		snprintf(buf, sizeof buf, "%d", ent_size);
-	}
-
-	DIR *dirp = opendir(path);
-	if (dirp == (DIR *)0)
-		return "opendir(wrap) failed";
-
-	struct dirent *ep;
-	errno = 0;
-	int ent_count = 0;
-	char *err = 0;
-	while (err == NULL && (ep = readdir(dirp)) != NULL) {
-		if (ent_count > ent_size) {
-			err = "too many entries in wrap dir";
-			break;
-		}
-		if (jmscott_frisk_udig(ep->d_name))
-			continue;
-		ent[ent_count][0] = 0;
-		jmscott_strcat(ent[ent_count], PATH_MAX, ep->d_name);
-		ent_count++;
-	}
-	if (closedir(dirp) && err == NULL)
-		err = strerror(errno);
-	if (err)
-		return err;
-	if (tracing) {
-		char buf[21];
-
-		snprintf(buf, sizeof buf, "%d", ent_count);
-		TRACE2("dir entry count", buf);
-	}
-	return (char *)0;
-}
-#endif
-
 /*
- *  Remove wrap sets from spool/wrap/ as contained in udig set
+ *  Read a wrap set of udigs to remove wrapped blob request
+ *  logs files in spool/wrap/<udig>.brr.
+ *
+ *  Steps: roll <wrap-udig>
+ *	mkdir -p $BLOBIO_ROOT/spool/wrap
+ *	mkdir -p $BLOBIO_ROOT/spool/roll
+ *	mkdir -p $BLOBIO_ROOT/tmp		#  on same fs as spool/wrap
+ *	USET=tmp/roll-<udig>-<epoch>-<pid>.uset
+ *	blobio get <wrap-udig> >$USET
+ *	while read UDIG;  do
+ *		rm -f spool/wrap/$USET.brr
+ *	done <$USET
+ *	rm $USET
  */
 static char *
 fs_roll(int *ok_no)
@@ -825,14 +800,11 @@ fs_roll(int *ok_no)
 	(void)ok_no;
 	char wrap_dir_path[PATH_MAX];
 	char roll_dir_path[PATH_MAX];
+	struct stat st;
 
 	char *err = make_wrap_dir(wrap_dir_path, sizeof wrap_dir_path);
 	if (err)
 		return err;
-
-	int wrap_dir_fd = jmscott_open(wrap_dir_path, O_RDONLY, 0);
-	if (wrap_dir_fd < 0)
-		return strerror(errno);
 
 	err = make_roll_dir(roll_dir_path, sizeof roll_dir_path);
 	if (err)
@@ -841,32 +813,70 @@ fs_roll(int *ok_no)
 	if (jmscott_mkdir_p("tmp"))
 		return strerror(errno);
 
-	char udig[8 + 128 + 1 + 1];
+	char udig[8 + 1 + 128 + 1];
 	udig[0] = 0;
 	jmscott_strcat3(udig, sizeof udig, algo, ":", ascii_digest);
 		
-	char wrap_set[PATH_MAX];
-	snprintf(wrap_set, sizeof wrap_set,
-		"tmp/wrap-%s.%ld_%d",
+	char roll_uset[PATH_MAX];
+	snprintf(roll_uset, sizeof roll_uset,
+		"tmp/roll-%s-%ld_%d.uset",
 		udig,
 		time((time_t *)0),
 		getpid()
 	);
-	err = fs_exec_get(udig, wrap_set);
+	TRACE2("tmp roll set", roll_uset);
+	err = fs_exec_get(udig, roll_uset);
 	if (err)
 		return err;
-	int wrap_fd = jmscott_open(wrap_set, O_RDONLY, 0);
-	if (wrap_fd < 0) {
+	int roll_fd = jmscott_open(roll_uset, O_RDONLY, 0);
+	if (roll_fd < 0) {
 		if (errno == ENOENT)
-			return "can not fetch wrap set";
+			return "can not fetch roll set";
 		return strerror(errno);
 	}
+	/*
+	 *  unlink the opened wrap set now, 
+	 *  to insure disappears upon process exit.
+	 */
+	if (unlink(roll_uset) < 0)
+		return strerror(errno);
 
 	/*
-	 *  unlink wrap set now, to insure disappears upon process exit.
+	 *  Slurp the wrap set into memory.
 	 */
-	if (unlink(wrap_set) < 0)
+	if (jmscott_fstat(roll_fd, &st) != 0)
 		return strerror(errno);
+	TRACE_ULL("roll set size", st.st_size);
+	char *roll_udigs = malloc(st.st_size + 1);
+	if (roll_udigs == NULL)
+		return "malloc(roll udigs) failed";
+	int status = jmscott_read_exact(roll_fd, roll_udigs, st.st_size);
+	if (status != 0) {
+		TRACE_LL("read_exact(roll udigs) failed: exit status", status);
+		if (status == -1)
+			return strerror(errno);
+		if (status == -2)
+			return "roll udigs: unexpected end of file";
+		if (status == -3)
+			return "roll udigs: more data to read";
+		return "PANIC: read_exact(roll udigs): unexpected return value";
+	}
+	roll_udigs[st.st_size] = 0;
+	if (jmscott_close(roll_fd))
+		return strerror(errno);
+
+	TRACE("scanning udigs in roll uset ...");
+	char *rup = roll_udigs;
+	while (*rup) {
+		char *nl = index(rup, '\n');
+		if (nl == NULL)
+			return "expected new line in udig of roll uset";
+		*nl = 0;
+		err = jmscott_frisk_udig(rup);
+		if (err)
+			return err;
+		rup = nl + 1;
+	}
 
 	return "\"roll\" not implemented (yet) service";
 }
