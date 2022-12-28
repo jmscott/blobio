@@ -554,16 +554,58 @@ AGAIN:
 	return strerror(errno);
 }
 
+/*
+ *  Steps: "wrap"
+ *	B=$BLOBIO_ROOT
+ *
+ *	ALGO=$(extract and verify service query arg "[&?]alog=(sha|btc20)")
+ *
+ *	mkdir -p $B/spool/
+ *
+ *	#  "freeze" file spool/fs.brr so no other "wrap" can access.
+ *
+ *	FROZEN_BRR=$B/spool/fs-<epoch>-<pid>.brr
+ *	xlock and freeze file $B/spool/fs.brr by renaming to $FROZEN_BRR
+ *
+ *	#  digest and move frozen blob request log (*.brr) to spool/wrap/
+ *
+ *	mkdir -p $B/spool/wrap/
+ *	BRR_UDIG=algo:$(digest $FROZEN_BRR)
+ *	move $FROZEN_BRR spool/wrap/$BRR_UDIG.brr
+ *
+ *	mkdir -p $B/tmp/
+ *
+ *	#  make a udig set of *.brr in wrap/*.brr, in $B/tmp/,
+ *	#  and "give" wrap udig set
+ *	#  the wrap udig set is list of udigs of brr logs in wrap/
+ *	#  the wrap set contains no duplicates, in no particular order
+ *
+ *	WRAP_USET=$B/tmp/wrap-<now>-<pid>.uset
+ *	find $B/spool/wrap					\
+ *		-maxdepth 1					\
+ *		-type f						\
+ *		-name '[a-z]*:*.brr'				|
+ *			xargs basename -s .brr >$WRAP_USET
+ *	WRAP_UDIG=algo:$(digest $WRAP_USET)
+ *	blobio give $WRAP_SET
+ *
+ *	echo $WRAP_UDIG
+ */
 static char *
 fs_wrap(int *ok_no)
 {
 	char brr_path[PATH_MAX];
 	char spool_path[PATH_MAX];
 
-	//  fs: requires algo in query arg, unlike bio4
+	//  fs: requires algo in query arg "[&?]algo=(sha|btc20)"
 
 	if (!algo[0])
 		return "qarg \"algo\" is missing";
+	struct digest *d = find_digest(algo);
+	if (!d)
+		return "impossible: unknown digest";	//  already verified
+	if ((err = d->init()))
+		return err;
 
 	//  path to $BLOBIO_ROOT/spool
 
@@ -608,7 +650,7 @@ fs_wrap(int *ok_no)
 	 *  Open brr file with exclusive lock, to block the other shared lock
 	 *  writers in brr_write().  hold lock briefly to rename fs.brr to
 	 *  fs-<unix epoch>-<pid>.brr.  if no brr file exists then an empty brr
-	 *  is created and renamed to fs-<epoch> empty.
+	 *  is created and renamed to fs-<epoch>-<pid> empty.
 	 *
 	 *  Note:
 	 *	exclusive lock is not posix for open() syscall.
@@ -649,7 +691,8 @@ fs_wrap(int *ok_no)
 
 	//  Note:
 	//	hack to fool digest code.
-	//	really, really, really, really need to refactor code!
+	//	really, really, really, really need to refactor code
+	//	into libblobio.a.  this is terrible coding practioce.
 	strcpy(algorithm, algo);
 
 	int frozen_fd = jmscott_open(frozen_brr_path, O_RDONLY, 0);
@@ -682,7 +725,7 @@ fs_wrap(int *ok_no)
 	);
 	TRACE2("put udig", put_udig);
 
-	//  make the wrap dir
+	//  make the wrap dir to spool/wrap/<udig>.brr
 	char wrap_dir_path[PATH_MAX];
 	err = make_wrap_dir(wrap_dir_path, sizeof wrap_dir_path);
 	if (err)
@@ -819,7 +862,7 @@ fs_roll(int *ok_no)
 		
 	char roll_uset[PATH_MAX];
 	snprintf(roll_uset, sizeof roll_uset,
-		"tmp/roll-%s-%ld_%d.uset",
+		"tmp/roll-%s-%ld-%d.uset",
 		udig,
 		time((time_t *)0),
 		getpid()
@@ -851,14 +894,12 @@ fs_roll(int *ok_no)
 	if (roll_udigs == NULL)
 		return "malloc(roll udigs) failed";
 	int status = jmscott_read_exact(roll_fd, roll_udigs, st.st_size);
-	if (status != 0) {
+	if (status != 0 && status != -3) {
 		TRACE_LL("read_exact(roll udigs) failed: exit status", status);
 		if (status == -1)
 			return strerror(errno);
 		if (status == -2)
 			return "roll udigs: unexpected end of file";
-		if (status == -3)
-			return "roll udigs: more data to read";
 		return "PANIC: read_exact(roll udigs): unexpected return value";
 	}
 	roll_udigs[st.st_size] = 0;
@@ -872,6 +913,7 @@ fs_roll(int *ok_no)
 		if (nl == NULL)
 			return "expected new line in udig of roll uset";
 		*nl = 0;
+		TRACE2("wrap udig to roll", rup);
 		err = jmscott_frisk_udig(rup);
 		if (err)
 			return err;
