@@ -575,10 +575,7 @@ AGAIN:
  *
  *	mkdir -p $B/tmp/
  *
- *	#  make a udig set of *.brr in wrap/*.brr, in $B/tmp/,
- *	#  and "give" wrap udig set
- *	#  the wrap udig set is list of udigs of brr logs in wrap/
- *	#  the wrap set contains no duplicates, in no particular order
+ *	#  write set of udigs for the *.brr in wrap/ into $B/tmp/wrap.uset
  *
  *	WRAP_USET=$B/tmp/wrap-<now>-<pid>.uset
  *	find $B/spool/wrap					\
@@ -596,6 +593,7 @@ fs_wrap(int *ok_no)
 {
 	char brr_path[PATH_MAX];
 	char spool_path[PATH_MAX];
+	char *err = (char *)0;
 
 	//  fs: requires algo in query arg "[&?]algo=(sha|btc20)"
 
@@ -650,7 +648,7 @@ fs_wrap(int *ok_no)
 	 *  Open brr file with exclusive lock, to block the other shared lock
 	 *  writers in brr_write().  hold lock briefly to rename fs.brr to
 	 *  fs-<unix epoch>-<pid>.brr.  if no brr file exists then an empty brr
-	 *  is created and renamed to fs-<epoch>-<pid> empty.
+	 *  is created.
 	 *
 	 *  Note:
 	 *	exclusive lock is not posix for open() syscall.
@@ -668,7 +666,7 @@ fs_wrap(int *ok_no)
 	if (jmscott_flock(brr_fd, LOCK_EX))
 		die2("flock(brr:LOCK_EX) failed", strerror(errno));
 	int status = rename(brr_path, frozen_brr_path);
-	char *err = (char *)0;
+	err = (char *)0;
 	if (status)
 		err = strerror(status);
 	
@@ -685,10 +683,6 @@ fs_wrap(int *ok_no)
 	if (err)
 		return err;		//  earlier error has higher priority
 
-	/*
-	 *  make the wrap/ dir, where the digested, frozen brr file be moved to.
-	 */
-
 	//  Note:
 	//	hack to fool digest code.
 	//	really, really, really, really need to refactor code
@@ -698,12 +692,6 @@ fs_wrap(int *ok_no)
 	int frozen_fd = jmscott_open(frozen_brr_path, O_RDONLY, 0);
 	if (frozen_fd < 0)
 		return strerror(errno);
-
-	struct digest *d = find_digest(algo);
-	if (!d)
-		return "impossible: unknown digest";
-	if ((err = d->init()))
-		return err;
 
 	ascii_digest[0] = 0;
 	if ((err = d->eat_input(frozen_fd)))
@@ -732,18 +720,14 @@ fs_wrap(int *ok_no)
 		return err;
 	TRACE2("wrap dir path", wrap_dir_path);
 
-	//  move frozen brr file into wrap/<wrap udig>.brr
+	//  move frozen brr file into spool/wrap/<wrap udig>.brr
 	char wrap_brr_path[PATH_MAX];
 
 	wrap_brr_path[0] = 0;
-	jmscott_strcat6(
-		wrap_brr_path,
-		sizeof wrap_brr_path,
+	jmscott_strcat4(wrap_brr_path, sizeof wrap_brr_path,
 		wrap_dir_path,
 		"/",
-		algo,
-		":",
-		ascii_digest,
+		put_udig,
 		".brr"
 	);
 	TRACE2("wrap brr path", wrap_brr_path);
@@ -754,6 +738,68 @@ fs_wrap(int *ok_no)
 
 	if ((err = fs_exec_put(put_udig, wrap_brr_path)))
 		return err;
+
+	err = jmscott_mkdir_p("tmp");
+	if (err)
+		return err;
+
+	char wrap_uset_path[PATH_MAX];
+	wrap_uset_path[0] = 0;
+	jmscott_strcat5(wrap_uset_path, sizeof wrap_uset_path,
+			"tmp/wrap-",
+			now,
+			"-",
+			pid,
+			".uset"
+	);
+	TRACE2("wrap uset path", wrap_uset_path);
+	int wu_fd = jmscott_open(
+			wrap_uset_path,
+			O_CREAT | O_EXCL | O_WRONLY,
+			S_IRUSR
+	);
+	if (wu_fd < 0)
+		return strerror(errno);
+
+	int dir_fd = open(wrap_dir_path, O_RDONLY, 0);
+	if (dir_fd < 0)
+		return "open(wrap/) failed";
+	DIR *dirp = fdopendir(dir_fd);
+	if (dirp == (DIR *)0)
+		return "fdopendir(wrap) failed";
+
+	err = NULL;
+	struct dirent *ep;
+	while (err == NULL && (ep = readdir(dirp)) != NULL) {
+		struct stat st;
+
+		TRACE2("wrap dir entry", ep->d_name);
+
+		if (fstatat(dir_fd, ep->d_name, &st, 0))
+			return strerror(errno);
+		if (!S_ISREG(st.st_mode))
+			continue;
+		char *period = rindex(ep->d_name, '.');
+		if (period == NULL)
+			continue;
+		int ulen = period - ep->d_name;
+		if (ulen < 3 || ulen > 8 + 1 + 128)
+			continue;
+		char udig[8 + 1 + 128 + 1];
+		memcpy(udig, ep->d_name, ulen);
+		udig[ulen] = 0;
+		TRACE2("wrap/ udig candidate", udig);
+
+		if (jmscott_frisk_udig(udig))
+			continue;
+		udig[ulen] = '\n';
+		if (jmscott_write(wu_fd, udig, ulen + 1) < 0)
+			return strerror(errno);
+	}
+	if (closedir(dirp) < 0)
+		return strerror(errno);
+	if (jmscott_close(wu_fd) < 0)
+		return strerror(errno);
 
 	TRACE2("put udig", put_udig);
 	if (jmscott_write(output_fd, (unsigned char*)put_udig,strlen(put_udig)))
