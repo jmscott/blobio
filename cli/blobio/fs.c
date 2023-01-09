@@ -2,6 +2,8 @@
  *  Synopsis:
  *	A driver for a fast, trusting posix file system blobio service.
  *  Note:
+ *	In func fs_wrap() need to move write of udig for uset above the driver.
+ *
  *	Why does fs_wrap need to created the dir <brr-path>/wrap ?
  *
  *	Need to properly use separator char in tmp_path.
@@ -15,11 +17,6 @@
  *  	Long (>= PATH_MAX) file paths are still problematic.
  *
  *	The input stream is not drained when the blob exists during a put/give.
- *
- *	A typo in the BLOBIO_SERVICE yields a "blob not found error", which
- *	is confusing.  Instead, the existence of the data directory ought to
- *	tested for a more clear error message.  An earlier version of fs did
- *	this test.
  */
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -56,8 +53,14 @@ extern char	ascii_digest[];
 extern struct digest		*digests[];
 extern unsigned long long	blob_size;
 
-static char	fs_path[PATH_MAX] = {0};
-static char	tmp_path[PATH_MAX] = {0};
+//  extracted from $BLOBIO_SERVICE=fs:<fs_path><qargs>?
+
+/*
+ *  Note:
+ *	"blob_path" is partially assembled in more than a single function(),
+ *	which is confusing and error prone.
+ */
+static char	blob_path[PATH_MAX] = {0};
 
 extern struct service fs_service;
 
@@ -79,85 +82,111 @@ fs_end_point_syntax(char *root_dir)
 }
 
 /*
- *  Verify that the root and data directories of the blob file system
- *  are at least searchable.
+ *  Insure all dirs exist: $BLOBIO_ROOT/{data,spool}
+ */
+static char *
+fs_mkdirs()
+{
+	char *err;
+	char path[PATH_MAX];
+
+	//  $BLOBIO_ROOT
+	path[0] = 0;
+	jmscott_strcat(path, sizeof path, BR);
+	TRACE2("BLOBIO_ROOT", path);
+	if ((err = jmscott_mkdir_p(path)))
+		return err;
+
+	char *root_slash = path + strlen(path);
+
+	//  $BLOBIO_ROOT/spool/
+	jmscott_strcat(path, sizeof path, "/spool");
+	TRACE2("spool/ path", path);
+	if ((err = jmscott_mkdir_p(path)))
+		return err;
+	char *spool_slash = root_slash + 6;
+
+	//  $BLOBIO_ROOT/spool/wrap
+	*spool_slash = 0;
+	jmscott_strcat(path, sizeof path, "/wrap");
+	TRACE2("spool/wrap path", path);
+	if ((err = jmscott_mkdir_p(path)))
+		return err;
+
+	//  $BLOBIO_ROOT/spool/roll
+	*spool_slash = 0;
+	jmscott_strcat(path, sizeof path, "/roll");
+	TRACE2("spool/roll path", path);
+	if ((err = jmscott_mkdir_p(path)))
+		return err;
+
+	//  $BLOBIO_ROOT/data/
+	*root_slash = 0;
+	jmscott_strcat(path, sizeof path, "/data");
+	TRACE2("data/ path", path);
+	if ((err = jmscott_mkdir_p(path)))
+		return err;
+	char *data_slash = root_slash + 5;
+
+	//  make all dirs for $BLOBIO_ROOT/data/fs_<algo>
+	for (int i = 0;  digests[i];  i++) {
+		struct digest *dp = digests[i]; 
+
+		*data_slash = 0;
+		jmscott_strcat2(path, sizeof path, "/fs_", dp->algorithm);
+		TRACE2("data/fs_<algo>/ path", path);
+		if ((err = jmscott_mkdir_p(path)))
+			return err;
+	}
+
+	//  $BLOBIO_ROOT/tmp/
+	*root_slash = 0;
+	jmscott_strcat(path, sizeof path, "/tmp");
+	TRACE2("tmp/ path", path);
+	if ((err = jmscott_mkdir_p(path)))
+		return err;
+
+	return (char *)0;
+}
+
+/*
+ *  Parse service query args and possibly create dirs 
+ *	$BLOBIO_ROOT/{data,run,spool,tmp} exist.
+ *  Note:
+ *	Should perms be checked for dirs under $BLOBIO_ROOT?
  *
- *  Posix declares process id (pid_t) to be 32 bit signed int.
+ *	setting BR=~ makes BR=<end_point>.  why would that not be the default?
  */
 static char *
 fs_open()
 {
-	struct stat st;
 	char *end_point = fs_service.end_point;
 
 	if (algo[0] && !find_digest(algo))
 		return "unknown digest algorithm in query arg \"algo\"";
-	
+
 	//  tilde shorthand for the file system root in end point
 	if (strcmp("~", BR) == 0) {
 		BR[0] = 0;
 		jmscott_strcat(BR, PATH_MAX, end_point);
 		TRACE2("BR ~ reset to fs path", BR);
 	}
-	//  Note: should this test be in blobio.c:xref_argv()?
-	if (*verb == 'w') {
-		if (!BR[0])
-			return "query arg \"BR\" not defined";
-		return (char *)0;
-	}
 
-	TRACE2("end point", end_point);
-	if (jmscott_access(end_point, X_OK)) {
-		if (errno == ENOENT)
-			return "blob root directory does not exist";
-		if (errno == EPERM)
-			return "no permission to search blob root directory";
-		return strerror(errno);
-	}
+	//  make dirs under $BLOBIO_ROOT
+	char *err = fs_mkdirs();
+	if (err)
+		return err;
+
+	*blob_path = 0;
+	if (algo[0])
+		jmscott_strcat4(blob_path, sizeof blob_path,
+				end_point,
+				"/data/",
+				"fs_",
+				algo
+		);
+	TRACE2("data fs path", blob_path);
 			
-	//  verify the end point is, in fact, a directory
-
-	if (stat(end_point, &st))
-		return strerror(errno);
-	if (!S_ISDIR(st.st_mode))
-		return "root blob directory is not a directory";
-	//  build the path to the $BLOBIO_ROOT/data/fs_<algo>/ directory
-
-	*fs_path = 0;
-	jmscott_strcat4(
-		fs_path,
-		sizeof fs_path,
-		end_point,
-		"/data/",
-		"fs_",
-		algorithm
-	);
-	TRACE2("path", fs_path);
-
-	//  verify permissons on data/ directory
-
-	if (jmscott_access(fs_path, X_OK)) {
-		if (errno == ENOENT)
-			return "directory does not exist: data/fs_<algo>";
-		if (errno == EPERM)
-			return "no permission for directory: data/fs_<algo>/";
-		return strerror(errno);
-	}
-			
-	//  verify the data directory is, in fact, a directory
-
-	if (stat(fs_path, &st))
-		return strerror(errno);
-	if (!S_ISDIR(st.st_mode))
-		return "not a directory: data/fs_<algo>";
-
-	//  if writing a blob then build path to temporary directory.
-
-	if (IS_WRITE_VERB()) {
-		*tmp_path = 0;
-		jmscott_strcat2(tmp_path, sizeof tmp_path, fs_path, "/tmp");
-	}
-
 	return (char *)0;
 }
 
@@ -219,8 +248,8 @@ fs_copy(char *in_path, char *out_path)
  *  Set global variables related to blog request records.
  *
  *  Note:
- *	Really, really need to push this code about the service level.
- *	Too much replication between services "fs" and "bio4".
+ *	Really, really, really need to refactor this code about the service
+ *	level.  Too much replication between services "fs" and "bio4".
  */
 static char *
 fs_set_brr(char *hist, char *fs_path) {
@@ -232,7 +261,7 @@ fs_set_brr(char *hist, char *fs_path) {
 	if (fs_path && fs_path[0]) {
 		if (stat(fs_path, &st)) {
 			if (errno == ENOENT)
-				return "stat(fs_path): file gone";
+				return "stat(fs_path): file does not exist";
 			return strerror(errno);
 		}
 		blob_size = st.st_size;
@@ -265,10 +294,10 @@ fs_get(int *ok_no)
 
 	//  build path to source blob file
 
-	len = strlen(fs_path);
+	len = strlen(blob_path);
 	err = fs_service.digest->fs_path(
-				fs_path + len,
-				PATH_MAX - len
+					blob_path + len,
+					sizeof blob_path - len
 	);
 	if (err)
 		return err;
@@ -276,9 +305,9 @@ fs_get(int *ok_no)
 	//  link output path to source blob file
 	
 	if (output_path && output_path != null_device) {
-		if (jmscott_link(fs_path, output_path) == 0) {
+		if (jmscott_link(blob_path, output_path) == 0) {
 			*ok_no = 0;
-			return fs_set_brr("ok", fs_path);
+			return fs_set_brr("ok", blob_path);
 		}
 
 		//  blob file does not exist
@@ -290,13 +319,13 @@ fs_get(int *ok_no)
 		if (errno != EXDEV && errno != EPERM)
 			return strerror(errno);
 	}
-	if ((err = fs_copy(fs_path, output_path))) {
+	if ((err = fs_copy(blob_path, output_path))) {
 		if (errno == ENOENT)
 			return fs_set_brr("no", (char *)0);
 		return err;
 	}
 	*ok_no = 0;
-	return fs_set_brr("ok", fs_path);
+	return fs_set_brr("ok", blob_path);
 }
 
 /*
@@ -308,15 +337,18 @@ fs_eat(int *ok_no)
 	char *err;
 	int len;
 
-	jmscott_strcat(fs_path, sizeof fs_path, "/");
-	len = strlen(fs_path);
-	err = fs_service.digest->fs_path(fs_path + len, PATH_MAX - len);
+	jmscott_strcat(blob_path, sizeof blob_path, "/");
+	len = strlen(blob_path);
+	err = fs_service.digest->fs_path(
+					blob_path + len,
+					sizeof blob_path - len
+	);
 	if (err)
 		return err;
 
 	//  insure we can read the file.
 
-	if (jmscott_access(fs_path, R_OK)) {
+	if (jmscott_access(blob_path, R_OK)) {
 		if (errno == ENOENT) {
 			*ok_no = 1;
 			return fs_set_brr("no", (char *)0);
@@ -336,8 +368,6 @@ fs_put(int *ok_no)
 	int nr;
 	unsigned char buf[MAX_ATOMIC_MSG];
 
-	TRACE("entered");
-
 	//  Name of temporary file
 	//  size: 1 + 8 + 1 + 21 + 1 + 21 + 1
 
@@ -345,29 +375,21 @@ fs_put(int *ok_no)
 
 	*ok_no = 1;
 
-	//  make the full directory path to the blob
-
-	TRACE2("path", fs_path);
-	err = fs_service.digest->fs_mkdir(fs_path, PATH_MAX - strlen(fs_path));
-	if (err)
-		return err;
-	TRACE2("path", fs_path);
-
 	//  append /<blob-file-name> to the path to the blob
 
-	jmscott_strcat(fs_path, sizeof fs_path, "/");
-	np = fs_path + strlen(fs_path);
-	err = fs_service.digest->fs_name(np, PATH_MAX - (np - fs_path));
+	jmscott_strcat(blob_path, sizeof blob_path, "/");
+	np = blob_path + strlen(blob_path);
+	err = fs_service.digest->fs_name(np, PATH_MAX - (np - blob_path));
 	if (err)
 		return err;
 
 	//  if the blob file already exists then we are done
 
-	if (jmscott_access(fs_path, F_OK) == 0) {
+	if (jmscott_access(blob_path, F_OK) == 0) {
 		*ok_no = 0;
 
 		//  Note: what about draining the input not bound to a file?
-		return fs_set_brr("ok,ok", fs_path);
+		return fs_set_brr("ok,ok", blob_path);
 	}
 	if (errno != ENOENT)
 		return strerror(errno);
@@ -375,19 +397,36 @@ fs_put(int *ok_no)
 	//  try to hard link the target blob to the existing source blob
 
 	if (input_path) {
-		if (jmscott_link(input_path, fs_path) == 0 || errno == EEXIST) {
+		if (jmscott_link(input_path, blob_path) == 0		||
+		    errno == EEXIST) {
 			*ok_no = 0;
-			return fs_set_brr("ok,ok", fs_path);
+			return fs_set_brr("ok,ok", blob_path);
 		}
 
 		if (errno != EXDEV)
 			return strerror(errno);
 	}
 
+	//  can not link input file to blob in data/fs_<algo>/XXX/XXX/<digest>
+
 	//  build path to temporary file which will accumulate the blob.
 
-	snprintf(tmp_name, sizeof tmp_name, "/%s.%ul", verb, getpid());
-	jmscott_strcat(tmp_path, sizeof tmp_path, tmp_name);
+	char now[21];
+	snprintf(now, sizeof now, "%d", (int)time((time_t *)0));
+
+	snprintf(tmp_name, sizeof tmp_name,
+			"%s-%s-%d.blob",
+			verb,
+			now,
+			getpid()
+	);
+	char tmp_path[PATH_MAX];
+	tmp_path[0] = 0;
+	jmscott_strcat3(tmp_path, sizeof tmp_path,
+			BR,
+			"/tmp/",
+			tmp_name
+	);
 
 	//  open input file.  may be standard input
 
@@ -397,8 +436,6 @@ fs_put(int *ok_no)
 			return strerror(errno);
 	} else
 		in_fd = input_fd;
-
-	//  open tempory file to for incoming blob
 
 	tmp_fd = jmscott_open(
 			tmp_path,
@@ -422,7 +459,7 @@ fs_put(int *ok_no)
 
 	if (err == (char *)0) {
 
-		if (jmscott_link(tmp_path, fs_path) && errno != EEXIST) {
+		if (jmscott_link(tmp_path, blob_path) && errno != EEXIST) {
 			err = strerror(errno);
 		} else
 			*ok_no = 0;
@@ -432,7 +469,7 @@ fs_put(int *ok_no)
 		err = strerror(errno);
 	if (jmscott_unlink(tmp_path) && err == (char *)0)
 		err = strerror(errno);
-	return fs_set_brr("ok,ok", fs_path);
+	return fs_set_brr("ok,ok", blob_path);
 }
 
 static char *
@@ -445,8 +482,8 @@ fs_take(int *ok_no)
 		return err;
 	if (*ok_no)
 		return fs_set_brr("no", (char *)0);
-	fs_set_brr("ok,ok,ok", fs_path);
-	if (jmscott_unlink(fs_path) != 0 && errno != ENOENT)
+	fs_set_brr("ok,ok,ok", blob_path);
+	if (jmscott_unlink(blob_path) != 0 && errno != ENOENT)
 		return strerror(errno);
 	return (char *)0;
 }
@@ -457,28 +494,7 @@ fs_give(int *ok_no)
 	char *err = fs_put(ok_no);
 	if (err)
 		return err;
-	return fs_set_brr("ok,ok,ok", fs_path);
-}
-
-static char *
-make_wrap_dir(char *dir_path, int dir_path_size)
-{
-	dir_path[0] = 0;
-	jmscott_strcat2(dir_path, dir_path_size, BR, "/spool/wrap");
-	TRACE2("dir path", dir_path);
-	if (jmscott_mkdir_p(dir_path))
-		return strerror(errno);
-	return (char *)0;
-}
-
-static char *
-make_roll_dir(char *dir_path, int dir_path_size)
-{
-	dir_path[0] = 0;
-	jmscott_strcat2(dir_path, dir_path_size, BR, "/spool/roll");
-	if (jmscott_mkdir_p(dir_path))
-		return strerror(errno);
-	return (char *)0;
+	return fs_set_brr("ok,ok,ok", blob_path);
 }
 
 /*
@@ -504,6 +520,9 @@ AGAIN:
 	}
 
 	//  wait for the "blobio put" child to exit
+	//
+	//  Note:
+	//	Refactor code for both fs_exec_{put,get}!
 	if (put_pid > 0) {
 		int status;
 		
@@ -515,7 +534,7 @@ AGAIN:
 		}
 
 		if (WIFEXITED(status)) {
-			TRACE("waitpid() ok");
+			TRACE_ULL("waitpid() exited: status", status);
 			if (WEXITSTATUS(status) != 0)
 				return "blobio put wrap failed";
 			return (char *)0;
@@ -560,8 +579,6 @@ AGAIN:
  *
  *	ALGO=$(extract and verify service query arg "[&?]alog=(sha|btc20)")
  *
- *	mkdir -p $B/spool/
- *
  *	#  "freeze" file spool/fs.brr so no other "wrap" can access.
  *
  *	FROZEN_BRR=$B/spool/fs-<epoch>-<pid>.brr
@@ -569,11 +586,8 @@ AGAIN:
  *
  *	#  digest and move frozen blob request log (*.brr) to spool/wrap/
  *
- *	mkdir -p $B/spool/wrap/
  *	BRR_UDIG=algo:$(digest $FROZEN_BRR)
  *	move $FROZEN_BRR spool/wrap/$BRR_UDIG.brr
- *
- *	mkdir -p $B/tmp/
  *
  *	#  write set of udigs for the *.brr in wrap/ into $B/tmp/wrap.uset
  *
@@ -592,7 +606,6 @@ static char *
 fs_wrap(int *ok_no)
 {
 	char brr_path[PATH_MAX];
-	char spool_path[PATH_MAX];
 	char *err = (char *)0;
 
 	//  fs: requires algo in query arg "[&?]algo=(sha|btc20)"
@@ -605,21 +618,8 @@ fs_wrap(int *ok_no)
 	if ((err = d->init()))
 		return err;
 
-	//  path to $BLOBIO_ROOT/spool
-
-	spool_path[0] = 0;
-	jmscott_strcat2(spool_path, sizeof spool_path, BR, "/spool");
-	TRACE2("spool path", spool_path);
-
-	//  path to $BLOBIO/spool/fs.brr
-
 	brr_path[0] = 0;
-	jmscott_strcat2(
-		brr_path,
-		sizeof brr_path,
-		spool_path,
-		"/fs.brr"
-	);
+	jmscott_strcat2(brr_path, sizeof brr_path, BR, "/spool/fs.brr");
 	TRACE2("brr path", brr_path);
 
 	char now[21];
@@ -635,8 +635,8 @@ fs_wrap(int *ok_no)
 	char frozen_brr_path[PATH_MAX];
 	frozen_brr_path[0] = 0;
 	jmscott_strcat6(frozen_brr_path, sizeof brr_path,
-		spool_path,
-		"/fs-",
+		BR,
+		"/spool/fs-",
 		now,
 		"-",
 		pid,
@@ -704,29 +704,22 @@ fs_wrap(int *ok_no)
 	if (jmscott_close(frozen_fd) && err == (char *)0)
 		return strerror(errno);
 
-	char put_udig[8 + 1 + 128 + 1];
+	char put_udig[8 + 1 + 128 + 1 + 1];	//  <algo>:<digest>\n\0
 	put_udig[0] = 0;
-	jmscott_strcat3(put_udig, sizeof put_udig,
+	char *put_udig_null = jmscott_strcat3(put_udig, sizeof put_udig,
 			algorithm,
 			":",
 			ascii_digest
 	);
 	TRACE2("put udig", put_udig);
 
-	//  make the wrap dir to spool/wrap/<udig>.brr
-	char wrap_dir_path[PATH_MAX];
-	err = make_wrap_dir(wrap_dir_path, sizeof wrap_dir_path);
-	if (err)
-		return err;
-	TRACE2("wrap dir path", wrap_dir_path);
-
 	//  move frozen brr file into spool/wrap/<wrap udig>.brr
 	char wrap_brr_path[PATH_MAX];
 
 	wrap_brr_path[0] = 0;
 	jmscott_strcat4(wrap_brr_path, sizeof wrap_brr_path,
-		wrap_dir_path,
-		"/",
+		BR,
+		"/spool/wrap/",
 		put_udig,
 		".brr"
 	);
@@ -739,14 +732,11 @@ fs_wrap(int *ok_no)
 	if ((err = fs_exec_put(put_udig, wrap_brr_path)))
 		return err;
 
-	err = jmscott_mkdir_p("tmp");
-	if (err)
-		return err;
-
 	char wrap_uset_path[PATH_MAX];
 	wrap_uset_path[0] = 0;
-	jmscott_strcat5(wrap_uset_path, sizeof wrap_uset_path,
-			"tmp/wrap-",
+	jmscott_strcat6(wrap_uset_path, sizeof wrap_uset_path,
+			BR,
+			"/tmp/wrap-",
 			now,
 			"-",
 			pid,
@@ -761,6 +751,13 @@ fs_wrap(int *ok_no)
 	if (wu_fd < 0)
 		return strerror(errno);
 
+	char wrap_dir_path[PATH_MAX];
+	wrap_dir_path[0] = 0;
+	jmscott_strcat2(wrap_dir_path, sizeof wrap_dir_path,
+			BR,
+			"/spool/wrap"
+	);
+	TRACE2("wrap dir path", wrap_dir_path);
 	int dir_fd = open(wrap_dir_path, O_RDONLY, 0);
 	if (dir_fd < 0)
 		return "open(wrap/) failed";
@@ -802,11 +799,13 @@ fs_wrap(int *ok_no)
 		return strerror(errno);
 
 	TRACE2("put udig", put_udig);
-	if (jmscott_write(output_fd, (unsigned char*)put_udig,strlen(put_udig)))
+	*put_udig_null++ = '\n';
+	*put_udig_null = 0;
+	if (jmscott_write(output_fd, put_udig, put_udig_null - put_udig) < 0)
 		return strerror(errno);
 
 	*ok_no = 0;
-	return fs_set_brr("ok", fs_path);
+	return fs_set_brr("ok", blob_path);
 }
 
 /*
@@ -873,9 +872,6 @@ AGAIN:
  *  logs files in spool/wrap/<udig>.brr.
  *
  *  Steps: roll <wrap-udig>
- *	mkdir -p $BLOBIO_ROOT/spool/wrap
- *	mkdir -p $BLOBIO_ROOT/spool/roll
- *	mkdir -p $BLOBIO_ROOT/tmp		#  on same fs as spool/wrap
  *	USET=tmp/roll-<udig>-<epoch>-<pid>.uset
  *	blobio get <wrap-udig> >$USET
  *	while read UDIG;  do
@@ -887,20 +883,7 @@ static char *
 fs_roll(int *ok_no)
 {
 	(void)ok_no;
-	char wrap_dir_path[PATH_MAX];
-	char roll_dir_path[PATH_MAX];
 	struct stat st;
-
-	char *err = make_wrap_dir(wrap_dir_path, sizeof wrap_dir_path);
-	if (err)
-		return err;
-
-	err = make_roll_dir(roll_dir_path, sizeof roll_dir_path);
-	if (err)
-		return err;
-
-	if (jmscott_mkdir_p("tmp"))
-		return strerror(errno);
 
 	char udig[8 + 1 + 128 + 1];
 	udig[0] = 0;
@@ -914,7 +897,7 @@ fs_roll(int *ok_no)
 		getpid()
 	);
 	TRACE2("tmp roll set", roll_uset);
-	err = fs_exec_get(udig, roll_uset);
+	char *err = fs_exec_get(udig, roll_uset);
 	if (err)
 		return err;
 	int roll_fd = jmscott_open(roll_uset, O_RDONLY, 0);
