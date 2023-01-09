@@ -781,7 +781,7 @@ static char *
 bio4_wrap(int *ok_no)
 {
 	char *err;
-	char udig[8+1+128+1+1];		//  <algo>:<digest>\n
+	char udig[8+1+128+1+1];		//  <algo>:<digest>\n\0
 	unsigned int nread = 0;
 
 	TRACE("entered");
