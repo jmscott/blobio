@@ -301,27 +301,37 @@ fs_get(int *ok_no)
 	);
 	if (err)
 		return err;
+	TRACE2("blob path", blob_path);
 
 	//  link output path to source blob file
 	
 	if (output_path && output_path != null_device) {
+		TRACE2("link: output path", output_path);
 		if (jmscott_link(blob_path, output_path) == 0) {
+			TRACE("link: blob path to output path");
 			*ok_no = 0;
 			return fs_set_brr("ok", blob_path);
 		}
 
 		//  blob file does not exist
 
-		if (errno == ENOENT)
+		if (errno == ENOENT) {
+			TRACE("link: blob does not exist");
 			return fs_set_brr("no", (char *)0);
+		}
 
 		//  linking not allowed, either cross link or permissions
 		if (errno != EXDEV && errno != EPERM)
 			return strerror(errno);
+		TRACE("hard link not allowed (ok)");
 	}
+
+	TRACE("copy blob to output path");
 	if ((err = fs_copy(blob_path, output_path))) {
-		if (errno == ENOENT)
+		if (errno == ENOENT) {
+			TRACE("copy: blob does not exist (ok)");
 			return fs_set_brr("no", (char *)0);
+		}
 		return err;
 	}
 	*ok_no = 0;
@@ -497,8 +507,57 @@ fs_give(int *ok_no)
 	return fs_set_brr("ok,ok,ok", blob_path);
 }
 
+static char *
+fs_fork()
+{
+	pid_t pid;
+
+AGAIN:
+	pid = fork();
+	if (pid < 0) {
+		if (errno == EAGAIN)
+			goto AGAIN;
+		return strerror(errno);
+	}
+
+	/*
+	 *  in child, so return so caller can exec "get", "put", "give", etc
+	 */
+	if (pid == 0)
+		return (char *)0;
+
+	TRACE_ULL("child blobio cli pid", pid);
+
+	/*
+	 *  in parent, so wait for child to exit
+	 */
+
+	int status;
+	
+	if (waitpid(pid, &status, 0) < 0) {
+		int e = errno;
+
+		TRACE2("waitpid() failed", strerror(e));
+		return strerror(e);
+	}
+
+	if (WIFEXITED(status)) {
+		TRACE_ULL("parent: waitpid() exited: status", status);
+		if (WEXITSTATUS(status) != 0)
+			return "blobio exec failed";
+		return (char *)0;
+	}
+	if (WIFSIGNALED(status))
+		return "blobio exec exit due to signal";
+	if (WCOREDUMP(status))
+		return "PANIC: blobio exec core dumped";
+	if (WSTOPSIG(status))
+		return "blobio exec STOP signal";
+	return "PANIC: unexpected status from waitpid()";
+}
+
 /*
- *  exec "blobio put" for a given input path.
+ *  exec "blobio put" for a blob
  *
  *  Note:
  *	why derive the udig, since we are given the input path?
@@ -510,43 +569,15 @@ fs_exec_put(char *udig, char *input_path)
 		TRACE2("udig", udig);
 		TRACE2("input path", input_path);
 	}
-	pid_t put_pid;
-AGAIN:
-	put_pid = fork();
-	if (put_pid < 0) {
-		if (errno == EAGAIN)
-			goto AGAIN;
-		return strerror(errno);
-	}
 
-	//  wait for the "blobio put" child to exit
-	//
-	//  Note:
-	//	Refactor code for both fs_exec_{put,get}!
-	if (put_pid > 0) {
-		int status;
-		
-		if (waitpid(put_pid, &status, 0) < 0) {
-			int e = errno;
+	pid_t my_pid = getpid();
+	char *err = fs_fork();
+	if (err)
+		return err;
+	if (my_pid == getpid())		// execed process finished in parent
+		return (char *)0;
 
-			TRACE2("waitpid() failed", strerror(e));
-			return strerror(e);
-		}
-
-		if (WIFEXITED(status)) {
-			TRACE_ULL("waitpid() exited: status", status);
-			if (WEXITSTATUS(status) != 0)
-				return "blobio put wrap failed";
-			return (char *)0;
-		}
-		if (WIFSIGNALED(status))
-			return "\"blobio put\" exit due to signal";
-		if (WCOREDUMP(status))
-			return "\"blobio put\" core dumped";
-		if (WSTOPSIG(status))
-			return "\"blobio put\" STOPPED";
-		return "unexpected status from waitpid()";
-	}
+	//  in the child, so exec "blobio put"
 
 	char srv[PATH_MAX * 2];
 	srv[0] = 0;
@@ -557,7 +588,6 @@ AGAIN:
 	if (fs_service.query[0])
 		jmscott_strcat2(srv, sizeof srv, "?", fs_service.query);
 
-	//  in the child, so exec the "blobio put"
 	if (tracing) {
 		TRACE2("child: udig", udig);
 		TRACE2("child: service", srv);
@@ -572,6 +602,55 @@ AGAIN:
 	);
 	return strerror(errno);
 }
+
+
+#ifdef NOCOMPILE
+/*
+ *  exec "blobio give" for a given input path.
+ *
+ *  Note:
+ *	why derive the udig, since we are given the input path?
+ */
+static char *
+fs_exec_give(char *udig, char *input_path)
+{
+	if (tracing) {
+		TRACE2("udig", udig);
+		TRACE2("input path", input_path);
+	}
+
+	pid_t my_pid = getpid();
+	char *err = fs_fork();
+	if (err)
+		return err;
+	if (my_pid == getpid())		// execed process finished in parent
+		return (char *)0;
+
+	char srv[PATH_MAX * 2];
+	srv[0] = 0;
+	jmscott_strcat2(srv, sizeof srv,
+			"fs:",
+			fs_service.end_point
+	);
+	if (fs_service.query[0])
+		jmscott_strcat2(srv, sizeof srv, "?", fs_service.query);
+
+	//  in the child, so exec the "blobio give"
+	if (tracing) {
+		TRACE2("child: udig", udig);
+		TRACE2("child: service", srv);
+		TRACE2("child: input path", input_path);
+	}
+	execlp("blobio",
+		"blobio", "give",
+		"--udig", udig,
+		"--service", srv,
+		"--input-path", input_path,
+		(char *)0
+	);
+	return strerror(errno);
+}
+#endif
 
 /*
  *  Steps: "wrap"
@@ -809,7 +888,7 @@ fs_wrap(int *ok_no)
 }
 
 /*
- *  exec "blobio get" for a given udig.
+ *  exec "blobio get" for a blob.
  */
 static char *
 fs_exec_get(char *udig, char *output_path)
@@ -818,32 +897,13 @@ fs_exec_get(char *udig, char *output_path)
 		TRACE2("udig", udig);
 		TRACE2("input path", input_path);
 	}
-	pid_t get_pid;
-AGAIN:
-	get_pid = fork();
-	if (get_pid < 0) {
-		if (errno == EAGAIN)
-			goto AGAIN;
-		return strerror(errno);
-	}
 
-	//  wait for the "blobio get" child to exit
-	if (get_pid > 0) {
-		int status;
-		
-		if (waitpid(get_pid, &status, 0) < 0)
-			return strerror(errno);
-
-		if (WIFEXITED(status))
-			return (char *)0;
-		if (WIFSIGNALED(status))
-			return "\"blobio get\" exit due to signal";
-		if (WCOREDUMP(status))
-			return "\"blobio get\" core dumped";
-		if (WSTOPSIG(status))
-			return "\"blobio get\" STOPPED";
-		return "unexpected status from waitpid";
-	}
+	pid_t my_pid = getpid();
+	char *err = fs_fork();
+	if (err)
+		return err;
+	if (my_pid == getpid())		// execed process finished in parent
+		return (char *)0;
 
 	char srv[PATH_MAX * 2];
 	srv[0] = 0;
