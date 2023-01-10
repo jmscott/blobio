@@ -2,7 +2,10 @@
  *  Synopsis:
  *	Frisk and extract query from uri: {tmo,brr}={\d{1,3}|<path>}
  *  Note:
- *	No escaping in query args, which is a serious bug!
+ *	--help should document the query args, since they are the args
+ *	for all services.
+ *
+ *	No escaping in query args, which is a limitation!
  */
 #include <ctype.h>
 #include <limits.h>
