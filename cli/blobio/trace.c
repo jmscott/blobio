@@ -39,21 +39,17 @@ RFC3339Nano_time()
 			"TRACE: clock_gettime(end REALTIME) failed",
 			strerror(errno)
 		);
-	t = gmtime(&now.tv_sec);
+	t = localtime(&now.tv_sec);
 	if (!t)
 		die2("TRACE: gmtime() failed", strerror(errno));
 	/*
 	 *  Format the record buffer.
 	 */
 	snprintf(buf, sizeof buf,
-		"%04d-%02d-%02dT%02d:%02d:%02d.%09ld+00:00",
-		t->tm_year + 1900,
-		t->tm_mon + 1,
-		t->tm_mday,
+		"%02d:%02d:%02d",
 		t->tm_hour,
 		t->tm_min,
-		t->tm_sec,
-		now.tv_nsec
+		t->tm_sec
 	);
 	return buf;
 }
