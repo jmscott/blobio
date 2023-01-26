@@ -284,6 +284,8 @@ Billing Model Questions:
 	  start_time.
 
 Note:
+	-  investigate fsverity in linux kernel.
+		https://www.kernel.org/doc/html/latest/filesystems/fsverity.html
 	- also, what about leap-seconds (:23:59:60) in starttime.
 
 	- requiring nanosecs to always be 9digits does not agree with
