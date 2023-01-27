@@ -56,7 +56,7 @@ Description:
 					#  since the previous "roll". the
 					#  wrapped <udig>, returned to client,
 					#  will  be in the next wrap, which
-					#  allows perpetual merkel chaining.
+					#  allows perpetual merkle chaining.
 
 		roll <udig>		#  forget all wrapped blob traffic logs
 					#  in the udig set described by <udig>.
