@@ -22,3 +22,5 @@ Syntax of BlobIO Service URI
 	will search for a blob in
 		FS=/usr/local/blobio/data/fs_sha
 		$FS/140/18a/14018a1c515e37eb5a1eb89abdbb14075fbecb97
+
+Add option --progress
