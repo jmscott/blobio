@@ -2,7 +2,7 @@
 #
 #  Synopsis:
 #	Calculate size of set of udigs read from stdin input.
-# 
+#  Usage:
 #	echo sha:07197d010a988984e1827645f09b6169cff62ae2 >x
 #	echo btc20:dd049c347d7b936dda490efad963d1aee87b0b89 >>x
 #
@@ -10,7 +10,7 @@
 #	#  duplicate in set, generates error!
 #	echo btc20:dd049c347d7b936dda490efad963d1aee87b0b89 >>x
 #
-#	bio-blob_size-stdin <x		#  generates sql error
+#	bio-blob_size <x		#  generates sql error
 #
 #	sort -u x | bio-blob_size	#  correct
 #
