@@ -10,7 +10,7 @@
 #	#  duplicate in set, generates error!
 #	echo btc20:dd049c347d7b936dda490efad963d1aee87b0b89 >>x
 #
-#	bio-blob_size <x		#  generates sql error
+#	bio-blob_size <x		#  WARN: generates wierd sql error
 #
 #	sort -u x | bio-blob_size	#  correct
 #
