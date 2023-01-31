@@ -11,6 +11,9 @@
 #	0	ok
 #	1	error
 #  Note:
+#	Consider adding the disk usage of the volume storing
+#	$BLOBIO_ROOT/data.  For gnu "df" do "df -h $BLOBIO_ROOT/data".
+#
 #	On gnu/linux sort is ignoring the second key.  The pain never ends.
 #
 NOW=$(date +'%s')
