@@ -15,7 +15,7 @@
  *	We can know the size of a blob that is not in service.
  */
 
-\set ON_ERROR_STOP
+\set ON_ERROR_STOP true
 
 CREATE TEMP TABLE cli_bio_byte_count(
 	blob	udig
@@ -23,7 +23,10 @@ CREATE TEMP TABLE cli_bio_byte_count(
 
 \copy cli_bio_byte_count FROM PSTDIN
 
-CREATE UNIQUE INDEX idx_cli_bio_byte_count ON cli_bio_byte_count(blob);
+CREATE UNIQUE INDEX idx_cli_bio_byte_count
+  ON
+  	cli_bio_byte_count(blob)
+;
 ANALYZE cli_bio_byte_count;
 
 SELECT

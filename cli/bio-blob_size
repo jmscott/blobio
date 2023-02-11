@@ -18,11 +18,13 @@
 #	0	output byte count of entire set
 #	1	error
 #  Note:
+#	Summarize blobs with no known size.
+#
 #	The input set must be not contain duplicates.
 #	Need to modify bio-blob_size.sql to eliminate dups.
 #
 
-PSQL='psql --no-psqlrc'
+PSQL='psql --no-psqlrc --quiet'
 PROG=$(basename $0)
 
 die()
@@ -64,7 +66,6 @@ test -n "$BLOBIO_ROOT" || die 'env not defined: BLOBIO_ROOT'
 $PSQL 									\
 	--file $BLOBIO_ROOT/lib/$PROG.sql				\
 	--field-separator="	"					\
-	--quiet								\
 	--no-align							\
 	--pset=tuples_only=t						||
 	die "psql failed: exit status=$?"
