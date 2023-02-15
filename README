@@ -132,8 +132,8 @@ Description:
 
 	The minimum size of a brr record is 70 ascii chars
 
-		#field    <sep> comment
-		#-----    ----- #  comment
+		#field    <tab> comment
+		#-----    ----- #-------------------------------------------
 
 		(19+1)	+ 1 +	#  =   start time
 				#        YYYY-MM-DDThh:mm:ssZ
@@ -148,7 +148,7 @@ Description:
 	The maximum size of a blob request record is 455 ascii chars.
 
 		field           <tab>   comment
-		-----           -----   #  comment
+		-----           -----   #------------------------------
 
 		(19+1+9+1+5)	+ 1 +	#  =  start time<tab>
 					#       DAY_re=YYYY-MM-DDThh:mm:ss
