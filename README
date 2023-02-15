@@ -85,43 +85,81 @@ Description:
 		https://en.wikipedia.org/wiki/Call_detail_record
 
 	The format of a single BRR record is a line of seven tab separated
-	fields: i.e, the typical unixy ascii record:
+	ascii fields: i.e, the typical unixy ascii record:
 
-		start_time		#  RFC3339 nanosec:		\
-					#      YYYY-MM-DDThh:mm:ss[.ns][+-]HH:MM
-		transport		#  [a-z][a-z0-9]{0,7}~[[:graph:]]{1,128}
-		verb			#  get|put|take|give|eat|wrap|roll[.u63]
-		algorithm:digest	#  [a-z][a-z0-9]{0,7}:		\
-					#	[[:graph:]]{32,192}
+		start_time		#  RFC3339 nanosec
+					#    NSEC_re=([0-9]{0,10})?
+					#    TZ_re=(([+-]HH:MM)|Z)?
+					#    YYYY-MM-DDThh:mm:ss$NSEC_re$TZ_re
+
+		transport		#  <tag>:<transport detail>
+					#    TAG_re=[a-z][a-z0-9_]{0,7}
+					#    REQUEST_re=[[:graph:]]{16,128}
+					#    ~ ${TAG_re}[~]$REQUEST_re
+
+		verb			#  get|put|give|take|wrap|roll|eat
+					#    UI63_re=([.]\d{1,20)?
+					#    V_re=((get|put|give|take)$UI63_re
+					#    V_re=(wrap|roll|eat)
+					#    ~ ($VERBN_re|$VERB0_re)
+
+		udig			#  algorithm:digest
+					#    ALGO_re=[a-z][a-z0-9]{0,7}
+					#    DIGEST_re=[[:graph:]]{32,128}
+					#    ~ $ALGO_re:$DIGEST_re
+
 		chat_history		#  ok/no handshake between server&client
-		blob_size		#  unsigned 63 bit long <= 2^63
-		wall_duration		#  wall duration in 32 bit sec.ns>=0
+					#    Note:
+					#	also depends upon the verb,
+					#	which is tricky to express
+					#	with regular expression.
+					#	perhaps use a variation of
+					#	$1 syntax in perl to express
+					#    ~  (ok|no)(,(ok|no){0,2}
 
-	All characters are ascii.  Most important is that each client request
-	is associated with a request for a single blob described by a udig.
-	Also, BRR records are always syntactally correct as described above.
-	In other words, a request for a syntactically incorrect udig or an
-	unknown verb will not generate a BRR record.
+		blob_size		#  unsigned 63 bit long <= 2^63
+					#    ~ \d{1,19}
+					#
+		wall_duration		#  <ui31 sec>(.<ui31 sec>)?
+					#    ~ \d{1,10}([.]\d{1,10})?
+
+	Most important is that each client request is associated with a request
+	for a single blob described by a udig.  BRR records are always
+	syntactally correct as described above.  In other words, a request that
+	is syntactically incorrect will never generate a blob request record,
+	which implies debugging a blob server may be out of band with BRR
+	records.
 
 	The minimum size of a brr record is XX ascii chars
 
-		(19+1+5)	+ 1 +	=   start time<tab>
-		(1+1+1)		+ 1 +	>=  transport<tab>
-		(3)		+ 1 +	>=  verb<tab>
-		(1+1+32)	+ 1 +	>=  udig<tab>
-		(2)		+ 1 +	>=  chat history<tab> 
-		(1)		+ 1 +	>=  blob size<tab>
-		(1)		+ 1	>=  wall duration   #  newline required
+		#field    <sep> comment
+		#-----    ----- #  comment
+
+		(19+1)	+ 1 +	#  =   start time
+				#        YYYY-MM-DDThh:mm:ssZ
+		(1+1+1)	+ 1 +	#  >=  transport<tab>
+				#        [a-z]:[[:graph:]]
+		(3)	+ 1 +	#  >=  verb<tab>
+		(1+1+32)+ 1 +	#  >=  udig<tab>
+		(2)	+ 1 +	#  >=  chat history<tab> 
+		(1)	+ 1 +	#  >=  blob size<tab>
+		(1)		#  >=  wall duration
 
 	The maximum size of a blob request record is 456 ascii chars.
 
-		(19+1+9+1+5)	+ 1 +	=   start time<tab>
-		(8+1+196)	+ 1 +	<=  transport<tab>
-		(4 + 1 + 19)	+ 1 +	<=  verb[.ui63]<tab>
-		(8+1+128)	+ 1 +	<=  udig<tab>
-		(8)		+ 1 +	<=  chat history<tab>
-		(19)		+ 1 +	<=  blob size<tab>
-		(10+1+10)	+ 1	<=  wall duration   #  newline required
+		field           <sep>   comment
+		-----           -----   #  comment
+
+		(19+1+9+1+5)	+ 1 +	#  =  start time<tab>
+					#       DAY_re=YYYY-MM-DDThh:mm:ss
+					#       ~ /${DAY_re}[.]\d{10}[+-]HH:MM/
+		(8+1+196)	+ 1 +	#  <= transport<tab>
+					#        ~ /[a-z]{8}:[[:graph:]]{128}/
+		(4 + 1 + 19)	+ 1 +	#  <= verb.\d{19}<tab>
+		(8+1+128)	+ 1 +	#  <= udig<tab>
+		(8)		+ 1 +	#  <= chat history (ok,ok,ok)<tab>
+		(19)		+ 1 +	#  <= blob size (ui63)<tab>
+		(10+1+10)		#  <= wall duration (ui31)
 
 		<= 456 bytes
 
