@@ -88,11 +88,11 @@ Description:
 	fields: i.e, the typical unixy ascii record:
 
 		start_time		#  RFC3339 nanosec:		\
-					#	YYYY-MM-DDThh:mm:ss.ns[+-]HH:MM
+					#      YYYY-MM-DDThh:mm:ss[.ns][+-]HH:MM
 		transport		#  [a-z][a-z0-9]{0,7}~[[:graph:]]{1,128}
-		verb			#  get/put/take/give/eat/wrap/roll
+		verb			#  get|put|take|give|eat|wrap|roll[.u63]
 		algorithm:digest	#  [a-z][a-z0-9]{0,7}:		\
-					#	[[:graph:]]{32,128}
+					#	[[:graph:]]{32,192}
 		chat_history		#  ok/no handshake between server&client
 		blob_size		#  unsigned 63 bit long <= 2^63
 		wall_duration		#  wall duration in 32 bit sec.ns>=0
@@ -103,43 +103,49 @@ Description:
 	In other words, a request for a syntactically incorrect udig or an
 	unknown verb will not generate a BRR record.
 
-	The minimum size of a brr record is 95 bytes
+	The minimum size of a brr record is XX ascii chars
 
-		(19+1+9+6)	+ 1 +	=   start time<tab>
+		(19+1+5)	+ 1 +	=   start time<tab>
 		(1+1+1)		+ 1 +	>=  transport<tab>
 		(3)		+ 1 +	>=  verb<tab>
 		(1+1+32)	+ 1 +	>=  udig<tab>
 		(2)		+ 1 +	>=  chat history<tab> 
 		(1)		+ 1 +	>=  blob size<tab>
-		(1+1+9)			>=  wall duration
+		(1)		+ 1	>=  wall duration   #  newline required
 
-	where nanoseconds in start_time and wall_duration is always 9 digits
-	(why, the RFC says not!?).  Seconds in wall duration is <= 10 digits
-	(2^31).
+	The maximum size of a blob request record is 456 ascii chars.
 
-	The maximum size of a blob request record is 371 bytes
-
-		(19+1+9+6)	+ 1 +	=   start time<tab>
-		(8+1+128)	+ 1 +	<=  transport<tab>
-		(8)		+ 1 +	<=  verb<tab>
+		(19+1+9+1+5)	+ 1 +	=   start time<tab>
+		(8+1+196)	+ 1 +	<=  transport<tab>
+		(4 + 1 + 19)	+ 1 +	<=  verb[.ui63]<tab>
 		(8+1+128)	+ 1 +	<=  udig<tab>
 		(8)		+ 1 +	<=  chat history<tab>
 		(19)		+ 1 +	<=  blob size<tab>
-		(10+1+10)		<=  wall duration
+		(10+1+10)	+ 1	<=  wall duration   #  newline required
 
-		<= 371 bytes
+		<= 456 bytes
 
-	Since the length is <= 371 bytes, a BRR record can be broadcast in an
-	UDP packet.  The BRR record format is cast in stone.
+	Since the length is <= 456 bytes, a BRR record can be broadcast in an
+	UDP packet, with a "insured" atomic payload of 508 bytes.
+	The BRR record format is cast in saphire.
 
 Protocol Flow:
  	>get udig\n		# request for blob by udig
 	  <ok\n[bytes][close]	#   server sends bytes of blob
 	  <no\n[close]		#   server can not honor request
+ 	>get.5432 udig\n	# request for blob of size 5432 bytes by udig
+	  <ok\n[5432 bytes][close]	#   server sends bytes of blob
+	  <no\n[close]		#   server can not honor request
 
  	>put udig\n		# request to put blog matching a udig
 	  <ok\n			#   server ready for blob bytes
 	    >[bytes]		#     send bytes to server
+	      <ok\n[close]	#       accepted bytes for blob
+	      <no\n[close]	#       rejects bytes for blob
+	  <no\n			#   server can not honor request
+ 	>put.5432 udig\n	# request to put blog of size 5432 and udig
+	  <ok\n			#   server ready for blob bytes
+	    >[5432 bytes]	#     send bytes to server
 	      <ok\n[close]	#       accepted bytes for blob
 	      <no\n[close]	#       rejects bytes for blob
 	  <no\n			#   server can not honor request
@@ -151,8 +157,23 @@ Protocol Flow:
 	      <ok[close]	#       server may forget the blob
 	    >no\n[close		#     client rejects the taken blob
 	  <no\n[close]		#   server can not forget blob
+  	>take.5432 udig\n	# request for blob of 5432 bytes by udig
+  	  <ok\n[bytes]		#   server sends 5432 blob bytes
+  	    >ok\n		#     client has the blob
+	      <no[close]	#       server may not forget the blob
+	      <ok[close]	#       server may forget the blob
+	    >no\n[close		#     client rejects the taken blob
+	  <no\n[close]		#   server can not forget blob
 
- 	>give udig\n		# request to put blog matching a udig
+ 	>give udig\n		# request to put blob matching a udig
+	  <ok\n			#   server ready for blob bytes
+	    >[bytes]		#     send digested bytes to server
+  	      <ok\n		#   server accepts the bytes
+  	        >ok[close]	#     client probably forgets blob
+  		>no[close]	#     client might remember the blob
+	      <no\n[close]	#   server rejects the blob
+  	  <no\n[close]		#   server rejects blob give request
+ 	>give.5432 udig\n	# request to put blob of 5432 bytes by udig
 	  <ok\n			#   server ready for blob bytes
 	    >[bytes]		#     send digested bytes to server
   	      <ok\n		#   server accepts the bytes
@@ -174,34 +195,9 @@ Protocol Flow:
 	    			# a wrap set.
 	    <no\n[close]	# not all logs in set forgotten, or other error
 
-	WARNING: the protocol is ambiguous about how the end of the blob stream
-	is physically interpreted.  This may turn out to be a serious design
-	flaw, particulary with regard to denial-of-service attacks.
-	Essentially the only indication that the end of the blob has been
-	reached is that the socket has closed;  nothing in the protocol
-	explicity indicates "END of BLOB" other than matching the digest.
-	In other words, only the digest presented by the request
-	determines the correctness of the blob.  A possible fix is to extend
-	the protocol with an optional byte count preceding the <udig>.  For
-	example, currently the request
-
-		get <udig>
-		get sha:cd50d19784897085a8d0e3e413f8612b097c03f1
-
-		put <udig>
-		put sha:cd50d19784897085a8d0e3e413f8612b097c03f1
-
-	could be extended as
-
-		get <blob-byte-count> <udig>
-		get.1499 sha:cd50d19784897085a8d0e3e413f8612b097c03f1
-
-		put <blob-byte-count> <udig>
-		put.1499 sha:cd50d19784897085a8d0e3e413f8612b097c03f1
-
-	Problematically, such an extension does leak info about the blob.
-	probing for support of the <byte-count> extension could be "solved"
-	by requiring all bio4 servers to contain the "empty" blob
+	Problematically, the <verb>.ui63 request does leak info about the blob.
+	also, probing for support of the <byte-count> extension could be
+	"solved" by requiring all bio4 servers to contain the "empty" blob
 	("epsilon knowledge").
 
 	to illustrate probing for byte count support, consider the empty
@@ -232,32 +228,34 @@ Protocol Flow:
 	As blobio evolves, forward facing, untrusted applications will rarely
 	speak the bio4 protocol.  instead, a security oriented gateway protocol
 	will sit in front of the bio4 services, such as http or a REST api.
+	in other words, all blob gateways are caches and a bio4 service is
+	service of last resort.
 
 Protocol Questions:
-	-  clarify the meaning of "transport" field in blob request record.
-	   for networks, trransport are roughly the protocol, request endpoint
+	- clarify the meaning of "transport" field in blob request record.
+	   for networks, transport are roughly the protocol, request endpoint
 	   and the negotiated endpoint.
 
 	- what about forbidding ':' as a digest character?
 
         - think about a "sum" command that allows the server to formally prove
-	  the existence of a set of blobs, thus verifying the server is not
-	  lying about storage.  the obvious technique would be for the client
-	  to send the udig of a randomly selected set of blobs for which the
-	  server is expected to digest the cancatenation of the blobs.
+	   the existence of a set of blobs, thus verifying the server is not
+	   lying about storage.  the obvious technique would be for the client
+	   to send the udig of a set of blobs unknown to the server, for which
+	   the server is expected to digest the cancatenation of the blobs.
 
 	- reimplement wrap as
 
 		wrap <udig>
 
-	  the idea is that the final record of the wrap set will always contain
-	  <udig>, creating a kind of audit trail.  also insures no wrap set is
-	  empty and sequential wraps could always return different udigs if the
-	  given udig was unique. in shell parlance
+	   the idea is that the final record of the wrap set will always contain
+	   <udig>, creating a kind of audit trail.  also insures no wrap set is
+	   empty and sequential wraps could always return different udigs if the
+	   given udig was unique. in shell parlance
 
 	  	test $(blobio wrap <udigA>) = $(blobio wrap <udigB>)
 
-	  is always false, even when udigA = udigB.
+	   is always false, even when udigA = udigB.
 
 Billing Model Questions:
 	- what to measure per billing cycle:
@@ -284,7 +282,16 @@ Billing Model Questions:
 	  start_time.
 
 Note:
-	-  investigate fsverity in linux kernel.
+	- should "get" verb include a reply?
+
+		>get
+		 <ok ... bytes
+		 >ok
+
+	- what would eat.ui63 mean?  seems like would be useful with trusted'
+	  network.
+
+	- investigate fsverity in linux kernel.
 		https://www.kernel.org/doc/html/latest/filesystems/fsverity.html
 	- also, what about leap-seconds (:23:59:60) in starttime.
 
@@ -295,9 +302,6 @@ Note:
 	  big.
 
 	- where is syntax for BLOBIO_SERVICE defined?
-
-	- should the digest match be changed to [[:graph:]]{32,128} to
-	  [[:graph:]]{32,128} for possible base 58 for newer digests?
 
 	- should the term "fault" be replaced with "panic", in the code?
 
