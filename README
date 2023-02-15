@@ -130,7 +130,7 @@ Description:
 	which implies debugging a blob server may be out of band with BRR
 	records.
 
-	The minimum size of a brr record is XX ascii chars
+	The minimum size of a brr record is 70 ascii chars
 
 		#field    <sep> comment
 		#-----    ----- #  comment
@@ -145,9 +145,9 @@ Description:
 		(1)	+ 1 +	#  >=  blob size<tab>
 		(1)		#  >=  wall duration
 
-	The maximum size of a blob request record is 456 ascii chars.
+	The maximum size of a blob request record is 455 ascii chars.
 
-		field           <sep>   comment
+		field           <tab>   comment
 		-----           -----   #  comment
 
 		(19+1+9+1+5)	+ 1 +	#  =  start time<tab>
@@ -161,9 +161,9 @@ Description:
 		(19)		+ 1 +	#  <= blob size (ui63)<tab>
 		(10+1+10)		#  <= wall duration (ui31)
 
-		<= 456 bytes
+		<= 455 bytes
 
-	Since the length is <= 456 bytes, a BRR record can be broadcast in an
+	Since the length is <= 455 bytes, a BRR record can be broadcast in an
 	UDP packet, with a "insured" atomic payload of 508 bytes.
 	The BRR record format is cast in saphire.
 
