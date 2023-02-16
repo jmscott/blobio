@@ -56,7 +56,8 @@ Description:
 					#  since the previous "roll". the
 					#  wrapped <udig>, returned to client,
 					#  will  be in the next wrap, which
-					#  allows perpetual merkle chaining.
+					#  allows perpetual acyclic chaining,
+					#  similar to merkle tree. 
 
 		roll <udig>		#  forget all wrapped blob traffic logs
 					#  in the udig set described by <udig>.
@@ -69,11 +70,11 @@ Description:
 					#  the next wrap set as a "roll" blob
 					#  request record.
 
-	After the initial request by the client, all request replies are just
+	After the initial request by the client, all server replies are just
 	'ok' or 'no', where 'no' is always the last reply. See below for the
 	exact protocol.
 
-	On the blob server, named "bio4d", for each correct client request a
+	On the blob server - named "bio4d" - for each correct client request a
 	single traffic record describing the request is written to the file
 
 		$BLOBIO_ROOT/spool/bio4d.brr
@@ -125,17 +126,18 @@ Description:
 
 	Most important is that each client request is associated with a request
 	for a single blob described by a udig.  BRR records are always
-	syntactally correct as described above.  In other words, a request that
+	syntactally correct as described below.  In other words, a request that
 	is syntactically incorrect will never generate a blob request record,
 	which implies debugging a blob server may be out of band with BRR
 	records.
 
-	The minimum size of a brr record is 70 ascii chars
+	The minimum size of a BRR record is 70 ascii chars.  A terminating new
+	line or null char is NOT included in the size.
 
 		#field    <tab> comment
 		#-----    ----- #-------------------------------------------
 
-		(19+1)	+ 1 +	#  =   start time
+		(19+1)	+ 1 +	#  =   start time<tab>
 				#        YYYY-MM-DDThh:mm:ssZ
 		(1+1+1)	+ 1 +	#  >=  transport<tab>
 				#        [a-z]:[[:graph:]]
@@ -143,9 +145,10 @@ Description:
 		(1+1+32)+ 1 +	#  >=  udig<tab>
 		(2)	+ 1 +	#  >=  chat history<tab> 
 		(1)	+ 1 +	#  >=  blob size<tab>
-		(1)		#  >=  wall duration
+		(1)		#  >=  wall duration seconds
 
 	The maximum size of a blob request record is 455 ascii chars.
+	No newlime or null char is included in max size.
 
 		field           <tab>   comment
 		-----           -----   #------------------------------
@@ -256,31 +259,26 @@ Protocol Flow:
 		< no
 
 	proves that the server does not support <byte-count> for the get
-	request.  and
+	request.  and  
 
 		> get.0 sha:da39a3ee5e6b4b0d3255bfef95601890afd80709
 		< ok
 
-	proves <byte-count> is supported for get request.
+	implies <byte-count> is supported for get/put/give/take
+	requests.
 
 	As blobio evolves, forward facing, untrusted applications will rarely
 	speak the bio4 protocol.  instead, a security oriented gateway protocol
-	will sit in front of the bio4 services, such as http or a REST api.
+	will sit in front of the bio4 services, such as https, rsync, or a REST api.
 	in other words, all blob gateways are caches and a bio4 service is
 	service of last resort.
 
 Protocol Questions:
-	- clarify the meaning of "transport" field in blob request record.
-	   for networks, transport are roughly the protocol, request endpoint
-	   and the negotiated endpoint.
-
-	- what about forbidding ':' as a digest character?
-
-        - think about a "sum" command that allows the server to formally prove
+        - think about a "cat" command that allows the server to formally prove
 	   the existence of a set of blobs, thus verifying the server is not
 	   lying about storage.  the obvious technique would be for the client
-	   to send the udig of a set of blobs unknown to the server, for which
-	   the server is expected to digest the cancatenation of the blobs.
+	   to send the udig of a list of blobs to the server, for which
+	   the server is reply with the digest of the cancatenation of the blobs.
 
 	- reimplement wrap as
 
@@ -312,13 +310,6 @@ Billing Model Questions:
 
 	- duration of storage: per blob or per plan?
 
-	- should the blob request record include a "duration to first byte",
-	  which measures the difference between start_time and time after the
-	  first read or write to the client.  the time to first byte can be
-	  observed on the network, sort of.  the sender will see a slightly
-	  different time to first byte than the receiver, as with the
-	  start_time.
-
 Note:
 	- should "get" verb include a reply?
 
@@ -332,35 +323,16 @@ Note:
 	- investigate fsverity in linux kernel.
 		https://www.kernel.org/doc/html/latest/filesystems/fsverity.html
 	- also, what about leap-seconds (:23:59:60) in starttime.
-
-	- requiring nanosecs to always be 9digits does not agree with
-	  the RFC.
-
-	- a "wrap" -> "no" has no <udig> in brr, implying the minimum is too
-	  big.
-
-	- where is syntax for BLOBIO_SERVICE defined?
-
-	- should the term "fault" be replaced with "panic", in the code?
-
-	- on a brr record, should transport+start_time be required to be unique?
-
-	- move pgsql data type public.udig to schema blobio.udig?!
-
-	- rename fs_sha and fs_btc20 to posix_sha and posix_btc20?
-
-	- follow project for atomic write in linux
-		https://lwn.net/Articles/789600/
-
-	- casting text to udig_sha fails when prefixed by sha:
-
-		--  OK
-		select '44e946a2889b295eeb0b9d95efe34625cc830dde'::udig_sha;
-
-		-- FAILS
-		select 'sha:44e946a2889b295eeb0b9d95efe34625cc830dde'::udig_sha;
 	
-	  why not cast both versions?
+	- a "wrap" -> "no" has no <udig> in brr, implying the minimum is too
+	  big. should the empty udig be in the brr record?
+
+	- where is syntax for BLOBIO_SERVICE defined
+
+	- move pgsql data type public.udig to schema blobio.udig!
+
+        - follow project for atomic write in linux
+		https://lwn.net/Articles/789600/
 
 	- move log/*.[fx]dr files to spool and, after wrapping, to data/
 
