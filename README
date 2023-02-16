@@ -1,25 +1,26 @@
 Synopsis:
-	A trivial protocol to access immutable blobs using a cypto digest as the key
+	A trivial system to access immutable blobs using cypto digests as the key
 Description:
-	The blobio system implements a simple client/server protocol for 
-	associating crypto hash digests as keys for immutable, binary large
-	objects stored on a network.  The blobs are referenced with a uri
-	(uniform resource identifier) called a uniform digest, shortened to
-	'udig', with a syntax like
+	The blobio system implements a several client/server/local protocols for 
+	associating crypto hash digests as keys for immutable, binary (typically
+	large) objects stored on a networks or file systems.  The blobs are
+	referenced with a uri (uniform resource identifier) called a uniform digest,
+	shortened to 'udig', with a syntax like
 
 		algorithm:digest
 
-	where 'algorithm' is the hash algorithm, like 'sha' or 'btc20', for
-	example, and 'digest' is the ascii hash value of the blob.  The colon
-	character separates the algorithm and the digest.  The algorithm
+	where 'algorithm' is the hash algorithm, like 'sha' or 'btc20', and 'digest'
+	is the ascii hash value of the blob.
+	
+	The colon character separates the algorithm and the digest.  The algorithm 
 	matches the perl5 regex
 	
-		^[a-z][a-z0-9]{0,7}$
+		^[a-z][a-z0-9]{0,7}
 
 	and the digest matches both perl5 regexs
 
-		^[[:graph:]]{32,128}$
-		^[[:ascii:]{32,128}$
+		[[:graph:]]{32,128}
+		[[:ascii:]{32,128}
 
 	Currently, just two digests are supported:
 
@@ -37,10 +38,10 @@ Description:
 		echo 'hello, world' | shasum
 		cd50d19784897085a8d0e3e413f8612b097c03f1  -
 
-	The maximum size of the algorithm tag is 8 asciicharacters.  The maximum size
-	of a digest is 128  ascii characters, making the maximum size of a udig =
-	8 + 1 (colon) + 128. The minimum size of a digest is 32 ascii chars,
-	making the minimum  size of a udig 1 + 1(colon) + 32 = 34 chars.
+	The maximum size of the algorithm tag is 8 ascii chars.  The maximum size
+	of a digest is 128  ascii graphical haracters, making the maximum size of
+	a udig = 8 + 1 (colon) + 128. The minimum size of a digest is 32 ascii chars,
+	making the minimum  size of a udig = 1 + 1(colon) + 32 = 34 chars.
 
 	The network protocol implements 7 verbs
 	
@@ -88,7 +89,7 @@ Description:
 	The format of a single BRR record in spool/bio4d.brr is a line of seven
 	tab separated ascii fields: i.e, the typical unixy ascii record:
 
-		start_time		#  RFC3339 nanosec
+		start_time		#  RFC3339
 					#    NSEC_re=([0-9]{0,10})?
 					#    TZ_re=(([+-]HH:MM)|Z)?
 					#    YYYY-MM-DDThh:mm:ss$NSEC_re$TZ_re
@@ -110,7 +111,7 @@ Description:
 					#    ~ $ALGO_re:$DIGEST_re
 
 		chat_history		#  ok/no handshake between server&client
-					#    Note:
+		                        #    Note:
 					#	also depends upon the verb,
 					#	which is tricky to express
 					#	with regular expression.
@@ -118,7 +119,7 @@ Description:
 					#	$1 syntax in perl to express
 					#    ~  (ok|no)(,(ok|no){0,2}
 
-		blob_size		#  unsigned 63 bit long <= 2^63
+		blob_size		#  unsigned 63 bit long 0 <= 2^63 - 1
 					#    ~ \d{1,19}
 					#
 		wall_duration		#  <ui31 sec>(.<ui31 sec>)?
@@ -132,7 +133,7 @@ Description:
 	records.
 
 	The minimum size of a BRR record is 70 ascii chars.  A terminating new
-	line or null char is NOT included in the min size.
+	line or null char is NOT included in the tally of the min in size.
 
 		#field    <tab> comment
 		#-----    ----- #-------------------------------------------
@@ -148,7 +149,7 @@ Description:
 		(1)		#  >=  wall duration seconds
 
         The maximum size of a blob request record is 455 ascii chars.
-	No newlime or null char is included in max size.
+	No newlime or null char is included in the tally of max size.
 
 		field           <tab>   comment
 		-----           -----   #------------------------------
