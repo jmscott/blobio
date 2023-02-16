@@ -37,10 +37,10 @@ Description:
 		echo 'hello, world' | shasum
 		cd50d19784897085a8d0e3e413f8612b097c03f1  -
 
-	The maximum size of the algorithm tag is 8 characters.  The maximum size
-	of a digest is 128 characters, making the maximum size of a udig =
-	8 + 128 + 1 (colon).  The minimum size of a digest is 32 ascii chars,
-	making the minum size of a udig 1 + 1 + 32 = 34 chars.
+	The maximum size of the algorithm tag is 8 asciicharacters.  The maximum size
+	of a digest is 128  ascii characters, making the maximum size of a udig =
+	8 + 1 (colon) + 128. The minimum size of a digest is 32 ascii chars,
+	making the minimum  size of a udig 1 + 1(colon) + 32 = 34 chars.
 
 	The network protocol implements 7 verbs
 	
@@ -52,19 +52,19 @@ Description:
 
 		wrap			#  freeze current unwrapped blob traffic
 					#  log into a single blob and return
-					#  udig of the set of all blobs wrapped
+					#  udig of the set of all blobs "wrapped"
 					#  since the previous "roll". the
-					#  wrapped <udig>, returned to client,
+					#  wrapped <udig>, returned to the client,
 					#  will  be in the next wrap, which
-					#  allows perpetual acyclic chaining,
-					#  similar to merkle tree. 
+					#  allows perpetual, acyclic chaining,
+					#  in the spirit of a merkle tree. 
 
 		roll <udig>		#  forget all wrapped blob traffic logs
 					#  in the udig set described by <udig>.
 					#  subsequent wrap/rolls will never see 
 					#  these blob sets again.
 					#
-					#  however, the blobs themselves will
+					#  however, the wrapped blobs themselves will
 					#  exist and probably be gettable.   the
 					#  <udig> of the rolled udig will be in
 					#  the next wrap set as a "roll" blob
@@ -72,7 +72,7 @@ Description:
 
 	After the initial request by the client, all server replies are just
 	'ok' or 'no', where 'no' is always the last reply. See below for the
-	exact protocol.
+	exact syntax.
 
 	On the blob server - named "bio4d" - for each correct client request a
 	single traffic record describing the request is written to the file
@@ -85,8 +85,8 @@ Description:
 
 		https://en.wikipedia.org/wiki/Call_detail_record
 
-	The format of a single BRR record is a line of seven tab separated
-	ascii fields: i.e, the typical unixy ascii record:
+	The format of a single BRR record in spool/bio4d.brr is a line of seven
+	tab separated ascii fields: i.e, the typical unixy ascii record:
 
 		start_time		#  RFC3339 nanosec
 					#    NSEC_re=([0-9]{0,10})?
@@ -124,15 +124,15 @@ Description:
 		wall_duration		#  <ui31 sec>(.<ui31 sec>)?
 					#    ~ \d{1,10}([.]\d{1,10})?
 
-	Most important is that each client request is associated with a request
-	for a single blob described by a udig.  BRR records are always
+	Most important is that each correct client request is associated with a
+	request for a single blob described by a udig.  BRR records are always
 	syntactally correct as described below.  In other words, a request that
 	is syntactically incorrect will never generate a blob request record,
 	which implies debugging a blob server may be out of band with BRR
 	records.
 
 	The minimum size of a BRR record is 70 ascii chars.  A terminating new
-	line or null char is NOT included in the size.
+	line or null char is NOT included in the min size.
 
 		#field    <tab> comment
 		#-----    ----- #-------------------------------------------
@@ -147,7 +147,7 @@ Description:
 		(1)	+ 1 +	#  >=  blob size<tab>
 		(1)		#  >=  wall duration seconds
 
-	The maximum size of a blob request record is 455 ascii chars.
+        The maximum size of a blob request record is 455 ascii chars.
 	No newlime or null char is included in max size.
 
 		field           <tab>   comment
@@ -168,6 +168,7 @@ Description:
 
 	Since the length is <= 455 bytes, a BRR record can be broadcast in an
 	UDP packet, with a "insured" atomic payload of 508 bytes.
+	
 	The BRR record format is cast in saphire.
 
 Protocol Flow:
@@ -236,12 +237,13 @@ Protocol Flow:
 	    			# a wrap set.
 	    <no\n[close]	# not all logs in set forgotten, or other error
 
-	Problematically, the <verb>.ui63 request does leak info about the blob.
-	also, probing for support of the <byte-count> extension could be
+	Problematically, the <verb>.ui63 request leaks info about the blob.
+	
+	Also, probing for support of the <byte-count> extension could be
 	"solved" by requiring all bio4 servers to contain the "empty" blob
 	("epsilon knowledge").
 
-	to illustrate probing for byte count support, consider the empty
+	To illustrate probing for byte count support, consider the empty
 	blob for sha digest:
 
 		sha:da39a3ee5e6b4b0d3255bfef95601890afd80709
@@ -274,24 +276,15 @@ Protocol Flow:
 	service of last resort.
 
 Protocol Questions:
-        - think about a "cat" command that allows the server to formally prove
-	   the existence of a set of blobs, thus verifying the server is not
-	   lying about storage.  the obvious technique would be for the client
-	   to send the udig of a list of blobs to the server, for which
-	   the server is reply with the digest of the cancatenation of the blobs.
+        - think about a "cat" command that allows the server to "prove" the existence 
+	   of a set of blobs on a remote server.  the obvious technique would be for
+	   the cliet "cat" to send the udig of a list of blobs to the server, for which
+	   the server replies with the digest of the cancatenation of the blobs in the
+	   sent udig list.
 
-	- reimplement wrap as
-
-		wrap <udig>
-
-	   the idea is that the final record of the wrap set will always contain
-	   <udig>, creating a kind of audit trail.  also insures no wrap set is
-	   empty and sequential wraps could always return different udigs if the
-	   given udig was unique. in shell parlance
-
-	  	test $(blobio wrap <udigA>) = $(blobio wrap <udigB>)
-
-	   is always false, even when udigA = udigB.
+	- should "wrap" verb send hash algorithm?  how does sending hash algo
+	  give too much control of security to client.  what if server wishes
+	  to use more secure digest for "wrap"?
 
 Billing Model Questions:
 	- what to measure per billing cycle:
