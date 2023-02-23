@@ -1,10 +1,9 @@
 Synopsis:
 	A trivial key/value protocol using crypto digests as keys.
 Description:
-	The blobio system implements several client/server/local protocols for 
-	associating crypto hash digests as keys for immutable, binary (typically
-	large) objects stored on a networks or file systems.  The blobs are
-	referenced with a uri (uniform resource identifier) called a uniform digest,
+	The blobio system implements a client/server protocol for 
+	associating crypto hash digests as keys for an immutable, binary (typically
+	large).  The blobs are referenced with a uri (uniform resource identifier) called a uniform digest,
 	shortened to 'udig', with a syntax like
 
 		algorithm:digest
@@ -40,7 +39,7 @@ Description:
 
 	The maximum size of the algorithm tag is 8 ascii chars.  The maximum size
 	of a digest is 128  ascii graphical haracters, making the maximum size of
-	a udig = 8 + 1 (colon) + 128. The minimum size of a digest is 32 ascii chars,
+	a udig = 8 + 1 (colon) + 128 asci chars. The minimum size of a digest is 32 ascii chars,
 	making the minimum  size of a udig = 1 + 1(colon) + 32 = 34 chars.
 
 	The network protocol implements 7 verbs
@@ -50,6 +49,7 @@ Description:
 		take <udig>		#  get a blob that the source may forget
 		give <udig>		#  put a blob that the source may forget
 		eat <udig>		#  untrusted digest of a blob by server
+		cat <udig>              #  sum the 9concatenationthe of blobs in <udig>
 
 		wrap			#  freeze current unwrapped blob traffic
 					#  log into a single blob and return
