@@ -1,5 +1,5 @@
 Synopsis:
-	A trivial protocol to access immutable blobs using the cyto digest of the blob as a key
+	A trivial key/value protocol using crypto digests as keys.
 Description:
 	The blobio system implements a several client/server/local protocols for 
 	associating crypto hash digests as keys for immutable, binary (typically
