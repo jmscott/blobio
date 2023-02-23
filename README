@@ -1,7 +1,7 @@
 Synopsis:
 	A trivial key/value protocol using crypto digests as keys.
 Description:
-	The blobio system implements a several client/server/local protocols for 
+	The blobio system implements several client/server/local protocols for 
 	associating crypto hash digests as keys for immutable, binary (typically
 	large) objects stored on a networks or file systems.  The blobs are
 	referenced with a uri (uniform resource identifier) called a uniform digest,
