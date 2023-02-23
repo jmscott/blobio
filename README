@@ -38,7 +38,7 @@ Description:
 		cd50d19784897085a8d0e3e413f8612b097c03f1  -
 
 	The maximum size of the algorithm tag is 8 ascii chars.  The maximum size
-	of a digest is 128  ascii graphical haracters, making the maximum size of
+	of a digest is 128 ascii graphical haracters, making the maximum size of
 	a udig = 8 + 1 (colon) + 128 asci chars. The minimum size of a digest is 32 ascii chars,
 	making the minimum  size of a udig = 1 + 1(colon) + 32 = 34 chars.
 
@@ -125,11 +125,9 @@ Description:
 		wall_duration		#  <ui31 sec>(.<ui31 sec>)?
 					#    ~ \d{1,10}([.]\d{1,10})?
 
-	Most important is that each correct client request is associated with a
-	request for a single blob described by a udig.  BRR records are always
-	syntactally correct as described below.  In other words, a request that
-	is syntactically incorrect will never generate a blob request record,
-	which implies debugging a blob server may be out of band with BRR
+	BRR records are always syntactally correct as described below.  In other words,
+	a request that is syntactically incorrect will never generate a blob request
+	record, which implies debugging a blob server may be out of band with BRR
 	records.
 
 	The minimum size of a BRR record is 70 ascii chars.  A terminating new
