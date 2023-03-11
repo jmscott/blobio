@@ -78,7 +78,7 @@ type config struct {
 	log_directory string
 }
 
-//  abstract syntax tree that represents the config file
+// abstract syntax tree that represents the config file
 type ast struct {
 	yy_tok int
 	bool
