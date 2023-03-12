@@ -15,6 +15,7 @@ log()
 
 die()
 {
+	log "ERROR: $@" >>run/$PROG.fault
 	log "ERROR: $@" >&2
 	exit 1
 }
@@ -26,14 +27,18 @@ zap_run()
 	log 'removing stale files in run/bio4d*'
 	find run/ -type f -name 'bio4d*' | xargs --no-run-if-empty rm -v
 	local STATUS="${PIPESTATUS[*]}"
-	test "$STATUS" = '0 0'					||
-		log "WARN: rm run/stale failed: exit status=$STATUS" >&2
+	test "$STATUS" = '0 0'						||
+		die "find run/bio4d* failed: exit status=$STATUS"
 }
 
 leave()
 {
+	local _STATUS=0
 	STATUS=$?
-	zap_run
+	(zap_run) || _STATUS=1
+	if [ $STATUS = 0 -a _STATUS != 0 ];  then
+		STATUS=$_STATUS
+	fi
 	log 'good bye, cruel world'
 	exit $STATUS
 }
@@ -98,7 +103,7 @@ log "net timeout: ${BLOBIO_BIO4D_NET_TIMEOUT}s"
 BLOBIO_BIO4D_RRD_DURATION=${BLOBIO_BIO4D_RRD_DURATION:=0}
 log "rrd duration: ${BLOBIO_BIO4D_NET_TIMEOUT}s"
 
-zap_run
+zap_run || die "zap_run failed: exit status=status=$?"
 log 'invoking sbin/bio4d ...'
 sbin/bio4d								\
 	--trust-fs $BLOBIO_TRUST_FS					\
