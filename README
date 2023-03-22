@@ -110,7 +110,7 @@ Description:
 					#    DIGEST_re=[[:graph:]]{32,128}
 					#      $ALGO_re:$DIGEST_re
 
-		chat_history		#  ok/no handshake between server&client
+		chat_history		#  full ok|no handshakes between server&client for request.
 	                                #    (ok|no)((ok|no),){0,2}
 					#
 		                        #    Note:
