@@ -108,16 +108,17 @@ Description:
 		udig			#  algorithm:digest
 					#    ALGO_re=[a-z][a-z0-9]{0,7}
 					#    DIGEST_re=[[:graph:]]{32,128}
-					#    ~ $ALGO_re:$DIGEST_re
+					#      $ALGO_re:$DIGEST_re
 
 		chat_history		#  ok/no handshake between server&client
+	                                #    (ok|no)((ok|no),){0,2}
+					#
 		                        #    Note:
 					#	also depends upon the verb,
 					#	which is tricky to express
 					#	with regular expression.
 					#	perhaps use a variation of
 					#	$1 syntax in perl to express
-					#    ~  (ok|no)(,(ok|no){0,2}
 
 		blob_size		#  unsigned 63 bit long 0 <= 2^63 - 1
 					#    ~ \d{1,19}
