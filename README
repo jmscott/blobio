@@ -29,7 +29,7 @@ Description:
 	where "sha" is the famous but broken SHA1 and "btc20" is a
 	composition of RIPEMD(SHA256(SHA256(blob))), inspired by the
 	bitcoin wallet.  Eventually a SHA3 digest can be added without
-	breaking code.  The experimental digest "bc160" will be gone soon.
+	breaking code.
 
 	An example udig is sha:cd50d19784897085a8d0e3e413f8612b097c03f1
 	which describes the string "hello, world\n".
