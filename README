@@ -38,7 +38,7 @@ Description:
 		cd50d19784897085a8d0e3e413f8612b097c03f1  -
 
 	The maximum size of the algorithm tag is 8 ascii chars.  The maximum size
-	of a digest is 128 ascii graphical haracters, making the maximum size of
+	of a digest is 128 ascii graphical characters, making the maximum size of
 	a udig = 8 + 1 (colon) + 128 asci chars. The minimum size of a digest is 32 ascii chars,
 	making the minimum  size of a udig = 1 + 1(colon) + 32 = 34 chars.
 
