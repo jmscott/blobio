@@ -2,8 +2,8 @@ Synopsis:
 	A trivial key/value protocol using crypto digests as keys.
 Description:
 	The blobio system implements a client/server protocol for 
-	associating crypto hash digests as keys for an immutable, binary (typically
-	large).  The blobs are referenced with a uri (uniform resource identifier) called a uniform digest,
+	associating crypto hash digests as keys pointing to immutable, binary (typically
+	large) objects.  The blobs are referenced with a uri (uniform resource identifier) called a uniform digest,
 	shortened to 'udig', with a syntax like
 
 		algorithm:digest
