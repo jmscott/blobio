@@ -90,7 +90,7 @@ Description:
 	tab separated ascii fields: i.e, the typical unixy ascii record:
 
 		start_time		#  RFC3339
-					#    NSEC_re=([0-9]{0,10})?
+					#    NSEC_re=([.][0-9]{0,10})?
 					#    TZ_re=(([+-]HH:MM)|Z)?
 					#    YYYY-MM-DDThh:mm:ss$NSEC_re$TZ_re
 
