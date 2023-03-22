@@ -111,7 +111,9 @@ Description:
 					#      $ALGO_re:$DIGEST_re
 
 		chat_history		#  full ok|no handshakes between server&client for request.
-	                                #    (ok|no)((ok|no),){0,2}
+	                                #    (ok|no)(,(ok|no)){0,2}
+					#    and "no" is always the final reply.
+					#    give me (jmscott) a bit to get the regex correct.
 					#
 		                        #    Note:
 					#	also depends upon the verb,
