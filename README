@@ -42,14 +42,14 @@ Description:
 	a udig = 8 + 1 (colon) + 128 asci chars. The minimum size of a digest is 32 ascii chars,
 	making the minimum  size of a udig = 1 + 1(colon) + 32 = 34 chars.
 
-	The network protocol implements 7 verbs
+	The network protocol implements 8 verbs
 	
 		get <udig>		#  read a blob with a particular digest
 		put <udig>		#  write a blob with a digest
 		take <udig>		#  get a blob that the source may forget
 		give <udig>		#  put a blob that the source may forget
 		eat <udig>		#  untrusted digest of a blob by server
-		cat <udig>              #  sum the 9concatenationthe of blobs in <udig>
+		cat <udig>              #  sum the concatenation of blobs in <udig>
 
 		wrap			#  freeze current unwrapped blob traffic
 					#  log into a single blob and return
