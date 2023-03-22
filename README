@@ -139,15 +139,20 @@ Description:
 		#field    <tab> comment
 		#-----    ----- #-------------------------------------------
 
-		(19+1)	+ 1 +	#  =   start time<tab>
-				#        YYYY-MM-DDThh:mm:ssZ
-		(1+1+1)	+ 1 +	#  >=  transport<tab>
-				#        [a-z]:[[:graph:]]
-		(3)	+ 1 +	#  >=  verb<tab>
-		(1+1+32)+ 1 +	#  >=  udig<tab>
-		(2)	+ 1 +	#  >=  chat history<tab> 
-		(1)	+ 1 +	#  >=  blob size<tab>
-		(1)		#  >=  wall duration seconds
+		(19+1)	+ 1 +	#  start time<tab>
+				#    YYYY-MM-DDThh:mm:ssZ
+		(1+1+1)	+ 1 +	#  transport<tab>
+				#    [a-z]~[[:graph:]]
+		(3)	+ 1 +	#  verb
+		                #    get|put|eat|cat|roll)<tab>
+		(1+1+32)+ 1 +	#  udig
+		                #    [a-z]:[[:graph:]]{32}<tab>
+		(2)	+ 1 +	#  chat history 
+				#    (ok|no)<tab> 
+		(1)	+ 1 +	#  wall_duration
+		                #    0(never leading 0)<tab>
+		(1)		#  record terminatior char
+                                #    newline or null
 
         The maximum size of a blob request record is 455 ascii chars.
 	No newlime or null char is included in the tally of max size.
