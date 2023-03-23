@@ -139,7 +139,7 @@ Description:
 		#field    <tab> comment
 		#-----    ----- #-------------------------------------------
 
-		(19+1)	+ 1 +	#  start time<tab>
+		(20)	+ 1 +	#  start time<tab>
 				#    YYYY-MM-DDThh:mm:ssZ
 		(1+1+1)	+ 1 +	#  transport<tab>
 				#    [a-z]~[[:graph:]]
