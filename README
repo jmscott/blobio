@@ -160,18 +160,22 @@ Description:
 		field           <tab>   comment
 		-----           -----   #------------------------------
 
-		(19+1+9+1+5)	+ 1 +	#  =  start time<tab>
-					#       DAY_re=YYYY-MM-DDThh:mm:ss
-					#       ~ /${DAY_re}[.]\d{10}[+-]HH:MM/
-		(8+1+196)	+ 1 +	#  <= transport<tab>
-					#        ~ /[a-z]{8}:[[:graph:]]{128}/
-		(4 + 1 + 19)	+ 1 +	#  <= verb.\d{19}<tab>
-		(8+1+128)	+ 1 +	#  <= udig<tab>
-		(8)		+ 1 +	#  <= chat history (ok,ok,ok)<tab>
-		(19)		+ 1 +	#  <= blob size (ui63)<tab>
-		(10+1+10)		#  <= wall duration (ui31)
+		(19+1+9+1+5)	+ 1 +	#  start_time<tab>
+					#    TIME_re=YYYY-MM-DDThh:mm:ss
+					#    /${TIME_re}[.]\d{9}[+-]HH:MM/
+		(8+1+160)	+ 1 +	#  transport<tab>
+					#    /[a-z0-9]{8}~[[:graph:]]{160}/
+		(4 + 1 + 19)	+ 1 +	#  wrap=\d{19}<tab>
+		(8+1+128)	+ 1 +	#  udig<tab>
+		                        #    /[a-z][a-z0-9]{7):[[:graph:]]{128l
+		(8)		+ 1 +	#  chat history 
+		                        #    /(ok,ok,(ok|no)/<tab>
+		(19)		+ 1 +	#  blob size
+		                        #    /[1-9][0-9]{18}/<tab>
+		(10+1+10)		#  wall duration
+		                        #    /[1-9]{10}[.][0-9]{10}/
 
-		<= 455 bytes
+		= 455 bytes
 
 	Since the length is <= 455 bytes, a BRR record can be broadcast in an
 	UDP packet, with a "insured" atomic payload of 508 bytes.
