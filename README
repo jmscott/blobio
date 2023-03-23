@@ -92,23 +92,23 @@ Description:
 		start_time		#  RFC3339
 					#    NSEC_re=([.][0-9]{0,10})?
 					#    TZ_re=(([+-]HH:MM)|Z)?
-					#    YYYY-MM-DDThh:mm:ss$NSEC_re$TZ_re
+					#    /YYYY-MM-DDThh:mm:ss$NSEC_re$TZ_re/
 
 		transport		#  <tag>~<transport detail>
 					#    TAG_re=[a-z][a-z0-9_]{0,7}
 					#    REQUEST_re=[[:graph:]]{16,128}
-					#      ${TAG_re}[~]$REQUEST_re
+					#    /${TAG_re}[~]$REQUEST_re/
 
 		verb			#  get|put|give|take|wrap|roll|eat|cat
 					#    UI63_re=(=\d{1,20)?
 					#    VN_re=((get|put|give|take)$UI63_re
 					#    V_re=(wrap|roll|eat)
-					#      ($VN_re|$V_re)
+					#    /($VN_re|$V_re)/
 
 		udig			#  algorithm:digest
 					#    ALGO_re=[a-z][a-z0-9]{0,7}
 					#    DIGEST_re=[[:graph:]]{32,128}
-					#      $ALGO_re:$DIGEST_re
+					#    /$ALGO_re:$DIGEST_re/
 
 		chat_history		#  full ok|no handshakes between server&client for request.
 	                                #    (ok|no)(,(ok|no)){0,2}
@@ -123,10 +123,10 @@ Description:
 					#	$1 syntax in perl to express
 
 		blob_size		#  unsigned 63 bit long 0 <= 2^63 - 1
-					#    ~ \d{1,19}
+					#    /\d{1,19}/
 					#
 		wall_duration		#  <ui31 sec>(.<ui31 sec>)?
-					#    ~ \d{1,10}([.]\d{1,10})?
+					#    /\d{1,10}([.]\d{1,10})?/
 
 	BRR records are always syntactally correct as described below.  In other words,
 	a request that is syntactically incorrect will never generate a blob request
