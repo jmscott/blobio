@@ -8,7 +8,11 @@
 #		/usr/local/go/bin/go get -v -u golang.org/x/tools/cmd/goyacc
 #		/usr/local/go/bin/go get -v -u github.com/lib/pq
 #
-#	wish installs goyacc in $GOPATH/bin.
+#	which installs goyacc in $GOPATH/bin.
+#
+#	ubunutu22 packages goyacc in
+#
+#		apt install golang-golang-x-tools
 #  Note:
 #	Need to eliminate redundant create of dir such as /bin, /sbin.
 #
