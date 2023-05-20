@@ -174,7 +174,7 @@ brr_write(char *srv_name)
 	/*
 	 *  Write the entire blob request record in a single write().
 	 */
-	if (jmscott_write(fd, brr, strlen(brr)) < 0)
+	if (jmscott_write_all(fd, brr, strlen(brr)) < 0)
 		die2("write(brr-path) failed", strerror(errno));
 	if (jmscott_flock(fd, LOCK_UN))
 		die2("flock(brr-path:LOCK_UN) failed", strerror(errno));

@@ -162,7 +162,7 @@ cleanup(int status)
 			ecat(buf, sizeof buf, panic);
 			jmscott_strcat2(buf, sizeof buf, err, "\n");
 
-			jmscott_write(2, buf, strlen(buf));
+			jmscott_write_all(2, buf, strlen(buf));
 		}
 	TRACE("good bye, cruel world");
 }
@@ -348,7 +348,7 @@ parse_argv(int argc, char **argv)
 	char *err;
 
 	if (argc == 1) {
-		jmscott_write(2, usage, strlen(usage));
+		jmscott_write_all(2, usage, strlen(usage));
 		die("no command line arguments");
 	}
 	if (strcmp("help", argv[1]) == 0 || strcmp("--help", argv[1]) == 0)
@@ -861,7 +861,9 @@ main(int argc, char **argv)
 
 				buf[0] = 0;
 				buf2cat(buf, sizeof buf, ascii_digest, "\n");
-				if (jmscott_write(output_fd, buf, strlen(buf)))
+				if (
+				   jmscott_write_all(output_fd,buf,strlen(buf))
+				)
 					die2(
 						"write(ascii_digest) failed",
 						strerror(errno)

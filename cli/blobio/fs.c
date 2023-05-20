@@ -229,7 +229,7 @@ fs_copy(char *in_path, char *out_path)
 		out = output_fd;
 
 	while ((nr = jmscott_read(in, buf, sizeof buf)) > 0) {
-		if (jmscott_write(out, buf, nr) < 0)
+		if (jmscott_write_all(out, buf, nr) < 0)
 			break;
 		blob_size += nr;
 	}
@@ -458,7 +458,7 @@ fs_put(int *ok_no)
 	//  copy the blob to temporary path.
 
 	while ((nr = jmscott_read(in_fd, buf, sizeof buf)) > 0)
-		if (jmscott_write(tmp_fd, buf, nr) < 0) {
+		if (jmscott_write_all(tmp_fd, buf, nr) < 0) {
 			err = strerror(errno);
 			break;
 		}
@@ -869,7 +869,7 @@ fs_wrap(int *ok_no)
 		if (jmscott_frisk_udig(udig))
 			continue;
 		udig[ulen] = '\n';
-		if (jmscott_write(wu_fd, udig, ulen + 1) < 0)
+		if (jmscott_write_all(wu_fd, udig, ulen + 1) < 0)
 			return strerror(errno);
 	}
 	if (closedir(dirp) < 0)
@@ -880,7 +880,7 @@ fs_wrap(int *ok_no)
 	TRACE2("put udig", put_udig);
 	*put_udig_null++ = '\n';
 	*put_udig_null = 0;
-	if (jmscott_write(output_fd, put_udig, put_udig_null - put_udig) < 0)
+	if (jmscott_write_all(output_fd, put_udig, put_udig_null-put_udig) < 0)
 		return strerror(errno);
 
 	*ok_no = 0;

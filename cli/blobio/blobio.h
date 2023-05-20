@@ -241,7 +241,7 @@ void		BLOBIO_SERVICE_get_BR(char *query, char *BR);
 void		BLOBIO_SERVICE_get_brr(char *query, char *brr);
 void		BLOBIO_SERVICE_get_algo(char *query, char *brr_path);
 
-extern void	brr_write();
+extern void	brr_write(char *);
 
 extern struct digest	*find_digest(char *algorithm);
 

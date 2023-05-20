@@ -355,7 +355,7 @@ _write(int fd, unsigned char *buf, int buf_size)
 		hexdump((unsigned char *)buf, buf_size, '>');
 	}
 #endif
-	if (jmscott_write(fd, (unsigned char *)buf, buf_size))
+	if (jmscott_write_all(fd, (unsigned char *)buf, buf_size))
 		err = strerror(errno);
 	if (timeout > 0) {
 		alarm(0);
