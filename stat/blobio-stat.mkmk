@@ -1,33 +1,8 @@
 #
 #  Synopsis:
-#	Example configuration file read by make-dist to build tar files.
+#	Example configuration file read by make-make to build tar files.
 #  See:
-#	https://github.com/jmscott/work/blob/master/make-dist
-#  Note:
-#	Consider adding "d" suffix to empty dirs like, say, spool/ .
-#	Also, any values in, say, SPOOLd would be subdirectores with
-#	the same permisions as the top level directory.  For example,
-#
-#		SPOOLd="
-#			wrap
-#		"
-#	
-#	create the dir spool/wrap the via "mkdir -p spool/wrap" command,
-#	with the same permisions as the spool/directory.
-#
-#	Makefile variables can be extracted and defined from the the
-#	root.dist file with these recipes.  Example make code follows:
-#
-#		DIST=product.dist
-#
-#		COMPILEs := $(shell  (. ./$(DIST) && echo $$COMPILEs))
-#		SBINs := $(shell  (. ./$(DIST) && echo $$SBINs))
-#		LIBs := $(shell  (. ./$(DIST) && echo $$LIBs))
-#		SRCs := $(shell  (. ./$(DIST) && echo $$SRCs))
-#		BINs := $(shell  (. ./$(DIST) && echo $$BINs))
-#		HTDOCSs := $(shell  (. ./$(DIST) && echo $$HTDOCSs))
-#		CGIBINs := $(shell  (. ./$(DIST) && echo $$CGIBINs))
-#		LIBEXEC := $(shell  (. ./$(DIST) && echo $$LIBEXECs))
+#	https://github.com/jmscott/work/blob/master/make-make
 #
 
 VAR2dir_local=(

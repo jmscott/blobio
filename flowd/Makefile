@@ -24,14 +24,14 @@ include ../blobio.mk
 
 _MAKE=$(MAKE) $(MFLAGS)
 
-DIST=blobio-flowd.dist
+MKMK=blobio-flowd.mkmk
 
-SRCs := $(shell  (. ./$(DIST) && echo $$SRCs))
-BINs := $(shell  (. ./$(DIST) && echo $$BINs))
-SBINs := $(shell  (. ./$(DIST) && echo $$SBINs))
-LIBs := $(shell  (. ./$(DIST) && echo $$LIBs))
-COMPILEs := $(shell  (. ./$(DIST) && echo $$COMPILEs))
-GOSRCs := $(shell  (. ./$(DIST) && echo $$GOSRCs))
+SRCs := $(shell  (. ./$(MKMK) && echo $$SRCs))
+BINs := $(shell  (. ./$(MKMK) && echo $$BINs))
+SBINs := $(shell  (. ./$(MKMK) && echo $$SBINs))
+LIBs := $(shell  (. ./$(MKMK) && echo $$LIBs))
+COMPILEs := $(shell  (. ./$(MKMK) && echo $$COMPILEs))
+GOSRCs := $(shell  (. ./$(MKMK) && echo $$GOSRCs))
 
 export PATH := $(GODIST)/bin:$(PATH)
 GO=$(GODIST)/bin/go

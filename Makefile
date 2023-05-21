@@ -21,10 +21,10 @@ include blobio.mk
 
 _MAKE=$(MAKE) $(MFLAGS)
 
-DIST=blobio.dist
-SBINs := $(shell  (. ./$(DIST) && echo $$SBINs))
-BINs := $(shell  (. ./$(DIST) && echo $$BINs))
-LIBs := $(shell  (. ./$(DIST) && echo $$LIBs))
+MKMK=blobio.mkmk
+SBINs := $(shell  (. ./$(MKMK) && echo $$SBINs))
+BINs := $(shell  (. ./$(MKMK) && echo $$BINs))
+LIBs := $(shell  (. ./$(MKMK) && echo $$LIBs))
 
 all:
 	cd bio4d &&	$(_MAKE) all

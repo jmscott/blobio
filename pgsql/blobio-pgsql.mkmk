@@ -1,24 +1,22 @@
 #
 #  Synopsis:
-#	Example configuration file read by make-dist to build tar files.
+#	Example configuration file read by make-make to build tar files.
 #  See:
-#	https://github.com/jmscott/work/blob/master/make-dist
+#	https://github.com/jmscott/work/blob/master/make-make
 #  Note:
-#	Rename make-dist-template.dist to make.dist.example
-#
 #	Makefile variables can be extracted and defined from the the
-#	root.dist file with these recipes.  Example make code follows:
+#	product.mkmk file with these recipes.  Example make code follows:
 #
-#		DIST=product.dist
+#		MKMK=product.mkmk
 #
-#		COMPILEs := $(shell  (. ./$(DIST) && echo $$COMPILEs))
-#		SBINs := $(shell  (. ./$(DIST) && echo $$SBINs))
-#		LIBs := $(shell  (. ./$(DIST) && echo $$LIBs))
-#		SRCs := $(shell  (. ./$(DIST) && echo $$SRCs))
-#		BINs := $(shell  (. ./$(DIST) && echo $$BINs))
-#		HTDOCSs := $(shell  (. ./$(DIST) && echo $$HTDOCSs))
-#		CGIBINs := $(shell  (. ./$(DIST) && echo $$CGIBINs))
-#		LIBEXEC := $(shell  (. ./$(DIST) && echo $$LIBEXECs))
+#		COMPILEs := $(shell  (. ./$(MKMK) && echo $$COMPILEs))
+#		SBINs := $(shell  (. ./$(MKMK) && echo $$SBINs))
+#		LIBs := $(shell  (. ./$(MKMK) && echo $$LIBs))
+#		SRCs := $(shell  (. ./$(MKMK) && echo $$SRCs))
+#		BINs := $(shell  (. ./$(MKMK) && echo $$BINs))
+#		HTDOCSs := $(shell  (. ./$(MKMK) && echo $$HTDOCSs))
+#		CGIBINs := $(shell  (. ./$(MKMK) && echo $$CGIBINs))
+#		LIBEXECs := $(shell  (. ./$(MKMK) && echo $$LIBEXECs))
 #
 
 #  Uncomment to override default mappings of VARs to target directory
@@ -30,45 +28,35 @@
 #  Uncomment for compiled programs to be installed in bin/ or sbin/ and
 #  removed in "clean" recipes.
 #
-COMPILEs="
-	bio-frisk-brr
-"
+#COMPILEs="
+#"
 
 LIBs="
-	bio-blob_size.sql
+	blobio.flow.example
+	bug-cast_jsonb_brr.sql
+	eat-unroll.sql
+	psqlrc.example
+	schema.sql
+	select-rummy-since.sql
+	select-rummy.sql
 "
 
 #  Uncoment to create bin/ directory
 BINs="
-	bio-bc160
-	bio-blob_size
-	bio-btc20
-	bio-cat
-	bio-eat
-	bio-file 
-	bio-frisk-brr
-	bio-fs-stat
-	bio-fs2udig
-	bio-get
-	bio-get-null
-	bio-give
-	bio-ls
-	bio-merge
-	bio-more
-	bio-put
-	bio-put-file
-	bio-put-stdin
-	bio-sha
-	bio-take
-	bio-udig2fs
-	bio-unroll
-	bio-wrap
-	bio-wrap-roll
-	bio-zap
+	bio-merge-service
 "
 
-#SBINs="
-#"
+SBINs="
+	cron-bio4d-stat2pg
+	cron-eat-unroll
+	cron-rummy
+	cron-rummy-yesterday
+	eat-unroll.sql
+	fs-get
+	fs-xor-service
+	minus-service
+	rummy-txn
+"
 
 #  Uncomment to create tmp/ directory
 #TMP="
@@ -83,9 +71,8 @@ BINs="
 #"
 
 #  Uncomment to create src/ directory
-SRCs="
-	bio-frisk-brr.c
-"
+#SRCs="
+#"
 
 #  Uncomment to create attic/ directory
 #ATTIC="

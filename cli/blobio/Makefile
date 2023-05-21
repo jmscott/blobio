@@ -1,19 +1,17 @@
 #
 #  Synopsis:
 #	Build blobio command line binary executable from C source
-#  Note:
-#	Move variables OBJs and SRCs to dist file.
 #
 include ../../local.mk
 include ../../blobio.mk
 
 _MAKE=$(MAKE) $(MFLAGS) COMPILE_TRACE=1
 
-DIST=blobio-cli-blobio.dist
-BINs := $(shell  (. ./$(DIST) && echo $$BINs))
-SRCs := $(shell  (. ./$(DIST) && echo $$SRCs))
-OBJs := $(shell  (. ./$(DIST) && echo $$OBJs))
-COMPILEs := $(shell  (. ./$(DIST) && echo $$COMPILEs))
+MKMK=blobio-cli-blobio.mkmk
+BINs := $(shell  (. ./$(MKMK) && echo $$BINs))
+SRCs := $(shell  (. ./$(MKMK) && echo $$SRCs))
+OBJs := $(shell  (. ./$(MKMK) && echo $$OBJs))
+COMPILEs := $(shell  (. ./$(MKMK) && echo $$COMPILEs))
 
 all: blobio
 
@@ -80,5 +78,5 @@ world:
 	$(_MAKE) all
 	$(_MAKE) distclean
 	$(_MAKE) install
-dist:
-	make-dist tar $(DIST)
+tar:
+	make-make tar $(MKMK)

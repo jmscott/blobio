@@ -7,12 +7,12 @@ include ../blobio.mk
 
 _MAKE=$(MAKE) $(MFLAGS)
 
-DIST=blobio-pgsql.dist
+MKMK=blobio-pgsql.mkmk
 
-COMPILEs := $(shell  (. ./$(DIST) && echo $$COMPILEs))
-SBINs := $(shell  (. ./$(DIST) && echo $$SBINs))
-SRCs := $(shell  (. ./$(DIST) && echo $$SRCs))
-LIBs := $(shell  (. ./$(DIST) && echo $$LIBs))
+COMPILEs := $(shell  (. ./$(MKMK) && echo $$COMPILEs))
+SBINs := $(shell  (. ./$(MKMK) && echo $$SBINs))
+SRCs := $(shell  (. ./$(MKMK) && echo $$SRCs))
+LIBs := $(shell  (. ./$(MKMK) && echo $$LIBs))
 
 install-dirs:
 	cd .. && $(_MAKE) install-dirs
@@ -43,5 +43,5 @@ world:
 	$(MAKE) $(MFLAGS) distclean
 	$(MAKE) $(MFLAGS) install
 
-dist:
-	make-dist tar $(DIST)
+tar:
+	make-make tar $(MKMK)

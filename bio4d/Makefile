@@ -1,19 +1,21 @@
 #
 #  Synospsi:
 #	Ye old makefile
+#  See:
+#	https://github.com/jmscott/work/tree/master/make-make
 #
 include ../local.mk
 include ../blobio.mk
 
 _MAKE=$(MAKE) $(MFLAGS)
 
-DIST=blobio-bio4d.dist
-COMPILEs := $(shell  (. ./$(DIST) && echo $$COMPILEs))
-BINs := $(shell  (. ./$(DIST) && echo $$BINs))
-SBINs := $(shell  (. ./$(DIST) && echo $$SBINs))
-LIBs := $(shell  (. ./$(DIST) && echo $$LIBs))
-SRCs := $(shell  (. ./$(DIST) && echo $$SRCs))
-OBJs := $(shell  (. ./$(DIST) && echo $$OBJs))
+MKMK=blobio-bio4d.mkmk
+COMPILEs := $(shell  (. ./$(MKMK) && echo $$COMPILEs))
+BINs := $(shell  (. ./$(MKMK) && echo $$BINs))
+SBINs := $(shell  (. ./$(MKMK) && echo $$SBINs))
+LIBs := $(shell  (. ./$(MKMK) && echo $$LIBs))
+SRCs := $(shell  (. ./$(MKMK) && echo $$SRCs))
+OBJs := $(shell  (. ./$(MKMK) && echo $$OBJs))
 
 SRC=$(DIST_ROOT)/src
 SBIN=$(DIST_ROOT)/sbin

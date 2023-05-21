@@ -7,12 +7,12 @@ include ../blobio.mk
 
 _MAKE=$(MAKE) $(MFLAGS)
 
-DIST=blobio-stat.dist
+MKMK=blobio-stat.mkmk
 
-COMPILEs := $(shell  (. ./$(DIST) && echo $$COMPILEs))
-SRCs := $(shell  (. ./$(DIST) && echo $$SRCs))
-LIBs := $(shell  (. ./$(DIST) && echo $$LIBs))
-SBINs := $(shell  (. ./$(DIST) && echo $$SBINs))
+COMPILEs := $(shell  (. ./$(MKMK) && echo $$COMPILEs))
+SRCs := $(shell  (. ./$(MKMK) && echo $$SRCs))
+LIBs := $(shell  (. ./$(MKMK) && echo $$LIBs))
+SBINs := $(shell  (. ./$(MKMK) && echo $$SBINs))
 
 all: $(COMPILEs)
 
@@ -66,5 +66,5 @@ world:
 	$(MAKE) $(MFLAGS) distclean
 	$(MAKE) $(MFLAGS) install
 
-dist:
-	make-dist tar $(DIST)
+tar:
+	make-make tar $(MKMK)

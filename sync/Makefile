@@ -7,12 +7,12 @@ include ../blobio.mk
 
 _MAKE=$(MAKE) $(MFLAGS)
 
-DIST=blobio-sync.dist
-BINs := $(shell  (. ./$(DIST) && echo $$BINs))
-SBINs := $(shell  (. ./$(DIST) && echo $$SBINs))
-LIBs := $(shell  (. ./$(DIST) && echo $$LIBs))
-SRCs := $(shell  (. ./$(DIST) && echo $$SRCs))
-COMPILEs := $(shell  (. ./$(DIST) && echo $$COMPILEs))
+MKMK=blobio-sync.mkmk
+BINs := $(shell  (. ./$(MKMK) && echo $$BINs))
+SBINs := $(shell  (. ./$(MKMK) && echo $$SBINs))
+LIBs := $(shell  (. ./$(MKMK) && echo $$LIBs))
+SRCs := $(shell  (. ./$(MKMK) && echo $$SRCs))
+COMPILEs := $(shell  (. ./$(MKMK) && echo $$COMPILEs))
 
 all: jaccard jaccard-tip
 

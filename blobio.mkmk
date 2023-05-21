@@ -1,24 +1,22 @@
 #
 #  Synopsis:
-#	Example configuration file read by make-dist to build tar files.
+#	Example configuration file read by make-make to build tar files.
 #  See:
-#	https://github.com/jmscott/work/blob/master/make-dist
+#	https://github.com/jmscott/work/blob/master/make-make
 #  Note:
-#	Rename make-dist-template.dist to make.dist.example
-#
 #	Makefile variables can be extracted and defined from the the
-#	root.dist file with these recipes.  Example make code follows:
+#	product.mkmk file with these recipes.  Example make code follows:
 #
-#		DIST=product.dist
+#		MKMK=product.mkmk
 #
-#		COMPILEs := $(shell  (. ./$(DIST) && echo $$COMPILEs))
-#		SBINs := $(shell  (. ./$(DIST) && echo $$SBINs))
-#		LIBs := $(shell  (. ./$(DIST) && echo $$LIBs))
-#		SRCs := $(shell  (. ./$(DIST) && echo $$SRCs))
-#		BINs := $(shell  (. ./$(DIST) && echo $$BINs))
-#		HTDOCSs := $(shell  (. ./$(DIST) && echo $$HTDOCSs))
-#		CGIBINs := $(shell  (. ./$(DIST) && echo $$CGIBINs))
-#		LIBEXEC := $(shell  (. ./$(DIST) && echo $$LIBEXECs))
+#		COMPILEs := $(shell  (. ./$(MKMK) && echo $$COMPILEs))
+#		SBINs := $(shell  (. ./$(MKMK) && echo $$SBINs))
+#		LIBs := $(shell  (. ./$(MKMK) && echo $$LIBs))
+#		SRCs := $(shell  (. ./$(MKMK) && echo $$SRCs))
+#		BINs := $(shell  (. ./$(MKMK) && echo $$BINs))
+#		HTDOCSs := $(shell  (. ./$(MKMK) && echo $$HTDOCSs))
+#		CGIBINs := $(shell  (. ./$(MKMK) && echo $$CGIBINs))
+#		LIBEXECs := $(shell  (. ./$(MKMK) && echo $$LIBEXECs))
 #
 
 #  Uncomment to override default mappings of VARs to target directory
@@ -34,30 +32,34 @@
 #"
 
 LIBs="
-	blobio.flow.example
-	bug-cast_jsonb_brr.sql
-	eat-unroll.sql
-	psqlrc.example
-	schema.sql
-	select-rummy-since.sql
-	select-rummy.sql
+	README								\
+	bash_login.example						\
+	blobio.mkmk
+	crontab.example							\
+	hamlet.txt							\
+	profile.example							\
 "
 
-#  Uncoment to create bin/ directory
+#
+#  Note:
+#	Should bio-merge-service be in dir pgsql?
+#
 BINs="
-	bio-merge-service
+	pgsql/bio-merge-service
 "
 
 SBINs="
-	cron-bio4d-stat2pg
-	cron-eat-unroll
-	cron-rummy
-	cron-rummy-yesterday
-	eat-unroll.sql
-	fs-get
-	fs-xor-service
-	minus-service
-	rummy-txn
+	BLOBIO_ROOT-bash						\
+	brr-stat							\
+	cron-pg_dump-daily						\
+	cron-reboot							\
+	cron-wrap							\
+	lock-flow-udig							\
+	ls-service							\
+	run-stat-report							\
+	run-stat-tuple							\
+	tail-log							\
+	unlock-flow-udig						\
 "
 
 #  Uncomment to create tmp/ directory

@@ -8,11 +8,11 @@ include ../blobio.mk
 
 _MAKE=$(MAKE) $(MFLAGS)
 
-DIST=blobio-cli.dist
-COMPILEs := $(shell  (. ./$(DIST) && echo $$COMPILEs))
-BINs := $(shell  (. ./$(DIST) && echo $$BINs))
-LIBs := $(shell  (. ./$(DIST) && echo $$LIBs))
-SRCs := $(shell  (. ./$(DIST) && echo $$SRCs))
+MKMK=blobio-cli.mkmk
+COMPILEs := $(shell  (. ./$(MKMK) && echo $$COMPILEs))
+BINs := $(shell  (. ./$(MKMK) && echo $$BINs))
+LIBs := $(shell  (. ./$(MKMK) && echo $$LIBs))
+SRCs := $(shell  (. ./$(MKMK) && echo $$SRCs))
 
 all: $(COMPILEs)
 	cd blobio && $(_MAKE) all
