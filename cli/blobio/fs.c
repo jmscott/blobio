@@ -1,7 +1,11 @@
 /*
  *  Synopsis:
- *	A driver for a fast, trusting posix file system blobio service.
+ *	Unstable driver for a fast, trusting posix file system blobio service.
  *  Note:
+ *	why does BLOBIO_SERVICE=fs:/path/to/blobio/rootf fail for "put".
+ *	requires query arg BR=~.  that seems like bug.  why not just use
+ *	/path/to/blobio/root?
+ *
  *	In func fs_wrap() need to move write of udig for uset above the driver.
  *
  *	Why does fs_wrap need to created the dir <brr-path>/wrap ?
