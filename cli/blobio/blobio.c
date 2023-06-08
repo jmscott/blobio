@@ -4,9 +4,10 @@
  *  Exit Status:
  *  	0	request succeed (ok).
  *  	1	request denied (no).
- *	2	timeout
+ *	2	i/o timeout
  *	3	unexpected error.
  *  Options:
+ *	--io-timeout seconds
  *	--service name:end_point
  *	--udig algorithm:digest
  *	--algorithm name
@@ -14,11 +15,14 @@
  *	--output-path <path/to/file>
  *	--help
  *  Note:
- *	Document/help the service query args:
+ *	Replace "-" in options to more variable friendly "_" char.
+ *	So, for example, "io-timeout" becomes "io_timeout".
+ *
+ *	Add query arg for --io_timeout option
  *
  *		?tmo=20
  *
- *	the wrap driver must write the digest to stdout.  that is incorrect
+ *	The wrap driver must write the digest to stdout.  that is incorrect
  *	layering.  this level should write the udig, since the behavior
  *	is the same regardless of thhe digest algorithm
  *
@@ -80,6 +84,7 @@
 char	*jmscott_progname = "blobio";
 
 extern int	tracing;
+static int	rm_output_path_error = 1;
 
 /*
  *  The global request.
@@ -97,7 +102,7 @@ char	brr[2];				//  write a brr record: [01]
 char	*null_device = "/dev/null";
 char	chat_history[10] = {0};
 char	transport[129] = {0};
-int	timeout = 20;
+int	io_timeout = -1;		//  read/write() i/o timeout in seconds
 
 unsigned long long	blob_size = 0;
 
@@ -148,7 +153,7 @@ cleanup(int status)
 
 	//  upon error, unlink() file created by --output-path,
 	//  grumbling if unlink() fails.
-	if (status > 1 && 
+	if (status > 1 && rm_output_path_error && 
 	    output_path && output_path != null_device &&
 	    jmscott_unlink(output_path))
 		if (errno != ENOENT) {
@@ -182,7 +187,8 @@ Options:\n\
 	--output-path   get/take target file <default stdout>\n\
 	--udig          algorithm:digest for get/put/give/take/eat/empty/roll\n\
 	--algorithm     algorithm name for local eat request\n\
-	--trace		trace i/o to standard error\n\
+	--trace		deep trace to standard error\n\
+	--io-timeout	read/write() timeouts.\n\
 	--help\n\
 Exit Status:\n\
 	0	request succeed\n\
@@ -390,6 +396,7 @@ parse_argv(int argc, char **argv)
 		 *	--input-path <path/to/file>
 		 *	--output-path <path/to/file>
 		 *	--trace
+		 *	--io-timeout
 		 *	--help
 		 */
 
@@ -599,12 +606,25 @@ parse_argv(int argc, char **argv)
 			if (tracing)
 				emany("trace");
 			tracing = 1;
-			TRACE("hello, world");
+		} else if (strcmp("io-timeout", a) == 0) {
+			if (io_timeout >= 0)
+				emany("io-timeout");
+			if (++i == argc)
+				emany("io-timeout");
+			unsigned long long ull;
+			if ((err = jmscott_a2ui63(argv[i], &ull)))
+				eopt2(a, "can not parse seconds", err);
+			if (ull > 255)
+				eopt(a, "seconds > 255");
+			io_timeout = ull;
+			TRACE2("timeout seconds", argv[i])
 		} else if (strcmp("help", a) == 0) {
 			help();
 		} else
 			die2("unknown option", argv[i]);
 	}
+	if (io_timeout == -1)
+		io_timeout = 0;
 }
 
 /*
@@ -747,9 +767,11 @@ main(int argc, char **argv)
 	if (output_path && output_path != null_device) {
 		struct stat st;
 
-		if (stat(output_path, &st) == 0)
+		if (stat(output_path, &st) == 0) {
+			rm_output_path_error = 0;
 			eopt2("output-path", "refuse to overwrite file",
 								output_path);
+		}
 		if (errno != ENOENT)
 			eopt2("output-path", strerror(errno), output_path);
 	}

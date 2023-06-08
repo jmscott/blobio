@@ -1,6 +1,6 @@
 /*
  *  Synopsis:
- *	A client driver semi-paranoid blobio service 'bio4' over TCP/IP4
+ *	A client driver for a paranoid blobio service 'bio4' over TCP/IP4
  *  Note:
  *	Need to replace most tracing with i/o tracing in {_read,_write}().
  *
@@ -23,7 +23,7 @@
 
 #include "blobio.h"
 
-extern int	timeout;
+extern int	io_timeout;
 
 //  Note: where is HOST_NAME_MAX defined on OS X?
 
@@ -162,7 +162,7 @@ AGAIN1:
 			 *  Uggh.  Map an unknown host onto ENOENT.
 			 *
 			 *  I (jmscott) simply do not want to create an entire
-			 *  error code set for a few single cases.
+			 *  error code set for a few cases.
 			 */
 			return ENOENT;
 		case NO_RECOVERY:
@@ -318,7 +318,7 @@ die_ALRM(char *func)
 {
 	char buf[MAX_ATOMIC_MSG];
 
-	TRACE2(func, "caught timeout alarm");
+	TRACE2(func, "caught io timeout alarm");
 
 	buf[0] = 0;
 	buf2cat(buf, sizeof buf, func, "() timed out");
@@ -337,17 +337,17 @@ catch_write_ALRM(int sig)
 
 /*
  *  Synopsis:
- *	Write bytes with tracing and timeout.
+ *	Write bytes with tracing and io timeout.
  */
 static char *
 _write(int fd, unsigned char *buf, int buf_size)
 {
 	char *err = 0;
 
-	if (timeout > 0) {
+	if (io_timeout > 0) {
 		if (signal(SIGALRM, catch_write_ALRM) == SIG_ERR)
 			return strerror(errno);
-		alarm((unsigned int)timeout);
+		alarm((unsigned int)io_timeout);
 	}
 #ifdef COMPILE_TRACE
 	if (tracing) {
@@ -357,7 +357,7 @@ _write(int fd, unsigned char *buf, int buf_size)
 #endif
 	if (jmscott_write_all(fd, (unsigned char *)buf, buf_size))
 		err = strerror(errno);
-	if (timeout > 0) {
+	if (io_timeout > 0) {
 		alarm(0);
 		if (signal(SIGALRM, SIG_IGN) == SIG_ERR && !err)
 			err = strerror(errno);
@@ -365,10 +365,6 @@ _write(int fd, unsigned char *buf, int buf_size)
 	return err;
 }
 
-/*
- *  Synopsis:
- *	Do a partial read() of all bytes.
- */
 static char *
 _read(int fd, unsigned char *buf, int buf_size, int *nread)
 {
@@ -377,10 +373,13 @@ _read(int fd, unsigned char *buf, int buf_size, int *nread)
 
 	TRACE("request to read()");
 
-	if ((nr = jmscott_read(fd, (unsigned char *)buf, buf_size)) < 0) {
-		if (nr == -2)
-			err = "read timeout";
-		else
+	int ms = io_timeout * 1000;
+	nr = jmscott_read_timeout(fd, (unsigned char *)buf, buf_size, ms);
+	if (nr < 0) {
+		if (nr == -2) {
+			TRACE_ULL("io timeout secs", io_timeout);
+			err = "i/o read() timeout";
+		} else
 			err = strerror(errno);
 	}
 		
