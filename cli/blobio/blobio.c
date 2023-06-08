@@ -14,6 +14,10 @@
  *	--output-path <path/to/file>
  *	--help
  *  Note:
+ *	Document/help the service query args:
+ *
+ *		?tmo=20
+ *
  *	the wrap driver must write the digest to stdout.  that is incorrect
  *	layering.  this level should write the udig, since the behavior
  *	is the same regardless of thhe digest algorithm
