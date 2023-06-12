@@ -695,10 +695,8 @@ bio4d(char *verb, char *algorithm, char *digest,
 		verb_callback = wrap;
 	else if (strcmp("roll", verb) == 0)
 		verb_callback = roll;
-	else {
+	else
 		die3_NO(algorithm, "unknown verb", verb);
-		/*NOTREACHED*/
-	}
 
 	//  set the process title seen by the os
 
@@ -1954,7 +1952,7 @@ Synopsis:\n\
 Options:\n\
 	--root <path/to/dir>\n\
 	--rrd-duration <secs>\n\
-	--wrap-algorithm <algorithn>\n\
+	--wrap-algorithm <algorithm>\n\
 	--port <port>\n\
 	--in-foreground\n\
 	--net-timeout\n\
