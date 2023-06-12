@@ -147,7 +147,14 @@ cleanup(int status)
 		service = (struct service *)0;
 	}
 
-	jmscott_close(input_fd);
+	if (input_fd > -1) {
+		jmscott_close(input_fd);
+		input_fd = -1;
+	}
+	if (output_fd > -1) {
+		jmscott_close(output_fd);
+		output_fd = -1;
+	}
 
 	//  Note: what about closing the digest?
 
@@ -928,16 +935,6 @@ main(int argc, char **argv)
 			die2("roll() failed", err);
 		exit_status = ok_no;
 	}
-
-	//  close input file
-
-	if (input_fd > 0 && jmscott_close(input_fd))
-		die2("close(input-path) failed", strerror(errno));
-
-	//  close output file
-
-	if (output_fd > 1 && jmscott_close(output_fd))
-		die2("close(output-path) failed",strerror(errno));
 
 	//  we had a successful transactions
 	if (brr[0] == '1')
