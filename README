@@ -186,7 +186,7 @@ Protocol Flow:
  	>get udig\n		# request for blob by udig
 	  <ok\n[bytes][close]	#   server sends bytes of blob
 	  <no\n[close]		#   server can not honor request
- 	>get.5432 udig\n	# request for blob of size 5432 bytes by udig
+ 	>get.5432 udig\n	# (request for blob of size 5432 bytes by udig
 	  <ok\n[5432 bytes][close]	#   server sends bytes of blob
 	  <no\n[close]		#   server can not honor request
 
@@ -285,6 +285,41 @@ Protocol Flow:
 	will sit in front of the bio4 services, such as https, rsync, or a REST api.
 	in other words, all blob gateways are caches and a bio4 service is
 	service of last resort.
+
+Proposed Byte Count Added to Protocol Flow (not implemented):
+ 	>get.5432 udig\n	# (request for blob of size 5432 bytes by udig
+	  <ok\n[5432 bytes][close]	#   server sends bytes of blob
+	  <no\n[close]		#   server can not honor request
+
+ 	>put.5432 udig\n	# request to put blog of size 5432 and udig
+	  <ok\n			#   server ready for blob bytes
+	    >[5432 bytes]	#     send bytes to server
+	      <ok\n[close]	#       accepted bytes for blob
+	      <no\n[close]	#       rejects bytes for blob
+	  <no\n			#   server can not honor request
+
+  	>take.5432 udig\n	# request for blob of 5432 bytes by udig
+  	  <ok\n[bytes]		#   server sends 5432 blob bytes
+  	    >ok\n		#     client has the blob
+	      <no[close]	#       server may not forget the blob
+	      <ok[close]	#       server may forget the blob
+	    >no\n[close		#     client rejects the taken blob
+	  <no\n[close]		#   server can not forget blob
+
+ 	>give.5432 udig\n	# request to put blob of 5432 bytes by udig
+	  <ok\n			#   server ready for blob bytes
+	    >[bytes]		#     send digested bytes to server
+  	      <ok\n		#   server accepts the bytes
+  	        >ok[close]	#     client probably forgets blob
+  		>no[close]	#     client might remember the blob
+	      <no\n[close]	#   server rejects the blob
+  	  <no\n[close]		#   server rejects blob give request
+
+	>eat.5432 udig\n	# client requests server to verify blob
+	    <ok.5432\n[close]	#   blob exists and has been verified
+	    <no\n[close]	#   server was unable to digest the blob
+
+	Problematically, the <verb>.ui63 request leaks info about the blob.
 
 Protocol Questions:
         - think about a "cat" command that allows the server to "prove" the existence 
