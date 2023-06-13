@@ -1,18 +1,20 @@
 Synopsis:
 	A trivial key/value protocol using crypto digests as keys.
+
 Description:
 	The blobio system implements a client/server protocol for 
-	associating crypto hash digests as keys pointing to immutable, binary (typically
-	large) objects.  The blobs are referenced with a uri (uniform resource identifier) called a uniform digest,
+	associating crypto hash digests as keys pointing to immutable, binary
+	(typically large) objects.  The blobs are referenced with a uri
+	(uniform resource identifier) called a uniform digest,
 	shortened to 'udig', with a syntax like
 
 		algorithm:digest
 
-	where 'algorithm' is the hash algorithm, like 'sha' or 'btc20', and 'digest'
-	is the ascii hash value of the blob.
+	where 'algorithm' is the hash algorithm, like 'sha' or 'btc20', and
+	'digest' is the ascii hash value of the blob.
 	
-	The colon character separates the algorithm and the digest.  The algorithm 
-	matches the perl5 regex
+	The colon character separates the algorithm and the digest.
+	The algorithm matches the perl5 regex
 	
 		^[a-z][a-z0-9]{0,7}
 
@@ -37,39 +39,43 @@ Description:
 		echo 'hello, world' | shasum
 		cd50d19784897085a8d0e3e413f8612b097c03f1  -
 
-	The maximum size of the algorithm tag is 8 ascii chars.  The maximum size
-	of a digest is 128 ascii graphical characters, making the maximum size of
-	a udig = 8 + 1 (colon) + 128 asci chars. The minimum size of a digest is 32 ascii chars,
-	making the minimum  size of a udig = 1 + 1(colon) + 32 = 34 chars.
+	The maximum size of the algorithm tag is 8 ascii chars.  The maximum
+	size of a digest is 128 ascii graphical characters, making the maximum
+	size of a udig = 8 + 1 (colon) + 128 asci chars. The minimum size of a
+	digest is 32 ascii chars, making the minimum size of a
 
-	The network protocol implements 8 verbs
+		udig = 1 + 1 (colon) + 32 = 34 chars.
+
+	The network protocol implements 7 verbs and 1 proposed verb ("cat")
 	
 		get <udig>		#  read a blob with a particular digest
 		put <udig>		#  write a blob with a digest
 		take <udig>		#  get a blob that the source may forget
 		give <udig>		#  put a blob that the source may forget
 		eat <udig>		#  untrusted digest of a blob by server
-		cat <udig>              #  sum the concatenation of blobs in <udig>
+		cat <udig>              #  (propsed) sum the concat of blobs
+					#    in <udig-list>
 
 		wrap			#  freeze current unwrapped blob traffic
 					#  log into a single blob and return
-					#  udig of the set of all blobs "wrapped"
-					#  since the previous "roll". the
-					#  wrapped <udig>, returned to the client,
-					#  will  be in the next wrap, which
-					#  allows perpetual, acyclic chaining,
-					#  in the spirit of a merkle tree. 
+					#  udig of the set of all blobs
+					#    "wrapped" since the previous
+					#    "roll". the wrapped <udig>,
+					#    returned to the client, will be in
+					#    the next wrap, which allows
+					#    perpetual, acyclic chaining, in the
+					#    spirit of a merkle tree. 
 
 		roll <udig>		#  forget all wrapped blob traffic logs
 					#  in the udig set described by <udig>.
 					#  subsequent wrap/rolls will never see 
 					#  these blob sets again.
 					#
-					#  however, the wrapped blobs themselves will
-					#  exist and probably be gettable.   the
-					#  <udig> of the rolled udig will be in
-					#  the next wrap set as a "roll" blob
-					#  request record.
+					#  however, the wrapped blobs
+					#  themselves will exist and probably
+					#  be gettable.   the <udig> of the
+					#  rolled udig will be in the next wrap
+					#  set as a "roll" blob request record.
 
 	After the initial request by the client, all server replies are just
 	'ok' or 'no', where 'no' is always the last reply. See below for the
@@ -110,10 +116,11 @@ Description:
 					#    DIGEST_re=[[:graph:]]{32,128}
 					#    /$ALGO_re:$DIGEST_re/
 
-		chat_history		#  full ok|no handshakes between server&client for request.
+		chat_history		#  full ok|no handshakes between
+					#  server&client for request.
+					#
 	                                #    /(ok|no)(,(ok|no)){0,2}/
 					#    and "no" is always the final reply.
-					#    give me (jmscott) a bit to get the regex correct.
 					#
 		                        #    Note:
 					#	also depends upon the verb,
@@ -128,10 +135,10 @@ Description:
 		wall_duration		#  <ui31 sec>(.<ui31 sec>)?
 					#    /\d{1,10}([.]\d{1,10})?/
 
-	BRR records are always syntactally correct as described below.  In other words,
-	a request that is syntactically incorrect will never generate a blob request
-	record, which implies debugging an errant client may be out of band with BRR
-	records.
+	BRR records are always syntactally correct as described below.  In other
+	words, a request that is syntactically incorrect will never generate a
+	blob request record, which implies debugging an errant client may be out
+	of band with BRR records.
 
 	The minimum size of a BRR record is 70 ascii chars.  A terminating new
 	line or null char is NOT included in the tally of the min in size.
@@ -186,19 +193,10 @@ Protocol Flow:
  	>get udig\n		# request for blob by udig
 	  <ok\n[bytes][close]	#   server sends bytes of blob
 	  <no\n[close]		#   server can not honor request
- 	>get.5432 udig\n	# (request for blob of size 5432 bytes by udig
-	  <ok\n[5432 bytes][close]	#   server sends bytes of blob
-	  <no\n[close]		#   server can not honor request
 
  	>put udig\n		# request to put blog matching a udig
 	  <ok\n			#   server ready for blob bytes
 	    >[bytes]		#     send bytes to server
-	      <ok\n[close]	#       accepted bytes for blob
-	      <no\n[close]	#       rejects bytes for blob
-	  <no\n			#   server can not honor request
- 	>put.5432 udig\n	# request to put blog of size 5432 and udig
-	  <ok\n			#   server ready for blob bytes
-	    >[5432 bytes]	#     send bytes to server
 	      <ok\n[close]	#       accepted bytes for blob
 	      <no\n[close]	#       rejects bytes for blob
 	  <no\n			#   server can not honor request
@@ -210,23 +208,8 @@ Protocol Flow:
 	      <ok[close]	#       server may forget the blob
 	    >no\n[close		#     client rejects the taken blob
 	  <no\n[close]		#   server can not forget blob
-  	>take.5432 udig\n	# request for blob of 5432 bytes by udig
-  	  <ok\n[bytes]		#   server sends 5432 blob bytes
-  	    >ok\n		#     client has the blob
-	      <no[close]	#       server may not forget the blob
-	      <ok[close]	#       server may forget the blob
-	    >no\n[close		#     client rejects the taken blob
-	  <no\n[close]		#   server can not forget blob
 
  	>give udig\n		# request to put blob matching a udig
-	  <ok\n			#   server ready for blob bytes
-	    >[bytes]		#     send digested bytes to server
-  	      <ok\n		#   server accepts the bytes
-  	        >ok[close]	#     client probably forgets blob
-  		>no[close]	#     client might remember the blob
-	      <no\n[close]	#   server rejects the blob
-  	  <no\n[close]		#   server rejects blob give request
- 	>give.5432 udig\n	# request to put blob of 5432 bytes by udig
 	  <ok\n			#   server ready for blob bytes
 	    >[bytes]		#     send digested bytes to server
   	      <ok\n		#   server accepts the bytes
@@ -282,9 +265,9 @@ Protocol Flow:
 
 	As blobio evolves, forward facing, untrusted applications will rarely
 	speak the bio4 protocol.  instead, a security oriented gateway protocol
-	will sit in front of the bio4 services, such as https, rsync, or a REST api.
-	in other words, all blob gateways are caches and a bio4 service is
-	service of last resort.
+	will sit in front of the bio4 services, such as https, rsync, or a
+	REST api.  in other words, all blob gateways are caches and a bio4
+	service is service of last resort.
 
 Proposed Byte Count Added to Protocol Flow (not implemented):
  	>get.5432 udig\n	# (request for blob of size 5432 bytes by udig
