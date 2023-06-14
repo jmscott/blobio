@@ -41,14 +41,15 @@ Usage: bio-blob_size <rummy.udig
 
 Output: Tab Separated Fields
 
-	Field 1:	Approximate, Readable Total Byte Count
+	Field 1:	Human Readable Total Byte Count in English
 	Field 2:	Decimal Total Byte Count
 	Field 3:	Count of Blobs with Known Size
 	Field 4:	Count of Blobs with No Known Size
 	Field 5:	Count Blobs not in Table blobio.service
 
 Note:
-	The size of a blob not in service is possible.
+	The size is pulled from table blobio.brr_blob_size.
+	Consequently, the size of a blob NOT in "service" IS possible to know.
 	The input set must contain no duplicates (which will change).
 END
 	exit 0
