@@ -8,7 +8,7 @@
  *	sha:18f74f6332e37185b2216c646d3617de4427fadc
  *	END
  *
- *	2 MB	1048576	1	2
+ *	2 MB	1048576	2	0	1
  *  See:
  *	script $BLOBIO_ROOT/bin/bio-sizeof-stdin
  *  Note:
