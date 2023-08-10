@@ -154,13 +154,6 @@ sha_give_update(unsigned char *src, int src_size)
 	return sha_put_update(src, src_size);
 }
 
-static char *
-sha_gave(char *reply)
-{
-	(void)reply;
-	return "0";
-}
-
 static int
 sha_close()
 {
@@ -344,7 +337,6 @@ struct digest	sha_digest =
 	.took		=	sha_took,
 	.put_update	=	sha_put_update,
 	.give_update	=	sha_give_update,
-	.gave		=	sha_gave,
 	.close		=	sha_close,
 
 	.eat_input	=	sha_eat_input,

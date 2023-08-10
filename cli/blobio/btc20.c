@@ -189,13 +189,6 @@ btc20_give_update(unsigned char *src, int src_size)
 	return btc20_put_update(src, src_size);
 }
 
-static char *
-btc20_gave(char *reply)
-{
-	(void)reply;
-	return "0";
-}
-
 static int
 btc20_close()
 {
@@ -399,7 +392,6 @@ struct digest	btc20_digest =
 	.took		=	btc20_took,
 	.put_update	=	btc20_put_update,
 	.give_update	=	btc20_give_update,
-	.gave		=	btc20_gave,
 	.close		=	btc20_close,
 
 	.eat_input	=	btc20_eat_input,

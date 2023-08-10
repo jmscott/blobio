@@ -110,14 +110,8 @@ struct digest
 	 *	blob read from a service.  Returns 0 if the full blob has 
 	 *	been seen, 1 if more needs to be read, < 0 if an error occured.
 	 *	
-	 *	After the blob has been successfully given to the server,
-	 *	the gave() is called with the remote reply.
 	 */
 	char	*(*give_update)(unsigned char *src, int src_size);
-	/*
-	 *  Is gave still used?
-	 */
-	char	*(*gave)(char *reply);
 
 	/*
 	 *  Digest the input stream
@@ -154,7 +148,7 @@ struct digest
 	char	*(*fs_name)(char *name, int size);
 
 	/*
-	 *  Convert the ascii digest to the full a path to file
+	 *  Convert the ascii digest to a full path to file
 	 *  stored locally and copy to the buffer that "path"
 	 *  points to.  No file is created in the file system.
 	 */
@@ -178,6 +172,9 @@ struct service
 {
 	char		*name;
 	char		end_point[256];
+
+	//  the query portion of the service, unparsed
+
 	char		query[256];
 
 	char		*(*end_point_syntax)(char *end_point);
@@ -244,5 +241,9 @@ void		BLOBIO_SERVICE_get_algo(char *query, char *brr_path);
 extern void	brr_write(char *);
 
 extern struct digest	*find_digest(char *algorithm);
+
+extern char	verb[];
+
+#define BLOBIO_MAX_FS_PATH	128	//  chars, not bytes
 
 #endif

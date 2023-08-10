@@ -172,13 +172,6 @@ bc160_give_update(unsigned char *src, int src_size)
 	return bc160_put_update(src, src_size);
 }
 
-static char *
-bc160_gave(char *reply)
-{
-	(void)reply;
-	return "0";
-}
-
 static int
 bc160_close()
 {
@@ -366,7 +359,6 @@ struct digest	bc160_digest =
 	.took		=	bc160_took,
 	.put_update	=	bc160_put_update,
 	.give_update	=	bc160_give_update,
-	.gave		=	bc160_gave,
 	.close		=	bc160_close,
 
 	.eat_input	=	bc160_eat_input,
