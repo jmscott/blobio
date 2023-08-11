@@ -793,6 +793,7 @@ main(int argc, char **argv)
 
 	//  open the blob service
 	if (service && (err = service->open())) {
+		TRACE2("service error", err);
 		char buf[MAX_ATOMIC_MSG];
 
 		*buf = 0;

@@ -64,6 +64,14 @@
 
 #define BLOBIO_MAX_URI_QARGS	5
 
+/*
+ *  Hash digest driver.
+ *
+ *  Note:
+ *	sadly, side effects exist in "struct digest".  this is bad design.
+ *	in particular, fs_mkdir() creates entries in the file system.
+ *	fs_mkdir() should be moved to jmscott clib.
+ */
 struct digest
 {
 	char	*algorithm;
@@ -190,6 +198,7 @@ struct service
 
 	char		*(*open)(void);
 	char		*(*close)(void);
+
 	char		*(*get)(int *ok_no);
 	char		*(*eat)(int *ok_no);
 	char		*(*put)(int *ok_no);
@@ -242,7 +251,8 @@ extern void	brr_write(char *);
 
 extern struct digest	*find_digest(char *algorithm);
 
-extern char	verb[];
+extern char		verb[];
+extern struct digest	*digest_module;
 
 #define BLOBIO_MAX_FS_PATH	128	//  chars, not bytes
 
