@@ -2,7 +2,7 @@
  *  Synopsis:
  *  	Trace/debug service flow with --trace command line option.
  *  Note:
- *	Move trace to JMSCOTT_TRACE macros.
+ *	Replace this with libjmscott version!
  *
  *	Replace macros _TRACE with new TRACE using __FUNCTION__
  *
