@@ -291,7 +291,7 @@ btc20_eat_input(int fd)
  *  Convert an ascii digest to a file system path.
  */
 static char *
-fs_btc20_name(char *name, int size)
+bct20_fs_name(char *name, int size)
 {
 
 	if (size < 41)
@@ -313,7 +313,7 @@ _mkdir(char *path)
  *  Assemble a full path to a blob and do "mkdir -p" to the blob.
  */
 static char *
-fs_btc20_mkdir(char *path, int size)
+btc20_fs_mkdir(char *path, int size)
 {
 	char *dp, *p;
 
@@ -348,7 +348,7 @@ fs_btc20_mkdir(char *path, int size)
  *  Convert an ascii digest to a file system path.
  */
 static char *
-fs_btc20_path(char *file_path, int size)
+btc20_fs_path(char *file_path, int size)
 {
 	char *dp, *fp;
 
@@ -358,7 +358,6 @@ fs_btc20_path(char *file_path, int size)
 	dp = ascii_digest;
 	fp = file_path;
 
-	*fp++ = '/';		//  first directory
 	*fp++ = *dp++;
 	*fp++ = *dp++;
 	*fp++ = *dp++;
@@ -400,9 +399,9 @@ struct digest	btc20_digest =
 	.empty		=	btc20_empty,
 	.empty_digest	=	btc20_empty_digest,
 
-	.fs_name	=	fs_btc20_name,
-	.fs_mkdir	=	fs_btc20_mkdir,
-	.fs_path	=	fs_btc20_path
+	.fs_name	=	bct20_fs_name,
+	.fs_mkdir	=	btc20_fs_mkdir,
+	.fs_path	=	btc20_fs_path
 };
 
 #endif
