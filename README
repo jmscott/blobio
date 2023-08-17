@@ -53,7 +53,7 @@ Description:
 		take <udig>		#  get a blob that the source may forget
 		give <udig>		#  put a blob that the source may forget
 		eat <udig>		#  untrusted digest of a blob by server
-		cat <udig>              #  (propsed) sum the concat of blobs
+		cat <udig>              #  (proposed) sum the concat of blobs
 					#    in <udig-list>
 
 		wrap			#  freeze current unwrapped blob traffic
@@ -333,6 +333,8 @@ Billing Model Questions:
 	- duration of storage: per blob or per plan?
 
 Note:
+	-  is blob size signed or unsigned i64?
+
 	- should "get" verb include a reply?
 
 		>get
