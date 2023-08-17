@@ -5,12 +5,19 @@
  *	Not UTF-8 safe.  Various char counts are in ascii bytes, not UTF8 chars.
  */
 
+#include <fcntl.h>
 #include <string.h>
 #include <errno.h>
+#include <sys/stat.h>
 
 #include "blobio.h"
 
+#define DEFER {if (!err && errno > 0) err = strerror(errno); goto BYE;}
+
 extern struct service fs_service;
+
+static char fs_data[4 + 1 + 3 + 8 + 1];			// data/fs_<algo>
+static int end_point_fd = -1;
 
 /*
  *  Verify the syntax of the end point of the file system service.
@@ -39,55 +46,55 @@ fs_open()
 
 	TRACE2("end point directory", end_point);
 
-	//  verify full path is endpoint.
+	//  verify endpoint is full path.
 
+	//  Note: why care about full path end point?
 	if (*end_point != '/')
 		return "first char of end point is not '/'";
 
-	//  verify that the end point exists as a directory
+	end_point_fd = jmscott_open(end_point, O_DIRECTORY, 0777);
+        if (end_point_fd < 0)
+                return strerror(errno);
 
-	struct stat st;
-	if (jmscott_stat(end_point, &st)) {
-		if (errno == ENOENT)
-			return "directory end_point does not exist";
-		if (S_ISDIR(st.st_mode))
-			return "end point is not a directory";
-		return strerror(errno);
-	}
+	// assemble "fs_data" using global algorithm
+
+	char *err;
+	fs_data[0] = 0;
+	jmscott_strcat2(fs_data, sizeof fs_data, "data/fs_", algorithm);
+	TRACE2("mkdir: fs data", fs_data);
+	err = jmscott_mkdirat_path(end_point_fd, fs_data, 0777);
+	if (err)
+		return err;
 
 	char v = *verb;
 
-	/*
-	 *  If the verb is a read request then we do NOT care if the sub dirs/
-	 *  {data, spool} of end point actually exist or not. we only care if
-	 *  the root exists.
-	 */
-	if (v == 'g' || v == 't' || v == 'e' || v == 'c') {
+	if ((v == 'g' && verb[1] == 'e') || v == 't' || v == 'e') {
 		TRACE2("read only verb", verb);
 		return (char *)0;
 	}
-	TRACE2("write verb", verb);
 
-	char tgt_dir[BLOBIO_MAX_FS_PATH + 1];
+	char *p;
+	if (v == 'w')
+		p = "spool/wrap";
+	else if (v == 'r')
+		p = "spool/roll";
+	else
+		p = "spool";
+	TRACE2("mkdir", p);
 
-	/*
-	 *  Verify existence of directory
-	 *
-	 *	$end_point/data/fs_<algo>/ exists and is writable.
-	 */
-
-	char *err = digest_module->fs_mkdir(tgt_dir, sizeof tgt_dir);
-	if (err != (char *)0)
-		return err;
-	TRACE2("target dir", tgt_dir); 
-	return (char *)0;
+	return jmscott_mkdirat_path(end_point_fd, p, 0777);
 }
 
 static char *
 fs_close()
 {
 	TRACE("entered");
-
+	if (end_point_fd > -1) {
+		int fd = end_point_fd;
+		end_point_fd = -1;
+		if (jmscott_close(fd))
+			return strerror(errno);
+	}
 	return (char *)0;
 }
 
@@ -95,7 +102,87 @@ static char *
 fs_get(int *ok_no)
 {
 	TRACE("entered");
-	*ok_no = 1;
+
+	char blob_path[BLOBIO_MAX_FS_PATH+1];
+	blob_path[0] = 0;
+	char *p = jmscott_strcat2(blob_path, sizeof blob_path, fs_data, "/");
+
+	size_t len = sizeof blob_path - (p - blob_path);
+	char *err = digest_module->fs_path(p, len);
+	if (err)
+		return err;
+	TRACE2("blob path", blob_path);
+
+	//  attempt to hard link blob to output path, for zero copy
+
+	if (output_path && output_path != null_device) {
+		int status = jmscott_linkat(
+				end_point_fd,
+				blob_path,
+				AT_FDCWD,
+				output_path,
+				0
+		);
+		if (status == 0) {
+			TRACE("hard linked blob to output path");
+			*ok_no = 0;
+			return (char *)0;
+		}
+		if (status < 0) {
+			if (errno == ENOENT) {
+				TRACE("blob does not exist");
+				*ok_no = 1;
+				return (char *)0;
+			}
+			if (errno != ENODEV)
+				return strerror(errno);
+
+			//  not on same device, so hard link failed, so copy
+		}
+		TRACE("blob not on same device as output path");
+	}
+
+	//  trusted copy of blob to output fd
+	int blob_fd = jmscott_openat(end_point_fd, blob_path, O_RDONLY, 077);
+	if (blob_fd < 0) {
+		if (errno == ENOENT) {		//  hmm, blob disappeared (ok)
+			*ok_no = 1;
+			return (char *)0;
+		}
+		return strerror(errno);
+	}
+	*ok_no = 0;
+
+	if (output_path == null_device) {
+		TRACE("output path is null device, so no read of blob");
+		goto BYE;
+	}
+
+	if (output_path) {
+		TRACE2("open output path exists", output_path)
+		output_fd = jmscott_open(
+				output_path,
+				O_WRONLY | O_CREAT | O_EXCL,
+				S_IRUSR | S_IRGRP
+		);
+		if (output_fd < 0)
+			DEFER;
+	}
+
+	TRACE("sendfile ...");
+	blob_size = 0;
+	err = jmscott_send_file(blob_fd, output_fd, &blob_size);
+BYE:
+	if (blob_fd >= 0 && jmscott_close(blob_fd) && !err)
+		err = strerror(errno);
+	blob_fd = -1;
+
+	if (output_path && output_fd >= 0 && jmscott_close(output_fd) && !err)
+		err = strerror(errno);
+	output_fd = -1;
+
+	if (err)
+		return err;
 	return (char *)0;
 }
 

@@ -9,18 +9,18 @@
 
 #include "blobio.h"
 
-extern char	verb[];
-extern char	algorithm[9];
-extern char	chat_history[9];
-extern char	transport[129];
-extern char	*output_path;
-extern int	output_fd;
-extern char	*input_path;
-extern int	input_fd;
-extern char	*null_device;
-extern unsigned long long	blob_size;
+extern char		verb[];
+extern char		algorithm[9];
+extern char		chat_history[9];
+extern char		transport[129];
+extern char		*output_path;
+extern int		output_fd;
+extern char		*input_path;
+extern int		input_fd;
+extern char		*null_device;
+extern long long	blob_size;
 
-extern struct service null_service;
+extern struct service	null_service;
 
 static char *
 null_end_point_syntax(char *null_path)

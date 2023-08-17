@@ -25,7 +25,7 @@ extern char			ascii_digest[];
 extern char			transport[];
 extern char			verb[];
 extern char			chat_history[];
-extern unsigned long long	blob_size;
+extern long long		blob_size;
 
 static char		*brr_format =
 	"%04d-%02d-%02dT%02d:%02d:%02d.%09ld+00:00\t"	//  RFC3339Nano time
@@ -33,7 +33,7 @@ static char		*brr_format =
 	"%s\t"						//  verb
 	"%s\t"						//  algorithm
 	"%s\t"						//  chat history
-	"%llu\t"					//  byte count
+	"%lld\t"					//  byte count
 	"%ld.%09ld\n"					//  wall duration
 ;
 

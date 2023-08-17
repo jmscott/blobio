@@ -104,7 +104,7 @@ char	chat_history[10] = {0};
 char	transport[129] = {0};
 int	io_timeout = -1;		//  read/write() i/o timeout in seconds
 
-unsigned long long	blob_size = 0;
+long long	blob_size = 0;
 
 struct timespec	start_time;
 int trust_fd = -1;

@@ -169,6 +169,7 @@ struct digest
 	 *  Effectively, "fs_mkdir" is equivalent to "mkdir -p".
 	 *
 	 *  Note:
+	 *	Deprecated.  Will be moved to jmscott_mkdirat.
 	 *	Why not rename "fs_mkdir()" to simply "mkdir()"?
 	 *
 	 *	Can fs_mkdir() be factored out of digest driver?
@@ -197,6 +198,8 @@ struct service
 	char		*(*open_output)(void);
 
 	char		*(*open)(void);
+
+	//  Note: close() ought to be called during error!
 	char		*(*close)(void);
 
 	char		*(*get)(int *ok_no);
@@ -252,8 +255,14 @@ extern void	brr_write(char *);
 extern struct digest	*find_digest(char *algorithm);
 
 extern char		verb[];
+extern char		algo[];
+extern char		algorithm[];
 extern struct digest	*digest_module;
+extern int 		output_fd;
+extern char 		*output_path;
+extern char 		*null_device;
+extern long long	blob_size;
 
-#define BLOBIO_MAX_FS_PATH	128	//  chars, not bytes
+#define BLOBIO_MAX_FS_PATH	255	//  chars, not bytes
 
 #endif
