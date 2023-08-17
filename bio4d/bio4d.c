@@ -16,7 +16,8 @@
  *	probably managed by either a hash table or a bloom filter process.
  *	when (total udig - distinct) grows to big, then caching needed.
  *
- *	Should {wrap,roll}->no be considered green, not yellow!
+ *	Should {wrap,roll}->no be considered green and not yellow!
+ *	or, should GYR concepts be totally removed from bio4d?
  *
  *	Need to count distinct blobs as part of stats!
  *
@@ -80,7 +81,6 @@
 #define BIO4D_PORT		1797
 
 #define MAX_VERB_SIZE		5
-#define DEFAULT_WRAP_DIGEST_ALGORITHM	"btc20"
 
 /*
  *  States of lexical parser for incoming client requests.
@@ -136,7 +136,7 @@ char pid_path[] ="run/bio4d.pid";
 
 static char	*BLOBIO_ROOT = 0;
 
-static char	wrap_digest_algorithm[MAX_ALGORITHM_SIZE+1];
+static char	*wrap_algorithm = 0;
 
 static int	net_timeout = -1;
 
@@ -633,6 +633,14 @@ give(struct request *rp, struct digest_module *mp)
 	return (*mp->give_reply)(rp, reply);
 }
 
+/*
+ *  Process a request from client.  All verbs except "wrap" match
+ *
+ *	<verb> <udig>
+ *
+ *  Note:
+ *	"scan_buf" contains
+ */
 static void
 bio4d(char *verb, char *algorithm, char *digest,
        unsigned char *scan_buf, int scan_size)
@@ -646,8 +654,8 @@ bio4d(char *verb, char *algorithm, char *digest,
 	req.step = 0;
 	if (strcmp("wrap", verb) == 0) {
 		if (algorithm[0])
-			die3_NO(verb, algorithm, "unexpected algorithm");
-		strcpy(algorithm, wrap_digest_algorithm);
+			die3_NO(verb, algorithm, "unexpected --algorithm");
+		strcpy(algorithm, wrap_algorithm);
 	} else if (!algorithm[0] || !digest[0])
 		die2_NO(verb, "missing udig or unknown verb");
 
@@ -658,9 +666,13 @@ bio4d(char *verb, char *algorithm, char *digest,
 	/*
 	 *  Find the digest algorithm in the installed list.
 	 */
-	mp = module_get(algorithm);
-	if (!mp)
-		die3_NO(verb, "unknown digest algorithm", algorithm);
+	mp = 0;					// silences clang
+	if (algorithm && algorithm[0]) {
+		mp = module_get(algorithm);
+		if (!mp)
+			panic3(verb, "unknown digest algorithm", algorithm);
+	} else
+		panic2(verb, "empty algorithm");
 	/*
 	 *  Verify the digest is syntacally correct.
 	 *
@@ -763,6 +775,7 @@ request()
 	v_next = verb;
 	v_end = verb + MAX_VERB_SIZE;
 
+	//  algorithm[0] = 0;
 	a_next = algorithm;
 	a_end = algorithm + MAX_ALGORITHM_SIZE;
 
@@ -775,11 +788,10 @@ request()
 	 *  Scan for request from the client.
 	 *  We are looking for
 	 *
-	 *	UDIG_RE=[:alpha:][:alnum:]{0,7}:[[:isgraph:]]{28,128}]
-	 *	[get|put|give|take|eat|wrap|roll] $UDIG_RE\n
+	 *	#  UDIG_RE=[:alpha:][:alnum:]{0,7}:[[:isgraph:]]{28,128}]
+	 *	[get|put|give|take|eat|roll] $UDIG_RE\n
 	 *  
-	 *  or
-	 *
+	 *  OR
 	 *	 wrap\n
 	 */
 	state = STATE_SCAN_VERB;
@@ -1978,8 +1990,6 @@ main(int argc, char **argv, char **env)
 	    strcmp("--help", argv[1]) == 0 || strcmp("--help", argv[1]) == 0))
 		help();
 
-	strcpy(wrap_digest_algorithm, DEFAULT_WRAP_DIGEST_ALGORITHM);
-
 	/*
 	 *  Parse verb line arguments.
 	 */
@@ -2036,13 +2046,13 @@ main(int argc, char **argv, char **env)
 			if (*argv[i] == 0)
 				die2(o, "empty algorithm");
 
-			if (wrap_digest_algorithm[0])
+			if (wrap_algorithm)
 				die2(o, "given more than once");
 
 			//  verify the digest module exists
 			if (!module_get(argv[i]))
 				die3(o, "unknown digest algorithm", argv[i]);
-			strcpy(wrap_digest_algorithm, argv[i]);
+			wrap_algorithm = argv[i];
 		} else if (strcmp("--in-foreground", argv[i]) == 0) {
 			static char o[] = "option --in-foreground";
 
@@ -2135,6 +2145,8 @@ main(int argc, char **argv, char **env)
 
 	if (!BLOBIO_ROOT)
 		die("option --root <directory-path> is required");
+	if (!wrap_algorithm)
+		die("option --wrap-algorithm <algo> is required");
 
 	/*
 	 *  Goto $BLOBIO_ROOT directory.
@@ -2162,7 +2174,7 @@ main(int argc, char **argv, char **env)
 	snprintf(buf, sizeof buf, "logger process id: %u", logger_pid);
 	info(buf);
 
-	info2("wrap digest algorithm", wrap_digest_algorithm);
+	info2("wrap digest algorithm", wrap_algorithm);
 
 	/*
 	 *  Calculate current working directory.
