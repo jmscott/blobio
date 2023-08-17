@@ -381,9 +381,8 @@ _read(int fd, unsigned char *buf, int buf_size, int *nread)
 			err = "i/o read() timeout";
 		} else
 			err = strerror(errno);
-	} else if (nr == 0)
-		err = "read() returned 0";
-		
+	}
+
 #ifdef COMPILE_TRACE
 	if (err) {
 		TRACE2("ERROR", err);
