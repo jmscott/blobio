@@ -62,6 +62,9 @@ env | while read KV;  do
 	log "$KV"
 done
 
+test -n "$BLOBIO_ALGORITHM" || die 'env var not defined: BLOBIO_ALGORITHM'
+log "hash algo: $BLOBIO_ALGORITHM"
+
 BLOBIO_TRUST_FS=${BLOBIO_TRUST_FS:=false}
 
 case "$BLOBIO_SERVICE" in
@@ -106,6 +109,7 @@ log "rrd duration: ${BLOBIO_BIO4D_NET_TIMEOUT}s"
 zap_run || die "zap_run failed: exit status=status=$?"
 log 'invoking sbin/bio4d ...'
 sbin/bio4d								\
+	--wrap-algorithm $BLOBIO_ALGORITHM				\
 	--trust-fs $BLOBIO_TRUST_FS					\
 	--port $BLOBIO_BIO4D_PORT					\
 	--root $BLOBIO_ROOT						\
