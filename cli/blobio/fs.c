@@ -134,7 +134,7 @@ fs_get(int *ok_no)
 				*ok_no = 1;
 				return (char *)0;
 			}
-			if (errno != ENODEV)
+			if (errno != EXDEV)
 				return strerror(errno);
 
 			//  not on same device, so hard link failed, so copy
