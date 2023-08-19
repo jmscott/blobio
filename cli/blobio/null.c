@@ -16,7 +16,6 @@ extern char		transport[129];
 extern char		*output_path;
 extern int		output_fd;
 extern char		*input_path;
-extern int		input_fd;
 extern char		*null_device;
 extern long long	blob_size;
 

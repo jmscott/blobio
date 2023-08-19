@@ -19,7 +19,6 @@
 
 extern char	verb[];
 extern char	ascii_digest[];
-extern int	input_fd;
 
 static unsigned char	bin_digest[20];
 static SHA_CTX	sha_ctx;
