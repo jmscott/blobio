@@ -761,7 +761,7 @@ main(int argc, char **argv)
 	if (input_path) {
 		struct stat st;
 
-		if (stat(input_path, &st) != 0) {
+		if (jmscott_stat(input_path, &st) != 0) {
 			if (errno == ENOENT)
 				eopt2("input-path", "no file", input_path);
 			eopt2("input-path", strerror(errno), input_path);
