@@ -79,7 +79,7 @@ fs_open()
 	else if (v == 'r')
 		p = "spool/roll";
 	else
-		p = "spool";
+		p = "spool";		//  "put" or "give"
 	TRACE2("mkdir", p);
 
 	return jmscott_mkdirat_path(end_point_fd, p, 0777);
@@ -89,12 +89,8 @@ static char *
 fs_close()
 {
 	TRACE("entered");
-	if (end_point_fd > -1) {
-		int fd = end_point_fd;
-		end_point_fd = -1;
-		if (jmscott_close(fd))
-			return strerror(errno);
-	}
+	if (end_point_fd > -1 && jmscott_close(end_point_fd))
+		return strerror(errno);
 	return (char *)0;
 }
 
@@ -143,7 +139,7 @@ fs_get(int *ok_no)
 	}
 
 	//  trusted copy of blob to output fd
-	int blob_fd = jmscott_openat(end_point_fd, blob_path, O_RDONLY, 077);
+	int blob_fd = jmscott_openat(end_point_fd, blob_path, O_RDONLY, 0777);
 	if (blob_fd < 0) {
 		if (errno == ENOENT) {		//  hmm, blob disappeared (ok)
 			*ok_no = 1;
@@ -194,6 +190,154 @@ fs_open_output()
 	return (char *)0;
 }
 
+/*
+ *  Note:
+ *	Remove temp file on func return!
+ */
+static char *
+fs_put(int *ok_no)
+{
+	TRACE("entered");
+
+	/*
+	 *  Construct path to blob in data/fs_<algo>/...
+	 */
+
+	char blob_path[BLOBIO_MAX_FS_PATH+1];
+	blob_path[0] = 0;
+	char *bp = jmscott_strcat3(blob_path, sizeof blob_path,
+		"data/fs_",
+		algorithm,
+		"/"
+	);
+	int len = sizeof blob_path - (bp - blob_path);
+	char *err = digest_module->fs_path(bp, len);
+	if (err)
+		return err;
+	TRACE2("blob path", blob_path);
+
+	/*
+	 *  Attempt to hard link the input file directly to blob under
+	 *  $BLOBIO_ROOT/data/fs_<algo>/path/to/blob.
+	 */
+
+	if (input_path) {
+		TRACE2("attempt hard link: input path", input_path);
+		int status = jmscott_linkat(
+					AT_FDCWD,
+					input_path,
+					end_point_fd,
+					blob_path,
+					0
+		);
+		if (status == 0) {
+			TRACE("hard linked, so no copy");
+			*ok_no = 0;
+			return (char *)0;
+		}
+		if (errno == EEXIST) {
+			TRACE("blob already exists, so no copy");
+			*ok_no = 0;
+			return (char *)0;
+		}
+		if (errno != EXDEV)
+			return strerror(errno);
+	}
+
+	TRACE("can not hard link across device, so copy");
+
+	/*
+	 *  First copy blob into $BLOBIO_ROOT/tmp/<udig>-<pid>.put
+	 */
+	err = jmscott_mkdirat_path(end_point_fd, "tmp", 0777);
+	if (err)
+		return err;
+
+	//  copy blob to tmp/put-<udig>.<pid> before renaming to data/
+	//  assume data/ and tmp/ on same volume, which may not be true!
+
+	char tmp_path[BLOBIO_MAX_FS_PATH+1];
+	tmp_path[0] = 0;
+
+	char pid[21];
+	pid[0] = '-';
+	*jmscott_lltoa((long long)getpid(), pid + 1) = 0;
+	jmscott_strcat6(tmp_path, sizeof tmp_path,
+				"tmp/put-",
+				algorithm,
+				":",
+				ascii_digest,
+				pid,
+				".blob"
+	);
+	TRACE2("tmp path", tmp_path);
+	int tmp_fd = jmscott_openat(
+			end_point_fd,
+			tmp_path,
+			O_WRONLY | O_EXCL | O_CREAT,
+			0777
+	);
+	if (tmp_fd < 0)
+		DEFER; 
+	blob_size = 0;
+
+	TRACE("sendfile input->tmp");
+	err = jmscott_send_file(input_fd, tmp_fd, &blob_size);
+	if (err)
+		DEFER;
+	if (jmscott_close(tmp_fd))
+		DEFER;
+	tmp_fd = -1;
+	TRACE("rename tmp->data");
+	if (jmscott_renameat(end_point_fd, tmp_path, end_point_fd, blob_path))
+		DEFER;
+	TRACE("ok");
+BYE:
+	if (tmp_fd >= 0) {
+		if (jmscott_close(tmp_fd) && !err)
+			err = strerror(errno);
+		tmp_fd = -1;
+		if (jmscott_unlinkat(end_point_fd, tmp_path, 0) && !err)
+			err = strerror(errno);
+	}
+	if (!err)
+		*ok_no = 0;
+	return err;
+}
+
+//  "eat" of a blob in a trusted file system.
+
+char *
+fs_eat(int *ok_no)
+{
+	TRACE("entered");
+
+	char blob_path[BLOBIO_MAX_FS_PATH+1];
+	blob_path[0] = 0;
+	char *bp = jmscott_strcat3(blob_path, sizeof blob_path,
+		"data/fs_",
+		algorithm,
+		"/"
+	);
+	int len = sizeof blob_path - (bp - blob_path);
+	char *err = digest_module->fs_path(bp, len);
+	if (err)
+		return err;
+	TRACE2("blob path", blob_path);
+
+	if (jmscott_faccessat(end_point_fd, blob_path, R_OK, 0)) {
+		if (errno == ENOENT) {
+			TRACE("blob does not exist");
+			*ok_no = 1;
+			return (char *)0;
+		}
+		return strerror(errno);
+	}
+	TRACE("blob exists");
+	*ok_no = 0;
+	return (char *)0;
+}
+
 struct service fs_service =
 {
 	.name			=	"fs",
@@ -201,5 +345,7 @@ struct service fs_service =
 	.open			=	fs_open,
 	.open_output		=	fs_open_output,
 	.close			=	fs_close,
-	.get			=	fs_get
+	.get			=	fs_get,
+	.put			=	fs_put,
+	.eat			=	fs_eat
 };
