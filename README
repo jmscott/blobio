@@ -192,14 +192,14 @@ Description:
 Protocol Flow:
  	>get udig\n		# request for blob by udig
 	  <ok\n[bytes][close]	#   server sends bytes of blob
-	  <no\n[close]		#   server can not honor request
+	  <no\n[close]		#   server will not honor request
 
  	>put udig\n		# request to put blog matching a udig
 	  <ok\n			#   server ready for blob bytes
 	    >[bytes]		#     send bytes to server
 	      <ok\n[close]	#       accepted bytes for blob
 	      <no\n[close]	#       rejects bytes for blob
-	  <no\n			#   server can not honor request
+	  <no\n			#   server will not honor request
 
   	>take udig\n		# request for blob by udig
   	  <ok\n[bytes]		#   server sends blob bytes
