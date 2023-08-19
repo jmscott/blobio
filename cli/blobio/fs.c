@@ -183,6 +183,40 @@ BYE:
 }
 
 static char *
+fs_take(int *ok_no)
+{
+	TRACE("entered");
+
+	char *err = fs_get(ok_no);
+	if (err)
+		return err;
+	if (*ok_no == 1) {
+		TRACE("blob does not exist");
+		return (char *)0;
+	}
+
+	/*
+	 *  Construct path to blob in data/fs_<algo>/...
+	 */
+	char blob_path[BLOBIO_MAX_FS_PATH+1];
+	blob_path[0] = 0;
+	char *bp = jmscott_strcat3(blob_path, sizeof blob_path,
+		"data/fs_",
+		algorithm,
+		"/"
+	);
+	int len = sizeof blob_path - (bp - blob_path);
+	err = digest_module->fs_path(bp, len);
+	if (err)
+		return err;
+	TRACE2("blob path", blob_path);
+
+	if (jmscott_unlinkat(end_point_fd, blob_path, 0) && errno != ENOENT)
+		return strerror(errno);
+	return (char *)0;
+}
+
+static char *
 fs_open_output()
 {
 	TRACE("entered");
@@ -347,5 +381,6 @@ struct service fs_service =
 	.close			=	fs_close,
 	.get			=	fs_get,
 	.put			=	fs_put,
-	.eat			=	fs_eat
+	.eat			=	fs_eat,
+	.take			=	fs_take
 };
