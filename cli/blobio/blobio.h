@@ -260,8 +260,11 @@ extern char		algorithm[];
 extern struct digest	*digest_module;
 extern int 		output_fd;
 extern char 		*output_path;
+extern int 		input_fd;
+extern char 		*input_path;
 extern char 		*null_device;
 extern long long	blob_size;
+extern char		ascii_digest[129];
 
 #define BLOBIO_MAX_FS_PATH	255	//  chars, not bytes
 
