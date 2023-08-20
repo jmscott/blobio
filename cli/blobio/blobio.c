@@ -695,7 +695,7 @@ xref_argv()
 
 		//  verbs: "eat" or "empty"
 
-		if (verb[1] == 'a') {
+		if (verb[1] == 'a') {		//  "eat" blob
 			if (service) {
 				if (input_path)
 					enot("input-path");
@@ -710,7 +710,7 @@ xref_argv()
 				no_opt("service");
 			else if (!algorithm[0])
 				no_opt("algorithm");
-		} else {
+		} else {				//  "eat" input
 			if (output_path)
 				enot("output-path");
 			if (input_path)
@@ -720,7 +720,7 @@ xref_argv()
 			if (!ascii_digest[0] && !algorithm[0])
 				no_opt("{udig,algorithm}");
 		}
-	} else if (*verb == 'w') {
+	} else if (*verb == 'w') {		//  "wrap"
 		if (!service)
 			no_opt("service");
 		if (input_path)
@@ -851,15 +851,15 @@ main(int argc, char **argv)
 	//
 	//  Note: Convert if/else if/ tests to switch.
 
-	if (*verb == 'g') {
+	if (*verb == 'g') {		//  "get" or "give"
 
 		//  "get" or "give" a blob
 
-		if (verb[1] == 'e') {
+		if (verb[1] == 'e') {				//  "get"
 			if ((err = service->get(&ok_no)))
 				die2("get failed", err);
 			exit_status = ok_no;
-		} else {
+		} else {					//  "give"
 			if ((err = service->give(&ok_no)))
 				die2("give failed", err);
 
