@@ -216,14 +216,6 @@ fs_take(int *ok_no)
 	return (char *)0;
 }
 
-static char *
-fs_open_output()
-{
-	TRACE("entered");
-
-	return (char *)0;
-}
-
 /*
  *  Note:
  *	Remove temp file on func return!
@@ -339,6 +331,33 @@ BYE:
 	return err;
 }
 
+static char *
+fs_give(int *ok_no)
+{
+	TRACE("entered");
+
+	char *err = fs_put(ok_no);
+	if (err)
+		return err;
+	if (*ok_no == 1) {
+		TRACE("could not put blob");
+		return (char *)0;
+	}
+
+	//  Note: ignoring ENOENT needs a think.
+	if (input_path && jmscott_unlink(input_path) && errno != ENOENT)
+		return strerror(errno);
+	return (char *)0;
+}
+
+static char *
+fs_open_output()
+{
+	TRACE("entered");
+
+	return (char *)0;
+}
+
 //  "eat" of a blob in a trusted file system.
 
 char *
@@ -382,5 +401,6 @@ struct service fs_service =
 	.get			=	fs_get,
 	.put			=	fs_put,
 	.eat			=	fs_eat,
-	.take			=	fs_take
+	.take			=	fs_take,
+	.give			=	fs_give
 };
