@@ -204,15 +204,6 @@ struct service
 
 	char		*(*end_point_syntax)(char *end_point);
 
-	/*
-	 *  Note:
-	 *	Why does open output exist in driver?  Just to do hard link
-	 *	in service driver "fs".
-	 *
-	 *	Why no close output?
-	 */
-	char		*(*open_output)(void);
-
 	char		*(*open)(void);
 
 	//  Note: close() ought to be called during error!

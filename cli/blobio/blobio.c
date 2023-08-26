@@ -826,32 +826,21 @@ TRACE2("WTF: output path", output_path);
 
 	//  open the output path
 
-	if (output_path) {
-		if (service) {
-			err = service->open_output();
-			if (err)
-				die3(
-					"service open(output) failed",
-					err,
-					output_path
-				);
-		} else {
-			int fd;
-			int flag = O_WRONLY | O_CREAT;
+	if (output_path && !service) {
+		int fd;
+		int flag = O_WRONLY | O_CREAT;
 
-			if (output_path != null_device)
-				flag |= O_EXCL;
-			fd = jmscott_open(output_path, flag, S_IRUSR|S_IRGRP);
-			if (fd == -1)
-				die3(
-					"open(output) failed",
-					strerror(errno),
-					output_path
-				);
-			output_fd = fd;
-		}
+		if (output_path != null_device)
+			flag |= O_EXCL;
+		fd = jmscott_open(output_path, flag, S_IRUSR|S_IRGRP);
+		if (fd == -1)
+			die3(
+				"open(output) failed",
+				strerror(errno),
+				output_path
+			);
+		output_fd = fd;
 	}
-
 
 	//  invoke the service callback
 	//

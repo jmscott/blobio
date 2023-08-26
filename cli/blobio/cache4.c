@@ -88,12 +88,6 @@ cache4_open()
 }
 
 static char *
-cache4_open_output()
-{
-	return (char *)0;
-}
-
-static char *
 cache4_close()
 {
 	char *err = fs_service.close();
@@ -299,7 +293,6 @@ struct service cache4_service =
 	.open			=	cache4_open,
 	.close			=	cache4_close,
 	.get			=	cache4_get,
-	.open_output		=	cache4_open_output,
 	.eat			=	cache4_eat,
 	.put			=	cache4_put,
 	.take			=	cache4_take,

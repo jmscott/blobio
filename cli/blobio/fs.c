@@ -384,14 +384,6 @@ fs_give(int *ok_no)
 	return (char *)0;
 }
 
-static char *
-fs_open_output()
-{
-	TRACE("entered");
-
-	return (char *)0;
-}
-
 //  "eat" of a blob in a trusted file system.
 
 char *
@@ -550,7 +542,6 @@ struct service fs_service =
 	.name			=	"fs",
 	.end_point_syntax	=	fs_end_point_syntax,
 	.open			=	fs_open,
-	.open_output		=	fs_open_output,
 	.close			=	fs_close,
 	.get			=	fs_get,
 	.put			=	fs_put,

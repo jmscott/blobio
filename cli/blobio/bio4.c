@@ -230,6 +230,25 @@ AGAIN3:
 }
 
 static char *
+bio4_open_output()
+{
+	int fd;
+	int flag = O_WRONLY | O_CREAT;
+
+	TRACE("entered");
+
+	if (output_path != null_device)
+		flag |= O_EXCL;		//  fail if file exists (and not null)
+
+	fd = jmscott_open(output_path, flag, S_IRUSR | S_IRGRP);
+	if (fd < -1)
+		return strerror(errno);
+	output_fd = fd;
+	TRACE("opened");
+	return (char *)0;
+}
+
+static char *
 bio4_open()
 {
 	int status;
@@ -237,6 +256,12 @@ bio4_open()
 	char pbuf[6];
 	int port = 0;
 	char *ep = bio4_service.end_point;
+
+	if (output_path) {
+		char *err = bio4_open_output();
+		if (err)
+			return err;
+	}
 
 	TRACE2("end point", bio4_service.end_point);
 
@@ -563,24 +588,6 @@ bio4_get(int *ok_no)
 }
 
 static char *
-bio4_open_output()
-{
-	int fd;
-	int flag = O_WRONLY | O_CREAT;
-
-	TRACE("entered");
-
-	if (output_path != null_device)
-		flag |= O_EXCL;		//  fail if file exists (and not null)
-
-	fd = jmscott_open(output_path, flag, S_IRUSR | S_IRGRP);
-	if (fd < -1)
-		return strerror(errno);
-	output_fd = fd;
-	return (char *)0;
-}
-
-static char *
 bio4_eat(int *ok_no)
 {
 	char *err;
@@ -848,7 +855,6 @@ struct service bio4_service =
 	.open			=	bio4_open,
 	.close			=	bio4_close,
 	.get			=	bio4_get,
-	.open_output		=	bio4_open_output,
 	.eat			=	bio4_eat,
 	.put			=	bio4_put,
 	.take			=	bio4_take,

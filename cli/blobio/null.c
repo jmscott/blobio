@@ -36,12 +36,6 @@ null_open()
 }
 
 static char *
-null_open_output()
-{
-	return (char *)0;
-}
-
-static char *
 null_close()
 {
 	return (char *)0;
@@ -111,7 +105,6 @@ struct service null_service =
 	.open			=	null_open,
 	.close			=	null_close,
 	.get			=	null_get,
-	.open_output		=	null_open_output,
 	.eat			=	null_eat,
 	.put			=	null_put,
 	.take			=	null_take,
