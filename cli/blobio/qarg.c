@@ -151,6 +151,8 @@ BLOBIO_SERVICE_frisk_qargs(char *query)
 				return "brr: specified more than once";
 			q = equal;
 			c = *q++;
+			if (c == 0)
+				return "brr: empty: want \"0\" or \"1\"";
 			if (c != '1' && c != '0')
 				return "brr: value not \"0\" or \"1\"";
 			seen_brr = 1;
