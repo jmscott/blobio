@@ -21,9 +21,9 @@
 
 #  Note: blobio.o must be first to satisfy linker.
 OBJs="
-	blobio.o
 	bc160.o
 	bio4.o
+	blobio.o
 	brr.o
 	btc20.o
 	buf.o
