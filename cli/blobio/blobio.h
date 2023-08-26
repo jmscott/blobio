@@ -64,6 +64,9 @@
 
 #define BLOBIO_MAX_URI_QARGS	5
 
+#define BLOBIO_MAX_FS_PATH	255	//  chars, not bytes
+#define BLOBIO_MAX_BRR_SIZE	455	//  not counting new-line&null
+
 /*
  *  Hash digest driver.
  *
@@ -177,6 +180,19 @@ struct digest
 	char	*(*fs_mkdir)(char *path, int size);
 };
 
+struct brr
+{
+	struct timespec		start_time;
+	char			transport[(8+1+160) + 1];
+	char			verb[8+1];
+	char			udig[(8+1+128)+1];		
+	char			chat_history[8+1];
+	long long		blob_size;
+	struct timespec		end_time;
+
+	int			log_fd;
+};
+
 struct service
 {
 	char		*name;
@@ -210,9 +226,12 @@ struct service
 	char		*(*roll)(int *ok_no);
 	char		*(*wrap)(int *ok_no);
 
+	char		*(*brr_frisk)(struct brr *);
+
 	struct digest	*digest;
 };
 
+//  replace jmscott_strcat()s with these more readable.
 extern char	*bufcat(char *tgt, int tgtsize, const char *src);
 extern char	*buf2cat(char *tgt, int tgtsize,
 				const char *src, const char *src2);
@@ -250,10 +269,9 @@ void		BLOBIO_SERVICE_get_BR(char *query, char *BR);
 void		BLOBIO_SERVICE_get_brr(char *query, char *brr);
 void		BLOBIO_SERVICE_get_algo(char *query, char *brr_path);
 
-extern void	brr_write(char *);
-
 extern struct digest	*find_digest(char *algorithm);
 
+extern char		udig[];
 extern char		verb[];
 extern char		algo[];
 extern char		algorithm[];
@@ -265,7 +283,6 @@ extern char 		*input_path;
 extern char 		*null_device;
 extern long long	blob_size;
 extern char		ascii_digest[129];
-
-#define BLOBIO_MAX_FS_PATH	255	//  chars, not bytes
+extern char *		brr_service(struct service *);
 
 #endif

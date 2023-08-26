@@ -26,8 +26,6 @@
  *	layering.  this level should write the udig, since the behavior
  *	is the same regardless of thhe digest algorithm
  *
- *	brr_write() does not verify an existing *.brr is a symbolic link.
- *
  *	Investigate linux system calls splice(), sendfile() and
  *	copy_file_range().
  *
@@ -55,6 +53,7 @@
  *
  *	Would be nice to eliminate stdio dependencies.  Currently stdio is
  *	required by only trace.c.  perhaps compile time option for --trace.
+ *	or, use a stioless version of trace in libjmscott.a
  *
  *	The service structure only understands ascii [:graph:] chars,
  *	which will be a problem for UTF8 DNS host names.
@@ -79,8 +78,6 @@
 
 #include "blobio.h"
 
-#define BRR_SIZE	370		//  terminating null NOT counted
-
 char	*jmscott_progname = "blobio";
 
 extern int	tracing;
@@ -92,12 +89,17 @@ static int	rm_output_path_error = 1;
 char	verb[6];
 char	algorithm[9] = {0};
 char	algo[9] = {0};
+char	udig[8 + 1 + 128 + 1] = {0};
 char	ascii_digest[129] = {0};
 char	*output_path = 0;
 char	*input_path = 0;
 
-char	BR[PATH_MAX] = {'.', 0};	//  service query arg BR=/path/to/blobio
-char	brr[2];				//  write a brr record: [01]
+//  service query arg BR=/path/to/blobio.
+//  default is current directory
+char	BR[BLOBIO_MAX_FS_PATH+1] = {'.', 0};
+
+//  write a brr record: [01]
+char	brr[2];
 
 char	*null_device = "/dev/null";
 char	chat_history[10] = {0};
@@ -119,7 +121,7 @@ extern struct digest		*digests[];
 extern struct service		*services[];
 struct digest			*digest_module;
 
-static struct service		*service = 0;
+struct service			*service = 0;
 
 static char		usage[] =
 	"usage: blobio [help | get|put|give|take|eat|wrap|roll|empty] "
@@ -460,6 +462,9 @@ parse_argv(int argc, char **argv)
 				);
 			digest_module = d;
 
+			udig[0] = 0;
+			jmscott_strcat(udig, sizeof udig, ud);
+
 		//  --algorithm [a-z][a-z0-9]{0,7}
 
 		} else if (strcmp("algorithm", a) == 0) {
@@ -774,7 +779,8 @@ main(int argc, char **argv)
 	if (output_path && output_path != null_device) {
 		struct stat st;
 
-		if (stat(output_path, &st) == 0) {
+TRACE2("WTF: output path", output_path);
+		if (jmscott_stat(output_path, &st) == 0) {
 			rm_output_path_error = 0;
 			eopt2("output-path", "refuse to overwrite file",
 								output_path);
@@ -937,9 +943,12 @@ main(int argc, char **argv)
 		exit_status = ok_no;
 	}
 
-	//  we had a successful transactions
-	if (brr[0] == '1')
-		brr_write(service->name);
+	//  write a BRR record
+	if (brr[0] == '1' && service) {
+		char *err = brr_service(service);
+		if (err)
+			die3("brr_service() failed", service->name, err);
+	}
 	cleanup(exit_status);
 
 	/*NOTREACHED*/

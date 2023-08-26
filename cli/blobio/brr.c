@@ -22,7 +22,6 @@ extern int			errno;
 extern char			algorithm[];
 extern char			algo[];
 extern char			ascii_digest[];
-extern char			transport[];
 extern char			verb[];
 extern char			chat_history[];
 extern long long		blob_size;
@@ -31,45 +30,63 @@ static char		*brr_format =
 	"%04d-%02d-%02dT%02d:%02d:%02d.%09ld+00:00\t"	//  RFC3339Nano time
 	"%s\t"						//  transport
 	"%s\t"						//  verb
-	"%s\t"						//  algorithm
+	"%s\t"						//  udig
 	"%s\t"						//  chat history
 	"%lld\t"					//  byte count
 	"%ld.%09ld\n"					//  wall duration
 ;
 
-static void
-bdie(char *msg)
+char *
+brr_service(struct service *srv)
 {
-	die2("brr_write", msg);
-}
-
-static void
-bdie2(char *msg1, char *msg2)
-{
-	die3("brr_write", msg1, msg2);
-}
-
-void
-brr_write(char *srv_name)
-{
+	struct brr brr = {0};
 	struct tm *t;
-	char brr[BRR_SIZE];
 	struct timespec	end_time;
 	long int sec, nsec;
 
-	TRACE2("service name", srv_name);
+	TRACE("entered");
+
+	brr.start_time = start_time;
+
+	brr.udig[0] = 0;
+	jmscott_strcat(brr.udig, sizeof brr.udig, udig);
+
+	brr.verb[0] = 0;
+	jmscott_strcat(brr.verb, sizeof brr.verb, verb);
+
+	brr.transport[0] = 0;
+	jmscott_strcat(brr.chat_history, sizeof brr.chat_history, chat_history);
+
+	brr.blob_size = blob_size;
+
+	char *err = srv->brr_frisk(&brr);
+	if (err)
+		return err;
+
+	if (brr.log_fd < 0)
+		return "log file < 0";
+	if (!brr.verb[0])
+		return "variable is empty: verb";
+	if (!brr.transport[0])
+		return "variable is empty: transport";
+	if (!brr.chat_history[0])
+		return "variable is empty: chat_history";
+	if (!brr.udig[0]) {
+		if (brr.verb[0] != 'w' || brr.chat_history[0] != 'n')
+			return "variable is empty: udig";
+	}
 
 	/*
 	 *  Build the ascii version of the start time.
 	 */
-	t = gmtime(&start_time.tv_sec);
+	t = gmtime(&brr.start_time.tv_sec);
 	if (!t)
-		bdie2("gmtime() failed", strerror(errno));
+		return strerror(errno);
 	/*
-	 *  Get end time.
+	 *  Get end time for wall duration.
 	 */
 	if (clock_gettime(CLOCK_REALTIME, &end_time) < 0)
-		bdie2("clock_gettime(end REALTIME) failed", strerror(errno));
+		return strerror(errno);
 	/*
 	 *  Calculate the elapsed time in seconds and
 	 *  nano seconds.  The trick of adding 1000000000
@@ -87,7 +104,7 @@ brr_write(char *srv_name)
 	/*
 	 *  Verify that seconds and nanoseconds are positive values.
 	 *  This test is added until I (jmscott) can determine why
-	 *  I peridocally see negative times on Linux hosted by VirtualBox
+	 *  peridocally negative times occur on Linux hosted by VirtualBox
 	 *  under Mac OSX.
 	 */
 	if (sec < 0) {
@@ -98,30 +115,12 @@ brr_write(char *srv_name)
 		nsec = 0;
 
 	//  cheap sanity tests
-
-	if (!verb[0])
-		bdie("variable is empty: verb");
-	if (!transport[0])
-		bdie("variable is empty: transport");
-	char udig[8+1+128+1];
-	if (algorithm[0]) {
-		if (!ascii_digest[0])
-			bdie("variable is empty: ascii_digest");
-		snprintf(udig, sizeof udig, "%s:%s", algorithm, ascii_digest);
-	} else {
-		if (strcmp(verb, "wrap"))
-			bdie("variable is empty: algorithm");
-		if (strcmp(chat_history, "no"))
-			bdie("variable is empty/chat not \"no\": algorithm");
-		udig[0] = 0;
-	}
-	if (!chat_history[0])
-		bdie("variable is empty: char_history");
 	/*
-	 *  Format the record buffer.
+	 *  Write the record to log_fd.
 	 */
-
-	snprintf(brr, sizeof brr, brr_format,
+	if (jmscott_flock(brr.log_fd, LOCK_EX))
+		return strerror(errno);
+	if (dprintf(brr.log_fd, brr_format,
 		t->tm_year + 1900,
 		t->tm_mon + 1,
 		t->tm_mday,
@@ -129,55 +128,16 @@ brr_write(char *srv_name)
 		t->tm_min,
 		t->tm_sec,
 		start_time.tv_nsec,
-		transport,
-		verb,
-		udig,
-		chat_history,
-		blob_size,
+		brr.transport,
+		brr.verb,
+		brr.udig,
+		brr.chat_history,
+		brr.blob_size,
 		sec,
 		nsec
-	);
-
-	/*
-	 *  Open local brr file with shared lock, not exclusive.
-	 *  Shared does not conflict with other brr writers, cause
-	 *  sizeof(brr tuple) are <= insured atomic writes.
-	 *
-	 *  Note:
-	 *	verify that brr file is NOT a sym link
-	 */
-	char brr_path[PATH_MAX];
-
-	brr_path[0] = 0;
-	if (BR[0])
-		jmscott_strcat4(brr_path, sizeof brr_path,
-			BR,
-			"/spool/",
-			srv_name,
-			".brr"
-		);
-	else
-		jmscott_strcat2(brr_path, sizeof brr_path,
-			srv_name,
-			".brr"
-		);
-	TRACE2("brr path", brr_path);
-	int fd = jmscott_open(
-		brr_path,
-		O_WRONLY|O_CREAT|O_APPEND,
-		S_IRUSR|S_IWUSR|S_IRGRP
-	);
-	if (fd < 0)
-		die2("open(brr-path) failed", strerror(errno));
-	if (jmscott_flock(fd, LOCK_EX))
-		die2("flock(brr-path:LOCK_EX) failed", strerror(errno));
-	/*
-	 *  Write the entire blob request record in a single write().
-	 */
-	if (jmscott_write_all(fd, brr, strlen(brr)) < 0)
-		die2("write(brr-path) failed", strerror(errno));
-	if (jmscott_flock(fd, LOCK_UN))
-		die2("flock(brr-path:LOCK_UN) failed", strerror(errno));
-	if (jmscott_close(fd) < 0)
-		die2("close(brr-path) failed", strerror(errno));
+	) < 0)
+		err = strerror(errno);
+	if (jmscott_flock(brr.log_fd, LOCK_UN) && !err)
+		return strerror(errno);
+	return err;
 }

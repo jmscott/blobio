@@ -18,6 +18,7 @@ extern struct service fs_service;
 
 static char fs_data[4 + 1 + 3 + 8 + 1];			// data/fs_<algo>
 static int end_point_fd = -1;
+static char *chat_history = (char *)0;
 
 /*
  *  Verify the syntax of the end point of the file system service.
@@ -42,6 +43,7 @@ fs_end_point_syntax(char *root_dir)
 static char *
 fs_open()
 {
+	blob_size = 0;
 	char *end_point = fs_service.end_point;
 
 	TRACE2("end point directory", end_point);
@@ -95,6 +97,47 @@ fs_close()
 }
 
 static char *
+fs_hard_link(int *ok_no, char *blob_path)
+{
+	TRACE("entered");
+
+	int status = jmscott_linkat(
+			end_point_fd,
+			blob_path,
+			AT_FDCWD,
+			output_path,
+			0
+	);
+	if (status != 0) {
+		if (errno == ENOENT) {
+			TRACE("source blob does not exist");
+			*ok_no = 1;
+			chat_history = "no";
+			return (char *)0;
+		}
+		if (errno == EXDEV) {
+			TRACE("source blob on different device");
+			return "";
+		}
+		return strerror(errno);
+	}
+
+	TRACE("hard linked blob ok to output path");
+
+	off_t sz;
+	char *err = jmscott_fsizeat(end_point_fd, blob_path, &sz);
+	if (err)
+		return err;
+	blob_size = (long long)sz;
+	TRACE_LL("blob size", blob_size);
+
+	*ok_no = 0;
+	chat_history = "ok";
+
+	return (char *)0;
+}
+
+static char *
 fs_get(int *ok_no)
 {
 	TRACE("entered");
@@ -109,44 +152,27 @@ fs_get(int *ok_no)
 		return err;
 	TRACE2("blob path", blob_path);
 
-	//  attempt to hard link blob to output path, for zero copy
-
-	if (output_path && output_path != null_device) {
-		int status = jmscott_linkat(
-				end_point_fd,
-				blob_path,
-				AT_FDCWD,
-				output_path,
-				0
-		);
-		if (status == 0) {
-			TRACE("hard linked blob to output path");
-			*ok_no = 0;
-			return (char *)0;
-		}
-		if (status < 0) {
-			if (errno == ENOENT) {
-				TRACE("blob does not exist");
-				*ok_no = 1;
-				return (char *)0;
-			}
-			if (errno != EXDEV)
-				return strerror(errno);
-
-			//  not on same device, so hard link failed, so copy
-		}
-		TRACE("blob not on same device as output path");
+	err = fs_hard_link(ok_no, blob_path);
+	if (!err)
+		return (char *)0;
+	if (err && err[0]) {
+		TRACE2("hard link failed", err);
+		return err;
 	}
+
+	TRACE("hard link failed, so try copy with sendfile");
 
 	//  trusted copy of blob to output fd
 	int blob_fd = jmscott_openat(end_point_fd, blob_path, O_RDONLY, 0777);
 	if (blob_fd < 0) {
 		if (errno == ENOENT) {		//  hmm, blob disappeared (ok)
 			*ok_no = 1;
+			chat_history = "no";
 			return (char *)0;
 		}
 		return strerror(errno);
 	}
+	chat_history = "ok";
 	*ok_no = 0;
 
 	if (output_path == null_device) {
@@ -191,6 +217,7 @@ fs_take(int *ok_no)
 	if (err)
 		return err;
 	if (*ok_no == 1) {
+		chat_history = "no";
 		TRACE("blob does not exist");
 		return (char *)0;
 	}
@@ -213,6 +240,7 @@ fs_take(int *ok_no)
 
 	if (jmscott_unlinkat(end_point_fd, blob_path, 0) && errno != ENOENT)
 		return strerror(errno);
+	chat_history = "ok,ok,ok";
 	return (char *)0;
 }
 
@@ -258,11 +286,13 @@ fs_put(int *ok_no)
 		);
 		if (status == 0) {
 			TRACE("hard linked, so no copy");
+			chat_history = "ok,ok";
 			*ok_no = 0;
 			return (char *)0;
 		}
 		if (errno == EEXIST) {
 			TRACE("blob already exists, so no copy");
+			chat_history = "ok,ok";
 			*ok_no = 0;
 			return (char *)0;
 		}
@@ -326,8 +356,10 @@ BYE:
 		if (jmscott_unlinkat(end_point_fd, tmp_path, 0) && !err)
 			err = strerror(errno);
 	}
-	if (!err)
+	if (!err) {
 		*ok_no = 0;
+		chat_history = "ok,ok";
+	}
 	return err;
 }
 
@@ -340,6 +372,7 @@ fs_give(int *ok_no)
 	if (err)
 		return err;
 	if (*ok_no == 1) {
+		chat_history = "ok,no";
 		TRACE("could not put blob");
 		return (char *)0;
 	}
@@ -347,6 +380,7 @@ fs_give(int *ok_no)
 	//  Note: ignoring ENOENT needs a think.
 	if (input_path && jmscott_unlink(input_path) && errno != ENOENT)
 		return strerror(errno);
+	chat_history = "ok,ok,ok";
 	return (char *)0;
 }
 
@@ -381,13 +415,133 @@ fs_eat(int *ok_no)
 	if (jmscott_faccessat(end_point_fd, blob_path, R_OK, 0)) {
 		if (errno == ENOENT) {
 			TRACE("blob does not exist");
+			chat_history = "no";
 			*ok_no = 1;
 			return (char *)0;
 		}
 		return strerror(errno);
 	}
 	TRACE("blob exists");
+	chat_history = "ok";
 	*ok_no = 0;
+	return (char *)0;
+}
+
+/*
+ *  Synopsis:
+ *	Wrap the contents of spool/wrap after moving spool/fs.brr to spool/wrap.
+ *  Description:
+ *	Wrap occurs in two steps.
+ *
+ *	First, move a frozen version of spool/bio4d.brr file into the file
+ *	spool/wrap/<udig>.brr, where <udig> is the digest of the frozen
+ *	blobified brr file.
+ *
+ *		mv spool/bio4d.brr ->
+ *		    spool/wrap/sha:8495766f40ca8ac6fcea76b9a11c82d87d2d0f9f.brr
+ *
+ *	where, say, sha:8495766f40ca8ac6fcea76b9a11c82d87d2d0f9f is the digest
+ *	of the frozen, read-only brr log file.
+ *
+ *	Second, scan the spool/wrap directory to build a set of all the udigs
+ *	of the frozen blobs in spool/wrap and then take the digest of THAT set
+ *	of udigs.
+ *
+ *	For example, suppose we have three traffic logs ready for digestion.
+ *
+ *		spool/wrap/sha:8495766f40ca8ac6fcea76b9a11c82d87d2d0f9f.brr
+ *		spool/wrap/sha:59a066dc8b2a633414c58a0ec435d2917bbf4b85.brr
+ *		spool/wrap/sha:f768865fe672543ebfac08220925054db3aa9465.brr
+ *
+ *	To wrap we build a small blob consisting only of the set of the above
+ *	udigs
+ *
+ *		sha:8495766f40ca8ac6fcea76b9a11c82d87d2d0f9f\n
+ *		sha:59a066dc8b2a633414c58a0ec435d2917bbf4b85\n
+ *		sha:f768865fe672543ebfac08220925054db3aa9465\n
+ *
+ * 	and then digest THAT set into a blob.  The udig of THAT set is returned
+ * 	to the client and the set is moved to spool/roll/<udig>.uset.
+ */
+static char *
+fs_wrap(int *ok_no)
+{
+	TRACE("entered");
+
+	/*
+	 *  Freeze spool/fs.brr by moving
+	 *
+	 *	spool/fs.brr -> spool/WRAPPING-fs-<epoch>-<pid>.brr
+	 */
+	char brr_path[BLOBIO_MAX_FS_PATH+1];
+	brr_path[0] = 0;
+	jmscott_strcat(brr_path, sizeof brr_path, "spool/fs.brr");
+
+	char pid[21];
+	jmscott_ulltoa((unsigned long long)getpid(), pid);
+
+	char epoch[21];
+	jmscott_ulltoa((unsigned long long)time((time_t *)0), epoch);
+
+	char frozen_path[BLOBIO_MAX_FS_PATH+1];
+	frozen_path[0] = 0;
+	jmscott_strcat5(frozen_path, sizeof frozen_path,
+			"spool/FROZEN-fs-",
+			epoch,
+			"-",
+			pid,
+			".pid"
+	);
+	TRACE2("frozen path", frozen_path);
+
+	*ok_no = 0;
+	return (char *)0;
+}
+
+/*
+ *  Set file system transport as
+ *
+ *	fs~<endpoint/path/to/spool/fs.brr>.<pid>
+ *
+ *  and chat history.
+ *
+ *  and open fs.brr.
+ */
+char *
+fs_brr_frisk(struct brr *brr)
+{
+	TRACE("entered");
+
+	brr->chat_history[0] = 0;
+	jmscott_strcat(
+		brr->chat_history,
+		sizeof brr->chat_history,
+		chat_history
+	);
+	TRACE2("chat history", brr->chat_history);
+
+	char pid[20];
+	jmscott_lltoa((long long)getpid(), pid);
+	brr->transport[0] = 0;
+	jmscott_strcat4(brr->transport, sizeof brr->transport,
+			"fs~",
+			fs_service.end_point,
+			"#",
+			pid
+	);
+	TRACE2("transport", brr->transport);
+
+	if (jmscott_mkdirat_EEXIST(end_point_fd, "spool", 0777))
+		return strerror(errno);
+
+	brr->log_fd = jmscott_openat(
+			end_point_fd,
+			"spool/fs.brr",
+			O_WRONLY | O_CREAT | O_APPEND,
+			0777
+	);
+	if (brr->log_fd < 0)
+		return strerror(errno);
 	return (char *)0;
 }
 
@@ -402,5 +556,7 @@ struct service fs_service =
 	.put			=	fs_put,
 	.eat			=	fs_eat,
 	.take			=	fs_take,
-	.give			=	fs_give
+	.give			=	fs_give,
+	.wrap			=	fs_wrap,
+	.brr_frisk		=	fs_brr_frisk
 };
