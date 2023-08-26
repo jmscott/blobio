@@ -333,7 +333,15 @@ Billing Model Questions:
 	- duration of storage: per blob or per plan?
 
 Note:
-	-  is blob size signed or unsigned i64?
+	- brr field "chat_history" only makes sense with network protocol.
+	  what is the chat history for service "fs"?  this is a design flaw in
+	  general brr semantics!  perhaps we should loosen syntax or meaning
+	  of chat history!  maybe call flow_history?  note sure.
+
+	  when blob trust levels add, chat history could be used to indicate
+	  if a blob was verified or not.
+
+	- is blob size signed or unsigned i64?
 
 	- should "get" verb include a reply?
 
