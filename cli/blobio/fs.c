@@ -43,7 +43,6 @@ fs_end_point_syntax(char *root_dir)
 static char *
 fs_open()
 {
-	blob_size = 0;
 	char *end_point = fs_service.end_point;
 
 	TRACE2("end point directory", end_point);
@@ -97,35 +96,44 @@ fs_close()
 }
 
 static char *
-fs_hard_link(int *ok_no, char *blob_path)
+fs_hard_link(int *ok_no, int src_fd, char *src_path, int tgt_fd, char *tgt_path)
 {
 	TRACE("entered");
 
+	TRACE2("src path", src_path);
+	TRACE2("tgt path", tgt_path);
+
 	int status = jmscott_linkat(
-			end_point_fd,
-			blob_path,
-			AT_FDCWD,
-			output_path,
+			src_fd,
+			src_path,
+			tgt_fd,
+			tgt_path,
 			0
 	);
-	if (status != 0) {
-		if (errno == ENOENT) {
-			TRACE("source blob does not exist");
+	if (status)
+		switch (errno) {
+		case ENOENT:
+			TRACE("src blob does not exist");
 			*ok_no = 1;
 			chat_history = "no";
 			return (char *)0;
-		}
-		if (errno == EXDEV) {
-			TRACE("source blob on different device");
+		case EEXIST:
+			TRACE("tgt blob exists (ok)");
+			chat_history = "ok";
+			break;
+		case EXDEV:
+			TRACE("src blob on different device");
 			return "";
+		default:
+			return strerror(errno);
 		}
-		return strerror(errno);
-	}
 
-	TRACE("hard linked blob ok to output path");
+	TRACE("hard linked src->tgt");
+
+	TRACE("set blob size to tgt");
 
 	off_t sz;
-	char *err = jmscott_fsizeat(end_point_fd, blob_path, &sz);
+	char *err = jmscott_fsizeat(tgt_fd, tgt_path, &sz);
 	if (err)
 		return err;
 	blob_size = (long long)sz;
@@ -138,29 +146,43 @@ fs_hard_link(int *ok_no, char *blob_path)
 }
 
 static char *
+fs_blob_path(char *blob_path, int path_size)
+{
+	blob_path[0] = 0;
+	char *p = jmscott_strcat2(blob_path, path_size, fs_data, "/");
+	size_t len = path_size - (p - blob_path);
+
+	char *err = digest_module->fs_path(p, len);
+	if (err)
+		return err;
+	TRACE2("blob path", blob_path);
+	return (char *)0;
+}
+
+static char *
 fs_get(int *ok_no)
 {
 	TRACE("entered");
 
 	char blob_path[BLOBIO_MAX_FS_PATH+1];
-	blob_path[0] = 0;
-	char *p = jmscott_strcat2(blob_path, sizeof blob_path, fs_data, "/");
 
-	size_t len = sizeof blob_path - (p - blob_path);
-	char *err = digest_module->fs_path(p, len);
+	char *err = fs_blob_path(blob_path, sizeof blob_path);
 	if (err)
 		return err;
-	TRACE2("blob path", blob_path);
 
-	err = fs_hard_link(ok_no, blob_path);
-	if (!err)
-		return (char *)0;
-	if (err && err[0]) {
-		TRACE2("hard link failed", err);
-		return err;
+	if (output_path) {
+		err = fs_hard_link(
+				ok_no,
+				end_point_fd,
+				blob_path,
+				AT_FDCWD,
+				output_path
+		);
+		if (!err || err[0])
+			return err;
 	}
 
-	TRACE("hard link failed, so try copy with sendfile");
+	TRACE("xdev failed, so copy blob->output");
 
 	//  trusted copy of blob to output fd
 	int blob_fd = jmscott_openat(end_point_fd, blob_path, O_RDONLY, 0777);
@@ -253,54 +275,30 @@ fs_put(int *ok_no)
 {
 	TRACE("entered");
 
-	/*
-	 *  Construct path to blob in data/fs_<algo>/...
-	 */
-
 	char blob_path[BLOBIO_MAX_FS_PATH+1];
-	blob_path[0] = 0;
-	char *bp = jmscott_strcat3(blob_path, sizeof blob_path,
-		"data/fs_",
-		algorithm,
-		"/"
-	);
-	int len = sizeof blob_path - (bp - blob_path);
-	char *err = digest_module->fs_path(bp, len);
+	char *err = fs_blob_path(blob_path, sizeof blob_path);
 	if (err)
 		return err;
-	TRACE2("blob path", blob_path);
-
-	/*
-	 *  Attempt to hard link the input file directly to blob under
-	 *  $BLOBIO_ROOT/data/fs_<algo>/path/to/blob.
-	 */
-
 	if (input_path) {
-		TRACE2("attempt hard link: input path", input_path);
-		int status = jmscott_linkat(
-					AT_FDCWD,
-					input_path,
-					end_point_fd,
-					blob_path,
-					0
+		err = fs_hard_link(
+				ok_no,
+				AT_FDCWD,
+				input_path,
+				end_point_fd,
+				blob_path
 		);
-		if (status == 0) {
-			TRACE("hard linked, so no copy");
-			chat_history = "ok,ok";
-			*ok_no = 0;
-			return (char *)0;
+		if (err) {
+			if (errno == EEXIST) {
+				TRACE("blob already exists (ok)")
+				chat_history = "ok,ok";
+				*ok_no = 0;
+				return (char *)0;
+			}
+			if (err[0])
+				return err;
 		}
-		if (errno == EEXIST) {
-			TRACE("blob already exists, so no copy");
-			chat_history = "ok,ok";
-			*ok_no = 0;
-			return (char *)0;
-		}
-		if (errno != EXDEV)
-			return strerror(errno);
 	}
-
-	TRACE("can not hard link across device, so copy");
+	TRACE("xdev failed, so copy input->blob");
 
 	/*
 	 *  First copy blob into $BLOBIO_ROOT/tmp/<udig>-<pid>.put
@@ -335,7 +333,6 @@ fs_put(int *ok_no)
 	);
 	if (tmp_fd < 0)
 		DEFER; 
-	blob_size = 0;
 
 	TRACE("sendfile input->tmp");
 	err = jmscott_send_file(input_fd, tmp_fd, &blob_size);
@@ -345,6 +342,8 @@ fs_put(int *ok_no)
 		DEFER;
 	tmp_fd = -1;
 	TRACE("rename tmp->data");
+
+	//  Note: assume $BLOBIO_ROOT/tmp on same device as $blob_path
 	if (jmscott_renameat(end_point_fd, tmp_path, end_point_fd, blob_path))
 		DEFER;
 	TRACE("ok");
@@ -352,7 +351,6 @@ BYE:
 	if (tmp_fd >= 0) {
 		if (jmscott_close(tmp_fd) && !err)
 			err = strerror(errno);
-		tmp_fd = -1;
 		if (jmscott_unlinkat(end_point_fd, tmp_path, 0) && !err)
 			err = strerror(errno);
 	}
