@@ -2,6 +2,9 @@
  *  Synopsis:
  *	Driver for a fast, trusted posix file system blobio service.
  *  Note:
+ *	Under linux perhaps consult /proc file system to verify that no process
+ *	is writing to the frozen wrap brr log after freezing.  clever.
+ *
  *	Not UTF-8 safe.  Various char counts are in ascii bytes, not UTF8 chars.
  */
 
@@ -38,20 +41,18 @@ fs_end_point_syntax(char *root_dir)
 }
 
 //  open a request to posix file system.
-//  assume global var "algo" has been extracted by caller.
 
 static char *
 fs_open()
 {
+	if (input_path && strcmp(input_path, null_device) == 0)
+		return "/dev/null can not be input device for fs service";
+
 	char *end_point = fs_service.end_point;
 
 	TRACE2("end point directory", end_point);
 
 	//  verify endpoint is full path.
-
-	//  Note: why care about full path end point?
-	if (*end_point != '/')
-		return "first char of end point is not '/'";
 
 	end_point_fd = jmscott_open(end_point, O_DIRECTORY, 0777);
         if (end_point_fd < 0)
@@ -115,7 +116,6 @@ fs_hard_link(int *ok_no, int src_fd, char *src_path, int tgt_fd, char *tgt_path)
 		case ENOENT:
 			TRACE("src blob does not exist");
 			*ok_no = 1;
-			chat_history = "no";
 			return (char *)0;
 		case EEXIST:
 			TRACE("tgt blob exists (ok)");
@@ -140,8 +140,6 @@ fs_hard_link(int *ok_no, int src_fd, char *src_path, int tgt_fd, char *tgt_path)
 	TRACE_LL("blob size", blob_size);
 
 	*ok_no = 0;
-	chat_history = "ok";
-
 	return (char *)0;
 }
 
@@ -159,6 +157,9 @@ fs_blob_path(char *blob_path, int path_size)
 	return (char *)0;
 }
 
+/*
+ *  Trusted "get" of a blob.
+ */
 static char *
 fs_get(int *ok_no)
 {
@@ -170,6 +171,23 @@ fs_get(int *ok_no)
 	if (err)
 		return err;
 
+	if (output_path == null_device) {
+		TRACE("output /dev/null, so no write|link");
+
+		off_t sz;
+		err = jmscott_fsizeat(end_point_fd, blob_path, &sz);
+		if (err) {
+			if (errno != ENOENT)
+				return err;
+			chat_history = "no";
+			*ok_no = 1;
+			return (char *)0;
+		}
+		blob_size = sz;
+		*ok_no = 0;
+		chat_history = "ok";
+		return (char *)0;
+	}
 	if (output_path) {
 		err = fs_hard_link(
 				ok_no,
@@ -178,16 +196,21 @@ fs_get(int *ok_no)
 				AT_FDCWD,
 				output_path
 		);
-		if (!err || err[0])
-			return err;
+		if (err) {
+			if (!err[0])
+				return err;
+		} else {
+			chat_history = "ok";
+			return (char *)0;
+		}
 	}
 
 	TRACE("xdev failed, so copy blob->output");
 
-	//  trusted copy of blob to output fd
 	int blob_fd = jmscott_openat(end_point_fd, blob_path, O_RDONLY, 0777);
 	if (blob_fd < 0) {
-		if (errno == ENOENT) {		//  hmm, blob disappeared (ok)
+		if (errno == ENOENT) {
+			TRACE("hmm, blob disappeared");
 			*ok_no = 1;
 			chat_history = "no";
 			return (char *)0;
@@ -196,11 +219,6 @@ fs_get(int *ok_no)
 	}
 	chat_history = "ok";
 	*ok_no = 0;
-
-	if (output_path == null_device) {
-		TRACE("output path is null device, so no read of blob");
-		goto BYE;
-	}
 
 	if (output_path) {
 		TRACE2("open output path exists", output_path)
@@ -224,10 +242,7 @@ BYE:
 	if (output_path && output_fd >= 0 && jmscott_close(output_fd) && !err)
 		err = strerror(errno);
 	output_fd = -1;
-
-	if (err)
-		return err;
-	return (char *)0;
+	return err;
 }
 
 static char *
@@ -267,8 +282,7 @@ fs_take(int *ok_no)
 }
 
 /*
- *  Note:
- *	Remove temp file on func return!
+ *  "put" of a trusted file to a blob store.
  */
 static char *
 fs_put(int *ok_no)
@@ -279,6 +293,7 @@ fs_put(int *ok_no)
 	char *err = fs_blob_path(blob_path, sizeof blob_path);
 	if (err)
 		return err;
+
 	if (input_path) {
 		err = fs_hard_link(
 				ok_no,
@@ -289,9 +304,7 @@ fs_put(int *ok_no)
 		);
 		if (err) {
 			if (errno == EEXIST) {
-				TRACE("blob already exists (ok)")
 				chat_history = "ok,ok";
-				*ok_no = 0;
 				return (char *)0;
 			}
 			if (err[0])
@@ -338,20 +351,19 @@ fs_put(int *ok_no)
 	err = jmscott_send_file(input_fd, tmp_fd, &blob_size);
 	if (err)
 		DEFER;
-	if (jmscott_close(tmp_fd))
-		DEFER;
-	tmp_fd = -1;
-	TRACE("rename tmp->data");
 
+	TRACE("rename tmp->data");
 	//  Note: assume $BLOBIO_ROOT/tmp on same device as $blob_path
 	if (jmscott_renameat(end_point_fd, tmp_path, end_point_fd, blob_path))
 		DEFER;
 	TRACE("ok");
 BYE:
 	if (tmp_fd >= 0) {
+		if (jmscott_unlinkat(end_point_fd, tmp_path, 0) && !err) {
+			if (errno != ENOENT)
+				err = strerror(errno);
+		}
 		if (jmscott_close(tmp_fd) && !err)
-			err = strerror(errno);
-		if (jmscott_unlinkat(end_point_fd, tmp_path, 0) && !err)
 			err = strerror(errno);
 	}
 	if (!err) {
