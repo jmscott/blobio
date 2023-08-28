@@ -2,6 +2,9 @@
  *  Synopsis:
  *	Frisk and extract query from uri: {tmo,brr}={\d{1,3}|<path>}
  *  Note:
+ *	Change value of brr=[01] to brr=[t|f].  we may wish to use
+ *	brr=[0-9] for a file descriptor.
+ *
  *	--help should document the query args, since they are the args
  *	for all services.
  *
