@@ -119,7 +119,6 @@ fs_hard_link(int *ok_no, int src_fd, char *src_path, int tgt_fd, char *tgt_path)
 			return (char *)0;
 		case EEXIST:
 			TRACE("tgt blob exists (ok)");
-			chat_history = "ok";
 			break;
 		case EXDEV:
 			TRACE("src blob on different device");
@@ -130,8 +129,7 @@ fs_hard_link(int *ok_no, int src_fd, char *src_path, int tgt_fd, char *tgt_path)
 
 	TRACE("hard linked src->tgt");
 
-	TRACE("set blob size to tgt");
-
+	TRACE("set blob size to tgt size");
 	off_t sz;
 	char *err = jmscott_fsizeat(tgt_fd, tgt_path, &sz);
 	if (err)
@@ -234,6 +232,7 @@ fs_get(int *ok_no)
 	TRACE("sendfile ...");
 	blob_size = 0;
 	err = jmscott_send_file(blob_fd, output_fd, &blob_size);
+	TRACE_LL("send size", blob_size);
 BYE:
 	if (blob_fd >= 0 && jmscott_close(blob_fd) && !err)
 		err = strerror(errno);
@@ -263,17 +262,9 @@ fs_take(int *ok_no)
 	 *  Construct path to blob in data/fs_<algo>/...
 	 */
 	char blob_path[BLOBIO_MAX_FS_PATH+1];
-	blob_path[0] = 0;
-	char *bp = jmscott_strcat3(blob_path, sizeof blob_path,
-		"data/fs_",
-		algorithm,
-		"/"
-	);
-	int len = sizeof blob_path - (bp - blob_path);
-	err = digest_module->fs_path(bp, len);
+	err = fs_blob_path(blob_path, sizeof blob_path);
 	if (err)
 		return err;
-	TRACE2("blob path", blob_path);
 
 	if (jmscott_unlinkat(end_point_fd, blob_path, 0) && errno != ENOENT)
 		return strerror(errno);
@@ -309,6 +300,9 @@ fs_put(int *ok_no)
 			}
 			if (err[0])
 				return err;
+		} else {
+			chat_history = "ok,ok";
+			return (char *)0;
 		}
 	}
 	TRACE("xdev failed, so copy input->blob");
@@ -470,10 +464,16 @@ fs_wrap(int *ok_no)
 {
 	TRACE("entered");
 
+	if (jmscott_mkdirat_EEXIST(end_point_fd, "spool", 0777))
+		return strerror(errno);
+		
 	/*
 	 *  Freeze spool/fs.brr by moving
 	 *
 	 *	spool/fs.brr -> spool/WRAPPING-fs-<epoch>-<pid>.brr
+	 *
+	 *  Note:
+	 *	How to insure no other process have open, other than locking?
 	 */
 	char brr_path[BLOBIO_MAX_FS_PATH+1];
 	brr_path[0] = 0;
