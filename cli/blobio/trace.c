@@ -144,7 +144,7 @@ trace4(char *msg1, char *msg2, char *msg3, char *msg4)
 }
 
 void
-trace5(char *msg1, char *msg2, char *msg3, char *msg4)
+trace5(char *msg1, char *msg2, char *msg3, char *msg4, char *msg5)
 {
 	if (msg1) {
 		char buf[MAX_ATOMIC_MSG];
@@ -153,9 +153,9 @@ trace5(char *msg1, char *msg2, char *msg3, char *msg4)
 		bufcat(buf, sizeof buf, msg1);
 		if (msg2)
 			buf2cat(buf, sizeof buf, ": ", msg2);
-		trace4(buf, msg2, msg3, msg4);
+		trace4(buf, msg3, msg4, msg4);
 	} else 
-		trace4(msg2, msg2, msg3, msg4);
+		trace4(msg2, msg3, msg4, msg5);
 }
 
 static void
