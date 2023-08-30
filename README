@@ -311,10 +311,6 @@ Protocol Questions:
 	   the server replies with the digest of the cancatenation of the blobs in the
 	   sent udig list.
 
-	- should "wrap" verb send hash algorithm?  how does sending hash algo
-	  give too much control of security to client.  what if server wishes
-	  to use more secure digest for "wrap"?
-
 Billing Model Questions:
 	- what to measure per billing cycle:
 		total count of blobs stored
