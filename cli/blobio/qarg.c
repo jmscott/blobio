@@ -38,6 +38,7 @@ frisk_qarg(char *expect, char *given, char **p_equal, int max_vlen)
 
 	TRACE2("expect", expect);
 	TRACE2("given", given);
+	TRACE_LL("max value length", (long long)max_vlen);
 
 	while ((ce = *e++)) {
 		cg = *g++;
@@ -45,8 +46,9 @@ frisk_qarg(char *expect, char *given, char **p_equal, int max_vlen)
 			return "unexpected null char in value";
 		if (!isascii(cg))
 			return "char in value is not ascii";
-		if (cg != ce)
+		if (cg != ce) {
 			return "unexpected char in arg";
+		}
 	}
 	if (*g++ != '=')
 		return "no \"=\" at end of arg";
@@ -55,14 +57,14 @@ frisk_qarg(char *expect, char *given, char **p_equal, int max_vlen)
 	//  insure value of query arg is copacetic.
 
 	while ((cg = *g++)) {
+		if (cg == '&')
+			break;
 		if (g - *p_equal > max_vlen)
 			return "value too large";
 		if (!isascii(cg))
 			return "char in value is not ascii";
 		if (!isgraph(cg))
 			return "char in value is not graphic";
-		if (cg == '&')
-			break;
 	}
 	if (g - given == 1)
 		return "empty value";
@@ -94,7 +96,6 @@ qae(char *qarg, char *err)
  *
  *		algo=[a-z][a-z0-9]{0,7}	#  algorithm for service wrap
  *		brr=[01]		#  write brr record
- *		BR=path/to/blobio	#  explict path to blobio root
  *
  *	Tis an error if args other than the three above exist in query string.
  *  Returns:
@@ -103,9 +104,11 @@ qae(char *qarg, char *err)
 char *
 BLOBIO_SERVICE_frisk_qargs(char *query)
 {
+	TRACE("entered");
+
 	char *q = query, c;
 	char *equal;
-	char seen_BR = 0, seen_algo = 0, seen_brr = 0;
+	char seen_algo = 0, seen_brr = 0;
 	char *err;
 
 	if (!query || !*query)
@@ -116,6 +119,7 @@ BLOBIO_SERVICE_frisk_qargs(char *query)
 		//  match: algo=[a-z][a-z0-9]{0,7}[&\000]
 
 		case 'a':
+			TRACE("saw char 'a', expect qarg \"algo\"");
 			err = frisk_qarg("algo", q - 1, &equal, 8);
 			if (err)
 				return qae("algo", err);
@@ -147,6 +151,7 @@ BLOBIO_SERVICE_frisk_qargs(char *query)
 
 		//  match: brr=[01]
 		case 'b':
+			TRACE("saw char 'b', expect qarg \"brr\"");
 			err = frisk_qarg("brr", q - 1, &equal, 1);
 			if (err)
 				return qae("brr", err);
@@ -159,29 +164,22 @@ BLOBIO_SERVICE_frisk_qargs(char *query)
 			if (c != '1' && c != '0')
 				return "brr: value not \"0\" or \"1\"";
 			seen_brr = 1;
+			c = *q++;
 			break;
-		case 'B':
-			err = frisk_qarg("BR", q - 1, &equal, 64);
-			if (err)
-				return qae("BR", err);
-			if (seen_BR)
-				return "BR: specified more than once";
+		default: {
+			char got[2];
 
-			//  skip over blobio root path till we hit end of string
-			//  or '&'
-			while ((c = *q++))
-				if (!c)
-					return (char *)0;
-			break;
-		default:
+			got[0]= c;  got[1] = 0;
+			TRACE2("unexpected char in query arg: got", got);
 			return "unexpected char in query arg";
-		}
+		}}
 		if (c == 0)
 			break;
 		if (c == '&')
 			if (!*q)
 				return "no query argument after \"&\"";
 	}
+	TRACE("bye (ok)");
 	return (char *)0;
 }
 
@@ -192,6 +190,8 @@ BLOBIO_SERVICE_frisk_qargs(char *query)
 void
 BLOBIO_SERVICE_get_algo(char *query, char *algo)
 {
+	TRACE("entered");
+
 	char *q = query, c, *a = algo;
 	
 	*a = 0;
@@ -222,6 +222,8 @@ BLOBIO_SERVICE_get_algo(char *query, char *algo)
 void
 BLOBIO_SERVICE_get_BR(char *query, char *path)
 {
+	TRACE("entered");
+
 	char *q = query, c, *p = path;
 	
 	*p = 0;
@@ -252,6 +254,8 @@ BLOBIO_SERVICE_get_BR(char *query, char *path)
 void
 BLOBIO_SERVICE_get_brr(char *query, char *put_brr)
 {
+	TRACE("entered");
+
 	char *q = query, c;
 	
 	while ((c = *q++)) {
