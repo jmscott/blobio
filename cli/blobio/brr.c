@@ -18,11 +18,6 @@ extern struct timespec		start_time;
 extern void			die(char *msg);
 extern void			die2(char *msg1, char *msg2);
 extern int			errno;
-extern char			algorithm[];
-extern char			algo[];
-extern char			ascii_digest[];
-extern char			verb[];
-extern char			chat_history[];
 extern long long		blob_size;
 
 static char		*brr_format =

@@ -86,24 +86,20 @@ static int	rm_output_path_error = 1;
 /*
  *  The global request.
  */
-char	verb[6];
-char	algorithm[9] = {0};
+char	verb[8+1];
+char	algorithm[8+1] = {0};
 char	algo[9] = {0};
 char	udig[8 + 1 + 128 + 1] = {0};
 char	ascii_digest[129] = {0};
 char	*output_path = 0;
 char	*input_path = 0;
 
-//  service query arg BR=/path/to/blobio.
-//  default is current directory
-char	BR[BLOBIO_MAX_FS_PATH+1] = {'.', 0};
-
 //  write a brr record: [01]
 char	brr[2];
 
 char	*null_device = "/dev/null";
-char	chat_history[10] = {0};
-char	transport[129] = {0};
+char	chat_history[2+1+2+1+2+1] = {0};
+char	transport[8+1+128 + 1] = {0};
 int	io_timeout = -1;		//  read/write() i/o timeout in seconds
 
 long long	blob_size = 0;
@@ -182,7 +178,7 @@ cleanup(int status)
 
 			jmscott_write_all(2, buf, strlen(buf));
 		}
-	TRACE("good bye, cruel world");
+	TRACE("bye");
 }
 
 static void
@@ -556,13 +552,16 @@ parse_argv(int argc, char **argv)
 				eservice2("end point >= 128 characters", s);
 			if (!*p)
 				eservice2("empty <end point>", s);
+
+			//  check for common error where '&' instead of '?'
+			//  is used to introduce the query string.
 			if (*p == '?')
 				eservice2("empty <end point> before ? char", s);
 			endp = p;
 
 			/*
 			 *  Verify that the end point are all graphic
-			 *  characters.
+			 *  characters and a few other common errors.
 			 */
 			char *query = (char *)0, c;
 			while ((c = *p++)) {
@@ -580,13 +579,10 @@ parse_argv(int argc, char **argv)
 					eservice("missing \"?\" before \"&\"");
 			}
 
-			//  check for common error where '&' instead of '?'
-			//  is ued to introduce the query string.
 
 			/*
 			 *  Extract query arguments from service:
 			 *
-			 *	BR	path/to/blobio/root
 			 *	brr	write a brr record [01]
 			 *	algo	algorithm for wrap
 			 *	tmo	per i/o timeout
@@ -604,7 +600,6 @@ parse_argv(int argc, char **argv)
 
 				BLOBIO_SERVICE_get_algo(query, algo);
 				BLOBIO_SERVICE_get_brr(query, brr);
-				BLOBIO_SERVICE_get_BR(query, BR);
 			}
 
 			//  validate the syntax of the specific end point
@@ -730,8 +725,6 @@ xref_argv()
 			no_opt("service");
 		if (input_path)
 			enot("input-path");
-		if (output_path)
-			enot("output-path");
 		if (ascii_digest[0])
 			enot("udig");
 		if (algorithm[0])
@@ -757,7 +750,6 @@ main(int argc, char **argv)
 #endif
 	xref_argv();
 
-	TRACE2("query arg: BR", BR);
 	TRACE2("query arg: brr", brr);
 	TRACE2("query arg: algo", algo);
 
@@ -779,7 +771,6 @@ main(int argc, char **argv)
 	if (output_path && output_path != null_device) {
 		struct stat st;
 
-TRACE2("WTF: output path", output_path);
 		if (jmscott_stat(output_path, &st) == 0) {
 			rm_output_path_error = 0;
 			eopt2("output-path", "refuse to overwrite file",
@@ -807,7 +798,7 @@ TRACE2("WTF: output path", output_path);
 			buf,
 			sizeof buf,
 			"service open(",
-				service->end_point,
+				service->name,
 			") failed"
 		);
 		die2(buf, err);
@@ -824,9 +815,10 @@ TRACE2("WTF: output path", output_path);
 		input_fd = fd;
 	}
 
-	//  open the output path
+	//  open the output path if verb is wrap/roll or local "eat" 
 
-	if (output_path && !service) {
+	char v = verb[0];
+	if (output_path && ((v == 'e' && !service) || v == 'w' || v == 'r')) {
 		int fd;
 		int flag = O_WRONLY | O_CREAT;
 
@@ -925,6 +917,15 @@ TRACE2("WTF: output path", output_path);
 	} else if (*verb == 'w') {
 		if ((err = service->wrap(&ok_no)))
 			die2("wrap() failed", err);
+
+		TRACE2("wrap udig", udig);
+		int len = strlen(udig);
+		char udig_out[8+1+128+1];
+		memcpy(udig_out, udig, len);
+		udig_out[len++] = '\n';
+		if (jmscott_write_all(output_fd, udig_out, len))
+			die2("write(udig) failed", strerror(errno));
+
 		exit_status = ok_no;
 	} else if (*verb == 'r') {
 		if ((err = service->roll(&ok_no)))

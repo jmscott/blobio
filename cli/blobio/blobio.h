@@ -183,7 +183,7 @@ struct digest
 struct brr
 {
 	struct timespec		start_time;
-	char			transport[(8+1+160) + 1];
+	char			transport[(8+1+128) + 1];
 	char			verb[8+1];
 	char			udig[(8+1+128)+1];		
 	char			chat_history[8+1];
@@ -241,6 +241,7 @@ extern void	trace(char *);
 extern void	trace2(char *, char *);
 extern void	trace3(char *, char *, char *);
 extern void	trace4(char *, char *, char *, char *);
+extern void	trace5(char *, char *, char *, char *, char *);
 extern void	trace_ull(char *, unsigned long long);
 extern void	trace_ll(char *, long long);
 extern void	hexdump(unsigned char *buf, int buf_size, char direction);
@@ -262,10 +263,11 @@ void		BLOBIO_SERVICE_get_algo(char *query, char *brr_path);
 
 extern struct digest	*find_digest(char *algorithm);
 
-extern char		udig[];
-extern char		verb[];
-extern char		algo[];
-extern char		algorithm[];
+extern char		udig[8 + 1 + 128 + 1];
+extern char		verb[8 + 1];
+extern char		algo[8 + 1];
+extern char		algorithm[8 + 1];
+extern char		chat_history[2 + 1 + 2 + 1 + 2 + 1];
 extern struct digest	*digest_module;
 extern int 		output_fd;
 extern char 		*output_path;

@@ -2,6 +2,10 @@
  *  Synopsis:
  *	Driver for a fast, trusted posix file system blobio service.
  *  Note:
+ *	Review chat history construction.
+ *
+ *	Double check default (0777) dir perms in various mkdir calls.
+ *
  *	Under linux perhaps consult /proc file system to verify that no process
  *	is writing to the frozen wrap brr log after freezing.  clever.
  *
@@ -21,7 +25,6 @@ extern struct service fs_service;
 
 static char fs_data[4 + 1 + 3 + 8 + 1];			// data/fs_<algo>
 static int end_point_fd = -1;
-static char *chat_history = (char *)0;
 
 /*
  *  Verify the syntax of the end point of the file system service.
@@ -45,6 +48,16 @@ fs_end_point_syntax(char *root_dir)
 static char *
 fs_open()
 {
+	if (verb[0] == 'w') {
+		if (!algo[0])
+			return "wrap requires algo query arg in service uri";
+		digest_module = find_digest(algo);
+		if (!digest_module)
+			return "unknown digest module in query arg \"algo\"";
+		algorithm[0] = 0;
+		jmscott_strcat(algorithm, sizeof algorithm, algo);
+	}
+
 	if (input_path && strcmp(input_path, null_device) == 0)
 		return "/dev/null can not be input device for fs service";
 
@@ -155,6 +168,16 @@ fs_blob_path(char *blob_path, int path_size)
 	return (char *)0;
 }
 
+static void
+fs_add_chat(char *chat)
+{
+	TRACE(chat);
+	if (chat_history[0])
+		jmscott_strcat2(chat_history, sizeof chat_history, ",", chat);
+	else
+		jmscott_strcat(chat_history, sizeof chat_history, chat);
+}
+
 /*
  *  Trusted "get" of a blob.
  */
@@ -177,13 +200,13 @@ fs_get(int *ok_no)
 		if (err) {
 			if (errno != ENOENT)
 				return err;
-			chat_history = "no";
+			fs_add_chat("no");
 			*ok_no = 1;
 			return (char *)0;
 		}
 		blob_size = sz;
 		*ok_no = 0;
-		chat_history = "ok";
+		fs_add_chat("no");
 		return (char *)0;
 	}
 	if (output_path) {
@@ -198,7 +221,7 @@ fs_get(int *ok_no)
 			if (!err[0])
 				return err;
 		} else {
-			chat_history = "ok";
+			fs_add_chat("ok");
 			return (char *)0;
 		}
 	}
@@ -210,12 +233,12 @@ fs_get(int *ok_no)
 		if (errno == ENOENT) {
 			TRACE("hmm, blob disappeared");
 			*ok_no = 1;
-			chat_history = "no";
+			fs_add_chat("no");
 			return (char *)0;
 		}
 		return strerror(errno);
 	}
-	chat_history = "ok";
+	fs_add_chat("ok");
 	*ok_no = 0;
 
 	if (output_path) {
@@ -253,10 +276,11 @@ fs_take(int *ok_no)
 	if (err)
 		return err;
 	if (*ok_no == 1) {
-		chat_history = "no";
+		fs_add_chat("no");
 		TRACE("blob does not exist");
 		return (char *)0;
-	}
+	} else
+		fs_add_chat("ok");
 
 	/*
 	 *  Construct path to blob in data/fs_<algo>/...
@@ -266,9 +290,13 @@ fs_take(int *ok_no)
 	if (err)
 		return err;
 
-	if (jmscott_unlinkat(end_point_fd, blob_path, 0) && errno != ENOENT)
-		return strerror(errno);
-	chat_history = "ok,ok,ok";
+	if (jmscott_unlinkat(end_point_fd, blob_path, 0)) {
+		if (errno != ENOENT)
+			return strerror(errno);
+		fs_add_chat("ok");
+	}
+	fs_add_chat("ok,ok,ok");
+	*ok_no = 0;
 	return (char *)0;
 }
 
@@ -284,6 +312,7 @@ fs_put(int *ok_no)
 	char *err = fs_blob_path(blob_path, sizeof blob_path);
 	if (err)
 		return err;
+	fs_add_chat("ok");
 
 	if (input_path) {
 		err = fs_hard_link(
@@ -295,13 +324,13 @@ fs_put(int *ok_no)
 		);
 		if (err) {
 			if (errno == EEXIST) {
-				chat_history = "ok,ok";
+				fs_add_chat("ok");
 				return (char *)0;
 			}
 			if (err[0])
 				return err;
 		} else {
-			chat_history = "ok,ok";
+			fs_add_chat("ok");
 			return (char *)0;
 		}
 	}
@@ -350,7 +379,7 @@ fs_put(int *ok_no)
 	//  Note: assume $BLOBIO_ROOT/tmp on same device as $blob_path
 	if (jmscott_renameat(end_point_fd, tmp_path, end_point_fd, blob_path))
 		DEFER;
-	TRACE("ok");
+	fs_add_chat("ok");
 BYE:
 	if (tmp_fd >= 0) {
 		if (jmscott_unlinkat(end_point_fd, tmp_path, 0) && !err) {
@@ -360,10 +389,8 @@ BYE:
 		if (jmscott_close(tmp_fd) && !err)
 			err = strerror(errno);
 	}
-	if (!err) {
+	if (!err)
 		*ok_no = 0;
-		chat_history = "ok,ok";
-	}
 	return err;
 }
 
@@ -376,7 +403,7 @@ fs_give(int *ok_no)
 	if (err)
 		return err;
 	if (*ok_no == 1) {
-		chat_history = "ok,no";
+		fs_add_chat("no");
 		TRACE("could not put blob");
 		return (char *)0;
 	}
@@ -384,7 +411,7 @@ fs_give(int *ok_no)
 	//  Note: ignoring ENOENT needs a think.
 	if (input_path && jmscott_unlink(input_path) && errno != ENOENT)
 		return strerror(errno);
-	chat_history = "ok,ok,ok";
+	fs_add_chat("ok");
 	return (char *)0;
 }
 
@@ -411,14 +438,14 @@ fs_eat(int *ok_no)
 	if (jmscott_faccessat(end_point_fd, blob_path, R_OK, 0)) {
 		if (errno == ENOENT) {
 			TRACE("blob does not exist");
-			chat_history = "no";
+			fs_add_chat("no");
 			*ok_no = 1;
 			return (char *)0;
 		}
 		return strerror(errno);
 	}
 	TRACE("blob exists");
-	chat_history = "ok";
+	fs_add_chat("ok");
 	*ok_no = 0;
 	return (char *)0;
 }
@@ -458,6 +485,13 @@ fs_eat(int *ok_no)
  *
  * 	and then digest THAT set into a blob.  The udig of THAT set is returned
  * 	to the client and the set is moved to spool/roll/<udig>.uset.
+ *
+ *  Note:
+ *	Triple check existence handling regarding uniqueness of renamed
+ *	frozen/wrap brr log files.  Havinf the previous wrap udig in current
+ *	wrap pretty much insures uniquesness ... but edge cases may exist.
+ *
+ *	Insure no dangling open files exist upon error!
  */
 static char *
 fs_wrap(int *ok_no)
@@ -479,12 +513,20 @@ fs_wrap(int *ok_no)
 	brr_path[0] = 0;
 	jmscott_strcat(brr_path, sizeof brr_path, "spool/fs.brr");
 
+	TRACE2("brr path", brr_path);
+	if (jmscott_faccessat(end_point_fd, brr_path, R_OK, 0)) {
+		if (errno != ENOENT)
+			return strerror(errno);
+		TRACE("brr does not exist, so no wrap");
+		fs_add_chat("no");
+		*ok_no = 1;
+		return (char *)0;
+	}
+
 	char pid[21];
 	jmscott_ulltoa((unsigned long long)getpid(), pid);
-
 	char epoch[21];
 	jmscott_ulltoa((unsigned long long)time((time_t *)0), epoch);
-
 	char frozen_path[BLOBIO_MAX_FS_PATH+1];
 	frozen_path[0] = 0;
 	jmscott_strcat5(frozen_path, sizeof frozen_path,
@@ -494,20 +536,77 @@ fs_wrap(int *ok_no)
 			pid,
 			".pid"
 	);
-	TRACE2("frozen path", frozen_path);
+	TRACE2("fs.brr -> frozen path", frozen_path);
+	int status = jmscott_renameat(
+				end_point_fd,
+				brr_path,
+				end_point_fd,
+				frozen_path
+	);
+	if (status) {
+		if (errno != ENOENT)
+			return strerror(errno);
+		TRACE("spool/fs.brr gone (ok)");
+		fs_add_chat("no");
+		*ok_no = 1;
+		return (char *)0;
+	}
+	TRACE("open frozen brr log for digesting");
+	int frozen_fd = jmscott_openat(
+				end_point_fd,
+				frozen_path,
+				O_RDONLY,
+				0
+	);
+	if (frozen_fd < 0)
+		return strerror(errno);
 
+	TRACE2("digest algorithm", digest_module->algorithm);
+	char *err = digest_module->eat_input(frozen_fd);
+	if (err)
+		return err;
+	TRACE2("frozen digest", ascii_digest);
+
+	if (jmscott_mkdirat_EEXIST(end_point_fd, "spool/wrap", 0777))
+		return strerror(errno);
+
+	char wrap_path[BLOBIO_MAX_FS_PATH+1];
+	wrap_path[0] = 0;
+	jmscott_strcat5(wrap_path, sizeof wrap_path,
+			"spool/wrap/",
+			algorithm,
+			":",
+			ascii_digest,
+			".brr"
+	);
+	TRACE2("wrap path", wrap_path);
+
+	TRACE("rename frozen->wrap/");
+	status = jmscott_renameat(
+			end_point_fd,
+			frozen_path,
+			end_point_fd,
+			wrap_path
+	);
+	if (status)
+		return strerror(errno);
+
+	//  set to empty udig until "wrap" coding done
+	udig[0] = 0;
+	jmscott_strcat3(udig, sizeof udig,
+			algorithm,
+			":",
+			digest_module->empty_digest()
+	);
+
+	fs_add_chat("ok");
 	*ok_no = 0;
 	return (char *)0;
 }
 
 /*
- *  Set file system transport as
- *
- *	fs~<endpoint/path/to/spool/fs.brr>.<pid>
- *
- *  and chat history.
- *
- *  and open fs.brr.
+ *  Frisk the blob request record and open the spool/fs.brr file.
+ *  The transport and chat history are set in the blob request record..
  */
 char *
 fs_brr_frisk(struct brr *brr)
