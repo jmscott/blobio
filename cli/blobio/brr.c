@@ -14,7 +14,6 @@
 
 #define BRR_SIZE	371 + 1 + 1	//  brr size + new-line + null
 
-extern char			BR[];
 extern struct timespec		start_time;
 extern void			die(char *msg);
 extern void			die2(char *msg1, char *msg2);
