@@ -488,10 +488,10 @@ fs_eat(int *ok_no)
  *
  *  Note:
  *	Triple check existence handling regarding uniqueness of renamed
- *	frozen/wrap brr log files.  Havinf the previous wrap udig in current
+ *	frozen/wrap brr log files.  Having the previous wrap udig in current
  *	wrap pretty much insures uniquesness ... but edge cases may exist.
  *
- *	Insure no dangling open files exist upon error!
+ *	Insure no dangling open files exist upon error (they exist)!
  */
 static char *
 fs_wrap(int *ok_no)
@@ -504,7 +504,7 @@ fs_wrap(int *ok_no)
 	/*
 	 *  Freeze spool/fs.brr by moving
 	 *
-	 *	spool/fs.brr -> spool/WRAPPING-fs-<epoch>-<pid>.brr
+	 *	spool/fs.brr -> spool/FROZEN-fs-<epoch>-<pid>.brr
 	 *
 	 *  Note:
 	 *	How to insure no other process have open, other than locking?
@@ -514,19 +514,13 @@ fs_wrap(int *ok_no)
 	jmscott_strcat(brr_path, sizeof brr_path, "spool/fs.brr");
 
 	TRACE2("brr path", brr_path);
-	if (jmscott_faccessat(end_point_fd, brr_path, R_OK, 0)) {
-		if (errno != ENOENT)
-			return strerror(errno);
-		TRACE("brr does not exist, so no wrap");
-		fs_add_chat("no");
-		*ok_no = 1;
-		return (char *)0;
-	}
 
 	char pid[21];
-	jmscott_ulltoa((unsigned long long)getpid(), pid);
+	*jmscott_ulltoa((unsigned long long)getpid(), pid) = 0;
+
 	char epoch[21];
-	jmscott_ulltoa((unsigned long long)time((time_t *)0), epoch);
+	*jmscott_ulltoa((unsigned long long)time((time_t *)0), epoch) = 0;
+
 	char frozen_path[BLOBIO_MAX_FS_PATH+1];
 	frozen_path[0] = 0;
 	jmscott_strcat5(frozen_path, sizeof frozen_path,
@@ -534,7 +528,7 @@ fs_wrap(int *ok_no)
 			epoch,
 			"-",
 			pid,
-			".pid"
+			".brr"
 	);
 	TRACE2("fs.brr -> frozen path", frozen_path);
 	int status = jmscott_renameat(
@@ -563,6 +557,8 @@ fs_wrap(int *ok_no)
 
 	TRACE2("digest algorithm", digest_module->algorithm);
 	char *err = digest_module->eat_input(frozen_fd);
+	if (jmscott_close(frozen_fd) && !err)
+		err = strerror(errno);
 	if (err)
 		return err;
 	TRACE2("frozen digest", ascii_digest);
@@ -579,7 +575,6 @@ fs_wrap(int *ok_no)
 			ascii_digest,
 			".brr"
 	);
-	TRACE2("wrap path", wrap_path);
 
 	TRACE("rename frozen->wrap/");
 	status = jmscott_renameat(
@@ -591,12 +586,90 @@ fs_wrap(int *ok_no)
 	if (status)
 		return strerror(errno);
 
+	char wrap_set_path[BLOBIO_MAX_FS_PATH+1];
+	wrap_set_path[0] = 0;
+	jmscott_strcat5(wrap_set_path, sizeof wrap_set_path,
+				"tmp/wrap-set-",
+				epoch,
+				"-",
+				pid,
+				".uset"
+	);
+	TRACE2("wrap set path", wrap_set_path);
+	int wrap_set_fd = jmscott_openat(
+				end_point_fd,
+				wrap_set_path,
+				O_RDWR | O_EXCL | O_CREAT,
+				0700
+	);
+	if (wrap_set_fd < 0)
+		return strerror(errno);
+	TRACE("build wrap set by scanning spool/wrap ...");
+	int wrap_dir_fd = jmscott_openat(
+				end_point_fd,
+				"spool/wrap",
+				O_DIRECTORY,
+				0777
+	);
+	if (wrap_dir_fd < 0)
+		return strerror(errno);
+	TRACE("open wrap dir for scanning");
+	DIR *wdp = jmscott_fdopendir(wrap_dir_fd);
+	if (!wdp)
+		return strerror(errno);
+
+	TRACE("begin scan of spool/wrap");
+	errno = 0;
+	struct dirent *ep;
+	while ((ep = jmscott_readdir(wdp))) {
+
+		//  skip over non-files or paths too short or path
+		//  not ending in ".brr".
+		if (ep->d_type != DT_REG)
+			continue;
+		if (ep->d_namlen < (1 + 1 + 32 + 4))
+			continue;
+
+		char *period = ep->d_name + (ep->d_namlen - (1+1+1+1));
+		if (*period != '.')
+			continue;
+		
+		//  pass to udig frisker by replacing "." with null
+		*period = 0;
+		if (jmscott_frisk_udig(ep->d_name))
+			continue;
+		*period = '\n';
+		status = jmscott_write_all(
+				wrap_set_fd,
+				ep->d_name,
+				ep->d_namlen - 4 + 1
+		);
+		if (status)
+			return strerror(errno);
+	}
+	if (errno > 0)
+		return strerror(errno);
+	TRACE("scan finished");
+	if (jmscott_close(wrap_dir_fd))
+		return strerror(errno);
+	if (jmscott_lseek(wrap_set_fd, 0, SEEK_SET))
+		return strerror(errno);
+
+	ascii_digest[0] = 0;
+	TRACE2("digest algorithm", digest_module->algorithm);
+	err = digest_module->eat_input(wrap_set_fd);
+	if (jmscott_close(wrap_set_fd) && !err)
+		err = strerror(errno);
+	if (err)
+		return err;
+	TRACE2("wrap set digest", ascii_digest);
+
 	//  set to empty udig until "wrap" coding done
 	udig[0] = 0;
 	jmscott_strcat3(udig, sizeof udig,
 			algorithm,
 			":",
-			digest_module->empty_digest()
+			ascii_digest
 	);
 
 	fs_add_chat("ok");
