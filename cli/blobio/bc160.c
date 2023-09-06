@@ -1,9 +1,6 @@
 /*
  *  Synopsis:
  *	Deprecated hash similar to bitcoin wallet hash.
- *
- *  Note:
- *	mode needs to be a global variable "brr_mkdir_mode"?
  */
 #ifdef FS_BC160_MODULE    
 
@@ -273,44 +270,6 @@ bc160_fs_name(char *name, int size)
 	return (char *)0;
 }
 
-//  Note: mode needs to be a global variable "brr_mkdir_mode"?
-static int
-_mkdir(char *path)
-{
-	return jmscott_mkdir_EEXIST(path, 0710);
-}
-
-/*
- *  Make the directory path to a file system blob, appending "/" at end.
- */
-static char *
-bc160_fs_mkdir(char *path, int size)
-{
-	char *dp, *p;
-
-	if (size < 10)
-		return "size < 10 bytes";
-
-	TRACE2("path", path);
-	dp = ascii_digest;
-
-	jmscott_strcat(path, size, "/");
-	p = path + 1;
-
-	*p++ = *dp++;    *p++ = *dp++;    *p++ = *dp++; 
-	*p = 0;
-	if (_mkdir(path))
-		return strerror(errno);
-
-	*p++ = '/';
-	*p++ = *dp++;    *p++ = *dp++;    *p++ = *dp++;  
-	*p++ = '/';
-	*p = 0;
-	if (_mkdir(path))
-		return strerror(errno);
-	return (char *)0;
-}
-
 /*
  *  Convert an ascii digest to a file system path.
  */
@@ -368,7 +327,6 @@ struct digest	bc160_digest =
 	.empty_digest	=	bc160_empty_digest,
 
 	.fs_name	=	bc160_fs_name,
-	.fs_mkdir	=	bc160_fs_mkdir,
 	.fs_path	=	bc160_fs_path
 };
 

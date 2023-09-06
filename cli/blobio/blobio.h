@@ -69,11 +69,6 @@
 
 /*
  *  Hash digest driver.
- *
- *  Note:
- *	sadly, side effects exist in "struct digest".  this is bad design.
- *	in particular, fs_mkdir() creates entries in the file system.
- *	fs_mkdir() should be moved to jmscott clib.
  */
 struct digest
 {
@@ -164,20 +159,6 @@ struct digest
 	 *  points to.  No file is created in the file system.
 	 */
 	char	*(*fs_path)(char *path, int size);
-
-	/*
-	 *  Make a file system path from the ascii digest
-	 *  and build all directories in the path.  The full
-	 *  path is copied to the buffer that "path" points to.
-	 *  Effectively, "fs_mkdir" is equivalent to "mkdir -p".
-	 *
-	 *  Note:
-	 *	Deprecated.  Will be moved to jmscott_mkdirat.
-	 *	Why not rename "fs_mkdir()" to simply "mkdir()"?
-	 *
-	 *	Can fs_mkdir() be factored out of digest driver?
-	 */
-	char	*(*fs_mkdir)(char *path, int size);
 };
 
 struct brr

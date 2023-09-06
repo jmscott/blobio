@@ -246,43 +246,6 @@ sha_fs_name(char *name, int size)
 	return (char *)0;
 }
 
-static int
-_mkdir(char *path)
-{
-	return jmscott_mkdir_EEXIST(path, 0710);	// g=rwx,g=x,o=
-}
-
-/*
- *  For a sha blob, assemble the directory path AND make all the needed
- *  directory entries.
- */
-static char *
-sha_fs_mkdir(char *path, int size)
-{
-	char *dp, *p;
-
-	if (size < 10)
-		return "fs_mkdir: size < 10 bytes";
-
-	dp = ascii_digest;
-
-	jmscott_strcat(path, size, "/");
-	p = path + 1;
-
-	*p++ = *dp++;    *p++ = *dp++;    *p++ = *dp++; 
-	*p = 0;
-	if (_mkdir(path))
-		return strerror(errno);
-
-	*p++ = '/';
-	*p++ = *dp++;    *p++ = *dp++;    *p++ = *dp++;  
-	*p++ = '/';
-	*p = 0;
-	if (_mkdir(path))
-		return strerror(errno);
-	return (char *)0;
-}
-
 /*
  *  Convert an ascii digest to a file system path that looks like
  *  for blob sha:4f39dfffcfe2e4cc1b089b3e4b5b595cf904b7b2
@@ -344,7 +307,6 @@ struct digest	sha_digest =
 	.empty_digest	=	sha_empty_digest,
 
 	.fs_name	=	sha_fs_name,
-	.fs_mkdir	=	sha_fs_mkdir,
 	.fs_path	=	sha_fs_path
 };
 

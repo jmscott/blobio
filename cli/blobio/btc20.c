@@ -301,48 +301,6 @@ bct20_fs_name(char *name, int size)
 	return (char *)0;
 }
 
-//  Note: not sure about the mode: u=rwx,g=rx,o=
-static int
-_mkdir(char *path)
-{
-	return jmscott_mkdir_EEXIST(path, 0710);
-}
-
-/*
- *  Assemble a full path to a blob and do "mkdir -p" to the blob.
- */
-static char *
-btc20_fs_mkdir(char *path, int size)
-{
-	char *dp, *p;
-
-	if (size < 10)
-		return "size < 10 bytes";
-
-	TRACE2("path", path);
-	dp = ascii_digest;
-	TRACE2("ascii digest", dp);
-
-	p = path + strlen(path);
-	*p++ = '/';
-	*p++ = *dp++;    *p++ = *dp++;    *p++ = *dp++; 
-	*p = 0;
-
-	TRACE2("path1", path);
-	if (_mkdir(path))
-		return strerror(errno);
-
-	*p++ = '/';
-	*p++ = *dp++;    *p++ = *dp++;    *p++ = *dp++;  
-	*p++ = '/';
-	*p = 0;
-
-	TRACE2("path2", path);
-	if (_mkdir(path))
-		return strerror(errno);
-	return (char *)0;
-}
-
 /*
  *  Convert an ascii digest to a file system path.
  */
@@ -399,7 +357,6 @@ struct digest	btc20_digest =
 	.empty_digest	=	btc20_empty_digest,
 
 	.fs_name	=	bct20_fs_name,
-	.fs_mkdir	=	btc20_fs_mkdir,
 	.fs_path	=	btc20_fs_path
 };
 
