@@ -247,8 +247,7 @@ sha_fs_name(char *name, int size)
 }
 
 /*
- *  Convert an ascii digest to a file system path that looks like
- *  for blob sha:4f39dfffcfe2e4cc1b089b3e4b5b595cf904b7b2
+ *  Convert an ascii digest to a file system path to the blob:
  *
  *	4f3/9df/4f39dfffcfe2e4cc1b089b3e4b5b595cf904b7b2
  *
@@ -282,6 +281,38 @@ sha_fs_path(char *file_path, int size)
 	return (char *)0;
 }
 
+/*
+ *  Convert an ascii digest to a file system path to the directory containing
+ *  the blob.
+ *
+ *	4f3/9df
+ *
+ *  for a blob with sha digest 4f39dfffcfe2e4cc1b089b3e4b5b595cf904b7b2.
+ */
+static char *
+sha_fs_dir_path(char *dir_path, int size)
+{
+	char *digp, *dirp;
+
+	if (size < 8)
+		return "file path size too small: size < 8 bytes";
+
+	digp = ascii_digest;
+	dirp = dir_path;
+
+	*dirp++ = *digp++;
+	*dirp++ = *digp++;
+	*dirp++ = *digp++;
+
+	*dirp++ = '/';		//  second directory
+	*dirp++ = *digp++;
+	*dirp++ = *digp++;
+	*dirp++ = *digp++;
+	*dirp = 0;
+
+	return (char *)0;
+}
+
 static char *
 sha_empty_digest()
 {
@@ -307,7 +338,8 @@ struct digest	sha_digest =
 	.empty_digest	=	sha_empty_digest,
 
 	.fs_name	=	sha_fs_name,
-	.fs_path	=	sha_fs_path
+	.fs_path	=	sha_fs_path,
+	.fs_dir_path	=	sha_fs_dir_path
 };
 
 #endif

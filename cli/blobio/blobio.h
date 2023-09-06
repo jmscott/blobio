@@ -154,11 +154,16 @@ struct digest
 	char	*(*fs_name)(char *name, int size);
 
 	/*
-	 *  Convert the ascii digest to a full path to file
-	 *  stored locally and copy to the buffer that "path"
-	 *  points to.  No file is created in the file system.
+	 *  Convert the ascii digest to a path relative to data/ that points
+	 *  to the file the blob is stored in.
 	 */
-	char	*(*fs_path)(char *path, int size);
+	char	*(*fs_path)(char *file_path, int size);
+
+	/*
+	 *  Convert the ascii digest to a path relative to data/ that points
+	 *  to the directory the blob is stored in.  See fs_path().
+	 */
+	char	*(*fs_dir_path)(char *dir_path, int size);
 };
 
 struct brr

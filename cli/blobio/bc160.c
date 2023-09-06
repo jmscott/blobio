@@ -301,6 +301,32 @@ bc160_fs_path(char *file_path, int size)
 
 	return (char *)0;
 }
+/*
+ *  Convert an ascii digest to a file system path.
+ */
+static char *
+bc160_fs_dir_path(char *dir_path, int size)
+{
+	char *digp, *dirp;
+
+	if (size < 8)
+		return "dir path size too small: size < 8 bytes";
+
+	digp = ascii_digest;
+	dirp = dir_path;
+
+	*dirp++ = *digp++;
+	*dirp++ = *digp++;
+	*dirp++ = *digp++;
+
+	*dirp++ = '/';		//  second directory
+	*dirp++ = *digp++;
+	*dirp++ = *digp++;
+	*dirp++ = *digp++;
+	*dirp = 0;
+
+	return (char *)0;
+}
 
 static char *
 bc160_empty_digest()
@@ -327,7 +353,8 @@ struct digest	bc160_digest =
 	.empty_digest	=	bc160_empty_digest,
 
 	.fs_name	=	bc160_fs_name,
-	.fs_path	=	bc160_fs_path
+	.fs_path	=	bc160_fs_path,
+	.fs_dir_path	=	bc160_fs_dir_path
 };
 
 #endif
