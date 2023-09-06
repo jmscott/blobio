@@ -45,8 +45,6 @@ brr.o: brr.c blobio.h
 	$(CC) $(CFLAGS) -c brr.c
 bio4.o: bio4.c blobio.h
 	$(CC) $(CFLAGS) -c bio4.c
-cache4.o: cache4.c blobio.h
-	$(CC) $(CFLAGS) -c cache4.c
 buf.o: buf.c
 	$(CC) $(CFLAGS) -c buf.c
 blobio.o: blobio.c blobio.h

@@ -27,7 +27,6 @@ OBJs="
 	brr.o
 	btc20.o
 	buf.o
-	cache4.o
 	digest.o
 	fs.o
 	null.o
@@ -83,7 +82,6 @@ SRCs="
 	brr.c
 	btc20.c
 	buf.c
-	cache4.c
 	digest.c 
 	fs.c
 	null.c
