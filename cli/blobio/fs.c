@@ -704,10 +704,11 @@ fs_wrap(int *ok_no)
 		//  not ending in ".brr".
 		if (ep->d_type != DT_REG)
 			continue;
-		if (ep->d_namlen < (1 + 1 + 32 + 4))
+		int d_namelen = strlen(ep->d_name) + 1;
+		if (d_namelen < (1 + 1 + 32 + 4))
 			continue;
 
-		char *period = ep->d_name + (ep->d_namlen - (1+1+1+1));
+		char *period = ep->d_name + (d_namelen - (1+1+1+1));
 		if (*period != '.')
 			continue;
 		
@@ -719,7 +720,7 @@ fs_wrap(int *ok_no)
 		status = jmscott_write_all(
 				wrap_set_fd,
 				ep->d_name,
-				ep->d_namlen - 4 + 1
+				d_namelen - 4 + 1
 		);
 		if (status)
 			return strerror(errno);
