@@ -475,6 +475,21 @@ fs_eat(int *ok_no)
 	return (char *)0;
 }
 
+static char *
+fs_eat_input(int fd)
+{
+	TRACE("entered");
+	ascii_digest[0] = 0;
+	char *err = digest_module->init();
+	if (err)
+		return err;
+	err = digest_module->eat_input(fd);
+	if (err)
+		return err;
+	TRACE2("digest", ascii_digest);
+	return jmscott_rewind(fd);
+}
+
 /*
  *  Synopsis:
  *	Wrap the contents of spool/wrap after moving spool/fs.brr to spool/wrap.
@@ -594,17 +609,10 @@ fs_wrap(int *ok_no)
 	if (frozen_fd < 0)
 		return strerror(errno);
 
-	ascii_digest[0] = 0;
-	TRACE2("digest algorithm", digest_module->algorithm);
-	char *err = digest_module->eat_input(frozen_fd);
+	char *err = fs_eat_input(frozen_fd);
 	if (err)
 		return err;
 	TRACE2("frozen digest", ascii_digest);
-
-	TRACE("rewind frozen file");
-	err = jmscott_rewind(frozen_fd);
-	if (err)
-		return err;
 
 	/*
 	 *  Insure dir $BLOBIO_ROOT/spool/wrap exists
@@ -725,16 +733,10 @@ fs_wrap(int *ok_no)
 	if (err)
 		return err;
 
-	ascii_digest[0] = 0;
-	TRACE2("digest algorithm", digest_module->algorithm);
-	err = digest_module->eat_input(wrap_set_fd);
+	err = fs_eat_input(wrap_set_fd);
 	if (err)
 		return err;
 	TRACE2("wrap set digest", ascii_digest);
-
-	err = jmscott_rewind(wrap_set_fd);
-	if (err)
-		return err;
 
 	/*
 	 *  Do a "put" on the wrap udig set and
