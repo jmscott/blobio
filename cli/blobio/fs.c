@@ -312,6 +312,28 @@ fs_put(int *ok_no)
 	char *err = fs_blob_path(blob_path, sizeof blob_path);
 	if (err)
 		return err;
+	TRACE2("blob path", blob_path);
+
+	char blob_dir_path[BLOBIO_MAX_FS_PATH+1];
+	blob_dir_path[0] = 0;
+	char *p = jmscott_strcat2(blob_dir_path, sizeof blob_dir_path,
+					fs_data,
+					"/"
+	);
+
+	err = digest_module->fs_dir_path(
+				p,
+				sizeof blob_dir_path - (p - blob_dir_path)
+	);
+	if (err)
+		return err;
+
+	TRACE2("blob dir path", blob_dir_path);
+
+	err = jmscott_mkdirat_path(end_point_fd, blob_dir_path, 0777);
+	if (err)
+		return err;
+
 	fs_add_chat("ok");
 
 	if (input_path) {
@@ -330,6 +352,7 @@ fs_put(int *ok_no)
 			if (err[0])
 				return err;
 		} else {
+			TRACE("hard linked");
 			fs_add_chat("ok");
 			return (char *)0;
 		}
@@ -337,7 +360,7 @@ fs_put(int *ok_no)
 	TRACE("xdev failed, so copy input->blob");
 
 	/*
-	 *  First copy blob into $BLOBIO_ROOT/tmp/<udig>-<pid>.put
+	 *  First copy blob into $BLOBIO_ROOT/tmp/put-<udig>-<pid>.blob
 	 */
 	err = jmscott_mkdirat_path(end_point_fd, "tmp", 0777);
 	if (err)
@@ -349,14 +372,16 @@ fs_put(int *ok_no)
 	char tmp_path[BLOBIO_MAX_FS_PATH+1];
 	tmp_path[0] = 0;
 
-	char pid[21];
-	pid[0] = '-';
-	*jmscott_lltoa((long long)getpid(), pid + 1) = 0;
-	jmscott_strcat6(tmp_path, sizeof tmp_path,
+	char pid[21], epoch[21];
+	*jmscott_ulltoa((unsigned long long)getpid(), pid) = 0;
+	*jmscott_ulltoa((unsigned long long)time((time_t *)0), epoch) = 0;
+
+	jmscott_strcat7(tmp_path, sizeof tmp_path,
 				"tmp/put-",
-				algorithm,
-				":",
-				ascii_digest,
+				udig,
+				"-",
+				epoch,
+				"-",
 				pid,
 				".blob"
 	);
@@ -370,7 +395,7 @@ fs_put(int *ok_no)
 	if (tmp_fd < 0)
 		DEFER; 
 
-	TRACE("sendfile input->tmp");
+	TRACE("sendfile input>tmp");
 	err = jmscott_send_file(input_fd, tmp_fd, &blob_size);
 	if (err)
 		DEFER;
@@ -458,7 +483,7 @@ fs_eat(int *ok_no)
  *
  *	First, move a frozen version of spool/bio4d.brr file into the file
  *	spool/wrap/<udig>.brr, where <udig> is the digest of the frozen
- *	blobified brr file.
+ *	blobified brr file.  Do a trusted "put" on the frozen file.
  *
  *		mv spool/bio4d.brr ->
  *		    spool/wrap/sha:8495766f40ca8ac6fcea76b9a11c82d87d2d0f9f.brr
@@ -483,24 +508,31 @@ fs_eat(int *ok_no)
  *		sha:59a066dc8b2a633414c58a0ec435d2917bbf4b85\n
  *		sha:f768865fe672543ebfac08220925054db3aa9465\n
  *
- * 	and then digest THAT set into a blob.  The udig of THAT set is returned
- * 	to the client and the set is moved to spool/roll/<udig>.uset.
+ * 	and then digest THAT set into a blob and do a "put" of that udig set.
+ *	The udig of THAT set is returned to the client and the set is moved to
+ *	spool/roll/<udig>.uset.
  *
  *  Note:
+ *	Do a stat on the frozen file before and after digesting, since
+ *	we are not positive another process has that file open!
+ *
  *	Triple check existence handling regarding uniqueness of renamed
  *	frozen/wrap brr log files.  Having the previous wrap udig in current
  *	wrap pretty much insures uniquesness ... but edge cases may exist.
  *
- *	Insure no dangling open files exist upon error (they exist)!
+ *	Dangling unclosed files exist!
  */
 static char *
 fs_wrap(int *ok_no)
 {
 	TRACE("entered");
 
+	/*
+	 *  Insure dir $BLOBIO_ROOT/spool exists
+	 */
 	if (jmscott_mkdirat_EEXIST(end_point_fd, "spool", 0777))
 		return strerror(errno);
-		
+
 	/*
 	 *  Freeze spool/fs.brr by moving
 	 *
@@ -515,10 +547,8 @@ fs_wrap(int *ok_no)
 
 	TRACE2("brr path", brr_path);
 
-	char pid[21];
+	char pid[21], epoch[21];
 	*jmscott_ulltoa((unsigned long long)getpid(), pid) = 0;
-
-	char epoch[21];
 	*jmscott_ulltoa((unsigned long long)time((time_t *)0), epoch) = 0;
 
 	char frozen_path[BLOBIO_MAX_FS_PATH+1];
@@ -540,11 +570,20 @@ fs_wrap(int *ok_no)
 	if (status) {
 		if (errno != ENOENT)
 			return strerror(errno);
+
+		/*
+		 *  Blob Request Record file does not exist, so no wrap.
+		 */
 		TRACE("spool/fs.brr gone (ok)");
 		fs_add_chat("no");
 		*ok_no = 1;
 		return (char *)0;
 	}
+
+	/*
+	 *  Derive the digest of the frozen BRR log file, using the digest
+	 *  algorithm in query arg "algo=".
+	 */
 	TRACE("open frozen brr log for digesting");
 	int frozen_fd = jmscott_openat(
 				end_point_fd,
@@ -555,17 +594,46 @@ fs_wrap(int *ok_no)
 	if (frozen_fd < 0)
 		return strerror(errno);
 
+	ascii_digest[0] = 0;
 	TRACE2("digest algorithm", digest_module->algorithm);
 	char *err = digest_module->eat_input(frozen_fd);
-	if (jmscott_close(frozen_fd) && !err)
-		err = strerror(errno);
 	if (err)
 		return err;
 	TRACE2("frozen digest", ascii_digest);
 
+	TRACE("rewind frozen file");
+	err = jmscott_rewind(frozen_fd);
+	if (err)
+		return err;
+
+	/*
+	 *  Insure dir $BLOBIO_ROOT/spool/wrap exists
+	 */
 	if (jmscott_mkdirat_EEXIST(end_point_fd, "spool/wrap", 0777))
 		return strerror(errno);
 
+	/*
+	 *  Do a "put" on the frozen *.brr file.
+	 */
+	udig[0] = 0;
+	jmscott_strcat3(udig, sizeof udig, algorithm, ":", ascii_digest);
+	TRACE("\"put\" frozen brr file");
+	input_fd = frozen_fd;
+	err = fs_put(ok_no);
+	if (jmscott_close(frozen_fd) && !err)
+		err = strerror(errno);
+	if (err)
+		return err;
+	if (*ok_no == 1) {
+		TRACE("\"put\" failed, so \"wrap\" failed");
+		return (char *)0;
+	}
+
+	/*
+	 *  Move frozen Blob Request Records log file to
+	 *
+	 *	spool/wrap/<udig>.brr
+	 */
 	char wrap_path[BLOBIO_MAX_FS_PATH+1];
 	wrap_path[0] = 0;
 	jmscott_strcat5(wrap_path, sizeof wrap_path,
@@ -576,7 +644,7 @@ fs_wrap(int *ok_no)
 			".brr"
 	);
 
-	TRACE("rename frozen->wrap/");
+	TRACE("move frozen->wrap/");
 	status = jmscott_renameat(
 			end_point_fd,
 			frozen_path,
@@ -586,6 +654,7 @@ fs_wrap(int *ok_no)
 	if (status)
 		return strerror(errno);
 
+	TRACE("build the wrap set tmp/wrap-set-<epoch>-<pid>.uset");
 	char wrap_set_path[BLOBIO_MAX_FS_PATH+1];
 	wrap_set_path[0] = 0;
 	jmscott_strcat5(wrap_set_path, sizeof wrap_set_path,
@@ -652,25 +721,32 @@ fs_wrap(int *ok_no)
 	TRACE("scan finished");
 	if (jmscott_close(wrap_dir_fd))
 		return strerror(errno);
-	if (jmscott_lseek(wrap_set_fd, 0, SEEK_SET))
-		return strerror(errno);
+	err = jmscott_rewind(wrap_set_fd);
+	if (err)
+		return err;
 
 	ascii_digest[0] = 0;
 	TRACE2("digest algorithm", digest_module->algorithm);
 	err = digest_module->eat_input(wrap_set_fd);
-	if (jmscott_close(wrap_set_fd) && !err)
-		err = strerror(errno);
 	if (err)
 		return err;
 	TRACE2("wrap set digest", ascii_digest);
 
-	//  set to empty udig until "wrap" coding done
+	err = jmscott_rewind(wrap_set_fd);
+	if (err)
+		return err;
+
+	/*
+	 *  Do a "put" on the wrap udig set and
+	 *  write that udig to output_fd.
+	 */
 	udig[0] = 0;
-	jmscott_strcat3(udig, sizeof udig,
-			algorithm,
-			":",
-			ascii_digest
-	);
+	jmscott_strcat3(udig, sizeof udig, algorithm, ":", ascii_digest);
+	input_fd = wrap_set_fd;
+	TRACE("\"put\" wrap udig set");
+	err = fs_put(ok_no);
+	if (err)
+		return err;
 
 	fs_add_chat("ok");
 	*ok_no = 0;
