@@ -181,7 +181,7 @@ in_range(char **src, int upper, int lower, char *set)
 }
 
 /*
- *  Scan up to 'limit' chars that are in set
+ *  Scan up to 'limit' chars that are exist in char "set"
  *  and set src to first char after the end char.
  *  non-ascii always fails. also assume char 'end_fld' not in the scan set.
  *
@@ -218,12 +218,13 @@ scan_set(char **src, int limit, char *set, char end_fld, char *what)
 		msg[0] = 0;
 
 		if (isascii(c))
-			jmscott_strcat2(msg, sizeof msg,
-				"char not in set: ",
-				set
+			jmscott_strcat(msg, sizeof msg,
+					"ascii char not in set"
 			);
 		else
-			jmscott_strcat(msg, sizeof msg, ": non ascii char");
+			jmscott_strcat(msg, sizeof msg,
+					"non ascii char not in set"
+			);
 
 		char hex[5];
 		snprintf(hex, sizeof hex, "0x%x", c);
