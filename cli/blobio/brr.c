@@ -49,6 +49,8 @@ brr_service(struct service *srv)
 	jmscott_strcat(brr.verb, sizeof brr.verb, verb);
 
 	brr.transport[0] = 0;
+
+	brr.chat_history[0] = 0;
 	jmscott_strcat(brr.chat_history, sizeof brr.chat_history, chat_history);
 
 	brr.blob_size = blob_size;
