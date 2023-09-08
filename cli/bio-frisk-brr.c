@@ -493,10 +493,10 @@ scan_verb(char **src)
  *  Scan the uniform digest that looks like:
  *
  *  	algorithm:hash-digest
- *  Note:
- *	replace with jmscott_is_udig
+ *
+ *  Returns 0 if udig exists, 1 if udig is empty.
  */
-static void
+static int
 scan_udig(char **src)
 {
 	char *p = *src;
@@ -506,10 +506,18 @@ scan_udig(char **src)
 	tab = strchr(p, '\t');
 	if (!tab)
 		sexit("no terminating tab", "udig");
-	if (tab - p > 95)
-		sexit("len < 95", "udig");
-	if (tab - p > 371)
-		sexit("len > 371", "udig");
+
+	//  an empty udig is a valid udig.
+	//  caller determines when empty udig is valid.
+
+	if (tab - p == 0) {
+		*src = tab + 1;
+		return 1;
+	}
+	if (tab - p < 34)
+		sexit("len < 34", "udig");
+	if (tab - p > 137)
+		sexit("len > 137", "udig");
 
 	*tab = 0;
 	err = jmscott_frisk_udig(p);
@@ -525,6 +533,7 @@ scan_udig(char **src)
 		sexit(msg, "udig");
 	}
 	*src = tab + 1;
+	return 0;
 }
 
 static void
@@ -550,23 +559,23 @@ errch(char *err)
  *  Scan the chat history first, and then verify the reposnse
  *  is correct for the verb.
  */
-static void
+static int
 scan_chat_history(char *verb, char **src)
 {
 	char *p, *end, ch[9];
-	int len;
+	int ch_len;
 
 	p = *src;
 	end = p;
 
 	scan_set(&end, 8, "nok,", '\t', "chat history");
 
-	len = (end - 1) - p;
+	ch_len = (end - 1) - p;
 
-	if (len != 2 && len != 5 && len != 8)
+	if (ch_len != 2 && ch_len != 5 && ch_len != 8)
 		errch("length not 2 and 5 and 8");
-	memcpy(ch, p, len);
-	ch[len] = 0;
+	memcpy(ch, p, ch_len);
+	ch[ch_len] = 0;
 
 	if (strcmp("no", ch) == 0)	//  any verb can reply "no"
 		goto done;
@@ -638,6 +647,7 @@ scan_chat_history(char *verb, char **src)
 	errch(err);
 done:
 	*src = end;
+	return ch[ch_len-1] == 'o' ? 1 : 0;
 }
 
 /*
@@ -728,9 +738,15 @@ main(int argc, char **argv)
 
 		char *verb = scan_verb(&p);
 
-		scan_udig(&p);
+		int no_udig = scan_udig(&p);
+		int is_no = scan_chat_history(verb, &p);
 
-		scan_chat_history(verb, &p);
+		if (*verb == 'w' || *verb == 'r') {
+			if (!no_udig && is_no)
+				die("{wrap,roll}/no: udig exists");
+			if (no_udig && !is_no)
+				die("{wrap,roll}/ok: no udig");
+		}
 
 		scan_byte_count(&p);
 
