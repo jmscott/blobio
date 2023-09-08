@@ -535,7 +535,7 @@ fs_eat_input(int fd)
  *	frozen/wrap brr log files.  Having the previous wrap udig in current
  *	wrap pretty much insures uniquesness ... but edge cases may exist.
  *
- *	Dangling unclosed files exist!
+ *	FIX ME: Dangling unclosed files or tmp/ exist!
  */
 static char *
 fs_wrap(int *ok_no)
@@ -622,6 +622,9 @@ fs_wrap(int *ok_no)
 
 	/*
 	 *  Do a "put" on the frozen *.brr file.
+	 *
+	 *  Note:  really, really need to refactor code to be properly
+	 *         reentrant via libblobio.a.  really.
 	 */
 	udig[0] = 0;
 	jmscott_strcat3(udig, sizeof udig, algorithm, ":", ascii_digest);
@@ -662,6 +665,12 @@ fs_wrap(int *ok_no)
 	if (status)
 		return strerror(errno);
 
+	/*
+	 *  Build the set of udigs (*.uset) by scanning file names in dir
+	 *  spool/wrap/.brr.  The uset file is assembled in
+	 *
+	 *	tmp/wrap-set-<epoch>-<pid>.uset
+	 */
 	TRACE("build the wrap set tmp/wrap-set-<epoch>-<pid>.uset");
 	char wrap_set_path[BLOBIO_MAX_FS_PATH+1];
 	wrap_set_path[0] = 0;
@@ -700,30 +709,47 @@ fs_wrap(int *ok_no)
 	struct dirent *ep;
 	while ((ep = jmscott_readdir(wdp))) {
 
+		TRACE2("wrap dir entry", ep->d_name);
+
 		//  skip over non-files or paths too short or path
 		//  not ending in ".brr".
-		if (ep->d_type != DT_REG)
-			continue;
-		int d_namelen = strlen(ep->d_name) + 1;
-		if (d_namelen < (1 + 1 + 32 + 4))
-			continue;
 
-		char *period = ep->d_name + (d_namelen - (1+1+1+1));
-		if (*period != '.')
+		if (ep->d_type != DT_REG) {
+			TRACE2("dir entry a regular file", ep->d_name);
 			continue;
+		}
+
+		char *nm = ep->d_name;
+
+		//  must be >= min udig+len(.brr)
+		int nlen = strlen(nm);
+		if (nlen < 38 || nlen > 141) {
+			TRACE2("WARN: dir entry length too large or small", nm);
+			continue;
+		}
+
+		//  find the "." at end of <udig>.brr
+		char *per = nm + (nlen - 4);
+		if (strcmp(per, ".brr")) {
+			TRACE2("WARN: dir entry not terminated by .brr", nm);
+			continue;
+		}
 		
 		//  pass to udig frisker by replacing "." with null
-		*period = 0;
-		if (jmscott_frisk_udig(ep->d_name))
+		*per = 0;
+		if (jmscott_frisk_udig(nm)) {
+			TRACE2("dir entry not a udig", nm);
 			continue;
-		*period = '\n';
-		status = jmscott_write_all(
-				wrap_set_fd,
-				ep->d_name,
-				d_namelen - 4 + 1
-		);
+		}
+
+		//  write udig with new-line terminator
+
+		*per = '\n';
+		status = jmscott_write_all(wrap_set_fd, nm, nlen - 3);
+		*per = 0;
 		if (status)
 			return strerror(errno);
+		TRACE2("added wrap entry to udig set", nm);
 	}
 	if (errno > 0)
 		return strerror(errno);
