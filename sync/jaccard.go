@@ -83,14 +83,14 @@ type AnswerService struct {
 	answer		*Answer
 
 	QueryDuration	time.Duration		`json:"query_duration"`
-	QueryDurationString	string		`json:"query_duration_string"`
+	QueryDurationEnglish	string		`json:"query_duration_english"`
 	query_start_time	time.Time
 }
 
 type Answer struct {
 	StartTime		time.Time	`json:"start_time"`
 	WallDuration		time.Duration	`json:"wall_duration"`
-	WallDurationString	string		`json:"wall_duration_string"`
+	WallDurationEnglish	string		`json:"wall_duration_english"`
 	Databases		map[string]*PGDatabase	`json:"databases"`
 	AnswerService	map[string]*AnswerService `json:"answer_service"`
 
@@ -335,7 +335,7 @@ SELECT
 		an.exists_mutex.Unlock()
 	}
 	as.QueryDuration = time.Since(as.query_start_time)
-	as.QueryDurationString = as.QueryDuration.String()
+	as.QueryDurationEnglish = as.QueryDuration.String()
 	if as.BlobCount % 100000 != 0 {
 		_debug("blob: total #%d", as.BlobCount)
 	}
@@ -432,7 +432,7 @@ func main() {
 	enc.SetIndent(conf.IndentLinePrefix, conf.IndentPrefix)
 
 	answer.WallDuration = time.Since(answer.StartTime)
-	answer.WallDurationString = answer.WallDuration.String()
+	answer.WallDurationEnglish = answer.WallDuration.String()
 	runtime.ReadMemStats(&answer.GoMemStats)
 	err = enc.Encode(&answer)
 	if err != nil {

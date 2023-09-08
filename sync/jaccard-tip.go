@@ -53,7 +53,7 @@ type TipQuery struct {
 	SourceInTarget	bool	`json:"source_in_target"`
 
 	WallDuration		time.Duration	`json:"wall_duration"`
-	WallDurationString	string		`json:"wall_duration_string"`
+	WallDurationEnglish	string		`json:"wall_duration_english"`
 }
 
 type Config struct {
@@ -75,7 +75,7 @@ type Answer struct {
 	TipExistsCount		int		`json:"tip_exists_count"`
 	StartTime		time.Time	`json:"start_time"`
 	WallDuration		time.Duration	`json:"wall_duration"`
-	WallDurationString	string		`json:"wall_duration_string"`
+	WallDurationEnglish	string		`json:"wall_duration_english"`
 
 	Databases	map[string]*PGDatabase	`json:"databases"`
 	TipQueries		[]TipQuery	`json:"tip_queries"`
@@ -245,7 +245,7 @@ SELECT EXISTS (
 			tq.source.Tip.Blob,
 	).Scan(&tq.SourceInTarget)
 	tq.WallDuration = time.Since(start_time)
-	tq.WallDurationString = tq.WallDuration.String()
+	tq.WallDurationEnglish = tq.WallDuration.String()
 	if err != nil {
 		die("tip query(" +
 			tq.SourceDB +
@@ -372,7 +372,7 @@ func main() {
 	enc.SetIndent(conf.IndentLinePrefix, conf.IndentPrefix)
 
 	answer.WallDuration = time.Since(answer.StartTime)
-	answer.WallDurationString = answer.WallDuration.String()
+	answer.WallDurationEnglish = answer.WallDuration.String()
 	err = enc.Encode(&answer)
 	if err != nil {
 		die("json.Encode(answer) failed: %s", err)
