@@ -330,6 +330,10 @@ Billing Model Questions:
 	- duration of storage: per blob or per plan?
 
 Note:
+	- consider reordering brr fields to make validating stateless.  in
+	  particular, chat history MUST be scanned after knowing when a udig
+	  can be missing, as in {wrap,roll}==no.
+
 	- brr field "chat_history" only makes sense with network protocol.
 	  what is the chat history for service "fs"?  this is a design flaw in
 	  general brr semantics!  perhaps we should loosen syntax or meaning
