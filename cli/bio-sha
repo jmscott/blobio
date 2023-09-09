@@ -1,27 +1,23 @@
 #!/bin/bash
 #
 #  Synopsis:
-#	Calculate SHA1 digest standard input or list of files.
+#	Calculate SHA1 digest standard input or list of files using OpenSSL.
 #  Usage:
-#	echo hello, world | bio-bc160
-#	bio-bc160 *.c
+#	echo hello, world | bio-sha
+#	bio-sha *.c
 #  Exit Status:
 #	0	no errors
 #	1	errors occured, failing on first error
-#  Note:
-#	This hash is deprecated.  See script bin/bio-btc20.
 #
 
 case $# in
 0)
-	openssl dgst -binary -sha1					|
-		sed 's/ \*stdin$/  -/'
+	openssl dgst -sha1 | sed 's/.*= *//'
 	test "${PIPESTATUS[*]}" = '0 0' || exit 1
 	;;
 *)
 	for F in $@;  do
-		openssl dgst -sha1 "$F"					|
-			sed "s# \*stdin\$#	$F#"
+		openssl dgst -sha1 "$F" | sed 's/.*= *//'
 		test "${PIPESTATUS[*]}" = '0 0' || exit 1
 	done
 esac
