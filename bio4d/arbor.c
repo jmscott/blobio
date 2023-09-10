@@ -511,7 +511,7 @@ arbor_close()
  *  Client invocation to rename a file blob.
  *
  *  Note:
- *	WTF: the reply from the client is ignored!
+ *	What the hey, the reply from the client is ignored!
  *
  *	Fifo is not always removed!
  */

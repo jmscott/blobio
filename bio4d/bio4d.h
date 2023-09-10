@@ -453,7 +453,4 @@ void		arbor_trim(char *blob_path);
 void		tmp_open();
 char *		tmp_get(char *algorithm, char *digest_prefix);
 
-void		WTF(char *msg);
-void		WTF2(char *msg1, char *msg2);
-
 #endif

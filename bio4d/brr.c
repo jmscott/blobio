@@ -816,13 +816,8 @@ roll(struct request *r, struct digest_module *mp)
 
 			/*
 			 *  Note:
-			 *	WTF: clang says the followign error when size
-			 *	is MAX_FILE_PATH_LEN:
-			 *
-			 *	‘%s’ directive output may be truncated writing
-			 *	up to 255 bytes into a region of size 245
-			 *
-			 *	why?
+			 *	snprintf() return value is ambiguous, so replace
+			 *	with jmscott_strcat*() funcs!
 			 */
 			char path[MAX_FILE_PATH_LEN*2];
 
