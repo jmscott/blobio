@@ -136,7 +136,7 @@ char pid_path[] ="run/bio4d.pid";
 
 static char	*BLOBIO_ROOT = 0;
 
-static char	*wrap_algorithm = 0;
+static char	wrap_algorithm[MAX_ALGORITHM_SIZE + 1] = {0};
 
 static int	net_timeout = -1;
 
@@ -636,15 +636,18 @@ give(struct request *rp, struct digest_module *mp)
 /*
  *  Process a request from client.  All verbs except "wrap" match
  *
- *	<verb> <udig>
- *
- *  Note:
- *	"scan_buf" contains
+ *	<verb> <udig>[\r]?\n
+ *  OR
+ *	wrap[\r]?\n
  */
 static void
-bio4d(char *verb, char *algorithm, char *digest,
-       unsigned char *scan_buf, int scan_size)
-{
+bio4d(
+	char *verb,
+	char *algorithm,
+	char *digest,
+	unsigned char *scan_buf,
+	int scan_size
+) {
 	int status;
 	struct digest_module *mp;
 	int (*verb_callback)(struct request *, struct digest_module *) = 0;
@@ -654,10 +657,10 @@ bio4d(char *verb, char *algorithm, char *digest,
 	req.step = 0;
 	if (strcmp("wrap", verb) == 0) {
 		if (algorithm[0])
-			die3_NO(verb, algorithm, "unexpected --algorithm");
+			die3_NO(verb, algorithm, "unexpected algorithm");
 		strcpy(algorithm, wrap_algorithm);
 	} else if (!algorithm[0] || !digest[0])
-		die2_NO(verb, "missing udig or unknown verb");
+		die2_NO(verb, "missing algo or digest");
 
 	req.algorithm = algorithm;
 	req.blob_size = scan_size;
@@ -667,19 +670,19 @@ bio4d(char *verb, char *algorithm, char *digest,
 	 *  Find the digest algorithm in the installed list.
 	 */
 	mp = 0;					// silences clang
-	if (algorithm && algorithm[0]) {
+	if (algorithm[0]) {
 		mp = module_get(algorithm);
 		if (!mp)
 			panic3(verb, "unknown digest algorithm", algorithm);
-	} else
-		panic2(verb, "empty algorithm");
+	}
+
 	/*
 	 *  Verify the digest is syntacally correct.
 	 *
 	 *  Note:
 	 *	what if *digest == 0?
 	 */
-	if (*digest && mp->is_digest(req.digest) == 0) {
+	if (digest[0] && mp->is_digest(req.digest) == 0) {
 		char ebuf[MSG_SIZE];
 
 		snprintf(ebuf, sizeof ebuf, "not a %s digest", algorithm);
@@ -688,10 +691,11 @@ bio4d(char *verb, char *algorithm, char *digest,
 
 	/*
 	 *  Map the verb name onto the appropriate callback
-	 *  BEFORE opening the module.
+	 *  BEFORE opening the digest module.
 	 *
 	 *  Note:
 	 *  	Collapse into faster inline tests.
+	 *	verb is in {get,put,give,take,eat,wrap,roll}
 	 */
 	if (strcmp("get", verb) == 0)
 		verb_callback = get;
@@ -717,7 +721,7 @@ bio4d(char *verb, char *algorithm, char *digest,
 	ps_title_set(ps_title, (char *)0, (char *)0);
 
 	/*
-	 *  Open the module.
+	 *  Open the digest module.
 	 */
 	status = (*mp->open)(&req);
 	if (status) {
@@ -775,7 +779,6 @@ request()
 	v_next = verb;
 	v_end = verb + MAX_VERB_SIZE;
 
-	//  algorithm[0] = 0;
 	a_next = algorithm;
 	a_end = algorithm + MAX_ALGORITHM_SIZE;
 
@@ -788,11 +791,11 @@ request()
 	 *  Scan for request from the client.
 	 *  We are looking for
 	 *
-	 *	#  UDIG_RE=[:alpha:][:alnum:]{0,7}:[[:isgraph:]]{28,128}]
-	 *	[get|put|give|take|eat|roll] $UDIG_RE\n
+	 *	#  UDIG_RE=[:alpha:][:alnum:]{0,7}:[[:isgraph:]]{32,128}]
+	 *	[get|put|give|take|eat|roll] $UDIG_RE[\r]?\n
 	 *  
 	 *  OR
-	 *	 wrap\n
+	 *	 wrap[\r]?\n
 	 */
 	state = STATE_SCAN_VERB;
 	while (state != STATE_HALT && (nr=req_read(&req, buf, sizeof buf)) > 0){
@@ -2046,13 +2049,13 @@ main(int argc, char **argv, char **env)
 			if (*argv[i] == 0)
 				die2(o, "empty algorithm");
 
-			if (wrap_algorithm)
+			if (wrap_algorithm[0])
 				die2(o, "given more than once");
 
 			//  verify the digest module exists
 			if (!module_get(argv[i]))
 				die3(o, "unknown digest algorithm", argv[i]);
-			wrap_algorithm = argv[i];
+			strcpy(wrap_algorithm, argv[i]);
 		} else if (strcmp("--in-foreground", argv[i]) == 0) {
 			static char o[] = "option --in-foreground";
 
@@ -2145,7 +2148,7 @@ main(int argc, char **argv, char **env)
 
 	if (!BLOBIO_ROOT)
 		die("option --root <directory-path> is required");
-	if (!wrap_algorithm)
+	if (!wrap_algorithm[0])
 		die("option --wrap-algorithm <algo> is required");
 
 	/*
