@@ -30,8 +30,10 @@ Description:
 
 	where "sha" is the famous but broken SHA1 and "btc20" is a
 	composition of RIPEMD(SHA256(SHA256(blob))), inspired by the
-	bitcoin wallet.  Eventually a SHA3 digest can be added without
-	breaking code.  The "bc160" is a deprecated, experimental digest.
+	bitcoin wallet, replacing base58 encoding with hex.
+
+	Eventually a SHA3 digest can be added without breaking code.
+	The "bc160" is a deprecated, experimental digest.
 
 	An example udig is sha:cd50d19784897085a8d0e3e413f8612b097c03f1
 	which describes the string "hello, world\n".
@@ -40,9 +42,8 @@ Description:
 		cd50d19784897085a8d0e3e413f8612b097c03f1  -
 
 	The maximum size of the algorithm tag is 8 ascii chars.  The maximum
-	size of a digest is 128 ascii graphical characters.
-	The minimum size of a digest is 32 ascii chars, making the min/max udig
-	sizes
+	size of a digest is 128 ascii graphical characters.  The minimum size
+	of a digest is 32 ascii chars, making the min/max udig sizes
 
 		min udig = 1 + 1 (colon) + 32 = 34 ascii chars.
 		max udig = 8 + 1 (colon) + 128 = 137 ascii chars.
@@ -54,8 +55,6 @@ Description:
 		take <udig>		#  get a blob that the source may forget
 		give <udig>		#  put a blob that the source may forget
 		eat <udig>		#  untrusted digest of a blob by server
-		cat <udig>              #  (proposed) sum the concat of blobs
-					#    in <udig-list>
 
 		wrap			#  freeze current unwrapped blob traffic
 					#  log into a single blob and return
@@ -77,6 +76,9 @@ Description:
 					#  be gettable.   the <udig> of the
 					#  rolled udig will be in the next wrap
 					#  set as a "roll" blob request record.
+		#  PROPOSED
+		cat <udig>              #  sum the concatenation of blobs in
+					#  <udig-list> ... proof of storage
 
 	After the initial request by the client, all server replies are just
 	'ok' or 'no', where 'no' is always the last reply. See below for the
