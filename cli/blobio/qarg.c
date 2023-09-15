@@ -95,7 +95,7 @@ qae(char *qarg, char *err)
  *	$BLOBIO_SERVICE.
  *
  *		algo=[a-z][a-z0-9]{0,7}	#  algorithm for service wrap
- *		brr=[01]		#  write brr record
+ *		brr=[0-9a-f][0-9a-f]	#  bit mask for brr verbs to write
  *
  *	Tis an error if args other than the three above exist in query string.
  *  Returns:
@@ -149,20 +149,33 @@ BLOBIO_SERVICE_frisk_qargs(char *query)
 			seen_algo = 1;
 			break;
 
-		//  match: brr=[01]
+		//  match: brr=[0-9a-f][0-9a-f]		bit mask for bee verbs
 		case 'b':
 			TRACE("saw char 'b', expect qarg \"brr\"");
-			err = frisk_qarg("brr", q - 1, &equal, 1);
+			err = frisk_qarg("brr", q - 1, &equal, 2);
 			if (err)
 				return qae("brr", err);
 			if (seen_brr)
 				return "brr: specified more than once";
+
 			q = equal;
+
 			c = *q++;
 			if (c == 0)
-				return "brr: empty: want \"0\" or \"1\"";
-			if (c != '1' && c != '0')
-				return "brr: value not \"0\" or \"1\"";
+				return "brr: empty: want [0-9a-f][0-9a-f]";
+			if (!isxdigit(c))
+				return "brr: first char is not hex digit";
+			if (isalpha(c) && !islower(c))
+				return "first hex digit is not lower case";
+
+			c = *q++;
+			if (c == 0)
+				return "brr: short: want [0-9a-f][0-9a-f]";
+			if (!isxdigit(c))
+				return "brr: second char is not hex digit";
+			if (isalpha(c) && !islower(c))
+				return "second hex digit is not lower case";
+
 			seen_brr = 1;
 			c = *q++;
 			break;
@@ -217,58 +230,37 @@ BLOBIO_SERVICE_get_algo(char *query, char *algo)
 
 /*
  *  Synopsis:
- *  	Extract the "BLOBIO_ROOT" file path from a frisked query string.
+ *  	Extract the bit mask for blob request records to write.
  */
 void
-BLOBIO_SERVICE_get_BR(char *query, char *path)
-{
-	TRACE("entered");
-
-	char *q = query, c, *p = path;
-	
-	*p = 0;
-	while ((c = *q++)) {
-		if (c == '&')
-			continue;
-
-		if (c == 'B') {
-			q += 2;			//  skip "R="
-
-			//  extract the frisked path
-			while ((c = *q++) && c != '&')
-				*p++ = c;
-			*p = 0;
-			return;
-		}
-		while ((c = *q++) && c != '&')
-			;
-		if (!c)
-			return;
-	}
-}
-
-/*
- *  Synopsis:
- *  	Extract the "brr" boolean [01] from a frisked query string.
- */
-void
-BLOBIO_SERVICE_get_brr(char *query, char *put_brr)
+BLOBIO_SERVICE_get_brr_mask(char *query, unsigned char *p_mask)
 {
 	TRACE("entered");
 
 	char *q = query, c;
 	
 	while ((c = *q++)) {
-		if (c == '&')
+		if (c == '&' || c != 'b')	//  not "brr="
 			continue;
 
-		if (c == 'b') {
-			*put_brr = q[3];
-			return;
-		}
-		while ((c = *q++) && c != '&')
-			;
-		if (!c)
-			return;
+		q += 3;			//  skip over "brr="
+
+		unsigned cu, cl;	//  upper & lower bytes
+
+		unsigned c = *q++;
+		if (islower(c))
+			cu = (c - 'a') + 10;
+		else
+			cu = c - '0';
+
+		c = *q++;
+		if (islower(c))
+			cl = (c - 'a') + 10;
+		else
+			cl = c - '0';
+		*p_mask = (cu << 4) | cl;
+
+		TRACE2("qarg: brr mask", brr_mask2ascii(*p_mask));
+		return;
 	}
 }

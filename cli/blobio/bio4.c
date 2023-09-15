@@ -37,7 +37,7 @@ extern char	algorithm[9];
 extern char	algo[9];		//  service query arg "algo"
 extern char	ascii_digest[129];
 extern char	chat_history[9];
-extern char	brr[2];
+extern unsigned char	brr_mask;
 extern char	end_point[129];
 extern char	*output_path;
 extern char	*null_device;
@@ -830,7 +830,7 @@ bio4_wrap(int *ok_no)
 	if (err)
 		return err;
 
-	if (brr[0] == '1') {
+	if (brr_mask_is_set(verb, brr_mask)) {
 		//  update vars algorithm[] and ascii_digest[] for a the
 		//  client side blob request record.
 		if (!memccpy(algorithm, udig, ':', 8))

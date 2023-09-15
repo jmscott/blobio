@@ -94,8 +94,22 @@ char	ascii_digest[129] = {0};
 char	*output_path = 0;
 char	*input_path = 0;
 
-//  write a brr record: [01]
-char	brr[2];
+/*
+ *  Bit mask for which blob requests records are written:
+ *
+ *	Bit 	Verb
+ *	---	----
+ *
+ *	1	"get"
+ *	2	"take"
+ *	3	"put"
+ *	4	"give"
+ *	5	"eat"
+ *	6	"wrap"
+ *	7	"roll"
+ *	8	"cat"
+ */
+unsigned char	brr_mask = 0;
 
 char	*null_device = "/dev/null";
 char	chat_history[2+1+2+1+2+1] = {0};
@@ -585,7 +599,6 @@ parse_argv(int argc, char **argv)
 			 *
 			 *	brr	write a brr record [01]
 			 *	algo	algorithm for wrap
-			 *	tmo	per i/o timeout
 			 */
 			if ((query = rindex(endp, '?'))) {
 				*query++ = 0;
@@ -599,7 +612,7 @@ parse_argv(int argc, char **argv)
 					eservice2("query arg: frisk", err);
 
 				BLOBIO_SERVICE_get_algo(query, algo);
-				BLOBIO_SERVICE_get_brr(query, brr);
+				BLOBIO_SERVICE_get_brr_mask(query, &brr_mask);
 			}
 
 			//  validate the syntax of the specific end point
@@ -750,7 +763,7 @@ main(int argc, char **argv)
 #endif
 	xref_argv();
 
-	TRACE2("query arg: brr", brr);
+	TRACE2("query arg: brr mask", brr_mask2ascii(brr_mask));
 	TRACE2("query arg: algo", algo);
 
 	//  the input path must always exist in the file system.
@@ -933,8 +946,8 @@ main(int argc, char **argv)
 		exit_status = ok_no;
 	}
 
-	//  write a BRR record
-	if (brr[0] == '1' && service) {
+	//  write a blob request record, using brr mask
+	if (brr_mask_is_set(verb, brr_mask) && service) {
 		char *err = brr_service(service);
 		if (err)
 			die3("brr_service() failed", service->name, err);

@@ -31,6 +31,66 @@ static char		*brr_format =
 ;
 
 char *
+brr_mask2ascii(unsigned char mask)
+{
+	static char ascii[5];
+	static char hexmap[] = {
+		'0', '1', '2', '3', '4', '5', '6', '7',
+		'8', '9', 'a', 'b', 'c', 'd', 'e', 'f'
+	};
+
+	ascii[0] = '0';
+	ascii[1] = 'x';
+
+	ascii[2] = hexmap[(mask >> 4) & 0x0f];
+	ascii[3] = hexmap[mask & 0x0f];
+	ascii[4] = 0;
+
+	return ascii;
+}
+
+/*
+ *  Is a particular verb set in the brr mask?
+ *
+ *	Bit 	Verb
+ *	---	----
+ *
+ *	1	"get"
+ *	2	"take"
+ *	3	"put"
+ *	4	"give"
+ *	5	"eat"
+ *	6	"wrap"
+ *	7	"roll"
+ *	8	"cat"
+ */
+
+int
+brr_mask_is_set(char *verb, unsigned char mask)
+{
+	switch (verb[0])
+	{
+	case 'c':
+		return (mask & 0x80) ? 1 : 0;		// verb "cat"
+	case 'e':
+		return (mask & 0x10) ? 1 : 0;		// verb "eat"
+	case  'g':
+		if (verb[1] == 'e')
+			return (mask & 0x01) ? 1 : 0;	//  verb "get"
+		return (mask & 0x08) ? 1 : 0;		//  verb "give"
+	case 'p':
+		return (mask & 0x04) ? 1 : 0;		//  verb "put"
+	case 'r':
+		return (mask & 0x40) ? 1 : 0;		//  verb "roll"
+	case 't':
+		return (mask & 0x02) ? 1 : 0;		//  verb "take"
+	case 'w':
+		return (mask & 0x20) ? 1 : 0;		//  verb "wrap"
+	}
+	return 0;
+}
+
+char *
 brr_service(struct service *srv)
 {
 	struct brr brr = {0};

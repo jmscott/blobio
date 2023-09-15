@@ -243,9 +243,9 @@ extern ssize_t	uni_read(int fd, void *buf, size_t count);
 extern ssize_t	uni_write(int fd, const void *buf, size_t count);
 
 extern char	*BLOBIO_SERVICE_frisk_qargs(char *query);
-void		BLOBIO_SERVICE_get_BR(char *query, char *BR);
-void		BLOBIO_SERVICE_get_brr(char *query, char *brr);
-void		BLOBIO_SERVICE_get_algo(char *query, char *brr_path);
+
+void		BLOBIO_SERVICE_get_brr_mask(char *query, unsigned char *mask);
+void		BLOBIO_SERVICE_get_algo(char *query, char *algo);
 
 extern struct digest	*find_digest(char *algorithm);
 
@@ -262,6 +262,9 @@ extern char 		*input_path;
 extern char 		*null_device;
 extern long long	blob_size;
 extern char		ascii_digest[129];
+
 extern char *		brr_service(struct service *);
+extern char *		brr_mask2ascii(unsigned char mask);
+extern int		brr_mask_is_set(char *verb, unsigned char mask);
 
 #endif
