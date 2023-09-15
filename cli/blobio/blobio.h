@@ -17,11 +17,13 @@
  *	consider adding query argument to enable tracing:
  *	&trace=[0|1|<path/to/output>
  */
-#define COMPILE_TRACE
+// #define COMPILE_TRACE
 
 #define MAX_ATOMIC_MSG	JMSCOTT_ATOMIC_WRITE_SIZE
 
 #ifdef COMPILE_TRACE
+
+extern int	tracing;
 
 //  Note: change TRACE to expression: (tracing && trace(...))
 
@@ -53,6 +55,7 @@
 #else
 
 /*  compile out any vestiage of tracing */
+
 #define TRACE(msg)
 #define TRACE2(msg1,msg2)
 #define TRACE3(msg1,msg2,msg3)
@@ -262,7 +265,10 @@ extern char 		*input_path;
 extern char 		*null_device;
 extern long long	blob_size;
 extern char		ascii_digest[129];
+extern char		transport[8+1+128 + 1];
+extern int		trust_fs;
 
+extern unsigned char	brr_mask;
 extern char *		brr_service(struct service *);
 extern char *		brr_mask2ascii(unsigned char mask);
 extern int		brr_mask_is_set(char *verb, unsigned char mask);

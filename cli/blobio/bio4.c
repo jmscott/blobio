@@ -31,21 +31,6 @@ extern int	io_timeout;
 #define HOST_NAME_MAX	64
 #endif
 
-extern char	verb[];
-extern char	transport[129];
-extern char	algorithm[9];
-extern char	algo[9];		//  service query arg "algo"
-extern char	ascii_digest[129];
-extern char	chat_history[9];
-extern unsigned char	brr_mask;
-extern char	end_point[129];
-extern char	*output_path;
-extern char	*null_device;
-extern int	output_fd;
-extern char	*input_path;
-extern int	input_fd;
-extern int	trust_fs;
-
 static int server_fd = -1;
 
 extern struct service bio4_service;		//  initialized below

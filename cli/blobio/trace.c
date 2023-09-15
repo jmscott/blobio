@@ -1,3 +1,4 @@
+#ifdef COMPILE_TRACE
 /*
  *  Synopsis:
  *  	Trace/debug service flow with --trace command line option.
@@ -19,7 +20,6 @@
 
 #include "blobio.h"
 
-extern char	verb[];
 int		tracing = 0;
 
 static int	trace_fd = 2;
@@ -304,3 +304,5 @@ hexdump(unsigned char *src, int src_size, char direction)
 	_write(tgt);
 	_write("\n");
 }
+
+#endif

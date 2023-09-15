@@ -15,9 +15,6 @@
 #include "openssl/ripemd.h"
 #include "blobio.h"
 
-extern char	verb[];
-extern char	ascii_digest[];
-
 static unsigned char	bin_digest[20];
 
 typedef struct

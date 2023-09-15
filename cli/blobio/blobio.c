@@ -80,7 +80,6 @@
 
 char	*jmscott_progname = "blobio";
 
-extern int	tracing;
 static int	rm_output_path_error = 1;
 
 /*
@@ -623,9 +622,13 @@ parse_argv(int argc, char **argv)
 			service = sp;
 			strcpy(service->end_point, endp);
 		} else if (strcmp("trace", a) == 0) {
+#ifdef COMPILE_TRACE
 			if (tracing)
 				emany("trace");
 			tracing = 1;
+#else
+			die("option --trace not compiled");
+#endif
 		} else if (strcmp("io-timeout", a) == 0) {
 			if (io_timeout >= 0)
 				emany("io-timeout");
@@ -758,9 +761,6 @@ main(int argc, char **argv)
 		);
 	parse_argv(argc, argv);
 
-#ifndef COMPILE_TRACE
-	tracing = 0;
-#endif
 	xref_argv();
 
 	TRACE2("query arg: brr mask", brr_mask2ascii(brr_mask));

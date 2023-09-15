@@ -16,10 +16,6 @@
 #include "jmscott/libjmscott.h"
 #include "blobio.h"
 
-extern char	verb[];
-extern char	ascii_digest[];
-extern int	input_fd;
-
 static unsigned char	bin_digest[20];
 
 typedef struct
@@ -114,11 +110,13 @@ bc160_chew(unsigned char *chunk, int size)
 		return "RIPEMD160_Update(tmp SHA256) failed";
 	if (!RIPEMD160_Final(tmp_ripemd_digest, &tmp_ripemd_ctx))
 		return "RIPEMD160_Final(tmp SHA256) failed";
+#ifdef COMPILE_TRACE
 	if (tracing) {
 		TRACE("hex dump of 20 byte RIPEMD160 follows ...");
 		hexdump(tmp_ripemd_digest, 20, '=');
 		TRACE("chew(tmp_ripemd) done");
 	}
+#endif
 	return memcmp(tmp_ripemd_digest, bin_digest, 20) == 0 ? "0" : "1";
 }
 
