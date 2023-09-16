@@ -188,6 +188,7 @@ static u8	no3_count = 	0;
 /*
  *  Request Verbs
  */
+static u8	cat_count =	0;	//  all "cat" requests
 static u8	get_count =	0;	//  all "get" requests
 static u8	put_count =	0;	//  all "put" requests
 static u8	give_count =	0;	//  all "give" requests
@@ -199,6 +200,8 @@ static u8	roll_count =	0;	//  all "roll" requests
 /*
  *  Statistics for failed requests that generate blob request record.
  */
+static u8	cat_no_count =	0;	//  first "no" on "cat"
+
 static u8	eat_no_count =	0;	//  first "no" on "eat"
 
 static u8	get_no_count =	0;	//  "no" on "get"
@@ -392,6 +395,28 @@ die3_NO(char *msg1, char *msg2, char *msg3)
 
 /*
  *  Synopsis:
+ *	Fire digest module callbacks for unimplemented "cat" verb.
+ *  Protocol Flow:
+ *	cat algorithm:digest\n		#  blob
+ *		<ok algorithm:digst\n	#  the udig of the concat (no blob)
+ *		<no\n			#  concat not completed
+ *  Return Status:
+ *	0	no error
+ *	-1	error
+ */
+static int
+cat(struct request *rp, struct digest_module *mp)
+{
+	(void)mp;
+
+	request_exit_status = (request_exit_status & 0x1C) |
+					(REQUEST_EXIT_STATUS_CAT << 2);
+	rp->step = "cat";
+	return write_no(rp);		//  concatenation not implemented
+}
+
+/*
+ *  Synopsis:
  *	Fire digest module callbacks for "get" verb.
  *  Protocol Flow:
  *	get algorithm:digest\n		# request for blob
@@ -442,6 +467,9 @@ get(struct request *rp, struct digest_module *mp)
  *	eat algorithm:digest\n		# request for to eat local blob
  *	    <ok\n[close]		# ok, blob digest verified locally
  *          <no\n[close]		# no blob with signature
+ *  Return Status:
+ *	0	no error
+ *	-1	error
  */
 static int
 eat(struct request *rp, struct digest_module *mp)
@@ -455,7 +483,7 @@ eat(struct request *rp, struct digest_module *mp)
 
 /*
  *  Synopsis:
- *	Execute the put request by firing the callbacks of the digest module.
+ *	Fire the put request of the digest module.
  *  Protocol Flow:
  *	>put udig\n	# request from client to put blob matching digest
  *	  <ok\n		#   server ready for bytes matching bytes
@@ -463,6 +491,9 @@ eat(struct request *rp, struct digest_module *mp)
  *	    <ok\n	#       accepted bytes for blob
  *	    <no\n	#       rejects bytes for blob
  *	<no\n		#   server rejects request to put blob
+ *  Return Status:
+ *	0	no error
+ *	-1	error
  */
 static int
 put(struct request *rp, struct digest_module *mp)
@@ -493,6 +524,9 @@ put(struct request *rp, struct digest_module *mp)
  *		>no[close]		# client rejects blob, bye
  *			<ok[close]	# we probably forget blob, bye
  *			<no[close]	# we may keep the blob, bye
+ *  Return Status:
+ *	0	no error
+ *	-1	error
  *  Note:
  *	Taking the empty blob ought to fail.
  */
@@ -545,7 +579,7 @@ take(struct request *rp, struct digest_module *mp)
 				rp->transport,
 				"blob in unrolled wrap set"
 			);
-			error3("take", "forbidden until a next roll", wrap_udig);
+			error3("take", "forbidden until a next roll",wrap_udig);
 			return write_no(rp);
 		}
 	}
@@ -596,6 +630,9 @@ take(struct request *rp, struct digest_module *mp)
  *		>no[close]	#     client might remember the blob
  *	      <no\n[close]	#   server rejects the bytes
  *	  <no\n[close]		#   server rejects blob give request
+ *  Return Status:
+ *	0	no error
+ *	-1	error
  */
 static int
 give(struct request *rp, struct digest_module *mp)
@@ -711,6 +748,8 @@ bio4d(
 		verb_callback = wrap;
 	else if (strcmp("roll", verb) == 0)
 		verb_callback = roll;
+	else if (strcmp("cat", verb) == 0)
+		verb_callback = cat;
 	else
 		die3_NO(algorithm, "unknown verb", verb);
 
@@ -1006,14 +1045,13 @@ bump_no(unsigned char exit_status, u8 *v_no, u8 *v_no2, u8 *v_no3) {
  *	Process Exit Class - Bits 1 and 2:
  *
  *	  ------00	normal request  - successful request, brr made
- *	  ------01	client error	- unknown verb, bad udig syntax,
- *					  read error taking to client
+ *	  ------01	client error	- client error, no brr made
  *	  ------10	hard time out	- read()/write() timeout occured
  *	  ------11	fault		- error affecting server stability
  *
  *  	Verb - Bits 3, 4, and 5
  *
- *	  ---000--	unused		- may become "prove" verb
+ *	  ---000--	unused		- may become "cat" verb
  *	  ---001--	get request 	
  *	  ---010--	put request 	
  *	  ---011--	give request 	
@@ -1165,6 +1203,15 @@ again:
 			 *  Verb stored in bits 3,4 and 5
 			 */
 			switch ((s8 & 0x1C) >> 2) {
+			case REQUEST_EXIT_STATUS_CAT:
+				cat_count++;
+				bump_no(
+					s8,
+					&cat_no_count,
+					(u8*)0,
+					(u8*)0
+				);
+				break;
 			case REQUEST_EXIT_STATUS_GET:
 				get_count++;
 				bump_no(
@@ -1309,12 +1356,14 @@ heartbeat()
 	info(buf);
 
 	snprintf(buf, sizeof buf,
-		"get=%llu, put=%llu, give=%llu, take=%llu, eat=%llu",
+		"get=%llu, put=%llu, give=%llu, take=%llu, eat=%llu, cat=%llu",
 			get_count,
 			put_count,
 			give_count,
 			take_count,
-			eat_count
+			eat_count,
+			cat_count
+
 	);
 	info(buf);
 

@@ -118,6 +118,7 @@ struct request
 /*
  *  Verb: Bits 3, 4 and 5 of the of the request child exit status.
  */
+#define REQUEST_EXIT_STATUS_CAT		0
 #define REQUEST_EXIT_STATUS_GET		1
 #define REQUEST_EXIT_STATUS_PUT		2
 #define REQUEST_EXIT_STATUS_GIVE	3
