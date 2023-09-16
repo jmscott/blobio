@@ -105,14 +105,10 @@ Description:
 
 		transport		#  <tag>~<transport detail>
 					#    TAG_re=[a-z][a-z0-9_]{0,7}
-					#    REQUEST_re=[[:graph:]]{16,128}
-					#    /${TAG_re}[~]$REQUEST_re/
+					#    DETAIL_re=[[:graph:]]{1,160}
+					#    /${TAG_re}[~]$DETAIL_re/
 
 		verb			#  get|put|give|take|wrap|roll|eat|cat
-					#    UI63_re=(=\d{1,20)?
-					#    VN_re=((get|put|give|take)$UI63_re
-					#    V_re=(wrap|roll|eat)
-					#    /($VN_re|$V_re)/
 
 		udig			#  algorithm:digest
 					#    ALGO_re=[a-z][a-z0-9]{0,7}
@@ -139,12 +135,13 @@ Description:
 					#    /\d{1,10}([.]\d{1,10})?/
 
 	BRR records are always syntactally correct as described below.  In other
-	words, a request that is syntactically incorrect will never generate a
-	blob request record, which implies debugging an errant client may be out
-	of band with BRR records.
+	words, a client request that is syntactically incorrect will never
+	generate a blob request record, which implies debugging an errant
+	client may be out of band with BRR records.
 
-	The minimum size of a BRR record is 70 ascii chars.  A terminating new
-	line or null char is NOT included in the tally of the min in size.
+	The minimum size of a blob request record is 35 ascii chars.
+	A terminating new line or null char is NOT included in the tally of
+	the minimum size.
 
 		#field    <tab> comment
 		#-----    ----- #-------------------------------------------
@@ -154,43 +151,41 @@ Description:
 		(1+1+1)	+ 1 +	#  transport<tab>
 				#    [a-z]~[[:graph:]]
 		(3)	+ 1 +	#  verb
-		                #    get|put|eat|cat|roll)<tab>
-		(1+1+32)+ 1 +	#  udig
-		                #    [a-z]:[[:graph:]]{32}<tab>
+		                #    (get|put|eat|cat)
+		(0)	+ 1 +	#  empty string (wrap|cat|eat) when chat=no
 		(2)	+ 1 +	#  chat history 
-				#    (ok|no)<tab> 
-		(1)	+ 1 +	#  wall_duration
-		                #    0(never leading 0)<tab>
-		(1)		#  record terminatior char
-                                #    newline or null
+				#    (no)
+		(1)	+ 1 	#  wall duration seconds
+		                #    0
 
-        The maximum size of a blob request record is 455 ascii chars.
-	No newlime or null char is included in the tally of max size.
+        The maximum size of a blob request record is 419 ascii chars.
+	No newlime or null char is included in the tally of maximum size.
 
 		field           <tab>   comment
 		-----           -----   #------------------------------
 
-		(19+1+9+1+5)	+ 1 +	#  start_time<tab>
+		(19+1+9+1+5)	+ 1 +	#  start_time
 					#    TIME_re=YYYY-MM-DDThh:mm:ss
 					#    /${TIME_re}[.]\d{9}[+-]HH:MM/
-		(8+1+160)	+ 1 +	#  transport<tab>
-					#    /[a-z0-9]{8}~[[:graph:]]{160}/
-		(4 + 1 + 19)	+ 1 +	#  wrap=\d{19}<tab>
-		(8+1+128)	+ 1 +	#  udig<tab>
-		                        #    /[a-z][a-z0-9]{7):[[:graph:]]{128l
+		(8+1+160)	+ 1 +	#  transport
+					#    /[a-z][a-z0-9]{7}~[[:graph:]]{160}/
+		(4 + 1 + 19)	+ 1 +	#  verb=give
+		(8+1+128)	+ 1 +	#  udig
+		                        #    /[a-z][a-z0-9]{7}:[[:graph:]]{128}
 		(8)		+ 1 +	#  chat history 
-		                        #    /(ok,ok,(ok|no)/<tab>
+		                        #    /(ok,ok,(ok|no)/
 		(19)		+ 1 +	#  blob size
-		                        #    /[1-9][0-9]{18}/<tab>
-		(10+1+10)		#  wall duration
-		                        #    /[1-9]{10}[.][0-9]{10}/
+		                        #    /[1-9][0-9]{18}/
+		(10+1+10)		#  wall duration seconds
+		                        #    /[1-9][0-9]{9}[.][0-9]{10}/
 
-		= 455 bytes
+		= 419 bytes
 
-	Since the length is <= 455 bytes, a BRR record can be broadcast in an
-	UDP packet, with a "insured" atomic payload of 508 bytes.
-	
-	The BRR record format is cast in saphire.
+	Since the length is 419 <= bytes, a BRR record can be broadcast in an
+	UDP packet, which pragmatically "insures" an atomic payload up to 508
+	bytes.
+
+	Consider the BRR format to have been cast in sapphire.
 
 Protocol Flow:
  	>get udig\n		# request for blob by udig

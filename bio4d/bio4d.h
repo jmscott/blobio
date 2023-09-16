@@ -43,6 +43,9 @@ typedef unsigned char		u1;
 /*
  *  Must be 255 since the interprocess message stream use leading byte for
  *  length. Must also be < PIPE_MAX
+ *
+ *  Note:
+ *	rename MSG_SIZE to MAX_PROC_MSG_SIZE
  */
 #define MSG_SIZE		255
 

@@ -44,11 +44,11 @@ static char	*RFC3339Nano =
  *
  *	Byte Count	Description
  *	--------        --------------
- *	36	+	start time: YYYY-MM-DDTHH:MM:SS.NS9[-+]hh:mm
+ *	35	+	start time: YYYY-MM-DDTHH:MM:SS.NS9[-+]hh:mm
  *	1	+	<tab>
- *	8+1+128 +	proto8:[[:graph:]{1,128}
+ *	8+1+160 +	proto8~[[:graph:]{1,160}
  *	1	+	<tab>
- *	8	+	verb: get|put|give|take|eat|wrap|roll ...
+ *	8	+	verb: get|put|give|take|eat|wrap|roll|cat ...
  *	1	+	<tab>
  *	8+1+128 +	udig: algorithm:digest
  *	8	+	chat history: ok(,ok){,2}|no|ok,no|ok,ok,no
@@ -57,7 +57,7 @@ static char	*RFC3339Nano =
  *	1	+	<tab>
  *	20		wall duration: sec32.ns9, sec32 >= 0 && ns9 <= 999999999
  */
-#define BRR_SIZE		371		//  terminating null NOT counted
+#define BRR_SIZE		419		//  terminating null NOT counted
 
 /*
  *  Answer a wrap request from a child process.
