@@ -50,12 +50,13 @@ install: all
 		$(DIST_ROOT)/lib
 
 bio4d: $(OBJs)
-	$(CC) -o bio4d $(OBJs)						\
+	$(CC) $(CFLAGS) -o bio4d $(OBJs)				\
 		$(RT_LINK)						\
 		$(OPENSSL_LIB)
 
 append-brr: append-brr.c
-	$(CC) -o append-brr $(CFLAGS) append-brr.c
+	$(CC) $(CFLAGS) -o append-brr append-brr.c			\
+		-L$(JMSCOTT_ROOT)/lib -ljmscott
 
 arbor.o: arbor.c bio4d.h
 	$(CC) $(CFLAGS) -c arbor.c
