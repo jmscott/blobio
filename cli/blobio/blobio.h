@@ -17,7 +17,7 @@
  *	consider adding query argument to enable tracing:
  *	&trace=[0|1|<path/to/output>
  */
-// #define COMPILE_TRACE
+#define COMPILE_TRACE
 
 #define MAX_ATOMIC_MSG	JMSCOTT_ATOMIC_WRITE_SIZE
 

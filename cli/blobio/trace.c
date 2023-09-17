@@ -1,4 +1,3 @@
-#ifdef COMPILE_TRACE
 /*
  *  Synopsis:
  *  	Trace/debug service flow with --trace command line option.
@@ -19,6 +18,8 @@
 #include <stdio.h>
 
 #include "blobio.h"
+
+#ifdef COMPILE_TRACE
 
 int		tracing = 0;
 
