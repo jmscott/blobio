@@ -2046,13 +2046,23 @@ main(int argc, char **argv, char **env)
 	 *  Parse verb line arguments.
 	 */
 	for (i = 1;  i < argc;  i++) {
+		char *opt = argv[i];
+
+		if (opt[0] != '-' || opt[1] != '-')
+			die2("options must start with --", opt);
+		if (!opt[2])
+			die("empty option: --");
+		opt = opt + 2;
+
 		/*
+		 *  Note: why option "--ps-title"?
+		 *
 		 *  --ps-title-XXXXXXXXXXX is an ugly hack.  see ps_title.c
 		 *  ps_title_init() is passed argv[].  
 		 */
-		if (strncmp("--ps-title-", argv[i], 11) == 0)
+		if (strncmp("ps-title-", opt, 9) == 0)
 			continue;
-		if (strcmp("--port", argv[i]) == 0) {
+		if (strcmp("port", opt) == 0) {
 			int p;
 
 			if (++i >= argc)
@@ -2063,7 +2073,7 @@ main(int argc, char **argv, char **env)
 			if (p > 65536)
 				die2("port > 65536", argv[i]);
 			port = p;
-		} else if (strcmp("--rrd-duration", argv[i]) == 0) {
+		} else if (strcmp("rrd-duration", opt) == 0) {
 			static char o[] = "option --rrd-duration";
 			char *hb;
 
@@ -2089,7 +2099,7 @@ main(int argc, char **argv, char **env)
 				rrd_duration = (u2)sec;
 			} else
 				die3(o, "unexpected seconds or heartbeat", hb);
-		} else if (strcmp("--wrap-algorithm", argv[i]) == 0) {
+		} else if (strcmp("wrap-algorithm", opt) == 0) {
 			static char o[] = "option --wrap-algorithm";
 
 			if (++i >= argc)
@@ -2105,13 +2115,13 @@ main(int argc, char **argv, char **env)
 			if (!module_get(argv[i]))
 				die3(o, "unknown digest algorithm", argv[i]);
 			strcpy(wrap_algorithm, argv[i]);
-		} else if (strcmp("--in-foreground", argv[i]) == 0) {
+		} else if (strcmp("in-foreground", opt) == 0) {
 			static char o[] = "option --in-foreground";
 
 			if (in_foreground)
 				die2(o, "given more than once");
 			in_foreground = 1;
-		} else if (strcmp("--root", argv[i]) == 0) {
+		} else if (strcmp("root", opt) == 0) {
 			static char o[] = "option --root";
 
 			if (++i >= argc)
@@ -2121,7 +2131,7 @@ main(int argc, char **argv, char **env)
 			if (argv[i] == 0)
 				die2(o, "empty directory path");
 			BLOBIO_ROOT = strdup(argv[i]);
-		} else if (strcmp("--net-timeout", argv[i]) == 0) {
+		} else if (strcmp("net-timeout", opt) == 0) {
 			static char o[] = "option --net-timeout";
 			char *tmo;
 			unsigned j, sec;
@@ -2151,7 +2161,7 @@ main(int argc, char **argv, char **env)
 			if (sec == 0)
 				die2(o, "timeout is 0");
 			net_timeout = (u1)sec;
-		} else if (strcmp("--trust-fs", argv[i]) == 0) {
+		} else if (strcmp("trust-fs", opt) == 0) {
 			static char o[] = "option --trust-fs";
 
 			if (++i >= argc)
@@ -2166,10 +2176,8 @@ main(int argc, char **argv, char **env)
 				trust_fs = 0;
 			else
 				die3(o, "unknown boolean", a);
-		} else if (strncmp("--", argv[i], 2) == 0)
-			die2("unknown option", argv[i]);
-		else
-			die2("unknown argument", argv[i]);
+		} else
+			die2("unknown option", opt);
 	}
 
 	if (rrd_duration > 0 && rrd_duration < LOG_HEARTBEAT) {
