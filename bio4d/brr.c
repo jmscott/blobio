@@ -29,6 +29,7 @@ extern unsigned char	request_exit_status;
 
 pid_t brr_logger_pid = 0;
 
+
 static int	log_fd = -1;
 static char 	log_path[] = "spool/bio4d.brr";
 static char	*RFC3339Nano =
@@ -73,7 +74,7 @@ static char	*RFC3339Nano =
 static void
 answer_wrap(char *reply_fifo_path)
 {
-	static u2 seq = 0;
+	static ui16 seq = 0;
 
 	static char 	log_wrap_format[] = "spool/bio4d-%010u-%05u.brr";
 	char path[MSG_SIZE];
@@ -811,7 +812,7 @@ roll(struct request *r, struct digest_module *mp)
 			warn3(n, "file in spool wrap is not log file", n);
 			continue;
 		}
-		if (blob_set_exists(udig_set, (u1 *)udig, strlen(udig))) {
+		if (blob_set_exists(udig_set, (ui64 *)udig, strlen(udig))) {
 
 
 			/*

@@ -1,6 +1,8 @@
 /*
  *  Synopsis:
  *	Global C header file for bio4d program.
+ *  Note:
+ *	why ui32 for {read,write}_timeout seconds?  Seems like ui2 enough.
  */
 #ifndef BIO4D_H
 #define BIO4D_H
@@ -36,9 +38,9 @@
 #endif
 
 typedef unsigned long long	u8;
-typedef unsigned int		u4;
-typedef unsigned short		u2;
-typedef unsigned char		u1;
+typedef unsigned int		ui32;
+typedef unsigned short		ui16;
+typedef unsigned char		ui64;
 
 /*
  *  Must be 255 since the interprocess message stream use leading byte for
@@ -104,8 +106,10 @@ struct request
 
 	u8	blob_size;
 
-	u4	read_timeout;	/* # seconds before a request read timeout */
-	u4	write_timeout;	/* # seconds before a request write timeout */
+	//  Note: why ui32 for {read,write}_timeout?  Seems like ui2 enough.
+
+	ui32	read_timeout;	/* # seconds before a request read timeout */
+	ui32	write_timeout;	/* # seconds before a request write timeout */
 
 	void	*module_boot_data;	/* allocated by module.boot() */
 };

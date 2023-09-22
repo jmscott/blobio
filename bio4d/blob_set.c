@@ -99,16 +99,16 @@ blob_set_alloc(void **set)
  *  Does an element exist in a set?
  */
 int
-blob_set_exists(void *set, unsigned char *value, int size)
+blob_set_exists(void *set, ui64 *element, int size)
 {
 	struct hash_set *s = (struct hash_set *)set;
 	struct hash_set_element *e;
 	unsigned int hash;
 
-	hash = djb(value, size) % s->size;
+	hash = djb(element, size) % s->size;
 	e = s->table[hash];
 	if (e) do {
-		if (size == e->size && memcmp(e->value, value, size) == 0)
+		if (size == e->size && memcmp(e->value, element, size) == 0)
 			return 1;
 	} while ((e = e->next));
 
@@ -127,7 +127,7 @@ blob_set_exists(void *set, unsigned char *value, int size)
  *	blob_set_for_each() is a system panic.
  */
 int
-blob_set_put(void *set, unsigned char *value, int size)
+blob_set_put(void *set, unsigned char *element, int size)
 {
 	unsigned int hash;
 	struct hash_set *s;
@@ -137,7 +137,7 @@ blob_set_put(void *set, unsigned char *value, int size)
 	s = (struct hash_set *)set;
 	if (s->for_each_level > 0)
 		panic2(nm, "blob_set_put() called in for each");
-	if (blob_set_exists(set, value, size))
+	if (blob_set_exists(set, element, size))
 		return 1;
 
 	/*
@@ -149,10 +149,10 @@ blob_set_put(void *set, unsigned char *value, int size)
 	e_new->value = malloc(size);
 	if (e_new->value == NULL)
 		panic3(nm, "malloc(element) failed", strerror(errno));
-	memcpy(e_new->value, value, size);
+	memcpy(e_new->value, element, size);
 	e_new->size = size;
 	e_new->next = 0;
-	hash = djb(value, size) % s->size;
+	hash = djb(element, size) % s->size;
 	if ((e = s->table[hash]))
 		e->next = e_new;
 	else

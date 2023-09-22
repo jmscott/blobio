@@ -129,7 +129,7 @@ pid_t		logger_pid = 0;
 int		leaving = 0;
 unsigned char	request_exit_status = 0;
 time_t		start_time;	
-u2		rrd_duration = 0;
+ui16		rrd_duration = 0;
 int		trust_fs = -1;
 
 char pid_path[] ="run/bio4d.pid";
@@ -2096,7 +2096,7 @@ main(int argc, char **argv, char **env)
 				}
 				if (sscanf(hb, "%u", &sec) != 1)
 					die3(o, "sscanf(seconds) failed", hb);
-				rrd_duration = (u2)sec;
+				rrd_duration = (ui16)sec;
 			} else
 				die3(o, "unexpected seconds or heartbeat", hb);
 		} else if (strcmp("wrap-algorithm", opt) == 0) {
@@ -2160,7 +2160,7 @@ main(int argc, char **argv, char **env)
 				die3(o, "timeout > 255 seconds", tmo);
 			if (sec == 0)
 				die2(o, "timeout is 0");
-			net_timeout = (u1)sec;
+			net_timeout = (ui64)sec;
 		} else if (strcmp("trust-fs", opt) == 0) {
 			static char o[] = "option --trust-fs";
 

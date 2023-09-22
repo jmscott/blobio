@@ -37,7 +37,7 @@ extern pid_t		request_pid;
 extern unsigned char	request_exit_status;
 extern time_t		recent_log_heartbeat;
 extern time_t		recent_pid_heartbeat;
-extern u2		rrd_duration;
+extern ui16		rrd_duration;
 extern time_t		start_time;	
 extern char		pid_path[];
 
