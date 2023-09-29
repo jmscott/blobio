@@ -2,6 +2,8 @@
  *  Synopsis:
  *	Implement logger and "wrap and "roll" verbs for blob request records.
  *  Note:
+ *	Functions wrap/roll need to be in file wrap.c/roll.c.
+ *
  *	Each wrapped set MUST contain only one wrap record.  More inspection
  *	of the code that serializes the wrap must be done.  In particular,
  *	how do we know nothing every writes to the wrapped file after closing?
@@ -28,7 +30,7 @@ extern pid_t		logged_pid;
 extern unsigned char	request_exit_status;
 
 pid_t brr_logger_pid = 0;
-
+ui8 brr_mask = 0xff;
 
 static int	log_fd = -1;
 static char 	log_path[] = "spool/bio4d.brr";
@@ -349,6 +351,50 @@ brr_close()
 }
 
 /*
+ *  Is a particular verb set in the brr mask?
+ *
+ *	Bit 	Verb
+ *	---	----
+ *
+ *	1	"get"
+ *	2	"take"
+ *	3	"put"
+ *	4	"give"
+ *	5	"eat"
+ *	6	"wrap"
+ *	7	"roll"
+ *	8	"cat"
+ *
+ *  For example, verbs that only write:
+ *
+ *	take,put,give,wrap,roll = 01101110 = 0x6e
+ */
+static int
+brr_mask_is_set(char *verb, ui8 mask)
+{
+	switch (verb[0])
+	{
+	case 'c':
+		return (mask & 0x80) ? 1 : 0;		// verb "cat"
+	case 'e':
+		return (mask & 0x10) ? 1 : 0;		// verb "eat"
+	case  'g':
+		if (verb[1] == 'e')
+			return (mask & 0x01) ? 1 : 0;	//  verb "get"
+		return (mask & 0x08) ? 1 : 0;		//  verb "give"
+	case 'p':
+		return (mask & 0x04) ? 1 : 0;		//  verb "put"
+	case 'r':
+		return (mask & 0x40) ? 1 : 0;		//  verb "roll"
+	case 't':
+		return (mask & 0x02) ? 1 : 0;		//  verb "take"
+	case 'w':
+		return (mask & 0x20) ? 1 : 0;		//  verb "wrap"
+	}
+	return 0;
+}
+
+/*
  *  Write the blob request record to the brr logger.
  */
 void
@@ -360,6 +406,8 @@ brr_send(struct request *r)
 	struct tm *t;
 	static char n[] = "brr_send";
 
+	if (!brr_mask_is_set(r->verb, brr_mask))
+		return;
 	if (log_fd < 0)
 		panic2(n, "brr log file is not open");
 
@@ -812,22 +860,14 @@ roll(struct request *r, struct digest_module *mp)
 			warn3(n, "file in spool wrap is not log file", n);
 			continue;
 		}
-		if (blob_set_exists(udig_set, (ui64 *)udig, strlen(udig))) {
+		if (blob_set_exists(udig_set, (ui8 *)udig, strlen(udig))) {
 
 
-			/*
-			 *  Note:
-			 *	WTF: clang says the followign error when size
-			 *	is MAX_FILE_PATH_LEN:
-			 *
-			 *	‘%s’ directive output may be truncated writing
-			 *	up to 255 bytes into a region of size 245
-			 *
-			 *	why?
-			 */
-			char path[MAX_FILE_PATH_LEN*2];
+			char path[MAX_FILE_PATH_LEN];
 
-			snprintf(path, sizeof path, "spool/wrap/%s", n);
+			path[0] = 0;
+			jmscott_strcat2(path, sizeof path, "spool/wrap/", n);
+
 			/*
 			 *  What about verifying the existence of the blob?
 			 */

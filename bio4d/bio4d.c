@@ -168,57 +168,57 @@ static int		listen_fd = -1;
  *
  *  we track accept/wait explicity, to ferret bugs.
  */
-static u8	accept_count = 0;	//  socket connections answered
-static u8	wait_count = 0;		//  number of req process waited upon
+static ui64	accept_count = 0;	//  socket connections answered
+static ui64	wait_count = 0;		//  number of req process waited upon
 
 /*
  *  Request summaries
  */
-static u8	success_count =	0;	//  exit ok
-static u8	error_count =	0;	//  error talking with client
-static u8	timeout_count =	0;	//  timeout read()/write() with client
-static u8	signal_count =	0;	//  terminated with signal
-static u8	fault_count =	0;	//  faulted (panic in request)
+static ui64	success_count =	0;	//  exit ok
+static ui64	error_count =	0;	//  error talking with client
+static ui64	timeout_count =	0;	//  timeout read()/write() with client
+static ui64	signal_count =	0;	//  terminated with signal
+static ui64	fault_count =	0;	//  faulted (panic in request)
 
-static u8	ok_count = 	0;
-static u8	no_count = 	0;
-static u8	no2_count = 	0;
-static u8	no3_count = 	0;
+static ui64	ok_count = 	0;
+static ui64	no_count = 	0;
+static ui64	no2_count = 	0;
+static ui64	no3_count = 	0;
 
 /*
  *  Request Verbs
  */
-static u8	cat_count =	0;	//  all "cat" requests
-static u8	get_count =	0;	//  all "get" requests
-static u8	put_count =	0;	//  all "put" requests
-static u8	give_count =	0;	//  all "give" requests
-static u8	take_count =	0;	//  all "take" requests
-static u8	eat_count =	0;	//  all "eat" requests
-static u8	wrap_count =	0;	//  all "wrap" requests
-static u8	roll_count =	0;	//  all "roll" requests
+static ui64	cat_count =	0;	//  all "cat" requests
+static ui64	get_count =	0;	//  all "get" requests
+static ui64	put_count =	0;	//  all "put" requests
+static ui64	give_count =	0;	//  all "give" requests
+static ui64	take_count =	0;	//  all "take" requests
+static ui64	eat_count =	0;	//  all "eat" requests
+static ui64	wrap_count =	0;	//  all "wrap" requests
+static ui64	roll_count =	0;	//  all "roll" requests
 
 /*
  *  Statistics for failed requests that generate blob request record.
  */
-static u8	cat_no_count =	0;	//  first "no" on "cat"
+static ui64	cat_no_count =	0;	//  first "no" on "cat"
 
-static u8	eat_no_count =	0;	//  first "no" on "eat"
+static ui64	eat_no_count =	0;	//  first "no" on "eat"
 
-static u8	get_no_count =	0;	//  "no" on "get"
+static ui64	get_no_count =	0;	//  "no" on "get"
 
-static u8	put_no_count =	0;	//  first "no" on "put"
-static u8	put_no2_count =	0;	//  second "no" on "eat"
+static ui64	put_no_count =	0;	//  first "no" on "put"
+static ui64	put_no2_count =	0;	//  second "no" on "eat"
 
-static u8	wrap_no_count =	0;	//  first "no" on "wrap"
-static u8	roll_no_count =	0;	//  first "no" on "roll"
+static ui64	wrap_no_count =	0;	//  first "no" on "wrap"
+static ui64	roll_no_count =	0;	//  first "no" on "roll"
 
-static u8	take_no_count =	0;	//  first "no" on "take"
-static u8	take_no2_count =0;	//  second "no" on take
-static u8	take_no3_count =0;	//  third "no" on "take"
+static ui64	take_no_count =	0;	//  first "no" on "take"
+static ui64	take_no2_count =0;	//  second "no" on take
+static ui64	take_no3_count =0;	//  third "no" on "take"
 
-static u8	give_no_count =	0;	//  first "no" on "give"
-static u8	give_no2_count =0;	//  second "no" on "give"
-static u8	give_no3_count =0;	//  second "no" on "give"
+static ui64	give_no_count =	0;	//  first "no" on "give"
+static ui64	give_no2_count =0;	//  second "no" on "give"
+static ui64	give_no3_count =0;	//  second "no" on "give"
 
 static char	rrd_path[] = "run/bio4d.rrd";
 static char	gyr_path[] = "run/bio4d.gyr";
@@ -345,6 +345,16 @@ die(char *msg)
 	if (request_pid && (request_exit_status & 0x3) == 0)
 		request_exit_status = (request_exit_status & 0xFC) | 0x1;
 	leave(request_exit_status);
+}
+
+static void
+odie(char *opt, char *msg1)
+{
+	char msg[MSG_SIZE];
+
+	msg[0] = 0;
+	jmscott_strcat4(msg, sizeof msg, "option --", opt, ": ", msg1);
+	die(msg);
 }
 
 static void
@@ -528,6 +538,7 @@ put(struct request *rp, struct digest_module *mp)
  *	0	no error
  *	-1	error
  *  Note:
+ *	No brr appears to be generated for taking a blob that does not exit
  *	Taking the empty blob ought to fail.
  */
 static int
@@ -1010,7 +1021,7 @@ request()
  *  Chat history stored in bits 6 and 7.
  */
 static void
-bump_no(unsigned char exit_status, u8 *v_no, u8 *v_no2, u8 *v_no3) {
+bump_no(unsigned char exit_status, ui64 *v_no, ui64 *v_no2, ui64 *v_no3) {
 
 	if ((exit_status & 0x3) != 0)		//  only count when brr exists
 		return;
@@ -1208,8 +1219,8 @@ again:
 				bump_no(
 					s8,
 					&cat_no_count,
-					(u8*)0,
-					(u8*)0
+					(ui64*)0,
+					(ui64*)0
 				);
 				break;
 			case REQUEST_EXIT_STATUS_GET:
@@ -1217,8 +1228,8 @@ again:
 				bump_no(
 					s8,
 					&get_no_count,
-					(u8*)0,
-					(u8*)0
+					(ui64*)0,
+					(ui64*)0
 				);
 				break;
 			case REQUEST_EXIT_STATUS_PUT:
@@ -1227,7 +1238,7 @@ again:
 					s8,
 					&put_no_count,
 					&put_no2_count,
-					(u8*)0
+					(ui64*)0
 				);
 				break;
 			case REQUEST_EXIT_STATUS_GIVE:
@@ -1253,8 +1264,8 @@ again:
 				bump_no(
 					s8,
 					&eat_no_count,
-					(u8 *)0,
-					(u8 *)0
+					(ui64 *)0,
+					(ui64 *)0
 				);
 				break;
 			case REQUEST_EXIT_STATUS_WRAP:
@@ -1262,8 +1273,8 @@ again:
 				bump_no(
 					s8,
 					&wrap_no_count,
-					(u8 *)0,
-					(u8 *)0
+					(ui64 *)0,
+					(ui64 *)0
 				);
 				break;
 			case REQUEST_EXIT_STATUS_ROLL:
@@ -1271,8 +1282,8 @@ again:
 				bump_no(
 					s8,
 					&roll_no_count,
-					(u8 *)0,
-					(u8 *)0
+					(ui64 *)0,
+					(ui64 *)0
 				);
 				break;
 			default: {
@@ -1306,10 +1317,10 @@ static void
 heartbeat()
 {
 	char buf[MSG_SIZE];
-	u8 accept_diff;
+	ui64 accept_diff;
 	float accept_rate;
-	static u8 prev_accept_count = 0;
-	static u8 prev_wait_count = 0;
+	static ui64 prev_accept_count = 0;
+	static ui64 prev_wait_count = 0;
 	time_t now;
 
 	time(&now);
@@ -1370,7 +1381,7 @@ heartbeat()
 	snprintf(buf, sizeof buf, "wrap=%llu, roll=%llu",wrap_count,roll_count);
 	info(buf);
 
-	u8 no_count = eat_no_count +
+	ui64 no_count = eat_no_count +
 			   get_no_count +
 			   put_no_count + put_no2_count +
 			   give_no_count + give_no2_count + give_no3_count +
@@ -1378,7 +1389,7 @@ heartbeat()
 			   wrap_no_count +
 			   roll_no_count
 	;
-	u8 chat_ok_count = success_count - no_count;
+	ui64 chat_ok_count = success_count - no_count;
 	snprintf(buf, sizeof buf,
 	      "chat: ok=%llu, no[123]=%llu, eat|take no=%llu|%llu",
 			chat_ok_count,
@@ -1472,44 +1483,44 @@ gyr_rrd()
 	/*
 	 *  Request summaries
 	 */
-	static u8	success_count_prev =	0;
-	static u8	error_count_prev =	0;
-	static u8	timeout_count_prev =	0;
-	static u8	signal_count_prev =	0;
-	static u8	fault_count_prev =	0;
+	static ui64	success_count_prev =	0;
+	static ui64	error_count_prev =	0;
+	static ui64	timeout_count_prev =	0;
+	static ui64	signal_count_prev =	0;
+	static ui64	fault_count_prev =	0;
 
 	/*
 	 *  Request Verbs
 	 */
-	static u8	eat_count_prev =	0;
-	static u8	eat_no_count_prev =	0;
+	static ui64	eat_count_prev =	0;
+	static ui64	eat_no_count_prev =	0;
 
-	static u8	get_count_prev =	0;
-	static u8	get_no_count_prev =	0;
+	static ui64	get_count_prev =	0;
+	static ui64	get_no_count_prev =	0;
 
-	static u8	put_count_prev =	0;
-	static u8	put_no_count_prev =	0;
-	static u8	put_no2_count_prev =	0;
+	static ui64	put_count_prev =	0;
+	static ui64	put_no_count_prev =	0;
+	static ui64	put_no2_count_prev =	0;
 
-	static u8	give_count_prev =	0;
-	static u8	give_no_count_prev =	0;
-	static u8	give_no2_count_prev =	0;
-	static u8	give_no3_count_prev =	0;
+	static ui64	give_count_prev =	0;
+	static ui64	give_no_count_prev =	0;
+	static ui64	give_no2_count_prev =	0;
+	static ui64	give_no3_count_prev =	0;
 
-	static u8	take_count_prev =	0;
-	static u8	take_no_count_prev =	0;
-	static u8	take_no2_count_prev =	0;
-	static u8	take_no3_count_prev =	0;
+	static ui64	take_count_prev =	0;
+	static ui64	take_no_count_prev =	0;
+	static ui64	take_no2_count_prev =	0;
+	static ui64	take_no3_count_prev =	0;
 
-	static u8	wrap_count_prev =	0;
-	static u8	wrap_no_count_prev =	0;
+	static ui64	wrap_count_prev =	0;
+	static ui64	wrap_no_count_prev =	0;
 
-	static u8	roll_count_prev =	0;
-	static u8	roll_no_count_prev =	0;
+	static ui64	roll_count_prev =	0;
+	static ui64	roll_no_count_prev =	0;
 
-	static u8	green_count_prev = 0;
-	static u8	yellow_count_prev = 0;
-	static u8	red_count_prev = 0;
+	static ui64	green_count_prev = 0;
+	static ui64	yellow_count_prev = 0;
+	static ui64	red_count_prev = 0;
 
 	time(&now);
 	if (now - rrd_now_prev < rrd_duration)
@@ -1583,16 +1594,16 @@ gyr_rrd()
 
 	//  Note: what about accept/wait counts?
 
-	u8 green_count = success_count - (no2_count+no3_count)+ eat_no_count;
-	u8 recent_green_count = green_count - green_count_prev;
+	ui64 green_count = success_count - (no2_count+no3_count)+ eat_no_count;
+	ui64 recent_green_count = green_count - green_count_prev;
 
-	u8 yellow_count = (no2_count+no3_count) +
+	ui64 yellow_count = (no2_count+no3_count) +
 			   error_count + timeout_count +
 			   wrap_no_count + roll_no_count;
-	u8 recent_yellow_count = yellow_count - yellow_count_prev;
+	ui64 recent_yellow_count = yellow_count - yellow_count_prev;
 
-	u8 red_count = signal_count + fault_count;
-	u8 recent_red_count = red_count - red_count_prev;
+	ui64 red_count = signal_count + fault_count;
+	ui64 recent_red_count = red_count - red_count_prev;
 
 	//  only update run/biod4.gyr when stats change.
 
@@ -2045,6 +2056,7 @@ main(int argc, char **argv, char **env)
 	/*
 	 *  Parse verb line arguments.
 	 */
+	int seen_brr_mask = 0;
 	for (i = 1;  i < argc;  i++) {
 		char *opt = argv[i];
 
@@ -2162,12 +2174,10 @@ main(int argc, char **argv, char **env)
 				die2(o, "timeout is 0");
 			net_timeout = (ui64)sec;
 		} else if (strcmp("trust-fs", opt) == 0) {
-			static char o[] = "option --trust-fs";
-
-			if (++i >= argc)
-				die2(o, "missing true or false");
 			if (trust_fs >= 0)
-				die2(o, "given more than once");
+				odie(opt, "given more than once");
+			if (++i >= argc)
+				odie(opt, "missing true or false");
 
 			char *a = argv[i];
 			if (strcmp(a, "true") == 0)
@@ -2175,7 +2185,53 @@ main(int argc, char **argv, char **env)
 			else if (strcmp(a, "false") == 0)
 				trust_fs = 0;
 			else
-				die3(o, "unknown boolean", a);
+				odie(opt, "unknown boolean");
+		} else if (strcmp("brr-mask", opt) == 0) {
+			if (seen_brr_mask)
+				odie(opt, "given more than once on cli");
+			if (++i >= argc)
+				die2(opt, "missing hex mask value");
+
+			char *o = argv[i];
+			if (strlen(o) != 2)
+				odie(opt, "mask value not two chars");
+
+			ui8 bm = 0;
+
+			//  parse first digit of hex value of mask
+
+			ui8 c = (ui8)o[0];
+			if (isxdigit(c)) {
+				if (isalpha(c)) {
+					if (!islower(c))
+						odie(
+							opt,
+							"first char " 
+							"upper case hex"
+						);
+					bm = ((c - 'a') + 10) << 4;
+				} else
+					bm = (c - '0') << 4;
+			} else
+				odie(opt, "first char not hex char");
+
+			//  parse second digit of hex value of mask
+
+			c = (ui8)o[1];
+			if (isxdigit(c)) {
+				if (isalpha(c)) {
+					if (!islower(c))
+						odie(
+							opt,
+							"second char " 
+							"upper case hex"
+						);
+					bm += (c - 'a') + 10;
+				} else
+					bm += (c - '0');
+			} else
+				odie(opt, "second char not hex char");
+			brr_mask = bm;
 		} else
 			die2("unknown option", opt);
 	}
@@ -2269,6 +2325,9 @@ main(int argc, char **argv, char **env)
 
 	arbor_open();
 	snprintf(buf, sizeof buf, "arborist process id: %u", arborist_pid);
+	info(buf);
+
+	snprintf(buf, sizeof buf, "brr mask: 0x%x", brr_mask);
 	info(buf);
 
 	/*

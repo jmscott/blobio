@@ -52,7 +52,8 @@ install: all
 bio4d: $(OBJs)
 	$(CC) $(CFLAGS) -o bio4d $(OBJs)				\
 		$(RT_LINK)						\
-		$(OPENSSL_LIB)
+		$(OPENSSL_LIB)						\
+		-L$(JMSCOTT_ROOT)/lib -ljmscott
 
 append-brr: append-brr.c
 	$(CC) $(CFLAGS) -o append-brr append-brr.c			\

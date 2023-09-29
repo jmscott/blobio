@@ -106,9 +106,12 @@ log "net timeout: ${BLOBIO_BIO4D_NET_TIMEOUT}s"
 BLOBIO_BIO4D_RRD_DURATION=${BLOBIO_BIO4D_RRD_DURATION:=0}
 log "rrd duration: ${BLOBIO_BIO4D_NET_TIMEOUT}s"
 
+BLOBIO_BIO4D_BRR_MASK=${BLOBIO_BIO4D_BRR_MASK:=ff}
+
 zap_run || die "zap_run failed: exit status=status=$?"
 log 'invoking sbin/bio4d ...'
 sbin/bio4d								\
+	--brr-mask $BLOBIO_BIO4D_BRR_MASK				\
 	--wrap-algorithm $BLOBIO_ALGORITHM				\
 	--trust-fs $BLOBIO_TRUST_FS					\
 	--port $BLOBIO_BIO4D_PORT					\
