@@ -21,6 +21,10 @@ PATH=$JMSCOTT_ROOT/bin:$PATH
 
 export BLOBIO_ROOT=${BLOBIO_ROOT:=/usr/local/blobio}
 export BLOBIO_BIO4D_PORT=${BLOBIO_BIO4D_PORT:=1797}
+
+#  log requests that write a blob but not read
+export BLOBIO_BIO4D_BRR_MASK=6e
+
 export BLOBIO_SERVICE=${BLOBIO_SERVICE:=bio4:127.0.0.1:$BLOBIO_BIO4D_PORT}
 
 #  RIP, sha1
