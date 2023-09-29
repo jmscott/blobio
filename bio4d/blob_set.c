@@ -99,7 +99,7 @@ blob_set_alloc(void **set)
  *  Does an element exist in a set?
  */
 int
-blob_set_exists(void *set, ui64 *element, int size)
+blob_set_exists(void *set, ui8 *element, int size)
 {
 	struct hash_set *s = (struct hash_set *)set;
 	struct hash_set_element *e;
@@ -127,7 +127,7 @@ blob_set_exists(void *set, ui64 *element, int size)
  *	blob_set_for_each() is a system panic.
  */
 int
-blob_set_put(void *set, unsigned char *element, int size)
+blob_set_put(void *set, ui8 *element, int size)
 {
 	unsigned int hash;
 	struct hash_set *s;

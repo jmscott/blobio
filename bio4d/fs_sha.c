@@ -688,7 +688,7 @@ fs_sha_put_bytes(struct request *r)
 	if (r->scan_size > 0) {
 
 		//  Note: regress, sanity test ... remove later.
-		if ((u8)r->scan_size != r->blob_size) {
+		if ((i64)r->scan_size != r->blob_size) {
 			io_unlink(tmp_path);
 			_panic(r, "r->scan_size != r->blob_size");
 		}

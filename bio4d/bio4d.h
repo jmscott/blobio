@@ -7,6 +7,8 @@
 #ifndef BIO4D_H
 #define BIO4D_H
 
+#include "jmscott/libjmscott.h"
+
 /*
  *  See:
  *	https://stackoverflow.com/questions/2888425/
@@ -37,10 +39,11 @@
 #define MAX_FILE_PATH_LEN	256
 #endif
 
-typedef unsigned long long	u8;
+typedef long long		i64;
+typedef unsigned long long	ui64;
 typedef unsigned int		ui32;
 typedef unsigned short		ui16;
-typedef unsigned char		ui64;
+typedef unsigned char		ui8;
 
 /*
  *  Must be 255 since the interprocess message stream use leading byte for
@@ -104,7 +107,7 @@ struct request
 	 */
 	char			chat_history[10];
 
-	u8	blob_size;
+	i64	blob_size;
 
 	//  Note: why ui32 for {read,write}_timeout?  Seems like ui2 enough.
 
@@ -298,6 +301,7 @@ char	*net_32addr2text(u_long addr);
 char	*sig_name(int sig);
 
 extern int	trust_fs;
+extern ui8	brr_mask;
 
 /*
  *  Wrappers around various interuptable unix system calls
