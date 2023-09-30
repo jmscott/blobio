@@ -283,10 +283,8 @@ main(int argc, char **argv)
 	char *path;
 	int fd;
 
-write(2, "WTF1\n", 5);
 	if (argc != 9)
 		jmscott_die_argc(EXIT_BAD_ARGC, argc, 9, usage);
-write(2, "WTF2\n", 5);
 
 	path = argv[1];
 
