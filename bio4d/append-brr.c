@@ -49,7 +49,7 @@
 #define EXIT_BAD_WRITE	4
 #define EXIT_BAD_CLOSE	5
 
-char	jmscott_progname[] = "append-brr";
+char	*jmscott_progname = "append-brr";
 
 #define MIN_BRR		35
 #define MAX_BRR		419
@@ -263,6 +263,18 @@ is_wall_duration(char *arg, char **brr)
 	in_char_set("wall duration", arg, duration_set);
 }
 
+static char usage[] =
+	"append-brr "
+	"<path> "
+	"<time> "
+	"<transport> "
+	"<verb> "
+	"<udig> "
+	"<chat> "
+	"<size> "
+	"<wall> "
+;
+
 int
 main(int argc, char **argv)
 {
@@ -271,8 +283,11 @@ main(int argc, char **argv)
 	char *path;
 	int fd;
 
+write(2, "WTF1\n", 5);
 	if (argc != 9)
-		jmscott_die(EXIT_BAD_ARGC, "wrong number arguments");
+		jmscott_die_argc(EXIT_BAD_ARGC, argc, 9, usage);
+write(2, "WTF2\n", 5);
+
 	path = argv[1];
 
 	/*
