@@ -5,6 +5,8 @@
 #	# cp $BLOBIO_ROOT/lib/blobio.sync.remote.service.example	\
 #		/etc/systemd/system/blobio.sync.<remote>.flowd.service
 #  Note:
+#	KillMode=mixed seems more stable than =control-group.  Not sure why.
+#
 #	Need to rename this file as
 #
 #		blobio.sync.remote.flowd.service.example
@@ -32,7 +34,7 @@ Environment=PGDATABASE=blobio
 StandardOutput=file:/home/blobio/log/systemd-blobio.sync.remote.service.log
 StandardError=file:/home/blobio/log/systemd-blobio.sync.remote.service.log
 ExecStart=/usr/local/blobio/bin/flowd server etc/sync-remote.host.com.flow
-KillMode=control-group
+KillMode=mixed
 KillSignal=SIGTERM
 TimeoutSec=20
 RestartSec=20
