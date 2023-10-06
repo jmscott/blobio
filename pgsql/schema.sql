@@ -2,10 +2,10 @@
  *  Synopsis:
  *	PostgreSQL schema tracks blobs available in a particular bio4d server.
  *  Note:
- *	Domains have explicit NOT NULL.  That is wrong.  The NOT
- *	should be in the table declaration!
+ *	Set COLLATIONS to C!  blob request records are by definition ascii.
  *
- *	Why does column brr_no_recent.wall_duration exist?
+ *	Still have not resolved if verb from any transport should have same
+ *	chat history!  See discuss in ../README.
  */
 \set ON_ERROR_STOP on
 
@@ -15,7 +15,7 @@ BEGIN;
 DROP SCHEMA IF EXISTS blobio CASCADE;
 CREATE SCHEMA blobio;
 COMMENT ON SCHEMA blobio IS
-  'blobs in service and summaries of historical blob request records'
+  'Blobs in service and summaries of historical blob request records'
 ;
 
 DROP DOMAIN IF EXISTS brr_duration CASCADE;
