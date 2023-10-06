@@ -10,6 +10,7 @@
 #
 #	A --count option might be nice.
 #
+PSQL='psql --no-psqlrc --quiet'
 
 die()
 {
@@ -32,4 +33,4 @@ case $# in
 	;;
 esac
 
-exec psql --quiet --tuples-only --no-align -c "$SQL"
+exec $PSQL --tuples-only --no-align --command "$SQL"
