@@ -208,6 +208,11 @@ Options:\n\
 	--trace		deep trace to standard error\n\
 	--io-timeout	read/write() timeouts.\n\
 	--help\n\
+Query Args:\n\
+	algo	hash algorithm for wrap verb [sha|btc20]\n\
+	brr	hex one byte bit map mask for which brr records to write\n\
+		  \"brr=ff\" puts a brr for all verbs\n\
+		  \"brr=6e\" puts a brr for verbs that write to storage\n\
 Exit Status:\n\
 	0	request succeed\n\
   	1	request denied.  blob may not exist or is not empty\n\
