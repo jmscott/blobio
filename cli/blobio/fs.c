@@ -206,7 +206,7 @@ fs_get(int *ok_no)
 		}
 		blob_size = sz;
 		*ok_no = 0;
-		fs_add_chat("no");
+		fs_add_chat("ok");
 		return (char *)0;
 	}
 	if (output_path) {
