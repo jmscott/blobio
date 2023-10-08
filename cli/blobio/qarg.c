@@ -1,14 +1,10 @@
 /*
  *  Synopsis:
- *	Frisk and extract query from uri: {tmo,brr}={\d{1,3}|<path>}
+ *	Frisk and extract query from uri: {algo,brr}={\d{1,3}|<path>}
  *  Note:
- *	Change value of brr=[01] to brr=[t|f].  we may wish to use
- *	brr=[0-9] for a file descriptor.
+ *	Add qarg "tmo=<sec>" for timeout!
  *
- *	--help should document the query args, since they are the args
- *	for all services.
- *
- *	No escaping in query args, which is a limitation!
+ *	No proper escaping in query args!
  */
 #include <ctype.h>
 #include <limits.h>
