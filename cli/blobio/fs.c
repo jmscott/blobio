@@ -255,7 +255,9 @@ fs_get(int *ok_no)
 	TRACE("sendfile ...");
 	blob_size = 0;
 	err = jmscott_send_file(blob_fd, output_fd, &blob_size);
-	TRACE_LL("send size", blob_size);
+	if (err)
+		TRACE2("send_file failed", err);
+	TRACE_LL("send blob size", blob_size);
 BYE:
 	if (blob_fd >= 0 && jmscott_close(blob_fd) && !err)
 		err = strerror(errno);
