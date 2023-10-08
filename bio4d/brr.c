@@ -34,7 +34,7 @@ ui8 brr_mask = 0xff;
 
 static int	log_fd = -1;
 static char 	log_path[] = "spool/bio4d.brr";
-static char	*RFC3339Nano =
+static char	*brr_format =
 "%04d-%02d-%02dT%02d:%02d:%02d.%09ld+00:00\t%s\t%s\t%s%s%s\t%s\t%llu\t%ld.%09ld\n";
 
 /*
@@ -165,11 +165,11 @@ request:
 	 *  Typically the blob request child sends only a full brr record,
 	 *  which is promptly written to spool/bio4d.brr. 
 	 *
-	 *  However, a wrap request, can syncronously freeze further writes
+	 *  However, a wrap request, can synchronously freeze further writes
 	 *  to the spool/bio4d.brr log file by sending a special record that
 	 *  looks like
 	 *
-	 *  	[null]run/wrap-<pid>.fifo[null]
+	 *  	run/wrap-<pid>.fifo[null]
 	 *
 	 *  This request means to close spool/bio4d.brr and rename to
 	 *  log/bio4d-<now>-<seq>.brr, thus freezing the log from updates,
@@ -186,7 +186,7 @@ request:
 	 * 		#  brr_log_pipe is the write side of the pipe to
 	 * 		#  brr file logger
 	 *
-	 * 		write '<null>$REPLY_FIFO<null>' >>brr_log_pipe[write]
+	 * 		write '$REPLY_FIFO<null>' >>brr_log_pipe[write]
 	 *
 	 * 		# wait for reply from bio4d process
 	 *		BRR_LOG=$(read BRR_LOG <$REPLY_FIFO)
@@ -463,7 +463,7 @@ brr_send(struct request *r)
 	/*
 	 *  Format the record buffer.
 	 */
-	snprintf(brr, sizeof brr, RFC3339Nano,
+	snprintf(brr, sizeof brr, brr_format,
 		t->tm_year + 1900,
 		t->tm_mon + 1,
 		t->tm_mday,
@@ -1009,10 +1009,10 @@ wrap(struct request *r, struct digest_module *mp)
 
 	/*
 	 *  Send a request message to the brr logger process to freeze the
-	 *  current brr log file.  The message length of 25 chars indicates
-	 *  to the brr logger to freeze the current brr log file.  The contents
-	 *  of the message is the fifo path to reply on with the path to the
-	 *  frozen brr file.
+	 *  current brr log file.  The magic message length of 25 chars
+	 *  indicates to the brr logger to freeze the current brr log file.
+	 *  The contents of the message is the fifo path to reply on with the
+	 *  path to the frozen brr file.
 	 */
 	snprintf(fifo_path, sizeof fifo_path, "run/wrap-%010u.fifo", getpid());
 	if (io_mkfifo(fifo_path, S_IRUSR | S_IWUSR))
@@ -1020,17 +1020,18 @@ wrap(struct request *r, struct digest_module *mp)
 
 	/*
 	 *  Send request to the brr logger process.
-	 *  The length of exactly 25 chars triggers the brr wrapper process
-	 *  to freeze the spool/bio4d.brr file
-	 *
-	 *  Note:
-	 *	Why use magic of 25 chars?
+	 *  The length of exactly 25 (strlen(fifo_path) + null) chars triggers
+	 *  the brr wrapper process to freeze the spool/bio4d.brr file.
+	 *  That is a kludge that only works cause we send only one type of
+	 *  message: wrap.
 	 */
 	if (io_msg_write(log_fd, fifo_path, 25) < 0)
 		panic3(n, "write(log) failed", strerror(errno));
 
 	/*
 	 *  Wait for reply containing the frozen path.
+	 *
+	 *  Note: timeout?
 	 */
 	reply_fifo = io_open(fifo_path, O_RDONLY, 0);
 	if (reply_fifo < 0) {
