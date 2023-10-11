@@ -1,7 +1,7 @@
 #!/bin/bash
 #
 #  Synopsis:
-#	Report on symmetric difference between the file system and service view.
+#	Touch the symmetric difference between the file system and service view.
 #  Usage:
 #	fs-xor-service >fs-xor-service.log 2>&1 &
 #	32 4 * * Sun sbin/fs-xor-service >>support/fs-xor-service/fxs.out 2>&1
