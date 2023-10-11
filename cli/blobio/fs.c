@@ -802,7 +802,7 @@ fs_brr_frisk(struct brr *brr)
 	TRACE2("chat history", brr->chat_history);
 
 	char pid[20];
-	jmscott_lltoa((long long)getpid(), pid);
+	*jmscott_lltoa((long long)getpid(), pid) = 0;
 	brr->transport[0] = 0;
 	jmscott_strcat4(brr->transport, sizeof brr->transport,
 			"fs~",
