@@ -59,7 +59,9 @@ trap leave EXIT
 log "BLOBIO_ROOT=$BLOBIO_ROOT"
 cd $BLOBIO_ROOT || die "cd $BLOBIO_ROOT failed: exit status=$?"
 . etc/profile
+
 test -n "$BLOBIO_SERVICE" || die 'env not defined: BLOBIO_SERVICE'
+BLOBIO_SERVICE=${BLOBIO_GET_SERVICE:=$BLOBIO_SERVICE}
 log "BLOBIO_SERVICE=$BLOBIO_SERVICE"
 
 log "ago: $AGO"
