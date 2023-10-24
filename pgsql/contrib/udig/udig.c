@@ -20,8 +20,7 @@
 
 #include "postgres.h"
 #include "access/hash.h"
-#include "fmgr.h"
-#include "libpq/pqformat.h"             /* needed for send/recv functions */
+#include "funcapi.h"
 
 //  Note: what is difference between UDIG_VARDATA and PG_GETARG_POINTER?
 #define UDIG_VARDATA(p)	(unsigned char *)VARDATA(p)
