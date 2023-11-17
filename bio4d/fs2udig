@@ -32,14 +32,17 @@ find_blob() {(
 		find . -maxdepth 1 -type d -name '[0-9a-f][0-9a-f][0-9a-f]' |
 		wc -l
 	) -gt 0 || exit 0
-	find [0-9a-f][0-9a-f][0-9a-f] -type f | sed "s/......../$ALGORITHM:/"
+
+	#  strip out leading "data/fs_" to get the algorithm
+	find [0-9a-f][0-9a-f][0-9a-f] -type f -follow			|
+				sed "s/......../$ALGORITHM:/"
 )}
 
 test -n "$BLOBIO_ROOT" || die 'environment variable BLOBIO_ROOT not defined'
 test -d $BLOBIO_ROOT || die "no data directory: $BLOBIO_ROOT/data"
 cd $BLOBIO_ROOT/data || die "cd $BLOBIO_ROOT/data failed"
 
-find . -maxdepth 1 -type d -name 'fs_[a-z]*'				|
+find . -maxdepth 1 -type d -name 'fs_[a-z]*' -follow			|
 	sed 's/..//'							|
 	while read FS;  do
 		find_blob $FS
