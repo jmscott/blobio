@@ -9,12 +9,11 @@
 #	- Would be nice display timestamps blobs, to quickly identify
 #	  blobs that arrived during scan.
 #
-#	- Be wary of the LC_COLLATE environment variable.  Setting value to 'C'
-#	  forces sorting case sensitive ascii, I (jmscott) think.
-#
 
 START_TIME=$(date +%s)
 PROG=$(basename $0)
+
+TMP_COUNT=${TMPDIR:=/tmp}/$PROG.wc
 
 #
 #  Force sort command to honor case.
@@ -34,37 +33,42 @@ die()
 
 leave()
 {
+	rm -f $TMP_COUNT || echo "ERROR: rm $TMP_COUNT failed: exit status=$?"
 	DURATION=$(expr $(date +%s) - $START_TIME)
-	log "$(duration-english $DURATION): good bye, cruel world"
+	log "good bye, cruel world: $(duration-english $DURATION) elapsed"
 }
+
+test $# = 0 || die "wrong number of cli args: got $#, need 0"
 
 log hello, world
 trap leave EXIT INT QUIT TERM
 
-test -n "$BLOBIO_ROOT" || die 'BLOBIO_ROOT environment variable not defined'
-
-cd $BLOBIO_ROOT || die "cd $BLOBIO_ROOT failed"
+test -n "$BLOBIO_ROOT" || die 'BLOBIO_ROOT env variable not defined'
 log "BLOBIO_ROOT=$BLOBIO_ROOT"
+cd $BLOBIO_ROOT || die "cd $BLOBIO_ROOT failed"
 
-if [ -r etc/profile ];  then
-	. etc/profile
-else
-	log "WARN: etc/profile does not exist (ok)"
-fi
+-r etc/profile && . etc/profile
 
+log "BLOBIO_SERVICE=$BLOBIO_SERVICE"
 log "PGHOST=$PGHOST"
 log "PGPORT=$PGPORT"
 log "PGUSER=$PGUSER"
 log "PGDATABASE=$PGDATABASE"
 
 log "PATH=$PATH"
+log "tmp count file: $TMP_COUNT"
 
 log "starting scan of $(pwd)/data/ ..."
-log "file system only in column <, service only in column >"
+log 'file system in column <, service in column >'
 comm -3 <(fs2udig | sort) <(ls-service)					|
 	sed 's/^\t/> /' 						|
 	sed 's/^\([^>]\)/< \1/'						|
+	tee >(wc -l | awk '{print $1}' >$TMP_COUNT)			|
 	while read LINE;  do
 		log $LINE
 	done
-log 'done with xor of file system and service table'
+STATUS=${PIPESTATUS[*]}
+test "$STATUS" = '0 0 0 0 0'						||
+		die "comm fs/service failed: exit status=$STATUS"
+
+log "xor udig count: $(cat $TMP_COUNT)"
