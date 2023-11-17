@@ -6,6 +6,8 @@
 #	fs-xor-service >fs-xor-service.log 2>&1 &
 #	32 4 * * Sun sbin/fs-xor-service >>support/fs-xor-service/fxs.out 2>&1
 #  Note:
+#	Option "--udig-file-path to save udigs for further eat/get.
+#
 #	- Would be nice display timestamps blobs, to quickly identify
 #	  blobs that arrived during scan.
 #
