@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 #
 #  Synopsis:
 #	Discover and eat missed blobs extracted from all brr logs in a wrap set.

@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 #
 #  Synopsis:
 #	Eat all unrolled blobs
@@ -128,7 +128,7 @@ case $STATUS in
 esac
 
 #
-#  Read a list of udigs, fetch the blob if not already fetched, grip if
+#  Read a list of udigs, fetch the blob if not already fetched, gripe if
 #  already fetched by not read.
 #
 cache_blob()
