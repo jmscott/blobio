@@ -84,6 +84,20 @@ COMMENT ON DOMAIN ui8 IS
   'non null integer in range 0 <= 2^8 - 1'
 ;
 
+DROP DOMAIN IF EXISTS text_graph_255 CASCADE;
+CREATE DOMAIN text_graph_255 AS text
+  CHECK (
+  	length(value) > 0
+	AND
+	length(value) < 256
+	AND
+	value ~ '[[:graph:]]'
+  ) NOT NULL
+;
+COMMENT ON DOMAIN text_graph_255 IS
+  'Text with at least one graphical character < 256 UTF-8 chars'
+;
+
 --  Note: rename to ascii_tag16?  utf8 tags may someday be needed
 DROP DOMAIN IF EXISTS tag CASCADE;
 CREATE DOMAIN tag AS text
