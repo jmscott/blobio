@@ -649,4 +649,73 @@ COMMENT ON view rummy IS
   'Blobs with known unknown attributes'
 ;
 
+DROP TABLE IF EXISTS gnustat_fs_file CASCADE;
+CREATE TABLE gnustat_fs_file
+(
+	blob		udig PRIMARY KEY,
+
+	file		text_graph_255,
+	size		text_graph_255 CHECK (
+				size = '0'
+				OR
+				size ~ '^[1-9][0-9]{0,18}$'
+			),
+	blocks		text_graph_255 CHECK (
+				size = '0'
+				OR
+				size ~ '^[1-9][0-9]{0,18}$'
+			),
+	io_block 	text_graph_255	CHECK (
+				size ~ '^[1-9][0-9]{0,10}[[:space:]+[[:graph:]]'
+				AND
+				length(io_block) < 64
+			),
+	device 		text_graph_255 CHECK (
+				length(device) < 32
+			),
+	inode 		text_graph_255	CHECK (
+				inode = '0'
+				OR
+				inode ~ '^[1-9][0-9]{0,18}$'
+			),
+	links 		text_graph_255	CHECK (
+				links = '0'
+				OR
+				links ~ '^[1-9][0-9]{0,10}$'
+			),
+	access_perm 	text_graph_255	CHECK (
+					length(access_perm) < 32
+			),
+	uid		text_graph_255	CHECK (
+					length(uid) < 64
+			),
+	gid 		text_graph_255	CHECK (
+				length(gid) < 64
+			),
+	access_time text	CHECK (
+					length(access_time) > 0
+					AND
+					length(access_time) < 32
+				) NOT NULL,
+	modfy_time text	CHECK (
+					length(modfy_time) > 0
+					AND
+					length(modfy_time) < 32
+				) NOT NULL,
+	change_time text	CHECK (
+					length(change_time) > 0
+					AND
+					length(change_time) < 32
+				) NOT NULL,
+	birth_time text	CHECK (
+					length(birth_time) > 0
+					AND
+					length(birth_time) < 32
+				) NOT NULL,
+	insert_time	brr_timestamp DEFAULT now()
+);
+COMMENT ON TABLE gnustat_fs_file IS
+  'Output of GNU "stat" command on UDig file in dir BLOBIO_ROOT/data/fs_<algo>'
+;
+
 COMMIT;
