@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 #
 #  Synopsis:
 #	Symmetric difference between the file system and service view.
@@ -49,7 +49,7 @@ test -n "$BLOBIO_ROOT" || die 'BLOBIO_ROOT env variable not defined'
 log "BLOBIO_ROOT=$BLOBIO_ROOT"
 cd $BLOBIO_ROOT || die "cd $BLOBIO_ROOT failed"
 
--r etc/profile && . etc/profile
+test -r etc/profile && . etc/profile
 
 log "BLOBIO_SERVICE=$BLOBIO_SERVICE"
 log "PGHOST=$PGHOST"
