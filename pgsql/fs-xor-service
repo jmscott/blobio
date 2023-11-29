@@ -1,12 +1,12 @@
 #!/bin/bash
 #
 #  Synopsis:
-#	Touch the symmetric difference between the file system and service view.
+#	Symmetric difference between the file system and service view.
 #  Usage:
 #	fs-xor-service >fs-xor-service.log 2>&1 &
 #	32 4 * * Sun sbin/fs-xor-service >>support/fs-xor-service/fxs.out 2>&1
 #  Note:
-#	Option "--udig-file-path to save udigs for further eat/get.
+#	- Option "--udig-file-path to save udigs for further eat/get.
 #
 #	- Would be nice display timestamps blobs, to quickly identify
 #	  blobs that arrived during scan.
@@ -15,7 +15,7 @@
 START_TIME=$(date +%s)
 PROG=$(basename $0)
 
-TMP_COUNT=${TMPDIR:=/tmp}/$PROG.wc
+TMP_COUNT=${TMPDIR:=/tmp}/$PROG-$$.wc
 
 #
 #  Force sort command to honor case.
