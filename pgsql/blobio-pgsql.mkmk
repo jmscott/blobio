@@ -35,6 +35,7 @@ LIBs="
 	blobio.flow.example
 	bug-cast_jsonb_brr.sql
 	eat-unroll.sql
+	not-in-service.sql
 	psqlrc.example
 	schema.sql
 	select-rummy-since.sql
@@ -55,6 +56,7 @@ SBINs="
 	fs-get
 	fs-xor-service
 	minus-service
+	not-in-service
 	rummy-txn
 "
 
