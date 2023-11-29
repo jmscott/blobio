@@ -17,7 +17,7 @@ START_EPOCH=$(date +'%s')
 PROG=$(basename $0)
 
 WORK_DIR=${TMPDIR:=/tmp}/$PROG-$$.d
-PSQL='psql --quiet --no-psqlrc  --no-align  --tuples-only'
+PSQL='psql --quiet --no-psqlrc --no-align --tuples-only --pset=pager=off'
 
 log()
 {
