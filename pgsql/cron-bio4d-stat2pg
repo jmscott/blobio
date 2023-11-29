@@ -19,7 +19,7 @@
 STAT=log/bio4d-stat.log
 FLUSH_PAUSE=${BLOBIO_STAT_FLUSH_PAUSE:=5}
 MERGE_SQL=lib/merge-bio4d_request_stat.sql
-PSQL='psql --no-psqlrc'
+PSQL='psql --no-psqlrc --quiet --pset=pager=off'
 
 log()
 {

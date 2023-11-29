@@ -28,7 +28,7 @@ START_EPOCH=$(date +'%s')
 data/rummy/
 
 RUMMY_UDIG_SET=${TMPDIR:=/tmp}/$(basename $0)-$$.udig
-PSQL='psql --quiet --no-align --no-psqlrc --tuples-only'
+PSQL='psql --quiet --no-align --no-psqlrc --pset=pager=off --tuples-only'
 
 log()
 {

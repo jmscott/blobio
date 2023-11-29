@@ -26,7 +26,7 @@ START_EPOCH=$(date +'%s')
 
 RUMMY_UDIG_SET=${TMPDIR:=/tmp}/$(basename $0)-$$.udig
 #  store stats for txn log, since 
-PSQL='psql --quiet --no-align --no-psqlrc --tuples-only'
+PSQL='psql --quiet --no-align --no-psqlrc --tuples-only --pset=pager=off'
 
 log()
 {

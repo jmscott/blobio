@@ -27,7 +27,7 @@ PROG=$(basename $0)
 START_EPOCH=$(date +'%s')
 TXN=data/rummy.txn
 RUMMY_SET=${TMPDIR:=/tmp}/$(basename $0)-$$.udig
-PSQL='psql --set ON_ERROR_STOP=1 --quiet --no-align --no-psqlrc --tuples-only'
+PSQL='psql --set ON_ERROR_STOP=1 --quiet --no-align --no-psqlrc --pset=pager=off --tuples-only'
 
 now()
 {

@@ -9,6 +9,8 @@
 #		--pg2user postgres
 #		--pg2database blobio
 #  Note:
+#	Rename to minus-services!
+#
 #	Consider first polling the database for the number of elements
 #	in blobio.service to determine whether to push or pull the
 #	udigs most economically.
@@ -16,7 +18,7 @@
 #	PGPASSWORD can not be passed on the command line.
 
 PROG=$(basename $0)
-PSQL='psql --no-psqlrc --tuples-only --no-align --echo-errors'
+PSQL='psql --no-psqlrc --tuples-only --no-align --echo-errors --pset=pager=off'
 SERVICE1=${TMPDIR:=/tmp}/$PROG-service1-$$.udig
 SERVICE2=${TMPDIR:=/tmp}/$PROG-service2-$$.udig
 

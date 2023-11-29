@@ -24,7 +24,7 @@
 #	Need to modify bio-blob_size.sql to eliminate dups.
 #
 
-PSQL='psql --no-psqlrc --quiet'
+PSQL='psql --no-psqlrc --quiet --pset=pager=off'
 PROG=$(basename $0)
 
 die()

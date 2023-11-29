@@ -6,11 +6,13 @@
 #	ls-service --since '-1 week'
 #	ls-service --since '-1 hour' | bio-ls
 #  Note:
+#	Script needs to be in dir pgsql/, not root!
+#
 #	Probably ought to move this code to cli/bio-ls
 #
 #	A --count option might be nice.
 #
-PSQL='psql --no-psqlrc --quiet'
+PSQL='psql --no-psqlrc --quiet --pset=pager=off'
 
 die()
 {
