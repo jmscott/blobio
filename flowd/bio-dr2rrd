@@ -18,7 +18,7 @@
 PROG=$(basename $0)
 DR_DIR=log/
 TMP_FDR=${TMPDIR:=/tmp}/$PROG-fdr.$$
-PSQL='psql --quiet --no-psqlrc'
+PSQL='psql --no-psqlrc --quiet --pset=pager=off'
 RRD=cache/rrd/fdr.rrd
 
 now()
