@@ -714,6 +714,9 @@ CREATE TABLE gnustat_fs_file
 				) NOT NULL,
 	insert_time	brr_timestamp DEFAULT now()
 );
+CREATE INDEX idx_gnustat_fs_file_blob ON
+	gnustat_fs_file USING hash(blob)
+;
 COMMENT ON TABLE gnustat_fs_file IS
   'Output of GNU "stat" command on UDig file in dir BLOBIO_ROOT/data/fs_<algo>'
 ;
