@@ -67,7 +67,7 @@ esac
 if [ -e $FLOW_PATH ]; then
 	if [ -e $PID_PATH ];  then
 		if [ -s $PID_PATH ];  then
-			if stale-mtime $STALE_AFTER $PID_PATH;  then
+			if file-stale-mtime $STALE_AFTER $PID_PATH;  then
 				STATE=YETI
 			else
 				STATE=UP

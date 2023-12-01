@@ -63,7 +63,7 @@ test -n "$BLOBIO_ALGORITHM" || die 'env not defined: BLOBIO_ALGORITHM'
 log "BLOBIO_ALGORITHM=$BLOBIO_ALGORITHM"
 
 STAT=run/flowd.gyr
-stale-mtime $STALE_MTIME $STAT
+file-stale-mtime $STALE_MTIME $STAT
 STATUS=$?
 case $STATUS in
 0)
@@ -77,7 +77,7 @@ case $STATUS in
 	die "run/flowd.gyr disappeared"
 	;;
 *)
-	die "stale-mtime failed: exit status=$?"
+	die "file-stale-mtime failed: exit status=$?"
 	;;
 esac
 
