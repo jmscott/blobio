@@ -1,0 +1,453 @@
+#!/bin/bash
+#
+#  Synopsis:
+#	Point in Time Merger of BLOBIO_SERVICE/PG* and another blobio service.
+#  Usage:
+#	bio-merge-service
+#		--since <sql time stamp expression>			\
+#		--service panoz.setspace.com:1797	 		\
+#		--pghost panoz.setspace.com				\
+#		--pgport 5433						\
+#		--pguser postgres					\
+#		--pgdatabase blobio
+#	bio-merge --keep-temp yes <above options>
+#  Exit Status:
+#	0	success
+#	1	blobs in BLOBIO_SERVICE service table do not exist
+#	2	blobs in second service table, given on the command line,
+#		do not exist
+#	3	blobs exist in both service tables do not exist in their
+#		respective BLOBIO_SERVICE services;  i.e., both exit statuses
+#		1 and 2 occured in the blob stream.
+#	127	error
+#  Description:
+#	Merge two blobio services.  After the merger, the contents of both
+#	service tables will be
+#
+#		(S1.service + S2.service) - (S1.taken + S2.taken)
+#  Note:
+#	Occasionally, bio-merge will exit with 1, indicating that a stable
+#	blob which exists in the BLOBIO_SERVICE.service table in fact does not
+#	exist in the BLOBIO_SERVICE. I (jmscott) have seen this with stable
+#	blobs, not transient, and only on Mac OSX Mountain Lion.  So far, the
+#	source of the bug appears to be due to brrflow not properly invoking
+#	ghost.sql despite seeing a get->no brr record.  Not sure why.
+#
+#	Update (2013/11/18): ghost.sql has been retired, so need to reexamine
+#	                     the above issue with bio-merge on mac os x.
+#
+#	No --pgpassword option exists for the second server
+#
+
+PROG=$(basename $0)
+START_TIME=$(date +'%s')
+
+WORK_DIR=${TMPDIR:=/tmp}/$PROG.$$
+
+SERVICE_UDIG=service.udig
+SERVICE_COMM=comm.out
+
+TAKEN_UDIG=taken.udig
+TAKEN_COMM=taken.comm.out
+
+BLOBIO_SERVICE2=
+PGHOST2=
+PGPORT2=
+PGUSER2=
+PGDATABASE2=
+KEEP_TEMP=no
+
+SINCE=
+
+help()
+{
+	#
+	#  Burp the comments section above and exit.
+	#
+	#  Sorry about using perl for the absolute path.
+	#  Mac OSX 10.7 doesn't support gnu readlink -f
+	#
+	ABSPATH=$(perl -MCwd=realpath -e "print realpath '$0'")
+	awk '
+		!/^ *#/ {
+			exit
+		}
+		!/^# *!/
+	' $ABSPATH | sed 's/^# *//'
+	exit 0
+}
+
+log()
+{
+	echo "$(date +'%Y/%m/%d %H:%M:%S'): $PROG#$$: $@"
+}
+
+die()
+{
+	log "ERROR: $@" >&2
+	log "usage: $PROG [--help] [--options]"
+	exit 1
+}
+
+leave()
+{
+	#  cleanup the work directory
+
+	test $KEEP_TEMP = no					&&
+		test -d "$WORK_DIR"				&&
+		cd ..						&&
+		rm -rf "$WORK_DIR"
+	log "elapsed time: $(expr $(date +'%s') - $START_TIME) seconds"
+	log 'good bye, cruel world'
+}
+
+log 'hello, world'
+trap leave EXIT
+
+while [ "$1" ];  do
+	ARG=$1
+	shift
+	case $ARG in
+	--help)
+		help
+		;;
+	--since)
+		SINCE="$1"
+		shift
+		case "$SINCE" in
+		'')
+			log 'option --since: empty timestamp, so disabling'
+			;;
+		19*|2[012]*)
+			SINCE="'$SINCE'"
+			;;
+		'now()'*)
+			;;
+		*)
+			die "option --since: unknown time stamp: $SINCE"
+			;;
+		esac
+		;;
+	--service)
+		BLOBIO_SERVICE2="$1"
+		test -n "$BLOBIO_SERVICE2" ||
+			die 'option --service: missing host:port'
+		shift
+		;;
+	--pghost)
+		PGHOST2="$1"
+		shift
+		case "$PGHOST2" in
+		'')
+			die 'option --pghost: missing host'
+			;;
+		[a-zA-Z0-9]*)
+			;;
+		*)
+			die "option --pghost: unexpected host: $PGHOST2"
+			;;
+		esac
+		;;
+	--pgport)
+		PGPORT2="$1"
+		shift
+		case "$PGPORT2" in
+		'')
+			die 'option --pgport: missing port'
+			;;
+		[0-9]*)
+			;;
+		*)
+			die "option --pgport: unexpected host: $PGPORT2"
+			;;
+		esac
+		;;
+	--pguser)
+		PGUSER2="$1"
+		shift
+		case "$PGUSER2" in
+		'')
+			die 'option --pguser: missing user'
+			;;
+		[a-zA-Z0-9]*)
+			;;
+		*)
+			die "option --pguser: unexpected host: $PGUSER2"
+			;;
+		esac
+		;;
+	--pgdatabase)
+		PGDATABASE2="$1"
+		shift
+		case "$PGDATABASE2" in
+		'')
+			die 'option --pgdatabase: missing database name'
+			;;
+		[a-zA-Z0-9]*)
+			;;
+		*)
+			die "option --pgdatabase: unexpected name: $PGDATABASE2"
+			;;
+		esac
+		;;
+	--keep-temp)
+		KEEP_TEMP="$1"
+		shift
+		case $KEEP_TEMP in
+		yes|no)
+			;;
+		*)
+			die "option --keep-temp: not yes|no: $KEEP_TEMP"
+			;;
+		esac
+		;;
+	--*)
+		die "unknown option: $ARG"
+		;;
+	*)
+		die "unknown command line argument: $ARG"
+		;;
+	esac
+done
+
+test -n "$BLOBIO_SERVICE" ||die 'enviroment variable BLOBIO_SERVICE not defined'
+test -n "$BLOBIO_SERVICE2" || die 'missing return option: --service'
+test 									\
+	-z "$PGHOST2" -a						\
+	-z "$PGPORT2" -a						\
+	-z "$PGUSER2" -a						\
+	-z "$PGDATABASE"						\
+  && die 'no postgres PG environment variables defined'
+
+log "BLOBIO_SERVICE=$BLOBIO_SERVICE"
+log "PGHOST=$PGHOST"
+log "PGPORT=$PGPORT"
+log "PGUSER=$PGUSER"
+log "PGDATABASE=$PGDATABASE"
+
+log "second BLOBIO_SERVICE=$BLOBIO_SERVICE2"
+log "second PGHOST=$PGHOST2"
+log "second PGPORT=$PGPORT2"
+log "second PGUSER=$PGUSER2"
+log "second PGDATABASE=$PGDATABASE2"
+
+log "work dir: $WORK_DIR"
+mkdir $WORK_DIR || die "mkdir failed: $WORK_DIR"
+cd $WORK_DIR || die "cd $WORK_DIR failed"
+
+case "$SINCE" in
+'')
+	log 'syncing all blobs'
+	SQL="
+SELECT
+	blob
+  FROM
+  	service
+  ORDER BY
+  	blob ASC
+;
+"
+	TAKEN_SQL="
+SELECT
+	blob
+  FROM
+  	taken
+  ORDER BY
+  	blob
+;
+"
+	;;
+*)
+	#
+	#  Fetch blobs since a point in time.
+	#
+	log "syncing since: $SINCE"
+	SQL="
+SELECT
+	blob
+  FROM
+  	service
+  WHERE
+  	discover_time >= $SINCE
+  ORDER BY
+  	blob asc
+;
+"
+	TAKEN_SQL="
+SELECT
+	blob
+  FROM
+  	taken
+  WHERE
+  	recent_verify_time >= $SINCE
+  ORDER BY
+  	blob
+;
+"
+	;;
+esac
+
+#
+#  Just a set of udigs from service table.
+#
+SQL_PSET="
+\\set ON_ERROR_STOP
+\\pset format unaligned
+\\pset tuples_only on
+SET search_path TO blobio,public;
+"
+
+#
+#  Fetch first, local udigs
+#
+PGWHO="$PGUSER@$PGHOST:$PGPORT/$PGDATABASE"
+log "keep temp: $KEEP_TEMP"
+if [ $KEEP_TEMP = yes ];  then
+	log "temporary service udig file: $SERVICE_UDIG"
+	log "temporary taken udig file: $TAKEN_UDIG"
+fi
+log "fetching service & taken from $BLOBIO_SERVICE: $PGWHO ..."
+psql --no-psqlrc --quiet <<END
+$SQL_PSET
+
+\\o $SERVICE_UDIG
+$SQL
+
+\\o $TAKEN_UDIG
+$TAKEN_SQL
+END
+
+STATUS=$?
+test $STATUS -eq 0 || die "psql $PGWHO failed: exit status=$STATUS"
+test -r $SQL_UDIG || die "can't read service udig file: $SQL_UDIG"
+log "$(wc -l $SERVICE_UDIG | awk '{print $1}') udigs fetched"
+
+PSQL_ARGS="
+	--quiet
+	--no-psqlrc
+	--host $PGHOST2
+	--port $PGPORT2
+	--user $PGUSER2
+	$PGDATABASE2
+"
+
+test $KEEP_TEMP = yes && log "temporary taken comm file: $TAKEN_COMM"
+log 'finding symmetric difference and intersection of both taken sets'
+psql $PSQL_ARGS <<END | comm $TAKEN_UDIG - >$TAKEN_COMM
+$SQL_PSET
+$TAKEN_SQL
+END
+
+test $KEEP_TEMP = yes && log "temporary taken comm file: $SERVICE_COMM"
+log 'finding symmetric difference and intersection of both services ...'
+psql $PSQL_ARGS <<END | comm $SERVICE_UDIG - >$SERVICE_COMM
+$SQL_PSET
+$SQL
+END
+
+STATUS=${PIPESTATUS[*]}
+case $STATUS in
+'0 0')
+	;;
+*)
+	die "psql | comm failed: pipe exit status: $STATUS"
+	;;
+esac
+
+log "counting taken blobs only in $BLOBIO_SERVICE ..."
+COUNT=$(awk -F'	' '$1 != ""' $TAKEN_COMM | wc -l)
+log "$COUNT taken blobs only in $BLOBIO_SERVICE"
+
+log "counting taken blobs only in $BLOBIO_SERVICE2 ..."
+COUNT=$(awk -F'	' '$2 != ""' $TAKEN_COMM | wc -l)
+log "$COUNT taken blobs only in $BLOBIO_SERVICE2"
+
+log 'counting blobs in both taken sets'
+COUNT=$(awk -F'	' '$3 != ""' $TAKEN_COMM | wc -l)
+log "$COUNT blobs in both taken sets"
+
+log "counting service blobs only in $BLOBIO_SERVICE ..."
+COUNT=$(awk -F'	' '$1 != ""' $SERVICE_COMM | wc -l)
+log "$COUNT service blobs only in $BLOBIO_SERVICE"
+
+log "counting service blobs only in $BLOBIO_SERVICE2 ..."
+COUNT=$(awk -F'	' '$2 != ""' $SERVICE_COMM | wc -l)
+log "$COUNT service blobs only in $BLOBIO_SERVICE2"
+
+log 'counting blobs in both services ...'
+COUNT=$(awk -F'	' '$3 != ""' $SERVICE_COMM | wc -l)
+log "$COUNT blobs in both services"
+
+log "taking blobs from $BLOBIO_SERVICE in taken set of $BLOBIO_SERVICE2"
+awk -F'	' '$2 != ""' $TAKEN_COMM | xargs bio-take --save no
+STATUS=${PIPESTATUS[*]}
+test "$STATUS" = '0 0' ||
+	die "awk taken | xargs bio-take service 1 failed: exit status=$STATUS"
+
+log "taking blobs from $BLOBIO_SERVICE2 in taken set of $BLOBIO_SERVICE"
+awk -F'	' '$1 != ""' $TAKEN_COMM |
+	BLOBIO_SERVICE=$BLOBIO_SERVICE2 xargs bio-take --save no
+STATUS=${PIPESTATUS[*]}
+test "$STATUS" = '0 0' ||
+	die "awk taken | xargs bio-take service 2 failed: exit status=$STATUS"
+
+#
+#  Note:
+#	Occasionally we see stable blobs in the service table that do not
+#	exist in underlying BLOBIO_SERVICE.  Not sure why.  See note
+#	at start of file.
+#
+BLOBIO_MISSING=no
+BLOBIO2_MISSING=no
+log "merging new blobs into $BLOBIO_SERVICE"
+awk -F'	' '$2 != ""' $SERVICE_COMM |
+	BLOBIO_SERVICE=$BLOBIO_SERVICE2 xargs bio-merge $BLOBIO_SERVICE
+STATUS=${PIPESTATUS[*]}
+case $STATUS in
+'0 0')
+	;;
+'0 1')
+	BLOBIO2_MISSING=yes
+	log "WARN: blobs in second $BLOBIO_SERVICE2 service table do not exist"
+	;;
+*)
+	die "awk service2 | xargs bio-merge failed: exit status=$STATUS"
+	;;
+esac
+
+#
+#  Note:
+#	Under MAC OS Mountain Lion, xargs bio-merge appears to exit
+#	with a value of 1 for empty input.  Standalone tests
+#	can't reproduce the error. 
+#
+log "merging new blobs into $BLOBIO_SERVICE2"
+awk -F'	' '$1 != ""' $SERVICE_COMM | xargs bio-merge $BLOBIO_SERVICE2
+STATUS=${PIPESTATUS[*]}
+case $STATUS in
+'0 0')
+	;;
+'0 1')
+	BLOBIO_MISSING=yes
+	log "WARN: blobs in $BLOBIO_SERVICE service table do not exist"
+	;;
+*)
+	die "awk service | xargs bio-merge failed: exit status=$STATUS"
+	;;
+esac
+
+STATUS=0
+if [ $BLOBIO_MISSING = yes ];  then
+	if [ $BLOBIO2_MISSING = yes ];  then
+		STATUS=3
+	else
+		STATUS=1
+	fi
+elif [ $BLOBIO2_MISSING = yes ];  then
+	if [ $BLOBIO_MISSING = yes ];  then
+		STATUS=3
+	else
+		STATUS=2
+	fi
+fi
+exit $STATUS

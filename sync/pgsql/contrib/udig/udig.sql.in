@@ -1,0 +1,1449 @@
+/*
+ *  Synopsis:
+ *	Create PostgreSQL UDIG Data Types, including SHA1.
+ *  Usage:
+ *	make udig.sql
+ *	psql <<END
+ *	DROP TYPE udig CASCADE;
+ *	DROP TYPE udig_sha CASCADE;
+ *	DROP TYPE udig_bc160 CASCADE;
+ *	DROP OPERATOR FAMILY udig_clan USING btree CASCADE;
+ *	END
+ *	psql -f udig.sql
+ *  Note:
+ *	Should a udig be in the blobio schema?
+ */
+\set ON_ERROR_STOP
+
+SET search_path = public;
+
+/*
+ *  SHA1 UDig Core Type.
+ */
+CREATE TYPE udig_sha;					-- sha1 udig type
+
+CREATE OR REPLACE FUNCTION udig_sha_in(cstring)		-- cstring to internal
+  RETURNS udig_sha
+  AS 'MODULE_PATHNAME', 'udig_sha_in'
+  LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE
+; 
+
+CREATE OR REPLACE FUNCTION udig_sha_out(udig_sha)	-- internal to cstring
+  RETURNS cstring
+  AS 'MODULE_PATHNAME', 'udig_sha_out'
+  LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE
+; 
+
+CREATE TYPE udig_sha
+(
+	input =			udig_sha_in,
+	output =		udig_sha_out,
+	internallength =	20
+);
+
+/*
+ *  Generic UDIG Core Type.
+ */
+CREATE TYPE udig;					-- temporay shell type
+
+CREATE OR REPLACE FUNCTION udig_in(cstring)		-- cstring to internal
+RETURNS udig
+AS 'MODULE_PATHNAME', 'udig_in'
+LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
+
+CREATE OR REPLACE FUNCTION udig_can_cast(cstring)	-- cstring is valid udig
+RETURNS boolean
+AS 'MODULE_PATHNAME', 'udig_can_cast'
+LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
+
+CREATE OR REPLACE FUNCTION udig_is_empty(udig)		-- the zero length blob
+RETURNS boolean
+AS 'MODULE_PATHNAME', 'udig_is_empty'
+LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
+
+CREATE OR REPLACE FUNCTION udig_out(udig)		-- internal to cstring
+RETURNS cstring
+AS 'MODULE_PATHNAME', 'udig_out'
+LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
+
+CREATE TYPE udig
+(
+	input =			udig_in,
+	output =		udig_out,
+	internallength =	variable
+);
+
+/*
+ *  Functions for core SHA data types.
+ */
+CREATE OR REPLACE FUNCTION udig_sha_eq(udig_sha, udig_sha)
+RETURNS boolean
+AS 'MODULE_PATHNAME', 'udig_sha_eq'
+LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
+
+CREATE OR REPLACE FUNCTION udig_sha_ne(udig_sha, udig_sha)
+RETURNS boolean
+AS 'MODULE_PATHNAME', 'udig_sha_ne'
+LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
+
+CREATE OR REPLACE FUNCTION udig_sha_lt(udig_sha, udig_sha)
+RETURNS boolean
+AS 'MODULE_PATHNAME', 'udig_sha_lt'
+LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
+
+CREATE OR REPLACE FUNCTION udig_sha_le(udig_sha, udig_sha)
+RETURNS boolean
+AS 'MODULE_PATHNAME', 'udig_sha_le'
+LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
+
+CREATE OR REPLACE FUNCTION udig_sha_gt(udig_sha, udig_sha)
+RETURNS boolean
+AS 'MODULE_PATHNAME', 'udig_sha_gt'
+LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
+
+CREATE OR REPLACE FUNCTION udig_sha_ge(udig_sha, udig_sha)
+RETURNS boolean
+AS 'MODULE_PATHNAME', 'udig_sha_ge'
+LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
+
+CREATE OR REPLACE FUNCTION udig_sha_cmp(udig_sha, udig_sha)
+RETURNS integer
+AS 'MODULE_PATHNAME', 'udig_sha_cmp'
+LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
+
+/*
+ *  Functions for cross compare SHA-generic UDIG data types.
+ */
+CREATE OR REPLACE FUNCTION udig_sha_eq_udig(udig_sha, udig)
+RETURNS boolean
+AS 'MODULE_PATHNAME', 'udig_sha_eq_udig'
+LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
+
+CREATE OR REPLACE FUNCTION udig_sha_ne_udig(udig_sha, udig)
+RETURNS boolean
+AS 'MODULE_PATHNAME', 'udig_sha_ne_udig'
+LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
+
+CREATE OR REPLACE FUNCTION udig_sha_lt_udig(udig_sha, udig)
+RETURNS boolean
+AS 'MODULE_PATHNAME', 'udig_sha_lt_udig'
+LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
+
+CREATE OR REPLACE FUNCTION udig_sha_le_udig(udig_sha, udig)
+RETURNS boolean
+AS 'MODULE_PATHNAME', 'udig_sha_le_udig'
+LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
+
+CREATE OR REPLACE FUNCTION udig_sha_gt_udig(udig_sha, udig)
+RETURNS boolean
+AS 'MODULE_PATHNAME', 'udig_sha_gt_udig'
+LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
+
+CREATE OR REPLACE FUNCTION udig_sha_ge_udig(udig_sha, udig)
+RETURNS boolean
+AS 'MODULE_PATHNAME', 'udig_sha_ge_udig'
+LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
+
+CREATE OR REPLACE FUNCTION udig_sha_cmp_udig(udig_sha, udig)
+RETURNS integer
+AS 'MODULE_PATHNAME', 'udig_sha_cmp_udig'
+LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
+
+/*
+ *  Cast SHA to generic udig.
+ */
+CREATE OR REPLACE FUNCTION udig_sha_cast(udig_sha)
+RETURNS udig
+AS 'MODULE_PATHNAME', 'udig_sha_cast'
+LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
+
+CREATE CAST (udig_sha AS udig)
+  WITH FUNCTION udig_sha_cast(udig_sha)
+  AS IMPLICIT
+;
+
+/*
+ *  Core SHA Comparison Operators
+ */
+CREATE OPERATOR =
+(
+	leftarg =		udig_sha,
+	rightarg =		udig_sha,
+	procedure =		udig_sha_eq,
+	commutator =		=,
+	negator =		<>,
+	restrict =		eqsel,
+	join =			eqjoinsel
+);
+
+CREATE OPERATOR <>
+(
+	leftarg =		udig_sha,
+	rightarg =		udig_sha,
+	procedure =		udig_sha_ne,
+	commutator =		<>,
+	negator =		=,
+	restrict =		neqsel,
+	join =			neqjoinsel
+);
+
+CREATE OPERATOR >
+(
+	leftarg =		udig_sha,
+	rightarg =		udig_sha,
+	procedure =		udig_sha_gt,
+	commutator =		<,
+	negator =		<=,
+	restrict =		scalargtsel,
+	join =			scalargtjoinsel
+);
+
+CREATE OPERATOR >=
+(
+	leftarg =		udig_sha,
+	rightarg =		udig_sha,
+	procedure =		udig_sha_ge,
+	commutator =		<=,
+	negator =		<,
+	restrict =		scalargtsel,
+	join =			scalargtjoinsel
+);
+
+CREATE OPERATOR <
+(
+	leftarg =		udig_sha,
+	rightarg =		udig_sha,
+	procedure =		udig_sha_lt,
+	commutator =		>,
+	negator =		>=,
+	restrict =		scalarltsel,
+	join =			scalarltjoinsel
+);
+
+CREATE OPERATOR <=
+(
+	leftarg =		udig_sha,
+	rightarg =		udig_sha,
+	procedure =		udig_sha_le,
+	commutator =		>=,
+	negator =		>,
+	restrict =		scalarltsel,
+	join =			scalarltjoinsel
+);
+
+/*
+ *  Cross Type SHA to UDig Comparison Operators
+ */
+CREATE OPERATOR =					-- = (sha, udig)
+(
+	leftarg =		udig_sha,
+	rightarg =		udig,
+	procedure =		udig_sha_eq_udig,
+	commutator =		=,
+	negator =		<>,
+	restrict =		eqsel,
+	join =			eqjoinsel
+);
+
+CREATE OPERATOR <>					-- <> (sha, udig)
+(
+	leftarg =		udig_sha,
+	rightarg =		udig,
+	procedure =		udig_sha_ne_udig,
+	commutator =		<>,
+	negator =		=,
+	restrict =		neqsel,
+	join =			neqjoinsel
+);
+
+CREATE OPERATOR >					-- > (sha, udig)
+(
+	leftarg =		udig_sha,
+	rightarg =		udig,
+	procedure =		udig_sha_gt_udig,
+	commutator =		<,
+	negator =		<=,
+	restrict =		scalargtsel,
+	join =			scalargtjoinsel
+);
+
+CREATE OPERATOR >=					-- >= (sha, udig)
+(
+	leftarg =		udig_sha,
+	rightarg =		udig,
+	procedure =		udig_sha_ge_udig,
+	commutator =		<=,
+	negator =		<,
+	restrict =		scalargtsel,
+	join =			scalargtjoinsel
+);
+
+CREATE OPERATOR <					-- < (sha, udig)
+(
+	leftarg =		udig_sha,
+	rightarg =		udig,
+	procedure =		udig_sha_lt_udig,
+	commutator =		>,
+	negator =		>=,
+	restrict =		scalarltsel,
+	join =			scalarltjoinsel
+);
+
+CREATE OPERATOR <=					-- <= (sha, udig)
+(
+	leftarg =		udig_sha,
+	rightarg =		udig,
+	procedure =		udig_sha_le_udig,
+	commutator =		>=,
+	negator =		>,
+	restrict =		scalarltsel,
+	join =			scalarltjoinsel
+);
+
+/*
+ *  Create Core UDIG Functions
+ */
+
+CREATE OR REPLACE FUNCTION udig_eq(udig, udig)
+RETURNS boolean
+AS 'MODULE_PATHNAME', 'udig_eq'
+LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
+
+CREATE OR REPLACE FUNCTION udig_ne(udig, udig)
+RETURNS boolean
+AS 'MODULE_PATHNAME', 'udig_ne'
+LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
+
+CREATE OR REPLACE FUNCTION udig_lt(udig, udig)
+RETURNS boolean
+AS 'MODULE_PATHNAME', 'udig_lt'
+LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
+
+CREATE OR REPLACE FUNCTION udig_le(udig, udig)
+RETURNS boolean
+AS 'MODULE_PATHNAME', 'udig_le'
+LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
+
+CREATE OR REPLACE FUNCTION udig_gt(udig, udig)
+RETURNS boolean
+AS 'MODULE_PATHNAME', 'udig_gt'
+LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
+
+CREATE OR REPLACE FUNCTION udig_ge(udig, udig)
+RETURNS boolean
+AS 'MODULE_PATHNAME', 'udig_ge'
+LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
+
+CREATE OR REPLACE FUNCTION udig_cmp(udig, udig)
+RETURNS integer
+AS 'MODULE_PATHNAME', 'udig_cmp'
+LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
+
+/*
+ *  Create Cross UDIG,SHA Functions
+ */
+CREATE OR REPLACE FUNCTION udig_eq_sha(udig, udig_sha)
+RETURNS boolean
+AS 'MODULE_PATHNAME', 'udig_eq_sha'
+LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
+
+CREATE OR REPLACE FUNCTION udig_ne_sha(udig, udig_sha)
+RETURNS boolean
+AS 'MODULE_PATHNAME', 'udig_ne_sha'
+LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
+
+CREATE OR REPLACE FUNCTION udig_lt_sha(udig, udig_sha)
+RETURNS boolean
+AS 'MODULE_PATHNAME', 'udig_lt_sha'
+LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
+
+CREATE OR REPLACE FUNCTION udig_le_sha(udig, udig_sha)
+RETURNS boolean
+AS 'MODULE_PATHNAME', 'udig_le_sha'
+LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
+
+CREATE OR REPLACE FUNCTION udig_gt_sha(udig, udig_sha)
+RETURNS boolean
+AS 'MODULE_PATHNAME', 'udig_gt_sha'
+LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
+
+CREATE OR REPLACE FUNCTION udig_ge_sha(udig, udig_sha)
+RETURNS boolean
+AS 'MODULE_PATHNAME', 'udig_ge_sha'
+LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
+
+CREATE OR REPLACE FUNCTION udig_cmp_sha(udig, udig_sha)
+RETURNS integer
+AS 'MODULE_PATHNAME', 'udig_cmp_sha'
+LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
+
+/*
+ *  Core UDIG Operators.
+ */
+CREATE OPERATOR =
+(
+	leftarg =		udig,
+	rightarg =		udig,
+	procedure =		udig_eq,
+	commutator =		=,
+	negator =		<>,
+	restrict =		eqsel,
+	join =			eqjoinsel
+);
+
+CREATE OPERATOR <>
+(
+	leftarg =		udig,
+	rightarg =		udig,
+	procedure =		udig_ne,
+	commutator =		<>,
+	negator =		=,
+	restrict =		neqsel,
+	join =			neqjoinsel
+);
+
+CREATE OPERATOR >
+(
+	leftarg =		udig,
+	rightarg =		udig,
+	procedure =		udig_gt,
+	commutator =		<,
+	negator =		<=,
+	restrict =		scalargtsel,
+	join =			scalargtjoinsel
+);
+
+CREATE OPERATOR >=
+(
+	leftarg =		udig,
+	rightarg =		udig,
+	procedure =		udig_ge,
+	commutator =		<=,
+	negator =		<,
+	restrict =		scalargtsel,
+	join =			scalargtjoinsel
+);
+
+CREATE OPERATOR <
+(
+	leftarg =		udig,
+	rightarg =		udig,
+	procedure =		udig_lt,
+	commutator =		>,
+	negator =		>=,
+	restrict =		scalarltsel,
+	join =			scalarltjoinsel
+);
+
+CREATE OPERATOR <=
+(
+	leftarg =		udig,
+	rightarg =		udig,
+	procedure =		udig_le,
+	commutator =		>=,
+	negator =		>,
+	restrict =		scalarltsel,
+	join =			scalarltjoinsel
+);
+
+/*
+ *  Cross Type UDIG,SHA Operators.
+ */
+CREATE OPERATOR =
+(
+	leftarg =		udig,
+	rightarg =		udig_sha,
+	procedure =		udig_eq_sha,
+	commutator =		=,
+	negator =		<>,
+	restrict =		eqsel,
+	join =			eqjoinsel
+);
+
+CREATE OPERATOR <>
+(
+	leftarg =		udig,
+	rightarg =		udig_sha,
+	procedure =		udig_ne_sha,
+	commutator =		<>,
+	negator =		=,
+	restrict =		neqsel,
+	join =			neqjoinsel
+);
+
+CREATE OPERATOR >
+(
+	leftarg =		udig,
+	rightarg =		udig_sha,
+	procedure =		udig_gt_sha,
+	commutator =		<,
+	negator =		<=,
+	restrict =		scalargtsel,
+	join =			scalargtjoinsel
+);
+
+CREATE OPERATOR >=
+(
+	leftarg =		udig,
+	rightarg =		udig_sha,
+	procedure =		udig_ge_sha,
+	commutator =		<=,
+	negator =		<,
+	restrict =		scalargtsel,
+	join =			scalargtjoinsel
+);
+
+CREATE OPERATOR <
+(
+	leftarg =		udig,
+	rightarg =		udig_sha,
+	procedure =		udig_lt_sha,
+	commutator =		>,
+	negator =		>=,
+	restrict =		scalarltsel,
+	join =			scalarltjoinsel
+);
+
+CREATE OPERATOR <=
+(
+	leftarg =		udig,
+	rightarg =		udig_sha,
+	procedure =		udig_le_sha,
+	commutator =		>=,
+	negator =		>,
+	restrict =		scalarltsel,
+	join =			scalarltjoinsel
+);
+
+/*
+ *  Define operator family 'udig_clan' according to
+ *
+ *	http://www.postgresql.org/docs/9.0/static/xindex.html
+ */
+CREATE OPERATOR FAMILY udig_clan USING btree;
+
+/*
+ *  Core Operator Classes for generic udig, udig_sha.
+ */
+CREATE OPERATOR CLASS udig_ops
+  DEFAULT FOR TYPE udig USING btree FAMILY udig_clan AS
+        OPERATOR        1       <	(udig, udig),
+        OPERATOR        2       <=	(udig, udig),
+        OPERATOR        3       =	(udig, udig),
+        OPERATOR        4       >=	(udig, udig),
+        OPERATOR        5       >	(udig, udig),
+        FUNCTION        1       udig_cmp(udig, udig)
+;
+
+CREATE OPERATOR CLASS udig_sha_ops
+  DEFAULT FOR TYPE udig_sha USING btree FAMILY udig_clan AS
+        OPERATOR        1       <	(udig_sha, udig_sha),
+        OPERATOR        2       <=	(udig_sha, udig_sha),
+        OPERATOR        3       =	(udig_sha, udig_sha),
+        OPERATOR        4       >=	(udig_sha, udig_sha),
+        OPERATOR        5       >	(udig_sha, udig_sha),
+        FUNCTION        1       udig_sha_cmp
+					(udig_sha, udig_sha)
+;
+
+/*
+ *  Add cross type - sha/generic udig - operator classes to udig_clan family.
+ */
+ALTER OPERATOR FAMILY udig_clan USING btree ADD
+
+  --  cross type for sha and udig
+  OPERATOR 1 	<	(udig_sha, udig),
+  OPERATOR 2	<=	(udig_sha, udig),
+  OPERATOR 3	=	(udig_sha, udig),
+  OPERATOR 4	>=	(udig_sha, udig),
+  OPERATOR 5	>	(udig_sha, udig),
+  FUNCTION 1	udig_sha_cmp_udig	(udig_sha, udig),
+
+  --  cross type for udig and sha
+  OPERATOR 1 	<	(udig, udig_sha),
+  OPERATOR 2	<=	(udig, udig_sha),
+  OPERATOR 3	=	(udig, udig_sha),
+  OPERATOR 4	>=	(udig, udig_sha),
+  OPERATOR 5	>	(udig, udig_sha),
+  FUNCTION 1	udig_cmp_sha	(udig, udig_sha)
+;
+
+/*
+ *  Extract the hash algorithm name of a uniform hash
+ */
+CREATE OR REPLACE FUNCTION udig_algorithm(udig)
+RETURNS cstring
+AS 'MODULE_PATHNAME', 'udig_algorithm'
+LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
+
+/*
+ *  Is the uniform hash a sha1?
+ */
+CREATE OR REPLACE FUNCTION udig_is_sha(udig)
+RETURNS boolean
+AS 'MODULE_PATHNAME', 'udig_is_sha'
+LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
+
+/*
+ *  Is the uniform hash the bitc ripemd160(sha256)?
+ */
+CREATE OR REPLACE FUNCTION udig_is_bc160(udig)
+RETURNS boolean
+AS 'MODULE_PATHNAME', 'udig_is_bc160'
+LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
+
+/*
+ *  Experimental RIPEMD160(SHA256) UDig Core Type.
+ */
+CREATE TYPE udig_bc160;					-- bc160 udig type
+
+CREATE OR REPLACE FUNCTION udig_bc160_in(cstring)	-- cstring to internal
+RETURNS udig_bc160
+AS 'MODULE_PATHNAME', 'udig_bc160_in'
+LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
+
+CREATE OR REPLACE FUNCTION udig_bc160_out(udig_bc160)	-- internal to cstring
+RETURNS cstring
+AS 'MODULE_PATHNAME', 'udig_bc160_out'
+LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
+
+CREATE TYPE udig_bc160
+(
+	input =			udig_bc160_in,
+	output =		udig_bc160_out,
+	internallength =	20
+);
+
+/*
+ *  Functions for core RIPEMD160(SHA256) data types.
+ */
+CREATE OR REPLACE FUNCTION udig_bc160_eq(udig_bc160, udig_bc160)
+RETURNS boolean
+AS 'MODULE_PATHNAME', 'udig_bc160_eq'
+LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
+
+CREATE OR REPLACE FUNCTION udig_bc160_ne(udig_bc160, udig_bc160)
+RETURNS boolean
+AS 'MODULE_PATHNAME', 'udig_bc160_ne'
+LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
+
+CREATE OR REPLACE FUNCTION udig_bc160_lt(udig_bc160, udig_bc160)
+RETURNS boolean
+AS 'MODULE_PATHNAME', 'udig_bc160_lt'
+LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
+
+CREATE OR REPLACE FUNCTION udig_bc160_le(udig_bc160, udig_bc160)
+RETURNS boolean
+AS 'MODULE_PATHNAME', 'udig_bc160_le'
+LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
+
+CREATE OR REPLACE FUNCTION udig_bc160_gt(udig_bc160, udig_bc160)
+RETURNS boolean
+AS 'MODULE_PATHNAME', 'udig_bc160_gt'
+LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
+
+CREATE OR REPLACE FUNCTION udig_bc160_ge(udig_bc160, udig_bc160)
+RETURNS boolean
+AS 'MODULE_PATHNAME', 'udig_bc160_ge'
+LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
+
+CREATE OR REPLACE FUNCTION udig_bc160_cmp(udig_bc160, udig_bc160)
+RETURNS integer
+AS 'MODULE_PATHNAME', 'udig_bc160_cmp'
+LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
+
+/*
+ *  Functions for cross compare RIPEMD160(SHA256)-generic
+ *  UDIG data types.
+ */
+CREATE OR REPLACE FUNCTION udig_bc160_eq_udig(udig_bc160, udig)
+RETURNS boolean
+AS 'MODULE_PATHNAME', 'udig_bc160_eq_udig'
+LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
+
+CREATE OR REPLACE FUNCTION udig_bc160_ne_udig(udig_bc160, udig)
+RETURNS boolean
+AS 'MODULE_PATHNAME', 'udig_bc160_ne_udig'
+LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
+
+CREATE OR REPLACE FUNCTION udig_bc160_lt_udig(udig_bc160, udig)
+RETURNS boolean
+AS 'MODULE_PATHNAME', 'udig_bc160_lt_udig'
+LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
+
+CREATE OR REPLACE FUNCTION udig_bc160_le_udig(udig_bc160, udig)
+RETURNS boolean
+AS 'MODULE_PATHNAME', 'udig_bc160_le_udig'
+LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
+
+CREATE OR REPLACE FUNCTION udig_bc160_gt_udig(udig_bc160, udig)
+RETURNS boolean
+AS 'MODULE_PATHNAME', 'udig_bc160_gt_udig'
+LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
+
+CREATE OR REPLACE FUNCTION udig_bc160_ge_udig(udig_bc160, udig)
+RETURNS boolean
+AS 'MODULE_PATHNAME', 'udig_bc160_ge_udig'
+LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
+
+CREATE OR REPLACE FUNCTION udig_bc160_cmp_udig(udig_bc160, udig)
+RETURNS integer
+AS 'MODULE_PATHNAME', 'udig_bc160_cmp_udig'
+LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
+
+/*
+ *  Cast RIPEMD160(SHA256) to generic udig.
+ */
+CREATE OR REPLACE FUNCTION udig_bc160_cast(udig_bc160)
+RETURNS udig
+AS 'MODULE_PATHNAME', 'udig_bc160_cast'
+LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
+
+CREATE CAST (udig_bc160 AS udig)
+  WITH FUNCTION udig_bc160_cast(udig_bc160)
+  AS IMPLICIT
+;
+
+/*
+ *  Core RIPEMD160(SHA256) Comparison Operators
+ */
+CREATE OPERATOR =
+(
+	leftarg =		udig_bc160,
+	rightarg =		udig_bc160,
+	procedure =		udig_bc160_eq,
+	commutator =		=,
+	negator =		<>,
+	restrict =		eqsel,
+	join =			eqjoinsel
+);
+
+CREATE OPERATOR <>
+(
+	leftarg =		udig_bc160,
+	rightarg =		udig_bc160,
+	procedure =		udig_bc160_ne,
+	commutator =		<>,
+	negator =		=,
+	restrict =		neqsel,
+	join =			neqjoinsel
+);
+
+CREATE OPERATOR >
+(
+	leftarg =		udig_bc160,
+	rightarg =		udig_bc160,
+	procedure =		udig_bc160_gt,
+	commutator =		<,
+	negator =		<=,
+	restrict =		scalargtsel,
+	join =			scalargtjoinsel
+);
+
+CREATE OPERATOR >=
+(
+	leftarg =		udig_bc160,
+	rightarg =		udig_bc160,
+	procedure =		udig_bc160_ge,
+	commutator =		<=,
+	negator =		<,
+	restrict =		scalargtsel,
+	join =			scalargtjoinsel
+);
+
+CREATE OPERATOR <
+(
+	leftarg =		udig_bc160,
+	rightarg =		udig_bc160,
+	procedure =		udig_bc160_lt,
+	commutator =		>,
+	negator =		>=,
+	restrict =		scalarltsel,
+	join =			scalarltjoinsel
+);
+
+CREATE OPERATOR <=
+(
+	leftarg =		udig_bc160,
+	rightarg =		udig_bc160,
+	procedure =		udig_bc160_le,
+	commutator =		>=,
+	negator =		>,
+	restrict =		scalarltsel,
+	join =			scalarltjoinsel
+);
+
+/*
+ *  Cross Type RIPEMD160(SHA256) to UDig Comparison Operators
+ */
+CREATE OPERATOR =					-- = (bc160, udig)
+(
+	leftarg =		udig_bc160,
+	rightarg =		udig,
+	procedure =		udig_bc160_eq_udig,
+	commutator =		=,
+	negator =		<>,
+	restrict =		eqsel,
+	join =			eqjoinsel
+);
+
+CREATE OPERATOR <>					-- <> (bc160, udig)
+(
+	leftarg =		udig_bc160,
+	rightarg =		udig,
+	procedure =		udig_bc160_ne_udig,
+	commutator =		<>,
+	negator =		=,
+	restrict =		neqsel,
+	join =			neqjoinsel
+);
+
+CREATE OPERATOR >					-- > (bc160, udig)
+(
+	leftarg =		udig_bc160,
+	rightarg =		udig,
+	procedure =		udig_bc160_gt_udig,
+	commutator =		<,
+	negator =		<=,
+	restrict =		scalargtsel,
+	join =			scalargtjoinsel
+);
+
+CREATE OPERATOR >=					-- >= (bc160, udig)
+(
+	leftarg =		udig_bc160,
+	rightarg =		udig,
+	procedure =		udig_bc160_ge_udig,
+	commutator =		<=,
+	negator =		<,
+	restrict =		scalargtsel,
+	join =			scalargtjoinsel
+);
+
+CREATE OPERATOR <					-- < (bc160, udig)
+(
+	leftarg =		udig_bc160,
+	rightarg =		udig,
+	procedure =		udig_bc160_lt_udig,
+	commutator =		>,
+	negator =		>=,
+	restrict =		scalarltsel,
+	join =			scalarltjoinsel
+);
+
+CREATE OPERATOR <=					-- <= (bc160, udig)
+(
+	leftarg =		udig_bc160,
+	rightarg =		udig,
+	procedure =		udig_bc160_le_udig,
+	commutator =		>=,
+	negator =		>,
+	restrict =		scalarltsel,
+	join =			scalarltjoinsel
+);
+
+/*
+ *  Create Cross UDIG,RIPEMD160(SHA256) Functions
+ */
+CREATE OR REPLACE FUNCTION udig_eq_bc160(udig, udig_bc160)
+RETURNS boolean
+AS 'MODULE_PATHNAME', 'udig_eq_bc160'
+LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
+
+CREATE OR REPLACE FUNCTION udig_ne_bc160(udig, udig_bc160)
+RETURNS boolean
+AS 'MODULE_PATHNAME', 'udig_ne_bc160'
+LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
+
+CREATE OR REPLACE FUNCTION udig_lt_bc160(udig, udig_bc160)
+RETURNS boolean
+AS 'MODULE_PATHNAME', 'udig_lt_bc160'
+LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
+
+CREATE OR REPLACE FUNCTION udig_le_bc160(udig, udig_bc160)
+RETURNS boolean
+AS 'MODULE_PATHNAME', 'udig_le_bc160'
+LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
+
+CREATE OR REPLACE FUNCTION udig_gt_bc160(udig, udig_bc160)
+RETURNS boolean
+AS 'MODULE_PATHNAME', 'udig_gt_bc160'
+LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
+
+CREATE OR REPLACE FUNCTION udig_ge_bc160(udig, udig_bc160)
+RETURNS boolean
+AS 'MODULE_PATHNAME', 'udig_ge_bc160'
+LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
+
+CREATE OR REPLACE FUNCTION udig_cmp_bc160(udig, udig_bc160)
+RETURNS integer
+AS 'MODULE_PATHNAME', 'udig_cmp_bc160'
+LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
+
+/*
+ *  Cross Type UDIG,RIPEMD160(SHA256) Operators.
+ */
+CREATE OPERATOR =
+(
+	leftarg =		udig,
+	rightarg =		udig_bc160,
+	procedure =		udig_eq_bc160,
+	commutator =		=,
+	negator =		<>,
+	restrict =		eqsel,
+	join =			eqjoinsel
+);
+
+CREATE OPERATOR <>
+(
+	leftarg =		udig,
+	rightarg =		udig_bc160,
+	procedure =		udig_ne_bc160,
+	commutator =		<>,
+	negator =		=,
+	restrict =		neqsel,
+	join =			neqjoinsel
+);
+
+CREATE OPERATOR >
+(
+	leftarg =		udig,
+	rightarg =		udig_bc160,
+	procedure =		udig_gt_bc160,
+	commutator =		<,
+	negator =		<=,
+	restrict =		scalargtsel,
+	join =			scalargtjoinsel
+);
+
+CREATE OPERATOR >=
+(
+	leftarg =		udig,
+	rightarg =		udig_bc160,
+	procedure =		udig_ge_bc160,
+	commutator =		<=,
+	negator =		<,
+	restrict =		scalargtsel,
+	join =			scalargtjoinsel
+);
+
+CREATE OPERATOR <
+(
+	leftarg =		udig,
+	rightarg =		udig_bc160,
+	procedure =		udig_lt_bc160,
+	commutator =		>,
+	negator =		>=,
+	restrict =		scalarltsel,
+	join =			scalarltjoinsel
+);
+
+CREATE OPERATOR <=
+(
+	leftarg =		udig,
+	rightarg =		udig_bc160,
+	procedure =		udig_le_bc160,
+	commutator =		>=,
+	negator =		>,
+	restrict =		scalarltsel,
+	join =			scalarltjoinsel
+);
+
+CREATE OPERATOR CLASS udig_bc160_ops
+  DEFAULT FOR TYPE udig_bc160 USING btree FAMILY udig_clan AS
+        OPERATOR        1       <	(udig_bc160, udig_bc160),
+        OPERATOR        2       <=	(udig_bc160, udig_bc160),
+        OPERATOR        3       =	(udig_bc160, udig_bc160),
+        OPERATOR        4       >=	(udig_bc160, udig_bc160),
+        OPERATOR        5       >	(udig_bc160, udig_bc160),
+        FUNCTION        1       udig_bc160_cmp
+					(udig_bc160, udig_bc160)
+;
+
+/*
+ *  Add cross type - bc160/generic udig - operator classes to udig_clan family.
+ */
+ALTER OPERATOR FAMILY udig_clan USING btree ADD
+
+  --  cross type for bc160 and udig
+  OPERATOR 1 	<	(udig_bc160, udig),
+  OPERATOR 2	<=	(udig_bc160, udig),
+  OPERATOR 3	=	(udig_bc160, udig),
+  OPERATOR 4	>=	(udig_bc160, udig),
+  OPERATOR 5	>	(udig_bc160, udig),
+  FUNCTION 1	udig_bc160_cmp_udig	(udig_bc160, udig),
+
+  --  cross type for udig and bc160
+  OPERATOR 1 	<	(udig, udig_bc160),
+  OPERATOR 2	<=	(udig, udig_bc160),
+  OPERATOR 3	=	(udig, udig_bc160),
+  OPERATOR 4	>=	(udig, udig_bc160),
+  OPERATOR 5	>	(udig, udig_bc160),
+  FUNCTION 1	udig_cmp_bc160	(udig, udig_bc160)
+;
+
+CREATE FUNCTION udig_hash(udig)
+RETURNS int4
+AS 'MODULE_PATHNAME'
+LANGUAGE C STRICT IMMUTABLE PARALLEL SAFE;
+
+CREATE FUNCTION udig_digest(udig)
+RETURNS bytea
+AS 'MODULE_PATHNAME'
+LANGUAGE C STRICT IMMUTABLE PARALLEL SAFE;
+
+CREATE FUNCTION udig_sha_hash(udig_sha)
+RETURNS int4
+AS 'MODULE_PATHNAME'
+LANGUAGE C STRICT IMMUTABLE PARALLEL SAFE;
+
+CREATE FUNCTION udig_sha_digest(udig_sha)
+RETURNS bytea
+AS 'MODULE_PATHNAME'
+LANGUAGE C STRICT IMMUTABLE PARALLEL SAFE;
+
+CREATE FUNCTION udig_bc160_hash(udig_bc160)
+RETURNS int4
+AS 'MODULE_PATHNAME'
+LANGUAGE C STRICT IMMUTABLE PARALLEL SAFE;
+
+CREATE FUNCTION udig_bc160_digest(udig_bc160)
+RETURNS bytea
+AS 'MODULE_PATHNAME'
+LANGUAGE C STRICT IMMUTABLE PARALLEL SAFE;
+
+--  benchmark says hash indexes increase test queries by %33 on
+--  count(blobio.service) over 15 millon tuples versus btree.
+--  blobio.service is a complex view.  storage is ssd.
+
+CREATE OPERATOR CLASS udig_ops
+DEFAULT FOR TYPE udig USING hash AS
+    OPERATOR    1   = (udig, udig),
+    FUNCTION    1   udig_hash(udig)
+;
+
+CREATE OPERATOR CLASS udig_sha_ops
+DEFAULT FOR TYPE udig_sha USING hash AS
+    OPERATOR    1   = (udig_sha, udig_sha),
+    FUNCTION    1   udig_sha_hash(udig_sha)
+;
+
+CREATE OPERATOR CLASS udig_bc160_ops
+DEFAULT FOR TYPE udig_bc160 USING hash AS
+    OPERATOR    1   = (udig_bc160, udig_bc160),
+    FUNCTION    1   udig_bc160_hash(udig_bc160)
+;
+
+/*
+ *  Is the uniform hash the bitc ripemd160(sha256)?
+ */
+CREATE OR REPLACE FUNCTION udig_is_bc160(udig)
+RETURNS boolean
+AS 'MODULE_PATHNAME', 'udig_is_bc160'
+LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
+
+/*
+ *  BitCoin Inspired RIPEMD160(SHA256(SHA256)) UDig Core Type.
+ */
+CREATE TYPE udig_btc20;					-- btc20 udig type
+
+CREATE OR REPLACE FUNCTION udig_btc20_in(cstring)	-- cstring to internal
+RETURNS udig_btc20
+AS 'MODULE_PATHNAME', 'udig_btc20_in'
+LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
+
+CREATE OR REPLACE FUNCTION udig_btc20_out(udig_btc20)	-- internal to cstring
+RETURNS cstring
+AS 'MODULE_PATHNAME', 'udig_btc20_out'
+LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
+
+CREATE TYPE udig_btc20
+(
+	input =			udig_btc20_in,
+	output =		udig_btc20_out,
+	internallength =	20
+);
+
+/*
+ *  Functions for btc20: RIPEMD160(SHA256(SHA256(blob)) data types.
+ */
+CREATE OR REPLACE FUNCTION udig_btc20_eq(udig_btc20, udig_btc20)
+RETURNS boolean
+AS 'MODULE_PATHNAME', 'udig_btc20_eq'
+LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
+
+CREATE OR REPLACE FUNCTION udig_btc20_ne(udig_btc20, udig_btc20)
+RETURNS boolean
+AS 'MODULE_PATHNAME', 'udig_btc20_ne'
+LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
+
+CREATE OR REPLACE FUNCTION udig_btc20_lt(udig_btc20, udig_btc20)
+RETURNS boolean
+AS 'MODULE_PATHNAME', 'udig_btc20_lt'
+LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
+
+CREATE OR REPLACE FUNCTION udig_btc20_le(udig_btc20, udig_btc20)
+RETURNS boolean
+AS 'MODULE_PATHNAME', 'udig_btc20_le'
+LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
+
+CREATE OR REPLACE FUNCTION udig_btc20_gt(udig_btc20, udig_btc20)
+RETURNS boolean
+AS 'MODULE_PATHNAME', 'udig_btc20_gt'
+LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
+
+CREATE OR REPLACE FUNCTION udig_btc20_ge(udig_btc20, udig_btc20)
+RETURNS boolean
+AS 'MODULE_PATHNAME', 'udig_btc20_ge'
+LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
+
+CREATE OR REPLACE FUNCTION udig_btc20_cmp(udig_btc20, udig_btc20)
+RETURNS integer
+AS 'MODULE_PATHNAME', 'udig_btc20_cmp'
+LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
+
+/*
+ *  Functions for cross compare RIPEMD160(SHA256(SHA256(blob)) and generic
+ *  UDIG data types.
+ */
+CREATE OR REPLACE FUNCTION udig_btc20_eq_udig(udig_btc20, udig)
+RETURNS boolean
+AS 'MODULE_PATHNAME', 'udig_btc20_eq_udig'
+LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
+
+CREATE OR REPLACE FUNCTION udig_btc20_ne_udig(udig_btc20, udig)
+RETURNS boolean
+AS 'MODULE_PATHNAME', 'udig_btc20_ne_udig'
+LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
+
+CREATE OR REPLACE FUNCTION udig_btc20_lt_udig(udig_btc20, udig)
+RETURNS boolean
+AS 'MODULE_PATHNAME', 'udig_btc20_lt_udig'
+LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
+
+CREATE OR REPLACE FUNCTION udig_btc20_le_udig(udig_btc20, udig)
+RETURNS boolean
+AS 'MODULE_PATHNAME', 'udig_btc20_le_udig'
+LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
+
+CREATE OR REPLACE FUNCTION udig_btc20_gt_udig(udig_btc20, udig)
+RETURNS boolean
+AS 'MODULE_PATHNAME', 'udig_btc20_gt_udig'
+LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
+
+CREATE OR REPLACE FUNCTION udig_btc20_ge_udig(udig_btc20, udig)
+RETURNS boolean
+AS 'MODULE_PATHNAME', 'udig_btc20_ge_udig'
+LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
+
+CREATE OR REPLACE FUNCTION udig_btc20_cmp_udig(udig_btc20, udig)
+RETURNS integer
+AS 'MODULE_PATHNAME', 'udig_btc20_cmp_udig'
+LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
+
+/*
+ *  Cast RIPEMD160(SHA256(SHA256(blob)) to generic udig.
+ */
+CREATE OR REPLACE FUNCTION udig_btc20_cast(udig_btc20)
+RETURNS udig
+AS 'MODULE_PATHNAME', 'udig_btc20_cast'
+LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
+
+CREATE CAST (udig_btc20 AS udig)
+  WITH FUNCTION udig_btc20_cast(udig_btc20)
+  AS IMPLICIT
+;
+
+/*
+ *  Core RIPEMD160(SHA256) Comparison Operators
+ */
+CREATE OPERATOR =
+(
+	leftarg =		udig_btc20,
+	rightarg =		udig_btc20,
+	procedure =		udig_btc20_eq,
+	commutator =		=,
+	negator =		<>,
+	restrict =		eqsel,
+	join =			eqjoinsel
+);
+
+CREATE OPERATOR <>
+(
+	leftarg =		udig_btc20,
+	rightarg =		udig_btc20,
+	procedure =		udig_btc20_ne,
+	commutator =		<>,
+	negator =		=,
+	restrict =		neqsel,
+	join =			neqjoinsel
+);
+
+CREATE OPERATOR >
+(
+	leftarg =		udig_btc20,
+	rightarg =		udig_btc20,
+	procedure =		udig_btc20_gt,
+	commutator =		<,
+	negator =		<=,
+	restrict =		scalargtsel,
+	join =			scalargtjoinsel
+);
+
+CREATE OPERATOR >=
+(
+	leftarg =		udig_btc20,
+	rightarg =		udig_btc20,
+	procedure =		udig_btc20_ge,
+	commutator =		<=,
+	negator =		<,
+	restrict =		scalargtsel,
+	join =			scalargtjoinsel
+);
+
+CREATE OPERATOR <
+(
+	leftarg =		udig_btc20,
+	rightarg =		udig_btc20,
+	procedure =		udig_btc20_lt,
+	commutator =		>,
+	negator =		>=,
+	restrict =		scalarltsel,
+	join =			scalarltjoinsel
+);
+
+CREATE OPERATOR <=
+(
+	leftarg =		udig_btc20,
+	rightarg =		udig_btc20,
+	procedure =		udig_btc20_le,
+	commutator =		>=,
+	negator =		>,
+	restrict =		scalarltsel,
+	join =			scalarltjoinsel
+);
+
+/*
+ *  Cross Type RIPEMD160(SHA256(SHA256(blob)) to UDig Comparison Operators
+ */
+CREATE OPERATOR =					-- = (btc20, udig)
+(
+	leftarg =		udig_btc20,
+	rightarg =		udig,
+	procedure =		udig_btc20_eq_udig,
+	commutator =		=,
+	negator =		<>,
+	restrict =		eqsel,
+	join =			eqjoinsel
+);
+
+CREATE OPERATOR <>					-- <> (btc20, udig)
+(
+	leftarg =		udig_btc20,
+	rightarg =		udig,
+	procedure =		udig_btc20_ne_udig,
+	commutator =		<>,
+	negator =		=,
+	restrict =		neqsel,
+	join =			neqjoinsel
+);
+
+CREATE OPERATOR >					-- > (btc20, udig)
+(
+	leftarg =		udig_btc20,
+	rightarg =		udig,
+	procedure =		udig_btc20_gt_udig,
+	commutator =		<,
+	negator =		<=,
+	restrict =		scalargtsel,
+	join =			scalargtjoinsel
+);
+
+CREATE OPERATOR >=					-- >= (btc20, udig)
+(
+	leftarg =		udig_btc20,
+	rightarg =		udig,
+	procedure =		udig_btc20_ge_udig,
+	commutator =		<=,
+	negator =		<,
+	restrict =		scalargtsel,
+	join =			scalargtjoinsel
+);
+
+CREATE OPERATOR <					-- < (btc20, udig)
+(
+	leftarg =		udig_btc20,
+	rightarg =		udig,
+	procedure =		udig_btc20_lt_udig,
+	commutator =		>,
+	negator =		>=,
+	restrict =		scalarltsel,
+	join =			scalarltjoinsel
+);
+
+CREATE OPERATOR <=					-- <= (btc20, udig)
+(
+	leftarg =		udig_btc20,
+	rightarg =		udig,
+	procedure =		udig_btc20_le_udig,
+	commutator =		>=,
+	negator =		>,
+	restrict =		scalarltsel,
+	join =			scalarltjoinsel
+);
+
+/*
+ *  Create Cross RIPEMD160(SHA256(SHA256(blob)) Functions
+ */
+CREATE OR REPLACE FUNCTION udig_eq_btc20(udig, udig_btc20)
+RETURNS boolean
+AS 'MODULE_PATHNAME', 'udig_eq_btc20'
+LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
+
+CREATE OR REPLACE FUNCTION udig_ne_btc20(udig, udig_btc20)
+RETURNS boolean
+AS 'MODULE_PATHNAME', 'udig_ne_btc20'
+LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
+
+CREATE OR REPLACE FUNCTION udig_lt_btc20(udig, udig_btc20)
+RETURNS boolean
+AS 'MODULE_PATHNAME', 'udig_lt_btc20'
+LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
+
+CREATE OR REPLACE FUNCTION udig_le_btc20(udig, udig_btc20)
+RETURNS boolean
+AS 'MODULE_PATHNAME', 'udig_le_btc20'
+LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
+
+CREATE OR REPLACE FUNCTION udig_gt_btc20(udig, udig_btc20)
+RETURNS boolean
+AS 'MODULE_PATHNAME', 'udig_gt_btc20'
+LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
+
+CREATE OR REPLACE FUNCTION udig_ge_btc20(udig, udig_btc20)
+RETURNS boolean
+AS 'MODULE_PATHNAME', 'udig_ge_btc20'
+LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
+
+CREATE OR REPLACE FUNCTION udig_cmp_btc20(udig, udig_btc20)
+RETURNS integer
+AS 'MODULE_PATHNAME', 'udig_cmp_btc20'
+LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
+
+/*
+ *  Cross Type RIPEMD160(SHA256(SHA256(blob)) Operators.
+ */
+CREATE OPERATOR =
+(
+	leftarg =		udig,
+	rightarg =		udig_btc20,
+	procedure =		udig_eq_btc20,
+	commutator =		=,
+	negator =		<>,
+	restrict =		eqsel,
+	join =			eqjoinsel
+);
+
+CREATE OPERATOR <>
+(
+	leftarg =		udig,
+	rightarg =		udig_btc20,
+	procedure =		udig_ne_btc20,
+	commutator =		<>,
+	negator =		=,
+	restrict =		neqsel,
+	join =			neqjoinsel
+);
+
+CREATE OPERATOR >
+(
+	leftarg =		udig,
+	rightarg =		udig_btc20,
+	procedure =		udig_gt_btc20,
+	commutator =		<,
+	negator =		<=,
+	restrict =		scalargtsel,
+	join =			scalargtjoinsel
+);
+
+CREATE OPERATOR >=
+(
+	leftarg =		udig,
+	rightarg =		udig_btc20,
+	procedure =		udig_ge_btc20,
+	commutator =		<=,
+	negator =		<,
+	restrict =		scalargtsel,
+	join =			scalargtjoinsel
+);
+
+CREATE OPERATOR <
+(
+	leftarg =		udig,
+	rightarg =		udig_btc20,
+	procedure =		udig_lt_btc20,
+	commutator =		>,
+	negator =		>=,
+	restrict =		scalarltsel,
+	join =			scalarltjoinsel
+);
+
+CREATE OPERATOR <=
+(
+	leftarg =		udig,
+	rightarg =		udig_btc20,
+	procedure =		udig_le_btc20,
+	commutator =		>=,
+	negator =		>,
+	restrict =		scalarltsel,
+	join =			scalarltjoinsel
+);
+
+CREATE OPERATOR CLASS udig_btc20_ops
+  DEFAULT FOR TYPE udig_btc20 USING btree FAMILY udig_clan AS
+        OPERATOR        1       <	(udig_btc20, udig_btc20),
+        OPERATOR        2       <=	(udig_btc20, udig_btc20),
+        OPERATOR        3       =	(udig_btc20, udig_btc20),
+        OPERATOR        4       >=	(udig_btc20, udig_btc20),
+        OPERATOR        5       >	(udig_btc20, udig_btc20),
+        FUNCTION        1       udig_btc20_cmp
+					(udig_btc20, udig_btc20)
+;
+
+/*
+ *  Add cross type - btc20/generic udig - operator classes to udig_clan family.
+ */
+ALTER OPERATOR FAMILY udig_clan USING btree ADD
+
+  --  cross type for btc20 and udig
+  OPERATOR 1 	<	(udig_btc20, udig),
+  OPERATOR 2	<=	(udig_btc20, udig),
+  OPERATOR 3	=	(udig_btc20, udig),
+  OPERATOR 4	>=	(udig_btc20, udig),
+  OPERATOR 5	>	(udig_btc20, udig),
+  FUNCTION 1	udig_btc20_cmp_udig	(udig_btc20, udig),
+
+  --  cross type for udig and btc20
+  OPERATOR 1 	<	(udig, udig_btc20),
+  OPERATOR 2	<=	(udig, udig_btc20),
+  OPERATOR 3	=	(udig, udig_btc20),
+  OPERATOR 4	>=	(udig, udig_btc20),
+  OPERATOR 5	>	(udig, udig_btc20),
+  FUNCTION 1	udig_cmp_btc20	(udig, udig_btc20)
+;
+
+CREATE FUNCTION udig_btc20_hash(udig_btc20)
+RETURNS int4
+AS 'MODULE_PATHNAME'
+LANGUAGE C STRICT IMMUTABLE PARALLEL SAFE;
+
+CREATE FUNCTION udig_btc20_digest(udig_btc20)
+RETURNS bytea
+AS 'MODULE_PATHNAME'
+LANGUAGE C STRICT IMMUTABLE PARALLEL SAFE;
+
+CREATE OPERATOR CLASS udig_btc20_ops
+DEFAULT FOR TYPE udig_btc20 USING hash AS
+    OPERATOR    1   = (udig_btc20, udig_btc20),
+    FUNCTION    1   udig_btc20_hash(udig_btc20)
+;

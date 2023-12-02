@@ -1,0 +1,152 @@
+#!/usr/bin/env bash
+#
+#  Synopsis:
+#	Get rummy blobs, over a time interval, log transaction in data/rummy.txn
+#  Usage:
+#	cron-rummy <postgres-time-interval>
+#	cron-rummy '-1 week'
+#
+#	#  crontab entry
+#	export BLOBIO_ROOT=/opt/jmscott/jmsdesk/blobio
+#	LOG=$BLOBIO_ROOT/log/cron-rummy.log
+#	*/15 * * * * $BLOBIO_ROOT/sbin/cron-rummy '-1 week' >>$LOG
+#  Requires:
+#	GNU date basename
+#	https://github.com/jmscott/work
+#  Exit Status:
+#	0	ok
+#	1	error
+#  Note:
+#	script depends upon RFC3339Nano before PATH includes JMSCOTT_ROOT/bin
+#
+#	Add an "all" time interval, to cover all blobs in rummy.
+#
+
+START_TIME=$(RFC3339Nano)
+PROG=$(basename $0)
+START_EPOCH=$(date +'%s')
+TXN=data/rummy.txn
+RUMMY_SET=${TMPDIR:=/tmp}/$(basename $0)-$$.udig
+PSQL='psql --set ON_ERROR_STOP=1 --quiet --no-align --no-psqlrc --pset=pager=off --tuples-only'
+
+now()
+{
+	date +'%Y/%m/%d %H:%M:%S'
+}
+
+log()
+{
+	echo "$(now): $@"
+}
+
+ERROR()
+{
+	log "ERROR: $@" >&2
+}
+
+fault()
+{
+	ERROR "$@"
+	FAULT=run/$PROG.fault
+	echo "$(now): ERROR: $@" >>$FAULT			||
+		ERROR "echo to $FAULT failed: exit status=$?"
+}
+
+die()
+{
+	fault "$@"
+	exit 1
+}
+
+leave()
+{
+	rm -f $RUMMY_SET || fault "rm -f $RUMMY_SET failed"
+	log "good bye, cruel world: elapsed $(
+		duration-english $(expr $(date +'%s') - $START_EPOCH)
+	)"
+}
+
+test $# = 1 || die 'wrong number of arguments'
+AGO="$1"
+test -n "$BLOBIO_ROOT" || die 'var not defined: BLOBIO_ROOT'
+
+log 'hello, world'
+trap leave EXIT
+
+log "BLOBIO_ROOT=$BLOBIO_ROOT"
+cd $BLOBIO_ROOT || die "cd $BLOBIO_ROOT failed: exit status=$?"
+. etc/profile
+test -n "$BLOBIO_SERVICE" || die 'env not defined: BLOBIO_SERVICE'
+export BLOBIO_GET_SERVICE=${BLOBIO_GET_SERVICE:=fs:$BLOBIO_ROOT}?brr=ff
+log "BLOBIO_SERVICE=$BLOBIO_SERVICE"
+
+log "ago: $AGO"
+
+#  Note:  check for tabs in AGO!
+case "$AGO" in
+infinity)
+	die "ago: no rummy blobs have postive infinity!"
+	;;
+yesterday|today|2[123]*/*/*|-infinity)
+	SQL_SINCE="'$AGO'"
+	;;
+*)
+	SQL_SINCE="now() + '$AGO'::interval"
+	;;
+esac
+
+log "PATH=$PATH"
+log "PGHOST=$PGHOST PORT=$PGPORT USER=$PGUSER DATABASE=$PGDATABASE"
+
+log "tmp rummy udig set: $RUMMY_SET"
+log "fetching blobs from rummy since $AGO"
+$PSQL --output $RUMMY_SET <<END || die "psql rummy failed: exit status=$?"
+
+SELECT
+	r.blob
+  FROM
+  	blobio.rummy r
+	  JOIN blobio.brr_discover d ON (d.blob = r.blob)
+  WHERE
+  	d.start_time >= $SQL_SINCE
+;
+END
+
+test -e $RUMMY_SET || die 'rummy set file does not exist'
+
+RUMMY_COUNT=$(wc -l $RUMMY_SET | awk '{print $1}')
+log "rummy blob count: $RUMMY_COUNT"
+
+#  fetch each blob to trigger merge of row in table brr_blob_size
+
+OK=0
+NO=0
+while read UDIG;  do
+	blobio get							\
+		--udig $UDIG						\
+		--service $BLOBIO_SERVICE				\
+		--output-path /dev/null
+	STATUS=$?
+	case $STATUS in
+	0)
+		log ">$UDIG"
+		OK=$(($OK + 1))
+		;;
+	1)
+		NO=$(($NO + 1))
+		log "?$UDIG"
+		;;
+	*)
+		die "blobio get /dev/null failed: exit status=$STATUS"
+		;;
+	esac
+done <$RUMMY_SET
+
+TXN=data/rummy.txn
+log "transaction log: $TXN"
+echo "$START_TIME	$AGO	$(RFC3339Nano)	$OK	$NO" >>$TXN	||
+	die "echo >txn failed: exit status=$?"
+
+log "got $RUMMY_COUNT blobs"
+
+exit 0

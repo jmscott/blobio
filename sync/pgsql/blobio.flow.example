@@ -1,0 +1,548 @@
+#
+#  Synopsis:
+#	Example configuration for maintaining database defined in schema.sql
+#  Usage:
+#  	flowd server blobio.flow
+#  See:
+#	For systemd service: $BLOBIO_ROOT/lib/blobio.flowd.service.example
+#  Note:
+#	The test for failed existence of brr_blob_size is not triggering
+#	update.  Currently only rummy does this.  This happens when only
+#	an "eat" request record is seen but not a "get/put/give/take"
+#	record, which has a size.  The fix is to issue a "get" request
+#	when this situation is seen.  This could confuse a stupid person.
+#
+
+boot
+{
+	brr_capacity = 32;
+	os_exec_capacity = 8;
+	os_exec_worker_count = 16;
+	flow_worker_count = 8;
+
+	qdr_roll_duration = "24h";
+	fdr_roll_duration = "24h";
+	xdr_roll_duration = "24h";
+	heartbeat_duration = "10s";
+}
+
+tail bio4d
+{
+	path = "spool/bio4d.brr";
+}
+
+command append_setcore_brr
+{
+	path = "sbin/append-brr";
+	argv = (
+		"../setspace/schema/setcore/spool/bio4d.brr"
+	);
+}
+
+#
+#
+#  Uncomment to push blob request records to setcore
+#
+#call append_setcore_brr(
+#	bio4d.start_time,
+#	bio4d.transport,
+#	bio4d.verb,
+#	bio4d.udig,
+#	bio4d.chat_history,
+#	bio4d.blob_size,
+#	bio4d.wall_duration
+#);
+
+command chat_ok
+{
+	path = "true";
+}
+
+command blob_on_network
+{
+	path = "true";
+}
+
+sql database blobio 
+{
+	driver_name = "postgres";
+	data_source_name =
+		"fallback_application_name=blobio.flow sslmode=disable";
+	max_idle_conns = 0;
+	max_open_conns = 32;
+}
+
+sql query blob_size_exists row
+{
+	result row is (
+		answer bool
+	);
+
+	statement = `
+
+	SELECT EXISTS (
+	  SELECT
+		blob
+	    FROM
+		blobio.brr_blob_size
+	    WHERE
+		blob = $1::udig
+
+	);
+	
+	`;
+}
+
+sql exec merge_blob_size
+{
+	statement = `
+
+	INSERT INTO blobio.brr_blob_size(
+		blob,
+		byte_count
+	) VALUES (
+		$1::udig,
+		$2::bigint
+	)
+	  ON CONFLICT
+	    DO NOTHING
+	;
+
+	`;
+}
+
+sql query discover_older row
+{
+	result row is (
+		is_older bool,
+		row_exists bool
+	);
+
+	statement = `
+
+	SELECT
+	  (SELECT
+	  	start_time > $2::blobio.brr_timestamp
+	      FROM
+	    	blobio.brr_discover
+	      WHERE
+	    	blob = $1::udig
+	  ),
+
+	  EXISTS (
+	    SELECT
+		blob
+	    FROM
+		blobio.brr_discover
+	    WHERE
+		blob = $1::udig
+	  )
+	;
+
+	`;
+}
+
+sql exec upsert_discover
+{
+	statement = `
+
+	INSERT INTO blobio.brr_discover AS RECENT (
+		blob,
+		start_time
+	) VALUES (
+		$1::udig,
+		$2::blobio.brr_timestamp
+	)
+	  ON CONFLICT (blob)
+	    DO UPDATE SET
+		start_time = EXCLUDED.start_time
+	    WHERE
+		EXCLUDED.start_time < RECENT.start_time
+	;
+
+	`;
+}
+
+sql query ok_newer row
+{
+	result row is (
+		is_newer bool,
+		row_exists bool
+	);
+
+	#
+	#  Note:
+	#	Why two attributes? Why not just test "is_newer" att for
+	#	nullness instead?
+	#
+	statement = `
+
+	SELECT
+	  --  is the "ok" request record more recent?
+	  (SELECT
+	  	$2::blobio.brr_timestamp > start_time
+	    FROM
+	    	blobio.brr_ok_recent
+	    WHERE
+	    	blob = $1::udig
+	  ),
+
+	  --  does the record exists exist?
+
+	  EXISTS (
+	    SELECT
+		blob
+	      FROM
+		blobio.brr_ok_recent
+	      WHERE
+		blob = $1::udig
+	  )
+	;
+
+	`;
+}
+
+#  the most recently seen "ok" for the blob
+
+sql exec upsert_ok_recent
+{
+	statement = `
+
+	INSERT INTO blobio.brr_ok_recent AS OLDER (
+		blob,
+		start_time,
+		wall_duration
+	) VALUES (
+		$1::udig,
+		$2::blobio.brr_timestamp,
+		$3::blobio.brr_duration
+	) ON CONFLICT (blob)
+	    DO UPDATE SET
+		start_time =	EXCLUDED.start_time,
+		wall_duration = EXCLUDED.wall_duration
+	    WHERE
+		OLDER.start_time < EXCLUDED.start_time
+	;
+	
+	`;
+}
+
+sql query no_newer row
+{
+	result row is (
+		is_newer bool,
+		row_exists bool
+	);
+
+	statement = `
+
+	SELECT
+	  --  is the brr more recent than tuple in table brr_no_recent?
+	  (
+	    SELECT
+	  	$2::blobio.brr_timestamp > start_time
+	      FROM
+	    	blobio.brr_no_recent
+	      WHERE
+	    	blob = $1::udig
+	  ),
+
+	  --  does the brr tuple exist in table brr_no_recent?
+
+	  EXISTS (
+	    SELECT
+		blob
+	      FROM
+		blobio.brr_no_recent
+	      WHERE
+		blob = $1::udig
+	  )
+	;
+
+	`;
+}
+
+#  the most recently seen "no" for the blob
+
+sql exec upsert_no_recent
+{
+	statement = `
+
+	INSERT INTO blobio.brr_no_recent AS OLDER (
+		blob,
+		start_time,
+		wall_duration
+	) VALUES (
+		$1::udig,
+	      	$2::blobio.brr_timestamp,
+		$3::blobio.brr_duration
+	) ON CONFLICT (blob)
+	    DO UPDATE SET
+	      	start_time =	EXCLUDED.start_time,
+		wall_duration = EXCLUDED.wall_duration
+	    WHERE
+	  	OLDER.start_time < EXCLUDED.start_time
+	;
+
+	`;
+}
+
+sql query roll_ok_exists row
+{
+	result row is (
+		answer bool
+	);
+
+	statement = `
+
+	SELECT EXISTS (
+	  SELECT
+		blob
+	    FROM
+		blobio.brr_roll_ok
+	    WHERE
+		blob = $1::udig
+	);
+	
+	`;
+}
+
+sql exec merge_roll_ok
+{
+	statement = `
+
+	INSERT INTO blobio.brr_roll_ok(
+		blob,
+		start_time,
+		wall_duration
+	) VALUES (
+		$1::udig,
+		$2::blobio.brr_timestamp,
+		$3::blobio.brr_duration
+	) ON CONFLICT
+	    DO NOTHING
+	;
+
+	`;
+}
+
+sql query wrap_ok_exists row
+{
+	result row is (
+		answer bool
+	);
+
+	statement = `
+
+	SELECT exists (
+	  SELECT
+		blob
+	    FROM
+		blobio.brr_wrap_ok
+	    WHERE
+		blob = $1::udig
+	);
+
+	`;
+}
+
+sql exec merge_wrap_ok
+{
+	statement = `
+
+	INSERT INTO blobio.brr_wrap_ok(
+		blob,
+		start_time,
+		wall_duration
+	) VALUES (
+		$1::udig,
+		$2::blobio.brr_timestamp,
+		$3::blobio.brr_duration
+	) ON CONFLICT
+	    DO NOTHING
+	;
+
+	`;
+}
+
+sql query take_ok_newer row
+{
+	result row is (
+		is_newer bool,
+		row_exists bool
+	);
+
+	statement = `
+
+	SELECT
+	  (SELECT
+	  	$2::blobio.brr_timestamp > start_time
+	     FROM
+	    	blobio.brr_take_ok_recent
+	     WHERE
+	    	blob = $1::udig
+	  ),
+	  EXISTS (
+	    SELECT
+		blob
+	      FROM
+		blobio.brr_take_ok_recent
+	      WHERE
+		blob = $1::udig
+	  )
+
+	;
+	`;
+}
+
+sql exec upsert_take_ok_recent
+{
+	statement = `
+
+	INSERT INTO blobio.brr_take_ok_recent AS OLDER (
+		blob,
+		start_time,
+		wall_duration
+	) VALUES (
+		$1::udig,
+		$2::blobio.brr_timestamp,
+		$3::blobio.brr_duration
+	)
+	  ON CONFLICT (blob)
+	    DO UPDATE set
+		start_time = EXCLUDED.start_time,
+		wall_duration = EXCLUDED.wall_duration
+	    WHERE
+		OLDER.start_time < EXCLUDED.start_time
+	;
+
+	`;
+}
+
+call chat_ok()
+  when
+	bio4d.chat_history == "ok"
+	or
+	bio4d.chat_history == "ok,ok"
+	or
+	bio4d.chat_history == "ok,ok,ok"
+;
+
+call blob_on_network()
+  when
+	(
+		bio4d.verb == "put"
+		or
+		bio4d.verb == "get"
+		or
+		bio4d.verb == "give"
+		or
+		bio4d.verb == "take"
+		or
+		bio4d.verb == "eat"
+		or
+		bio4d.verb == "wrap"
+		or
+		bio4d.verb == "roll"
+	)
+	and
+	chat_ok.exit_status == 0
+;
+
+query blob_size_exists(bio4d.udig)
+  when
+  	blob_on_network.exit_status == 0
+	and
+	(
+		bio4d.verb == "put"
+		or
+		bio4d.verb == "get"
+		or
+		bio4d.verb == "give"
+		or
+		bio4d.verb == "take"
+	)
+;
+
+query merge_blob_size(bio4d.udig, bio4d.blob_size)
+  when
+  	blob_size_exists.answer == false
+;
+
+query discover_older(bio4d.udig, bio4d.start_time)
+  when
+  	chat_ok.exit_status == 0
+;
+
+query upsert_discover(bio4d.udig, bio4d.start_time)
+  when
+  	discover_older.is_older == true
+	or
+	discover_older.row_exists == false
+;
+
+query ok_newer(bio4d.udig, bio4d.start_time)
+  when
+  	bio4d.chat_history == "ok,ok,ok"
+	or
+  	bio4d.chat_history == "ok,ok"
+	or
+	bio4d.chat_history == "ok"
+;
+
+query upsert_ok_recent(bio4d.udig, bio4d.start_time, bio4d.wall_duration)
+  when
+  	ok_newer.row_exists == false
+	or
+	ok_newer.is_newer == true
+;
+
+query no_newer(bio4d.udig, bio4d.start_time)
+  when
+  	bio4d.chat_history == "no"
+;
+
+query upsert_no_recent(bio4d.udig, bio4d.start_time, bio4d.wall_duration)
+  when
+	no_newer.row_exists == false
+	or
+	no_newer.is_newer == true
+;
+
+query roll_ok_exists(bio4d.udig)
+  when
+  	bio4d.verb == "roll"
+	and
+	bio4d.chat_history == "ok"
+;
+
+query merge_roll_ok(bio4d.udig, bio4d.start_time, bio4d.wall_duration)
+  when
+  	roll_ok_exists.answer == false
+;
+
+query wrap_ok_exists(bio4d.udig)
+  when
+  	bio4d.verb == "wrap"
+	and
+	bio4d.chat_history == "ok"
+;
+
+query merge_wrap_ok(bio4d.udig, bio4d.start_time, bio4d.wall_duration)
+  when
+  	wrap_ok_exists.answer == false
+;
+
+query take_ok_newer(bio4d.udig, bio4d.start_time)
+  when
+  	bio4d.verb == "take"
+	and
+	bio4d.chat_history == "ok,ok,ok"
+;
+
+query upsert_take_ok_recent(bio4d.udig, bio4d.start_time, bio4d.wall_duration)
+  when
+  	take_ok_newer.row_exists == false
+	or
+	take_ok_newer.is_newer == true
+;
