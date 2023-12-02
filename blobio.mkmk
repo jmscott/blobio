@@ -50,7 +50,6 @@ SBINs="
 	ls-service							\
 	run-stat-report							\
 	run-stat-tuple							\
-	tail-log							\
 	unlock-flow-udig						\
 "
 
