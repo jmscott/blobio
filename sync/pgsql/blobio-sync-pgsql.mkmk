@@ -57,6 +57,7 @@ SBINs="
 	fs-xor-service
 	jaccard
 	jaccard-tip
+	ls-service
 	minus-service
 	not-in-service
 	rummy-txn

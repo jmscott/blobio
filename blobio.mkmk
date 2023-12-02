@@ -47,7 +47,6 @@ SBINs="
 	cron-reboot							\
 	cron-wrap							\
 	lock-flow-udig							\
-	ls-service							\
 	run-stat-report							\
 	run-stat-tuple							\
 	unlock-flow-udig						\
