@@ -24,6 +24,7 @@ jaccard: jaccard.go
 install-dirs:
 	cd .. && $(_MAKE) install-dirs
 install: all
+	cd pgsql && $(_MAKE) install
 	$(_MAKE) install-dirs
 
 	install -g $(DIST_GROUP) -o $(DIST_USER)			\
@@ -41,6 +42,7 @@ install: all
 		$(DIST_ROOT)/src/sync
 
 distclean:
+	cd pgsql && $(_MAKE) distclean
 	rm -rf $(DIST_ROOT)/src/sync
 	test -d $(DIST_ROOT)/sbin && cd $(DIST_ROOT)/sbin &&rm -f $(SBINs)
 	test -d $(DIST_ROOT)/lib && cd $(DIST_ROOT)/sbin &&rm -f $(LIBs)
@@ -53,6 +55,7 @@ dev-links:
 	test -e run || ln -s . run
 	test -e sbin || ln -s . sbin
 world:
+	cd pgsql && $(_MAKE) world
 	$(_MAKE) clean
 	$(_MAKE) all
 	$(_MAKE) distclean

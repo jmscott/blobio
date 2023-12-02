@@ -45,6 +45,7 @@ endif
 	cd sync &&	$(_MAKE) clean
 
 distclean:
+	cd sync && $(_MAKE) distclean
 ifdef DASH_DNS_VHOST_SUFFIX
 	cd www &&	$(_MAKE) distclean
 endif
@@ -75,7 +76,7 @@ install-dirs:
 	install -g $(DIST_GROUP) -o $(DIST_USER)			\
 		-d $(DIST_ROOT)/src
 	install -g $(DIST_GROUP) -o $(DIST_USER)			\
-		-d $(DIST_ROOT)/src/pgsql
+		-d $(DIST_ROOT)/src/sync/pgsql
 	install -g $(DIST_GROUP) -o $(DIST_USER)			\
 		-d $(DIST_ROOT)/src/bio4d
 	install -g $(DIST_GROUP) -o $(DIST_USER)			\
@@ -131,9 +132,7 @@ install: all
 		$(DIST_ROOT)/lib
 	cd bio4d;	$(MAKE) $(MFLAGS) install
 	cd cli;		$(MAKE) $(MFLAGS) install
-	cd pgsql;	$(MAKE) $(MFLAGS) install
 	cd flowd;	$(MAKE) $(MFLAGS) install
-	#cd www;		$(MAKE) $(MFLAGS) install
 	cd sync;	$(MAKE) $(MFLAGS) install
 ifdef NOC_DNS_VHOST_SUFFIX
 	cd www && $(MAKE) $(MFLAGS) install
