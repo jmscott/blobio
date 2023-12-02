@@ -1,65 +1,26 @@
-#
-#  Synopsis:
-#	Example crontab for BlobIO daemon account
-#
-BLOBIO_ROOT=/usr/local/blobio
-BLOBIO_GET_SERVICE=fs:/usr/local/blobio
-PATH=/opt/local/libexec/gnubin:/usr/local/jmscott/bin:/usr/bin:/bin
+JMSDESK_BLOBIO_ROOT=/opt/local/jmscott/jmsdesk/blobio
+PATH=/usr/local/jmscott/bin:/usr/bin:/bin:/usr/sbin:/bin:/usr/local/pgsql
 
 #
 #  What:
-#       Wrap and roll blob request records.
+#	Snapshot crontab
 #  When:
-#       3::44am, every night
+#	1:24am, every night
 #
-44 3 * * * (echo "$(date): hello, world";  cd $BLOBIO_ROOT;  . etc/profile;  bio-wrap-roll;  echo "$(date): good bye, cruel world") >>log/bio-wrap-roll.log 2>&1
+24 1 * * * crontab -l >etc/crontab.conf
 
 #
 #  What:
-#       Clear file log/bio-wrap-roll.log
+#	Backup jmsdesk pg database
 #  When:
-#       6:26am, 4th day of every month
+#	2:45am, everyday
 #
-26 6 4 * * echo "$(date): cleared by cron" >log/bio-wrap-roll.log
+45 2 * * * . $JMSDESK_BLOBIO_ROOT/etc/profile; pg_dump-Dow jmsdesk >>log/pg_dump-Dow-jmsdesk.log 2>&1
 
 #
 #  What:
-#	Compare blob chain against service table for previous 24 * 3 chains.
+#       Catchup blobio jmsdesk missing info for blobs.
 #  When:
-#	54 minutes after every hour.
-#  Note:
-#	Paused until syntax error diagnosed in wrap-wrap-set diagnosed.
+#       top of every 15 minute
 #
-54 * * * * $BLOBIO_ROOT/sbin/rummy 72 >>log/rummy.log 2>&1
-
-#
-#  What:
-#	Clear log file log/rummy.log
-#  When:
-#	Every Tuesday at 9:55am
-#
-55 9 * * Tue echo "$(date): cleared by cron" >log/rummy.log
-
-#
-#  What:
-#	Nighty dump of blobio database.
-#  When:
-#	one minute before midnight.
-#
-59 23 * * * (echo "$(date): hello, world";  . etc/profile;  pg_dump-Dow blobio;  echo "$(date): good bye, cruel world") >>log/pg_dump-Dow-blobio.log 2>&1
-
-#
-#  What:
-#	Clear log file log/pg_dump-Dow-blobio.log
-#  When:
-#	6:01pm, on fourth day of every month.
-#
-01 18 4 * * echo "$(date): cleared by cron" >log/pg_dump-Dow-blobio.log
-
-#
-#  What:
-#	Snapshot crontab to etc/crontab.conf
-#  When:
-#	6:20am, every day
-#
-20 6 * * * crontab -l >etc/crontab.conf
+*/5 * * * *  export BLOBIO_ROOT=$JMSDESK_BLOBIO_ROOT; cd $BLOBIO_ROOT; sbin/rummy-txn yesterday >>log/rummy-txn.log 2>&1
