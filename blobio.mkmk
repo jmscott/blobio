@@ -40,14 +40,6 @@ LIBs="
 	profile.example							\
 "
 
-#
-#  Note:
-#	Should bio-merge-service be in dir pgsql?
-#
-BINs="
-	pgsql/bio-merge-service
-"
-
 SBINs="
 	BLOBIO_ROOT-bash						\
 	brr-stat							\

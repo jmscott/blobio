@@ -119,10 +119,6 @@ install-dirs:
 install: all
 	$(_MAKE) install-dirs
 
-	install -g $(DIST_GROUP) -o $(DIST_USER) -m ugo=rx		\
-		$(BINs)							\
-		$(DIST_ROOT)/bin
-
 	install -g $(DIST_GROUP) -o $(DIST_USER) -m u=rx,go=		\
 		$(SBINs)						\
 		$(DIST_ROOT)/sbin
