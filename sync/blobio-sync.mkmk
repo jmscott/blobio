@@ -29,15 +29,11 @@ VAR2dir_local=(
 #  removed in "clean" recipes.
 #
 COMPILEs="
-	jaccard
-	jaccard-tip
 "
 
 LIBs="
 	blobio.sync.remote.flowd.plist.example
 	blobio.sync.remote.flowd.service.example
-	jaccard-all.conf.example
-	jaccard-tip.conf.example
 	profile-sync.example
 	rummy-chain.sql
 	sync-remote.flow.example
@@ -50,8 +46,6 @@ LIBs="
 
 SBINs="
 	flip-remote-brr
-	jaccard
-	jaccard-tip
 	make-sync-remote
 	purge-sync-cache
 	reboot-sync
@@ -75,10 +69,8 @@ SBINs="
 #"
 
 #  Uncomment to create src/ directory
-SRCs="
-	jaccard.go
-	jaccard-tip.go
-"
+#SRCs="
+#"
 
 #  Uncomment to create attic/ directory
 #ATTIC="

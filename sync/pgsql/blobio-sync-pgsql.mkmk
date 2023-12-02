@@ -24,17 +24,17 @@
 #	[CGIBINs]='cgi-bin/schema'
 #)
 
-#
-#  Uncomment for compiled programs to be installed in bin/ or sbin/ and
-#  removed in "clean" recipes.
-#
-#COMPILEs="
-#"
+COMPILEs="
+	jaccard
+	jaccard-tip
+"
 
 LIBs="
 	blobio.flow.example
 	bug-cast_jsonb_brr.sql
 	eat-unroll.sql
+	jaccard-all.conf.example
+	jaccard-tip.conf.example
 	not-in-service.sql
 	psqlrc.example
 	schema.sql
@@ -55,6 +55,8 @@ SBINs="
 	eat-unroll.sql
 	fs-get
 	fs-xor-service
+	jaccard
+	jaccard-tip
 	minus-service
 	not-in-service
 	rummy-txn

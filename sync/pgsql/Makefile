@@ -14,6 +14,15 @@ SBINs := $(shell  (. ./$(MKMK) && echo $$SBINs))
 SRCs := $(shell  (. ./$(MKMK) && echo $$SRCs))
 LIBs := $(shell  (. ./$(MKMK) && echo $$LIBs))
 
+all: $(COMPILEs)
+clean:
+	rm -f $(COMPILEs)
+
+jaccard-tip: jaccard-tip.go
+	$(GODIST)/bin/go build jaccard-tip.go
+jaccard: jaccard.go
+	$(GODIST)/bin/go build jaccard.go
+
 install-dirs:
 	cd .. && $(_MAKE) install-dirs
 
@@ -38,8 +47,10 @@ dev-links:
 distclean:
 	test ! -d $(DIST_ROOT)/lib || (cd $(DIST_ROOT)/lib;  rm -f $(LIBs))
 	test ! -d $(DIST_ROOT)/sbin || (cd $(DIST_ROOT)/sbin;  rm -f $(SBINs))
-	test ! -d $(DIST_ROOT)/src || (cd $(DIST_ROOT)/sbin && rm -f $(SRCs))
+	test ! -d $(DIST_ROOT)/src || (cd $(DIST_ROOT)/src && rm -f $(SRCs))
 world:
+	$(MAKE) $(MFLAGS) clean
+	$(MAKE) $(MFLAGS) all
 	$(MAKE) $(MFLAGS) distclean
 	$(MAKE) $(MFLAGS) install
 tar:

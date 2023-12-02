@@ -14,32 +14,24 @@ LIBs := $(shell  (. ./$(MKMK) && echo $$LIBs))
 SRCs := $(shell  (. ./$(MKMK) && echo $$SRCs))
 COMPILEs := $(shell  (. ./$(MKMK) && echo $$COMPILEs))
 
-all: jaccard jaccard-tip
-
-jaccard-tip: jaccard-tip.go
-	$(GODIST)/bin/go build jaccard-tip.go
-jaccard: jaccard.go
-	$(GODIST)/bin/go build jaccard.go
+all:
 
 install-dirs:
 	cd .. && $(_MAKE) install-dirs
-install: all
-	cd pgsql && $(_MAKE) install
-	$(_MAKE) install-dirs
-
 	install -g $(DIST_GROUP) -o $(DIST_USER)			\
 		-m u=rwx,go= -d $(DIST_ROOT)/sync
 	install -g $(DIST_GROUP) -o $(DIST_USER) -m u=rwx,g=rx,o=	\
 		-d $(DIST_ROOT)/src/sync
+install: all
+	cd pgsql && $(_MAKE) install
+	$(_MAKE) install-dirs
+
 	install -g $(DIST_GROUP) -o $(DIST_USER) -m u=rx,go=		\
 		$(SBINs)						\
 		$(DIST_ROOT)/sbin
 	install -g $(DIST_GROUP) -o $(DIST_USER) -m ug=r,o=		\
 		$(LIBs)							\
 		$(DIST_ROOT)/lib
-	install -g $(DIST_GROUP) -o $(DIST_USER) -m ug=r,o=		\
-		$(SRCs)							\
-		$(DIST_ROOT)/src/sync
 
 distclean:
 	cd pgsql && $(_MAKE) distclean

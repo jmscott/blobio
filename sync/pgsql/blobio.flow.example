@@ -1,6 +1,6 @@
 #
 #  Synopsis:
-#	Example configuration for maintaining database defined in schema.sql
+#	Example configuration for sync PG database, defined by schema.sql
 #  Usage:
 #  	flowd server blobio.flow
 #  See:
