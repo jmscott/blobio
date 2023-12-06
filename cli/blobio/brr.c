@@ -113,6 +113,20 @@ brr_service(struct service *srv)
 	brr.chat_history[0] = 0;
 	jmscott_strcat(brr.chat_history, sizeof brr.chat_history, chat_history);
 
+	//  verify blob sizes are consistent
+
+	if (!digest_module)
+		return "impossible empty digest module";
+	if (digest_module->empty()) {
+		if (blob_size != 0)
+			return "empty blob has size > 0";
+	} else if (blob_size == 0 && strchr("gtp", verb[0])) {
+		size_t len = strlen(chat_history);
+		if (len == 0)
+			return "zero length chat history";
+		if (chat_history[len - 1] == 'k')
+			return "ok: blob size == 0 for non empty blob";
+	}
 	brr.blob_size = blob_size;
 
 	char *err = srv->brr_frisk(&brr);
