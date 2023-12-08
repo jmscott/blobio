@@ -20,7 +20,7 @@
 START_EPOCH=$(date +%s)
 START_DIR=$(pwd)
 WORK_DIR=${TMPDIR:=/tmp}/$(basename $0)-$$.d
-PROGRESS_MODULUS=100
+PROGRESS_MODULUS=500
 
 log()
 {
