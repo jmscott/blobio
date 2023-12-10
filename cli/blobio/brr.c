@@ -107,11 +107,19 @@ brr_service(struct service *srv)
 
 	brr.verb[0] = 0;
 	jmscott_strcat(brr.verb, sizeof brr.verb, verb);
+	if (!brr.verb[0])
+		return "variable is empty: verb";
+
+	int is_ok = verb[strlen(verb) - 1] == 'k';
 
 	brr.transport[0] = 0;
 
 	brr.chat_history[0] = 0;
 	jmscott_strcat(brr.chat_history, sizeof brr.chat_history, chat_history);
+	
+	int chat_len = strlen(chat_history);
+	if (chat_len == 0)
+		return "zero length chat history";
 
 	//  verify blob sizes are consistent
 
@@ -120,11 +128,8 @@ brr_service(struct service *srv)
 	if (digest_module->empty()) {
 		if (blob_size != 0)
 			return "empty blob has size > 0";
-	} else if (blob_size == 0 && strchr("gtp", verb[0])) {
-		size_t len = strlen(chat_history);
-		if (len == 0)
-			return "zero length chat history";
-		if (chat_history[len - 1] == 'k')
+	} else if (blob_size == 0 && strchr("gtp", verb[0]) && is_ok) {
+		if (chat_history[chat_len - 1] == 'k')
 			return "ok: blob size == 0 for non empty blob";
 	}
 	brr.blob_size = blob_size;
@@ -135,8 +140,6 @@ brr_service(struct service *srv)
 
 	if (brr.log_fd < 0)
 		return "log file < 0";
-	if (!brr.verb[0])
-		return "variable is empty: verb";
 	if (!brr.transport[0])
 		return "variable is empty: transport";
 	if (!brr.chat_history[0])
