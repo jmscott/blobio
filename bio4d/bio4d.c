@@ -5,6 +5,9 @@
  *	cd /usr/local/blobio
  *	sbin/bio4d
  *  Note:
+ *	Getting an empty blob should always be true and never depend upon the
+ *	underlying service driver!
+ *
  *	upon boot the bio4d process should create {data/fs_*} dirs,
  *	since, technically, only bio4d knows the supported algorithms for
  *	fs_* storage.

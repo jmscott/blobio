@@ -15,6 +15,9 @@
  *	--output-path <path/to/file>
  *	--help
  *  Note:
+ *	Getting an empty blob should always be true and never depend upon the
+ *	underlying service driver!
+ *
  *	Replace "-" in options to more variable friendly "_" char.
  *	So, for example, "io-timeout" becomes "io_timeout".
  *

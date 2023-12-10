@@ -2,6 +2,9 @@
  *  Synopsis:
  *	A client driver for a paranoid blobio service 'bio4' over TCP/IP4
  *  Note:
+ *	Getting an empty blob should always be true and never depend upon the
+ *	underlying service driver!
+ *
  *	Need to replace most tracing with i/o tracing in {_read,_write}().
  *
  *	Timeout not active when waiting for for the reply from a blob with

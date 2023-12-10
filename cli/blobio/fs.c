@@ -2,6 +2,9 @@
  *  Synopsis:
  *	Driver for a fast, trusted posix file system blobio service.
  *  Note:
+ *	Getting an empty blob should always be true and never depend upon the
+ *	underlying service driver!
+ *
  *	Review chat history construction.
  *
  *	Double check default (0777) dir perms in various mkdir calls.
