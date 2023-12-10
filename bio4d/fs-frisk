@@ -104,6 +104,7 @@ while read U P;  do
 	let progress=count%PROGRESS_MODULUS
 	if (($progress==0));  then
 		log "$count frisked"
+		log "	ok=$ok_count,miss=$missing_count,bad=$bad_count"
 	fi
 done <FS
 log "ok count: $ok_count"
