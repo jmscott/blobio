@@ -79,6 +79,12 @@ while read U P;  do
 	ALGO=$(echo $U | cut -d: -f1)
 	BP=$BLOBIO_ROOT/data/$P
 
+	let progress=count%PROGRESS_MODULUS
+	if (($progress==0));  then
+		log "$count frisked, ok=$ok_count,miss=$missing_count"	\
+		    ",bad=$bad_count"
+	fi
+
 	#  minor race condition until "blobio eat" has specific
 	#  exit status for missing --input-path.
 	if [ ! -e $BP ];  then
@@ -101,11 +107,6 @@ while read U P;  do
 		die "blobio eat failed: exit status=$STATUS"
 		;;
 	esac
-	let progress=count%PROGRESS_MODULUS
-	if (($progress==0));  then
-		log "$count frisked"
-		log "	ok=$ok_count,miss=$missing_count,bad=$bad_count"
-	fi
 done <FS
 log "ok count: $ok_count"
 log "missing count: $missing_count"
