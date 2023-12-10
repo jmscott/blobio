@@ -218,7 +218,7 @@ fs_get(int *ok_no)
 				output_path
 		);
 		if (err) {
-			if (!err[0])
+			if (err[0])
 				return err;
 		} else {
 			fs_add_chat("ok");
