@@ -98,6 +98,11 @@ while read U P;  do
 		if [ "$ALGO:$D" = $U ];  then
 			let ok_count+=1
 		else
+			if [ "$D" = '' ];  then
+				log 'ERROR: eat: empty digest'
+			else
+				log "ERROR: eat: unexpected digest: $D"
+			fi
 			log "!$U"
 			let bad_count+=1
 		fi
