@@ -1,0 +1,57 @@
+#!/usr/bin/env bash
+#
+#  Synopsis:
+#	Touch blobs via fs:BLOBIO_ROOT service and write blob request record
+#  Usage:
+#	fs-touch eat|get <udig1> ...
+#
+
+PROG=$(basename $0)
+
+die() {
+	echo "$PROG: ERROR: $@" >&2
+	exit 1
+}
+
+test $# -lt 1 && die "wrong number of cli args: got $#, expected > 0" 
+
+VERB=$1;  shift
+case $VERB in
+eat)
+	;;
+get)
+	OUTPUT_PATH='--output-path /dev/null'
+	;;
+help|--help)
+	echo "usage: $PROG [get|eat|help] <udig> ..."
+	;;
+*)
+	die "unknown verb: $VERB"
+	;;
+esac
+
+test -n "$BLOBIO_ROOT" || die "env not defined: BLOBIO_ROOT"
+cd $BLOBIO_ROOT || die "cd failed: exit status $?: $BLOBIO_ROOT"
+
+SERVICE="--service fs:$BLOBIO_ROOT?brr=ff"
+
+while [ "$1" ];  do
+	U=$1
+	blobio $VERB --udig $U $SERVICE $OUTPUT_PATH
+	STATUS=$?
+	case $STATUS in
+	0)
+		echo ">$U"
+		;;
+	1)
+		echo "?$U"
+		;;
+	*)
+		echo "!$U"
+		die "blobio $VERB failed: exit status=$$STATUS"
+		;;
+	esac
+	shift
+done
+
+exit 0

@@ -65,6 +65,7 @@ SBINs="
 	boot-bio4d
 	create-rrd
 	fs-frisk
+	fs-touch
 	fs2udig
 	graph-rrd
 	gyr-run-tuple-bio4d
