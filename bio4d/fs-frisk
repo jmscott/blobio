@@ -52,9 +52,10 @@ trap leave EXIT
 
 log "BLOBIO_ROOT=$BLOBIO_ROOT"
 log "PATH=$PATH"
-log "work dir: $WORK_DIR"
 log "progress modulus: $PROGRESS_MODULUS"
 
+log "TMPDIR=$TMPDIR"
+log "work dir: $WORK_DIR"
 mkdir "$WORK_DIR" || die "mkdir work dir failed: exit status=$?"
 
 cd $WORK_DIR || die "cd work dir failed: exist status=$?"
