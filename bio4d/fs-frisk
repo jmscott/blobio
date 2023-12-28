@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 #
 #  Synopsis:
 #	Verify correctness of file system blobs in $BLOBIO_ROOT/data/fs_*
