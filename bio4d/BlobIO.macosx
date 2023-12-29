@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 #
 #  Synopsis:
 #	MAC OS X 10.6 Start/Stop Script

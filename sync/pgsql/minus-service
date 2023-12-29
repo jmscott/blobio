@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 #
 #  Synopsis:
 #	Find blobs in service 1 (PG*) not in service 2 (--pg2*)

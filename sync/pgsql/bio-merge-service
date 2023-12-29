@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 #
 #  Synopsis:
 #	Point in Time Merger of BLOBIO_SERVICE/PG* and another blobio service.

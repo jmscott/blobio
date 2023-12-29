@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/usr/bin/env bash
 #
 #  Synopsis:
 #	Merge the bio4d samples in log/bio4d-stat.log into log/bio4d.rrd

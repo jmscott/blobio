@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 #
 #  Synospsis:
 #	Report of GREEN/YELLOW/RED stats for bio4d & flowd processes.

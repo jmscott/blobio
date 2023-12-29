@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 #
 #  Synopsis:
 #	Wrap blobs when flowd is "quiet", based upon mtime of run/flowd.gyr

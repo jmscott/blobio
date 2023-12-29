@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 #
 #  Synopsis:
 #	Roll various desc logs (*.[fqx]dr) to round robin db in cache/rrd/*.rrd

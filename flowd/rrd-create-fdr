@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/usr/bin/env bash
 #
 #  Synopsis:
 #	Create the for fd recored a round robin database file.

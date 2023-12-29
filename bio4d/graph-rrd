@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 #
 #  Synopsis:
 #	Generate a PNG overview graph of the traffic on a BIO4D server.

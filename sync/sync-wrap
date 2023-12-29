@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 #
 #  Synopsis:
 #	Sync all blobs in a single wrap set by "blobio get >/dev/null"

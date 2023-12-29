@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 #
 #  Synopsis:
 #	Eat blobs that are not in the table "service" or "brr_blob_size"

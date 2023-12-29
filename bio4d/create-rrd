@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/usr/bin/env bash
 #
 #  Synopsis:
 #	Create the round robin database for blobio.

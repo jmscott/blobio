@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 #
 #  Synopsis:
 #	Convert file system paths in dirs data/fs_[a-z]* into udigs

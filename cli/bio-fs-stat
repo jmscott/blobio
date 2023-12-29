@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 #
 #  Synospsis:
 #	Stat the file of a blob stored in $BLOBIO_ROOT/data.

@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 #
 #  Synopsis:
 #	Make the root dir tree for a remote service in $BLOBIO_ROOT/sync/remote

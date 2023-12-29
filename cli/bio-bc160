@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 #
 #  Synopsis:
 #	Calculate digest RIPEMD160(SHA256) of standard input or list of files.

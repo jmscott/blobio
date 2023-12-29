@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 #
 #  Synopsis:
 #	Flip all blob request record files in spool to spool/<file>-<epoch>.brr

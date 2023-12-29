@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 #
 #  Synopsis:
 #	Manual reboot of all sync flowd process in $BLOBIO_ROOT/sync/remote/*
