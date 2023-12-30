@@ -158,7 +158,7 @@ log "ok count: $ok_count"
 log "missing count: $missing_count"
 log "bad count: $bad_count"
 log "scanned: $count blobs total"
-log "byte total: $byte_total bytes"
+log "ok byte total: $byte_total bytes"
 
 if (($bad_count>0));  then
 	if (($missing_count>0)); then
