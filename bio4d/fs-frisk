@@ -40,6 +40,11 @@ ERROR()
 	log "ERROR: $@" >&2
 }
 
+WARN()
+{
+	log "WARN: $@" >&2
+}
+
 die()
 {
 	ERROR "$@"
@@ -101,16 +106,10 @@ while read U P;  do
 	[a-z]*)
 		;;
 	'')
-		ERROR $ALGO
-		ERROR "empty extracted algo: $U"
-		ERROR "!$U"
-		continue
+		die "empty extracted algo: $U"
 		;;
 	*)
-		ERROR $ALGO
-		ERROR "cannot extract algo: $U"
-		log "!$U"
-		continue
+		die "cannot extract algo: $U"
 		''
 	esac
 
@@ -119,8 +118,8 @@ while read U P;  do
 	#  minor race condition if blob is taken after successfull eat.
 
 	if [ ! -e $BP ];  then
-		ERROR 'possible race, blob file disappeared after ok blob eat'
-		ERROR "?$U"
+		WARN 'possible race, blob file disappeared after ok blob eat'
+		WARN "?$U"
 		let missing_count+=1
 		continue
 	fi
@@ -130,11 +129,11 @@ while read U P;  do
 	0)
 		if [ "$ALGO:$D" != $U ];  then
 			if [ "$D" = '' ];  then
-				ERROR 'eat: empty digest'
+				WARN 'eat: empty digest'
 			else
-				ERROR "eat: unexpected algo:digest: $ALGO:$D"
+				WARN "eat: unexpected algo:digest: $ALGO:$D"
 			fi
-			ERROR "!$U"
+			WARN "!$U"
 			let bad_count+=1
 			continue
 		fi
@@ -145,8 +144,8 @@ while read U P;  do
 		if [ $STATUS = 0 ];  then
 			let byte_total+=$SZ
 		else
-			ERROR "file-stat-size failed: exit status"
-			ERROR "!$U"
+			WARN "file-stat-size failed: exit status"
+			WARN "!$U"
 		fi
 		;;
 	*)
