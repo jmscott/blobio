@@ -33,6 +33,8 @@
  *	2	-> is empty
  *  	3	-> unexpected error
  *  Note:
+ *	Test for blob_size == 0 for non-empty blobs.
+ *
  *	What about leap second?
  *
  *  	Need a compile time pragma to insure the
@@ -652,7 +654,8 @@ done:
 }
 
 /*
- *  Scan for an unsigned int <= 2^63 -1.
+ *  Scan for an unsigned int <= 2^63 -1.  A size of zero only valid for the
+ *  empty blob.
  *
  *  Note:
  *  	Need a compile time pragma to insure the
