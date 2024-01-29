@@ -2,6 +2,8 @@
 #  Synopsis:
 #	Example flow config for syncing a local bio4 server with a remote.
 #  Note:
+#	Rethink the take of a remote blob!
+#
 #	Various scripts expect the name of this file to be
 #	sync-<remote-name>.flow, so do not rename!
 #
