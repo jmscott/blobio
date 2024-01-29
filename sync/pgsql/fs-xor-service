@@ -61,7 +61,6 @@ log "PATH=$PATH"
 log "tmp count file: $TMP_COUNT"
 
 log "starting scan of $(pwd)/data/ ..."
-log 'file system in column <, service in column >'
 comm -3 <(fs2udig | sort) <(ls-service)					|
 	sed 's/^\t/> /' 						|
 	sed 's/^\([^>]\)/< \1/'						|
@@ -73,4 +72,5 @@ STATUS=${PIPESTATUS[*]}
 test "$STATUS" = '0 0 0 0 0'						||
 		die "comm fs/service failed: exit status=$STATUS"
 
+log 'file system in column <, service in column >'
 log "xor udig count: $(cat $TMP_COUNT)"
