@@ -36,8 +36,10 @@ install: all
 distclean:
 	cd pgsql && $(_MAKE) distclean
 	rm -rf $(DIST_ROOT)/src/sync
-	test -d $(DIST_ROOT)/sbin && cd $(DIST_ROOT)/sbin &&rm -f $(SBINs)
-	test -d $(DIST_ROOT)/lib && cd $(DIST_ROOT)/sbin &&rm -f $(LIBs)
+	realpath --relative-to $(DIST_ROOT)/sbin $(SBINs)		|\
+		rm --verbose --force
+	realpath --relative-to $(DIST_ROOT)/lib $(LIBs)			|\
+		rm --verbose --force
 clean:
 	rm -f $(COMPILEs)
 
