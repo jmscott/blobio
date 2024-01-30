@@ -41,7 +41,7 @@ fs:*)
 bio4:*:[0-9]*)
 	;;
 *)
-	die "unknown blobio remote service: $REMOTE_BLOBIO_SERVICE"
+	die "unknown syntax for remote BLOBIO_SERVICE: $REMOTE_BLOBIO_SERVICE"
 	;;
 esac
 
