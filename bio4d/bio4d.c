@@ -2368,7 +2368,6 @@ main(int argc, char **argv, char **env)
 		panic2("signal(HUP, SIG_IGN) failed", strerror(errno));
 
 	ps_title_set("bio4d-listen", (char *)0, (char *)0);
-	gyr_rrd_empty();
 
 	/*
 	 *  Open the socket to listen for requests.
@@ -2386,6 +2385,7 @@ main(int argc, char **argv, char **env)
 		snprintf(buf, sizeof buf, "rrd duration: %u sec", rrd_duration);
 		info(buf);
 		info2("rrd path", rrd_path);
+		gyr_rrd_empty();
 	} else
 		warn("rrd disabled");
 
