@@ -42,7 +42,8 @@ export BLOBIO_TRUST_FS=${BLOBIO_TRUST_FS:=false}
 #  set sample rate (sec) for stats in run/bio4d.gyr
 #  0 disables.  note, BLOBIO_BIO4D_RRD_DURATION >= LOG_HEARTBEAT
 #
-#  the script run-stat-report uses run/bio4d.gyr
+#  the script run-stat-report uses run/bio4d.gyr and files mysteriously
+#  when BLOBIO_BIO4D_RRD_DURATION=0. 
 #
 export BLOBIO_BIO4D_RRD_DURATION=0
 

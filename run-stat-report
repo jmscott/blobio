@@ -11,6 +11,9 @@
 #	0	ok
 #	1	error
 #  Note:
+#	Issue warning when BLOBIO_BIO4D_RRD_DURATION=0, otherwise the outp[ut
+#	seems mysteriously stae.
+#
 #	Consider adding the disk usage of the volume storing
 #	$BLOBIO_ROOT/data.  For gnu "df" do "df -h $BLOBIO_ROOT/data".
 #
