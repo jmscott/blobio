@@ -13,4 +13,4 @@ rrdtool graph fdr.png 							\
 	DEF:g=fdr.rrd:ok_count:LAST	 				\
 	'LINE2:g#00FF00:MAX green/sec'					\
 	DEF:r=fdr.rrd:fault_count:MAX	 				\
-	'LINE2:r#FF0000:WTF red/sec'					\
+	'LINE2:r#FF0000:MAX red/sec'					\
