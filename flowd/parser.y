@@ -245,6 +245,7 @@ const (
 %token	IN
 %token	IS
 %token	LOCK
+%token	TAS_LOCK
 %token	LOG_DIRECTORY
 %token	MAX_IDLE_CONNS
 %token	MAX_OPEN_CONNS
@@ -1050,6 +1051,21 @@ projection:
 	;
 
 qualify:
+	  TAS_LOCK '(' tail_project ')'
+	  {
+		l := yylex.(*yyLexState)
+
+		f := $3.brr_field
+	  	if f != brr_UDIG {
+			l.error("tas_lock: only project udig, not %s", f)
+			return 0
+		}
+		$$ = &ast {
+			yy_tok:	TAS_LOCK,
+			left:	$3,
+		}
+	  }
+	|
 	  projection  rel_op  constant
 	  {
 		l := yylex.(*yyLexState)
@@ -1784,28 +1800,6 @@ sql_decl_stmt_list:
 	;
 
 statement:
-	/*
-	  PROCESS  LOCK  '('  arg  ')'
-	  {
-		l := yylex.(*yyLexState)
-
-		if !$$.ast.is_string() {
-			l.error("process lock args not a string")
-		}
-	  }  WHEN  qualify
-	  {
-		$$ = &ast{
-			yy_tok:	LOCK,
-			left:	&ast{
-					yy_tok:	ARGV1,
-					left:	$4,
-					uint64:	1,
-			},
-			right:	$8,
-		}
-	  }
-	|
-	*/
 	  BOOT {
 		l := yylex.(*yyLexState)
 		if l.seen_boot {
@@ -2136,6 +2130,7 @@ var keyword = map[string]int{
 	"wall_duration":	WALL_DURATION,
 	"when":			WHEN,
 	"xdr_roll_duration":	XDR_ROLL_DURATION,
+	"tas_lock":		TAS_LOCK,
 }
 
 type yyLexState struct {
@@ -2781,6 +2776,8 @@ func (a *ast) to_string(brief bool) string {
 		what = Sprintf("EQ_STRING(\"%s\")", a.string)
 	case TAIL:
 		what = Sprintf("TAIL(%s)", a.tail.name)
+	case TAS_LOCK:
+		what = Sprintf("TAS_LOCK")
 	case TAIL_REF:
 		what = Sprintf("TAIL_REF(%s.%s)", a.tail.name, a.brr_field)
 	case COMMAND_REF:

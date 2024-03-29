@@ -192,7 +192,7 @@ func init() {
 	or[ln|rum_WAIT] = rum_WAIT
 }
 
-// bool_value is result of AND, OR and relational operations
+// bool_value is result of AND, OR, LOCKED and relational operations
 type bool_value struct {
 	bool
 	is_null bool

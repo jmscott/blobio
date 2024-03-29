@@ -50,6 +50,7 @@ func init() {
 
 //  trivial, serialized debug printf() with easy to grep prefix
 
+/*
 func wtf(format string, args ...interface{}) {
 
 	io := func() {
@@ -65,12 +66,13 @@ func wtf(format string, args ...interface{}) {
 	wtf_once.Do(io)
 
 	pay := &wtf_payload{
-		msg:  Sprintf("WTF: %s\n", Sprintf(format, args...)),
+		msg:  Sprintf("WTF: WTF: %s\n", Sprintf(format, args...)),
 		done: make(chan bool),
 	}
 	wtf_io <- pay
 	<-pay.done
 }
+*/
 
 func (in file_byte_chan) roll_Dow(
 	prefix, suffix string,

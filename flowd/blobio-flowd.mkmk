@@ -81,6 +81,7 @@ SBINs="
 #
 GOSRCs="
 	flowd.go							\
+									\
 	brr.go								\
 	command.go							\
 	compile.go							\
@@ -94,6 +95,7 @@ GOSRCs="
 	server.go							\
 	sql.go								\
 	tail.go								\
+	tas_lock.go							\
 	tsort.go							\
 	xdr.go
 "

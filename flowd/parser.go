@@ -178,64 +178,65 @@ const HEARTBEAT_DURATION = 57373
 const IN = 57374
 const IS = 57375
 const LOCK = 57376
-const LOG_DIRECTORY = 57377
-const MAX_IDLE_CONNS = 57378
-const MAX_OPEN_CONNS = 57379
-const MEMSTAT_DURATION = 57380
-const NAME = 57381
-const NEQ = 57382
-const NO_MATCH = 57383
-const NEQ_BOOL = 57384
-const NEQ_STRING = 57385
-const NO_MATCH_STRING = 57386
-const NEQ_UINT64 = 57387
-const OS_EXEC_CAPACITY = 57388
-const OS_EXEC_WORKER_COUNT = 57389
-const PARSE_ERROR = 57390
-const PATH = 57391
-const PROCESS = 57392
-const PROJECT_BRR = 57393
-const PROJECT_QDR_ROWS_AFFECTED = 57394
-const PROJECT_QDR_SQLSTATE = 57395
-const PROJECT_SQL_QUERY_ROW_BOOL = 57396
-const PROJECT_XDR_EXIT_STATUS = 57397
-const QDR_ROLL_DURATION = 57398
-const QUERY_DURATION = 57399
-const QUERY_EXEC = 57400
-const QUERY_EXEC_TXN = 57401
-const QUERY_ROW = 57402
-const RESULT = 57403
-const ROW = 57404
-const ROWS_AFFECTED = 57405
-const SQL = 57406
-const SQLSTATE = 57407
-const SQL_DATABASE = 57408
-const SQL_DATABASE_REF = 57409
-const SQL_EXEC_REF = 57410
-const SQL_QUERY_ROW_REF = 57411
-const START_TIME = 57412
-const STATEMENT = 57413
-const STRING = 57414
-const TAIL = 57415
-const TAIL_REF = 57416
-const TRANSACTION = 57417
-const TRANSPORT = 57418
-const UDIG = 57419
-const UINT64 = 57420
-const UNLOCK = 57421
-const VERB = 57422
-const WALL_DURATION = 57423
-const WHEN = 57424
-const XDR_ROLL_DURATION = 57425
-const yy_AND = 57426
-const yy_EXEC = 57427
-const yy_FALSE = 57428
-const yy_INT64 = 57429
-const yy_OK = 57430
-const yy_OR = 57431
-const yy_TRUE = 57432
-const QUERY = 57433
-const yy_BOOL = 57434
+const TAS_LOCK = 57377
+const LOG_DIRECTORY = 57378
+const MAX_IDLE_CONNS = 57379
+const MAX_OPEN_CONNS = 57380
+const MEMSTAT_DURATION = 57381
+const NAME = 57382
+const NEQ = 57383
+const NO_MATCH = 57384
+const NEQ_BOOL = 57385
+const NEQ_STRING = 57386
+const NO_MATCH_STRING = 57387
+const NEQ_UINT64 = 57388
+const OS_EXEC_CAPACITY = 57389
+const OS_EXEC_WORKER_COUNT = 57390
+const PARSE_ERROR = 57391
+const PATH = 57392
+const PROCESS = 57393
+const PROJECT_BRR = 57394
+const PROJECT_QDR_ROWS_AFFECTED = 57395
+const PROJECT_QDR_SQLSTATE = 57396
+const PROJECT_SQL_QUERY_ROW_BOOL = 57397
+const PROJECT_XDR_EXIT_STATUS = 57398
+const QDR_ROLL_DURATION = 57399
+const QUERY_DURATION = 57400
+const QUERY_EXEC = 57401
+const QUERY_EXEC_TXN = 57402
+const QUERY_ROW = 57403
+const RESULT = 57404
+const ROW = 57405
+const ROWS_AFFECTED = 57406
+const SQL = 57407
+const SQLSTATE = 57408
+const SQL_DATABASE = 57409
+const SQL_DATABASE_REF = 57410
+const SQL_EXEC_REF = 57411
+const SQL_QUERY_ROW_REF = 57412
+const START_TIME = 57413
+const STATEMENT = 57414
+const STRING = 57415
+const TAIL = 57416
+const TAIL_REF = 57417
+const TRANSACTION = 57418
+const TRANSPORT = 57419
+const UDIG = 57420
+const UINT64 = 57421
+const UNLOCK = 57422
+const VERB = 57423
+const WALL_DURATION = 57424
+const WHEN = 57425
+const XDR_ROLL_DURATION = 57426
+const yy_AND = 57427
+const yy_EXEC = 57428
+const yy_FALSE = 57429
+const yy_INT64 = 57430
+const yy_OK = 57431
+const yy_OR = 57432
+const yy_TRUE = 57433
+const QUERY = 57434
+const yy_BOOL = 57435
 
 var yyToknames = [...]string{
 	"$end",
@@ -272,6 +273,7 @@ var yyToknames = [...]string{
 	"IN",
 	"IS",
 	"LOCK",
+	"TAS_LOCK",
 	"LOG_DIRECTORY",
 	"MAX_IDLE_CONNS",
 	"MAX_OPEN_CONNS",
@@ -346,7 +348,7 @@ const yyEofCode = 1
 const yyErrCode = 2
 const yyInitialStackSize = 16
 
-//line parser.y:2085
+//line parser.y:2079
 
 var keyword = map[string]int{
 	"OK":                   yy_OK,
@@ -400,6 +402,7 @@ var keyword = map[string]int{
 	"wall_duration":        WALL_DURATION,
 	"when":                 WHEN,
 	"xdr_roll_duration":    XDR_ROLL_DURATION,
+	"tas_lock":             TAS_LOCK,
 }
 
 type yyLexState struct {
@@ -1045,6 +1048,8 @@ func (a *ast) to_string(brief bool) string {
 		what = Sprintf("EQ_STRING(\"%s\")", a.string)
 	case TAIL:
 		what = Sprintf("TAIL(%s)", a.tail.name)
+	case TAS_LOCK:
+		what = Sprintf("TAS_LOCK")
 	case TAIL_REF:
 		what = Sprintf("TAIL_REF(%s.%s)", a.tail.name, a.brr_field)
 	case COMMAND_REF:
@@ -1227,72 +1232,72 @@ var yyExca = [...]int8{
 
 const yyPrivate = 57344
 
-const yyLast = 274
+const yyLast = 279
 
 var yyAct = [...]uint8{
-	212, 198, 146, 32, 123, 145, 139, 134, 147, 228,
-	59, 147, 225, 178, 227, 141, 140, 226, 136, 217,
-	65, 40, 216, 206, 215, 66, 214, 204, 54, 62,
-	208, 57, 142, 143, 112, 53, 204, 144, 58, 205,
-	137, 151, 151, 121, 154, 153, 60, 61, 119, 151,
-	103, 149, 152, 196, 149, 150, 56, 29, 150, 28,
-	192, 148, 135, 95, 148, 94, 93, 122, 88, 65,
-	87, 76, 38, 37, 66, 75, 65, 189, 41, 89,
-	183, 66, 4, 55, 10, 193, 67, 20, 179, 6,
-	188, 19, 40, 171, 17, 172, 163, 124, 124, 124,
-	97, 34, 164, 18, 158, 155, 16, 201, 128, 98,
-	181, 174, 168, 157, 167, 166, 165, 159, 108, 102,
-	101, 100, 99, 219, 107, 65, 195, 182, 230, 197,
-	66, 223, 110, 187, 186, 130, 109, 9, 125, 229,
-	221, 156, 210, 147, 199, 162, 5, 108, 170, 41,
-	169, 185, 86, 107, 22, 124, 177, 59, 184, 81,
-	21, 110, 126, 127, 11, 109, 180, 132, 131, 129,
-	25, 78, 170, 175, 190, 54, 62, 116, 57, 117,
-	113, 31, 53, 77, 91, 58, 149, 136, 50, 63,
-	150, 69, 70, 60, 61, 24, 148, 213, 202, 27,
-	26, 42, 191, 56, 114, 45, 115, 106, 44, 137,
-	72, 71, 111, 43, 82, 30, 74, 23, 224, 14,
-	85, 80, 141, 140, 84, 83, 68, 194, 176, 173,
-	55, 135, 161, 207, 203, 118, 92, 120, 96, 142,
-	143, 3, 90, 64, 12, 15, 13, 104, 105, 211,
-	200, 138, 133, 220, 222, 209, 160, 48, 47, 46,
-	73, 49, 1, 51, 52, 218, 79, 39, 35, 2,
-	33, 36, 8, 7,
+	216, 202, 150, 33, 126, 149, 143, 137, 151, 151,
+	182, 60, 219, 232, 139, 145, 144, 41, 231, 229,
+	221, 218, 208, 220, 230, 212, 125, 148, 208, 55,
+	63, 209, 58, 146, 147, 32, 140, 54, 124, 155,
+	59, 66, 158, 196, 155, 122, 67, 157, 61, 62,
+	105, 155, 153, 153, 156, 115, 154, 154, 57, 138,
+	29, 28, 152, 152, 141, 210, 200, 97, 197, 39,
+	38, 96, 95, 69, 66, 42, 90, 89, 78, 67,
+	77, 41, 19, 66, 91, 56, 223, 193, 67, 187,
+	183, 192, 175, 68, 18, 20, 17, 167, 35, 127,
+	127, 127, 99, 176, 185, 4, 168, 10, 16, 162,
+	161, 159, 6, 131, 100, 178, 172, 171, 170, 169,
+	163, 104, 111, 129, 130, 103, 102, 101, 110, 66,
+	199, 186, 234, 205, 67, 201, 113, 111, 227, 42,
+	112, 191, 190, 110, 160, 133, 60, 128, 42, 166,
+	179, 113, 174, 151, 173, 112, 233, 225, 214, 127,
+	181, 9, 203, 22, 55, 63, 88, 58, 189, 21,
+	5, 188, 54, 83, 184, 59, 174, 135, 134, 132,
+	25, 36, 116, 61, 62, 80, 194, 119, 11, 120,
+	93, 31, 51, 57, 64, 71, 72, 153, 79, 139,
+	217, 154, 206, 24, 46, 45, 117, 152, 118, 27,
+	26, 43, 145, 144, 195, 74, 73, 44, 109, 30,
+	56, 140, 228, 114, 14, 70, 23, 76, 198, 84,
+	146, 147, 180, 177, 165, 87, 82, 211, 207, 86,
+	85, 121, 3, 98, 138, 12, 94, 123, 92, 65,
+	15, 108, 13, 215, 204, 142, 136, 224, 106, 107,
+	75, 226, 213, 164, 49, 48, 47, 50, 1, 52,
+	53, 222, 81, 40, 2, 34, 37, 8, 7,
 }
 
 var yyPact = [...]int16{
-	73, -1000, 73, -1000, -1000, 180, -1000, 12, 9, 69,
-	178, 131, -1000, -40, -42, 176, -1000, 4, -1000, 4,
-	174, 169, 166, -1000, -1000, -1000, -1000, -1000, 147, 140,
-	-1000, -8, 170, 170, 4, -1000, -1000, -21, -25, 144,
-	-26, -28, -15, -1000, 122, -1000, -31, -32, -34, 0,
-	15, 29, 28, 27, -1000, -1000, -1000, -1000, -1000, -1000,
-	-1000, -1000, -1000, 26, -49, 4, 4, -1000, 46, -1000,
-	-1000, -1000, -1000, 46, -64, 141, 114, -1000, -1000, -1000,
-	-1000, -1000, -1000, -1000, -1000, -1000, -1000, 208, -1000, -1000,
-	-51, -1000, -56, 75, 75, 75, 14, -1000, -1000, 97,
-	57, 96, 95, 182, 41, 41, -1000, -1000, -1000, -1000,
-	-1000, -1000, -1000, -1000, -1000, -1000, -1000, -1000, -1000, 203,
-	-62, 125, -46, -1000, -1000, -1000, -53, -54, -1000, -1000,
-	-1000, -1000, 11, 13, 10, 24, -1000, 199, -4, 8,
-	23, 22, 21, 19, 125, -7, 1, 196, 18, 111,
-	195, 75, -1000, -1000, -1000, -87, -6, -1000, -1000, 94,
-	17, 39, -14, -1000, -1000, 86, 79, 56, 55, -10,
-	-17, -1000, -1000, 135, -12, 194, 38, -1000, -1000, -1000,
-	-1000, -44, 47, -1000, -1000, -1000, -1000, -1000, -1000, -1000,
-	-1000, -1000, -1000, 72, -1000, 25, 72, 202, -59, -1000,
-	-74, 201, -68, -1000, 70, -1000, 158, -73, -1000, -75,
-	-1000, -76, -1000, 31, 68, 53, -1000, 158, -1000, -1000,
-	-83, -1000, -86, -1000, -1000, 67, -1000, -1000, 50, -1000,
-	-1000,
+	96, -1000, 96, -1000, -1000, 184, -1000, 13, -1, 77,
+	186, 140, -1000, -39, -40, 179, -1000, 0, -1000, 0,
+	177, 165, 164, -1000, -1000, -1000, -1000, -1000, 136, 144,
+	-1000, -2, -25, 174, 174, 0, -1000, -1000, -17, -19,
+	158, -20, -21, -11, -1000, 127, -1000, -26, -27, -31,
+	1, 19, 33, 32, 31, -1000, -1000, -1000, -1000, -1000,
+	-1000, -1000, -1000, -1000, 27, -50, 0, 0, -1000, 73,
+	49, -1000, -1000, -1000, -1000, 49, -44, 142, 123, -1000,
+	-1000, -1000, -1000, -1000, -1000, -1000, -1000, -1000, -1000, 214,
+	-1000, -1000, -55, -1000, -62, 64, 64, 64, 18, -1000,
+	-1000, 106, 66, 105, 104, 194, 44, 44, -35, -1000,
+	-1000, -1000, -1000, -1000, -1000, -1000, -1000, -1000, -1000, -1000,
+	-1000, -1000, 193, -73, 135, -45, -1000, -1000, -1000, -52,
+	-57, -1000, -1000, -1000, -1000, 16, 9, 14, 26, -1000,
+	201, -1000, -4, 11, 25, 24, 23, 22, 135, -9,
+	8, 200, 21, 87, 199, 64, -1000, -1000, -1000, -91,
+	-5, -1000, -1000, 101, 10, 42, -6, -1000, -1000, 98,
+	95, 63, 62, -10, -8, -1000, -1000, 146, -30, 195,
+	41, -1000, -1000, -1000, -1000, -32, 52, -1000, -1000, -1000,
+	-1000, -1000, -1000, -1000, -1000, -1000, -1000, 89, -1000, 50,
+	89, 206, -68, -1000, -33, 205, -74, -1000, 85, -1000,
+	160, -79, -1000, -88, -1000, -76, -1000, -7, 84, 59,
+	-1000, 160, -1000, -1000, -77, -1000, -83, -1000, -1000, 83,
+	-1000, -1000, 53, -1000, -1000,
 }
 
 var yyPgo = [...]int16{
-	0, 4, 67, 273, 272, 271, 270, 138, 226, 181,
-	269, 241, 268, 3, 267, 266, 265, 264, 263, 1,
-	262, 188, 261, 259, 258, 257, 7, 256, 255, 254,
-	253, 252, 6, 251, 2, 250, 249, 5, 246, 245,
-	243, 242, 237, 236, 0,
+	0, 4, 26, 278, 277, 276, 275, 147, 225, 191,
+	274, 242, 181, 3, 273, 272, 271, 270, 269, 1,
+	268, 192, 267, 266, 265, 264, 7, 263, 262, 261,
+	257, 256, 6, 255, 2, 254, 253, 5, 252, 250,
+	249, 248, 247, 246, 0,
 }
 
 var yyR1 = [...]int8{
@@ -1301,13 +1306,13 @@ var yyR1 = [...]int8{
 	7, 7, 8, 8, 8, 8, 14, 5, 6, 6,
 	6, 6, 6, 15, 15, 15, 15, 15, 15, 15,
 	12, 12, 12, 13, 13, 9, 9, 9, 9, 9,
-	1, 1, 2, 2, 2, 3, 23, 3, 4, 24,
-	4, 25, 4, 26, 27, 26, 28, 26, 29, 29,
-	30, 30, 31, 31, 32, 32, 32, 32, 33, 33,
-	34, 34, 34, 34, 35, 34, 34, 37, 37, 38,
-	11, 11, 39, 40, 11, 11, 11, 11, 11, 41,
-	11, 42, 11, 43, 11, 16, 44, 36, 36, 10,
-	10,
+	9, 1, 1, 2, 2, 2, 3, 23, 3, 4,
+	24, 4, 25, 4, 26, 27, 26, 28, 26, 29,
+	29, 30, 30, 31, 31, 32, 32, 32, 32, 33,
+	33, 34, 34, 34, 34, 35, 34, 34, 37, 37,
+	38, 11, 11, 39, 40, 11, 11, 11, 11, 11,
+	41, 11, 42, 11, 43, 11, 16, 44, 36, 36,
+	10, 10,
 }
 
 var yyR2 = [...]int8{
@@ -1315,68 +1320,68 @@ var yyR2 = [...]int8{
 	1, 3, 3, 3, 2, 3, 1, 3, 1, 1,
 	1, 1, 1, 1, 1, 1, 2, 3, 3, 3,
 	3, 3, 3, 1, 1, 1, 1, 1, 1, 1,
-	2, 2, 2, 1, 1, 3, 3, 3, 3, 3,
-	1, 1, 0, 1, 3, 2, 0, 6, 2, 0,
-	6, 0, 6, 3, 0, 6, 0, 9, 1, 3,
-	1, 3, 2, 3, 3, 3, 3, 3, 2, 3,
-	3, 3, 3, 5, 0, 7, 8, 2, 3, 0,
-	5, 8, 0, 0, 7, 2, 4, 2, 4, 0,
-	7, 0, 8, 0, 7, 1, 2, 1, 3, 1,
-	2,
+	2, 2, 2, 1, 1, 4, 3, 3, 3, 3,
+	3, 1, 1, 0, 1, 3, 2, 0, 6, 2,
+	0, 6, 0, 6, 3, 0, 6, 0, 9, 1,
+	3, 1, 3, 2, 3, 3, 3, 3, 3, 2,
+	3, 3, 3, 3, 5, 0, 7, 8, 2, 3,
+	0, 5, 8, 0, 0, 7, 2, 4, 2, 4,
+	0, 7, 0, 8, 0, 7, 1, 2, 1, 3,
+	1, 2,
 }
 
 var yyChk = [...]int16{
-	-1000, -20, -10, -11, 9, 73, 16, -3, -4, 64,
-	11, 91, -11, -38, 39, -39, 94, 82, 94, 82,
-	18, 91, 85, 39, 17, 39, 69, 68, 99, 99,
-	39, -9, -13, -6, 97, -12, -5, 69, 68, -14,
-	17, 74, -9, 39, 39, 39, -23, -24, -25, -22,
-	-21, -18, -17, 35, 28, 83, 56, 31, 38, 10,
-	46, 47, 29, 49, -40, 84, 89, 94, -8, 21,
-	22, 41, 40, -8, -9, 96, 96, 39, 27, -15,
-	77, 15, 70, 81, 80, 76, 8, 96, 96, 94,
-	-41, 62, -43, 97, 97, 97, -21, 100, 94, 93,
-	93, 93, 93, 99, -9, -9, -7, 78, 72, 90,
-	86, -7, 98, 39, 63, 65, 63, 65, 27, 99,
-	-42, 99, -2, -1, -13, -7, -2, -2, 94, 72,
-	78, 72, 72, -31, -26, 49, 5, 27, -33, -32,
-	20, 19, 36, 37, 99, -37, -34, 18, 71, 61,
-	65, 95, 98, 98, 98, 94, -26, 100, 94, 93,
-	-27, 33, -32, 100, 94, 93, 93, 93, 93, -37,
-	-34, 100, 94, 33, 93, 62, 33, -1, 100, 94,
-	72, 93, 88, 94, 72, 72, 78, 78, 100, 94,
-	39, 67, 72, 97, 33, 88, 97, 82, -19, 72,
-	-35, 82, -19, 32, 95, 98, 97, 32, 98, -28,
-	72, -36, -44, 39, 99, 99, 98, 95, -16, 92,
-	-30, 72, -29, 78, -44, 95, 100, 100, 95, 72,
-	78,
+	-1000, -20, -10, -11, 9, 74, 16, -3, -4, 65,
+	11, 92, -11, -38, 40, -39, 95, 83, 95, 83,
+	18, 92, 86, 40, 17, 40, 70, 69, 100, 100,
+	40, -9, 35, -13, -6, 98, -12, -5, 70, 69,
+	-14, 17, 75, -9, 40, 40, 40, -23, -24, -25,
+	-22, -21, -18, -17, 36, 28, 84, 57, 31, 39,
+	10, 47, 48, 29, 50, -40, 85, 90, 95, 98,
+	-8, 21, 22, 42, 41, -8, -9, 97, 97, 40,
+	27, -15, 78, 15, 71, 82, 81, 77, 8, 97,
+	97, 95, -41, 63, -43, 98, 98, 98, -21, 101,
+	95, 94, 94, 94, 94, 100, -9, -9, -12, -7,
+	79, 73, 91, 87, -7, 99, 40, 64, 66, 64,
+	66, 27, 100, -42, 100, -2, -1, -13, -7, -2,
+	-2, 95, 73, 79, 73, 73, -31, -26, 50, 5,
+	27, 99, -33, -32, 20, 19, 37, 38, 100, -37,
+	-34, 18, 72, 62, 66, 96, 99, 99, 99, 95,
+	-26, 101, 95, 94, -27, 33, -32, 101, 95, 94,
+	94, 94, 94, -37, -34, 101, 95, 33, 94, 63,
+	33, -1, 101, 95, 73, 94, 89, 95, 73, 73,
+	79, 79, 101, 95, 40, 68, 73, 98, 33, 89,
+	98, 83, -19, 73, -35, 83, -19, 32, 96, 99,
+	98, 32, 99, -28, 73, -36, -44, 40, 100, 100,
+	99, 96, -16, 93, -30, 73, -29, 79, -44, 96,
+	101, 101, 96, 73, 79,
 }
 
 var yyDef = [...]int8{
-	0, -2, 1, 109, 89, 0, 92, 0, 0, 0,
-	0, 0, 110, 0, 0, 0, 95, 0, 97, 0,
-	0, 0, 0, 55, 56, 58, 59, 61, 0, 0,
-	93, 0, 0, 0, 0, 43, 44, 0, 0, 0,
-	0, 0, 0, 99, 0, 103, 0, 0, 0, 0,
-	0, 0, 0, 0, 6, 7, 8, 9, 10, 2,
-	3, 4, 5, 0, 0, 0, 0, 96, 0, 22,
-	23, 24, 25, 0, 0, 0, 0, 40, 41, 42,
-	33, 34, 35, 36, 37, 38, 39, 0, 26, 98,
-	0, 101, 0, 52, 52, 52, 0, 90, 14, 0,
-	0, 0, 0, 0, 48, 49, 45, 18, 19, 20,
-	21, 46, 47, 28, 29, 30, 31, 32, 27, 0,
-	0, 0, 0, 53, 50, 51, 0, 0, 15, 11,
-	12, 13, 0, 0, 0, 0, 64, 0, 0, 0,
-	0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-	0, 0, 57, 60, 62, 0, 0, 94, 72, 0,
-	0, 0, 0, 100, 78, 0, 0, 0, 0, 0,
-	0, 104, 87, 0, 0, 0, 0, 54, 91, 73,
-	63, 0, 0, 79, 74, 75, 76, 77, 102, 88,
-	80, 81, 82, 0, 84, 0, 0, 0, 0, 16,
-	0, 0, 0, 66, 0, 83, 0, 0, 65, 0,
-	17, 0, 107, 0, 0, 0, 85, 0, 106, 105,
-	0, 70, 0, 68, 108, 0, 86, 67, 0, 71,
-	69,
+	0, -2, 1, 110, 90, 0, 93, 0, 0, 0,
+	0, 0, 111, 0, 0, 0, 96, 0, 98, 0,
+	0, 0, 0, 56, 57, 59, 60, 62, 0, 0,
+	94, 0, 0, 0, 0, 0, 43, 44, 0, 0,
+	0, 0, 0, 0, 100, 0, 104, 0, 0, 0,
+	0, 0, 0, 0, 0, 6, 7, 8, 9, 10,
+	2, 3, 4, 5, 0, 0, 0, 0, 97, 0,
+	0, 22, 23, 24, 25, 0, 0, 0, 0, 40,
+	41, 42, 33, 34, 35, 36, 37, 38, 39, 0,
+	26, 99, 0, 102, 0, 53, 53, 53, 0, 91,
+	14, 0, 0, 0, 0, 0, 49, 50, 0, 46,
+	18, 19, 20, 21, 47, 48, 28, 29, 30, 31,
+	32, 27, 0, 0, 0, 0, 54, 51, 52, 0,
+	0, 15, 11, 12, 13, 0, 0, 0, 0, 65,
+	0, 45, 0, 0, 0, 0, 0, 0, 0, 0,
+	0, 0, 0, 0, 0, 0, 58, 61, 63, 0,
+	0, 95, 73, 0, 0, 0, 0, 101, 79, 0,
+	0, 0, 0, 0, 0, 105, 88, 0, 0, 0,
+	0, 55, 92, 74, 64, 0, 0, 80, 75, 76,
+	77, 78, 103, 89, 81, 82, 83, 0, 85, 0,
+	0, 0, 0, 16, 0, 0, 0, 67, 0, 84,
+	0, 0, 66, 0, 17, 0, 108, 0, 0, 0,
+	86, 0, 107, 106, 0, 71, 0, 69, 109, 0,
+	87, 68, 0, 72, 70,
 }
 
 var yyTok1 = [...]int8{
@@ -1384,15 +1389,15 @@ var yyTok1 = [...]int8{
 	3, 3, 3, 3, 3, 3, 3, 3, 3, 3,
 	3, 3, 3, 3, 3, 3, 3, 3, 3, 3,
 	3, 3, 3, 3, 3, 3, 3, 3, 3, 3,
-	97, 98, 3, 3, 95, 3, 96, 3, 3, 3,
-	3, 3, 3, 3, 3, 3, 3, 3, 3, 94,
-	3, 93, 3, 3, 3, 3, 3, 3, 3, 3,
+	98, 99, 3, 3, 96, 3, 97, 3, 3, 3,
+	3, 3, 3, 3, 3, 3, 3, 3, 3, 95,
+	3, 94, 3, 3, 3, 3, 3, 3, 3, 3,
 	3, 3, 3, 3, 3, 3, 3, 3, 3, 3,
 	3, 3, 3, 3, 3, 3, 3, 3, 3, 3,
 	3, 3, 3, 3, 3, 3, 3, 3, 3, 3,
 	3, 3, 3, 3, 3, 3, 3, 3, 3, 3,
 	3, 3, 3, 3, 3, 3, 3, 3, 3, 3,
-	3, 3, 3, 99, 3, 100,
+	3, 3, 3, 100, 3, 101,
 }
 
 var yyTok2 = [...]int8{
@@ -1405,7 +1410,7 @@ var yyTok2 = [...]int8{
 	62, 63, 64, 65, 66, 67, 68, 69, 70, 71,
 	72, 73, 74, 75, 76, 77, 78, 79, 80, 81,
 	82, 83, 84, 85, 86, 87, 88, 89, 90, 91,
-	92,
+	92, 93,
 }
 
 var yyTok3 = [...]int8{
@@ -1751,7 +1756,7 @@ yydefault:
 
 	case 2:
 		yyDollar = yyS[yypt-1 : yypt+1]
-//line parser.y:334
+//line parser.y:335
 		{
 			l := yylex.(*yyLexState)
 			if l.seen_brr_capacity {
@@ -1763,7 +1768,7 @@ yydefault:
 		}
 	case 3:
 		yyDollar = yyS[yypt-1 : yypt+1]
-//line parser.y:345
+//line parser.y:346
 		{
 			l := yylex.(*yyLexState)
 			if l.seen_os_exec_capacity {
@@ -1775,7 +1780,7 @@ yydefault:
 		}
 	case 4:
 		yyDollar = yyS[yypt-1 : yypt+1]
-//line parser.y:356
+//line parser.y:357
 		{
 			l := yylex.(*yyLexState)
 			if l.seen_os_exec_worker_count {
@@ -1787,7 +1792,7 @@ yydefault:
 		}
 	case 5:
 		yyDollar = yyS[yypt-1 : yypt+1]
-//line parser.y:367
+//line parser.y:368
 		{
 			l := yylex.(*yyLexState)
 			if l.seen_flow_worker_count {
@@ -1799,7 +1804,7 @@ yydefault:
 		}
 	case 6:
 		yyDollar = yyS[yypt-1 : yypt+1]
-//line parser.y:380
+//line parser.y:381
 		{
 			l := yylex.(*yyLexState)
 			if l.seen_fdr_roll_duration {
@@ -1811,7 +1816,7 @@ yydefault:
 		}
 	case 7:
 		yyDollar = yyS[yypt-1 : yypt+1]
-//line parser.y:391
+//line parser.y:392
 		{
 			l := yylex.(*yyLexState)
 			if l.seen_xdr_roll_duration {
@@ -1823,7 +1828,7 @@ yydefault:
 		}
 	case 8:
 		yyDollar = yyS[yypt-1 : yypt+1]
-//line parser.y:402
+//line parser.y:403
 		{
 			l := yylex.(*yyLexState)
 			if l.seen_qdr_roll_duration {
@@ -1835,7 +1840,7 @@ yydefault:
 		}
 	case 9:
 		yyDollar = yyS[yypt-1 : yypt+1]
-//line parser.y:413
+//line parser.y:414
 		{
 			l := yylex.(*yyLexState)
 			if l.seen_heartbeat_duration {
@@ -1847,7 +1852,7 @@ yydefault:
 		}
 	case 10:
 		yyDollar = yyS[yypt-1 : yypt+1]
-//line parser.y:424
+//line parser.y:425
 		{
 			l := yylex.(*yyLexState)
 			if l.seen_memstats_duration {
@@ -1859,7 +1864,7 @@ yydefault:
 		}
 	case 11:
 		yyDollar = yyS[yypt-3 : yypt+1]
-//line parser.y:437
+//line parser.y:438
 		{
 			l := yylex.(*yyLexState)
 
@@ -1895,7 +1900,7 @@ yydefault:
 		}
 	case 12:
 		yyDollar = yyS[yypt-3 : yypt+1]
-//line parser.y:472
+//line parser.y:473
 		{
 			l := yylex.(*yyLexState)
 
@@ -1924,7 +1929,7 @@ yydefault:
 		}
 	case 13:
 		yyDollar = yyS[yypt-3 : yypt+1]
-//line parser.y:500
+//line parser.y:501
 		{
 			l := yylex.(*yyLexState)
 
@@ -1941,7 +1946,7 @@ yydefault:
 		}
 	case 16:
 		yyDollar = yyS[yypt-1 : yypt+1]
-//line parser.y:527
+//line parser.y:528
 		{
 			sl := make([]string, 1)
 			sl[0] = yyDollar[1].string
@@ -1949,7 +1954,7 @@ yydefault:
 		}
 	case 17:
 		yyDollar = yyS[yypt-3 : yypt+1]
-//line parser.y:534
+//line parser.y:535
 		{
 			yyVAL.string_list = append(yyDollar[1].string_list, yyDollar[3].string)
 			if len(yyVAL.string_list) >= max_argv {
@@ -1961,7 +1966,7 @@ yydefault:
 		}
 	case 18:
 		yyDollar = yyS[yypt-1 : yypt+1]
-//line parser.y:547
+//line parser.y:548
 		{
 			yyVAL.ast = &ast{
 				yy_tok: UINT64,
@@ -1970,7 +1975,7 @@ yydefault:
 		}
 	case 19:
 		yyDollar = yyS[yypt-1 : yypt+1]
-//line parser.y:555
+//line parser.y:556
 		{
 			yyVAL.ast = &ast{
 				yy_tok: STRING,
@@ -1979,7 +1984,7 @@ yydefault:
 		}
 	case 20:
 		yyDollar = yyS[yypt-1 : yypt+1]
-//line parser.y:563
+//line parser.y:564
 		{
 			yyVAL.ast = &ast{
 				yy_tok: yy_TRUE,
@@ -1988,7 +1993,7 @@ yydefault:
 		}
 	case 21:
 		yyDollar = yyS[yypt-1 : yypt+1]
-//line parser.y:571
+//line parser.y:572
 		{
 			yyVAL.ast = &ast{
 				yy_tok: yy_FALSE,
@@ -1997,7 +2002,7 @@ yydefault:
 		}
 	case 22:
 		yyDollar = yyS[yypt-1 : yypt+1]
-//line parser.y:581
+//line parser.y:582
 		{
 			yyVAL.ast = &ast{
 				yy_tok: EQ,
@@ -2005,7 +2010,7 @@ yydefault:
 		}
 	case 23:
 		yyDollar = yyS[yypt-1 : yypt+1]
-//line parser.y:588
+//line parser.y:589
 		{
 			yyVAL.ast = &ast{
 				yy_tok: MATCH,
@@ -2013,7 +2018,7 @@ yydefault:
 		}
 	case 24:
 		yyDollar = yyS[yypt-1 : yypt+1]
-//line parser.y:595
+//line parser.y:596
 		{
 			yyVAL.ast = &ast{
 				yy_tok: NO_MATCH,
@@ -2021,7 +2026,7 @@ yydefault:
 		}
 	case 25:
 		yyDollar = yyS[yypt-1 : yypt+1]
-//line parser.y:602
+//line parser.y:603
 		{
 			yyVAL.ast = &ast{
 				yy_tok: NEQ,
@@ -2029,7 +2034,7 @@ yydefault:
 		}
 	case 26:
 		yyDollar = yyS[yypt-2 : yypt+1]
-//line parser.y:611
+//line parser.y:612
 		{
 			yyVAL.ast = &ast{
 				yy_tok: PROJECT_BRR,
@@ -2038,7 +2043,7 @@ yydefault:
 		}
 	case 27:
 		yyDollar = yyS[yypt-3 : yypt+1]
-//line parser.y:621
+//line parser.y:622
 		{
 			l := yylex.(*yyLexState)
 
@@ -2095,7 +2100,7 @@ yydefault:
 		}
 	case 28:
 		yyDollar = yyS[yypt-3 : yypt+1]
-//line parser.y:679
+//line parser.y:680
 		{
 			l := yylex.(*yyLexState)
 
@@ -2160,7 +2165,7 @@ yydefault:
 		}
 	case 29:
 		yyDollar = yyS[yypt-3 : yypt+1]
-//line parser.y:743
+//line parser.y:744
 		{
 			l := yylex.(*yyLexState)
 
@@ -2218,7 +2223,7 @@ yydefault:
 		}
 	case 30:
 		yyDollar = yyS[yypt-3 : yypt+1]
-//line parser.y:800
+//line parser.y:801
 		{
 			l := yylex.(*yyLexState)
 
@@ -2275,7 +2280,7 @@ yydefault:
 		}
 	case 31:
 		yyDollar = yyS[yypt-3 : yypt+1]
-//line parser.y:856
+//line parser.y:857
 		{
 			l := yylex.(*yyLexState)
 
@@ -2332,7 +2337,7 @@ yydefault:
 		}
 	case 32:
 		yyDollar = yyS[yypt-3 : yypt+1]
-//line parser.y:912
+//line parser.y:913
 		{
 			l := yylex.(*yyLexState)
 
@@ -2389,49 +2394,49 @@ yydefault:
 		}
 	case 33:
 		yyDollar = yyS[yypt-1 : yypt+1]
-//line parser.y:970
+//line parser.y:971
 		{
 			yyVAL.brr_field = brr_field(brr_UDIG)
 		}
 	case 34:
 		yyDollar = yyS[yypt-1 : yypt+1]
-//line parser.y:975
+//line parser.y:976
 		{
 			yyVAL.brr_field = brr_field(brr_CHAT_HISTORY)
 		}
 	case 35:
 		yyDollar = yyS[yypt-1 : yypt+1]
-//line parser.y:980
+//line parser.y:981
 		{
 			yyVAL.brr_field = brr_field(brr_START_TIME)
 		}
 	case 36:
 		yyDollar = yyS[yypt-1 : yypt+1]
-//line parser.y:985
+//line parser.y:986
 		{
 			yyVAL.brr_field = brr_field(brr_WALL_DURATION)
 		}
 	case 37:
 		yyDollar = yyS[yypt-1 : yypt+1]
-//line parser.y:990
+//line parser.y:991
 		{
 			yyVAL.brr_field = brr_field(brr_VERB)
 		}
 	case 38:
 		yyDollar = yyS[yypt-1 : yypt+1]
-//line parser.y:995
+//line parser.y:996
 		{
 			yyVAL.brr_field = brr_field(brr_TRANSPORT)
 		}
 	case 39:
 		yyDollar = yyS[yypt-1 : yypt+1]
-//line parser.y:1000
+//line parser.y:1001
 		{
 			yyVAL.brr_field = brr_field(brr_BLOB_SIZE)
 		}
 	case 40:
 		yyDollar = yyS[yypt-2 : yypt+1]
-//line parser.y:1007
+//line parser.y:1008
 		{
 			l := yylex.(*yyLexState)
 			l.error("%s: unknown tail attribute: %s", yyDollar[1].ast.tail.name, yyDollar[2].string)
@@ -2439,7 +2444,7 @@ yydefault:
 		}
 	case 41:
 		yyDollar = yyS[yypt-2 : yypt+1]
-//line parser.y:1014
+//line parser.y:1015
 		{
 			l := yylex.(*yyLexState)
 			l.error("%s: exit_status is not a tail attribute", yyDollar[1].ast.tail.name)
@@ -2447,7 +2452,7 @@ yydefault:
 		}
 	case 42:
 		yyDollar = yyS[yypt-2 : yypt+1]
-//line parser.y:1021
+//line parser.y:1022
 		{
 			yyDollar[1].ast.brr_field = yyDollar[2].brr_field
 
@@ -2471,8 +2476,24 @@ yydefault:
 				Sprintf("%s %s", subject, yyDollar[1].ast.tail.name))
 		}
 	case 45:
+		yyDollar = yyS[yypt-4 : yypt+1]
+//line parser.y:1055
+		{
+			l := yylex.(*yyLexState)
+
+			f := yyDollar[3].ast.brr_field
+			if f != brr_UDIG {
+				l.error("tas_lock: only project udig, not %s", f)
+				return 0
+			}
+			yyVAL.ast = &ast{
+				yy_tok: TAS_LOCK,
+				left:   yyDollar[3].ast,
+			}
+		}
+	case 46:
 		yyDollar = yyS[yypt-3 : yypt+1]
-//line parser.y:1054
+//line parser.y:1070
 		{
 			l := yylex.(*yyLexState)
 			left := yyDollar[1].ast
@@ -2485,9 +2506,9 @@ yydefault:
 
 			yyVAL.ast = yyDollar[2].ast
 		}
-	case 46:
+	case 47:
 		yyDollar = yyS[yypt-3 : yypt+1]
-//line parser.y:1069
+//line parser.y:1085
 		{
 			l := yylex.(*yyLexState)
 			q := yyDollar[1].ast.sql_query_row
@@ -2554,15 +2575,15 @@ yydefault:
 				return 0
 			}
 		}
-	case 47:
+	case 48:
 		yyDollar = yyS[yypt-3 : yypt+1]
-//line parser.y:1137
+//line parser.y:1153
 		{
 			yyVAL.ast = yyDollar[2].ast
 		}
-	case 48:
+	case 49:
 		yyDollar = yyS[yypt-3 : yypt+1]
-//line parser.y:1142
+//line parser.y:1158
 		{
 			yyVAL.ast = &ast{
 				yy_tok: yy_AND,
@@ -2570,9 +2591,9 @@ yydefault:
 				right:  yyDollar[3].ast,
 			}
 		}
-	case 49:
+	case 50:
 		yyDollar = yyS[yypt-3 : yypt+1]
-//line parser.y:1151
+//line parser.y:1167
 		{
 			yyVAL.ast = &ast{
 				yy_tok: yy_OR,
@@ -2580,15 +2601,15 @@ yydefault:
 				right:  yyDollar[3].ast,
 			}
 		}
-	case 52:
+	case 53:
 		yyDollar = yyS[yypt-0 : yypt+1]
-//line parser.y:1168
+//line parser.y:1184
 		{
 			yyVAL.ast = nil
 		}
-	case 54:
+	case 55:
 		yyDollar = yyS[yypt-3 : yypt+1]
-//line parser.y:1175
+//line parser.y:1191
 		{
 			a := yyDollar[1].ast
 
@@ -2598,26 +2619,26 @@ yydefault:
 
 			a.next = yyDollar[3].ast
 		}
-	case 55:
+	case 56:
 		yyDollar = yyS[yypt-2 : yypt+1]
-//line parser.y:1187
+//line parser.y:1203
 		{
 			l := yylex.(*yyLexState)
 			l.error("unknown command: '%s'", yyDollar[2].string)
 			return 0
 		}
-	case 56:
+	case 57:
 		yyDollar = yyS[yypt-2 : yypt+1]
-//line parser.y:1194
+//line parser.y:1210
 		{
 			l := yylex.(*yyLexState)
 			l.call = &call{
 				command: yyDollar[2].command,
 			}
 		}
-	case 57:
+	case 58:
 		yyDollar = yyS[yypt-6 : yypt+1]
-//line parser.y:1201
+//line parser.y:1217
 		{
 			l := yylex.(*yyLexState)
 			cmd := yyDollar[2].command
@@ -2707,24 +2728,24 @@ yydefault:
 			}
 			l.call2ast[call.command.name] = yyVAL.ast
 		}
-	case 58:
+	case 59:
 		yyDollar = yyS[yypt-2 : yypt+1]
-//line parser.y:1294
+//line parser.y:1310
 		{
 			l := yylex.(*yyLexState)
 			l.error("unknown query: '%s'", yyDollar[2].string)
 			return 0
 		}
-	case 59:
+	case 60:
 		yyDollar = yyS[yypt-2 : yypt+1]
-//line parser.y:1301
+//line parser.y:1317
 		{
 			l := yylex.(*yyLexState)
 			l.sql_query_row = yyDollar[2].sql_query_row
 		}
-	case 60:
+	case 61:
 		yyDollar = yyS[yypt-6 : yypt+1]
-//line parser.y:1306
+//line parser.y:1322
 		{
 			l := yylex.(*yyLexState)
 			q := yyDollar[2].sql_query_row
@@ -2809,16 +2830,16 @@ yydefault:
 			}
 			l.query2ast[q.name] = yyVAL.ast
 		}
-	case 61:
+	case 62:
 		yyDollar = yyS[yypt-2 : yypt+1]
-//line parser.y:1392
+//line parser.y:1408
 		{
 			l := yylex.(*yyLexState)
 			l.sql_exec = yyDollar[2].sql_exec
 		}
-	case 62:
+	case 63:
 		yyDollar = yyS[yypt-6 : yypt+1]
-//line parser.y:1397
+//line parser.y:1413
 		{
 			l := yylex.(*yyLexState)
 			ex := yyDollar[2].sql_exec
@@ -2912,9 +2933,9 @@ yydefault:
 			}
 			l.query2ast[ex.name] = yyVAL.ast
 		}
-	case 63:
+	case 64:
 		yyDollar = yyS[yypt-3 : yypt+1]
-//line parser.y:1494
+//line parser.y:1510
 		{
 			l := yylex.(*yyLexState)
 			cmd := l.command
@@ -2929,9 +2950,9 @@ yydefault:
 			}
 			cmd.path = yyDollar[3].string
 		}
-	case 64:
+	case 65:
 		yyDollar = yyS[yypt-1 : yypt+1]
-//line parser.y:1509
+//line parser.y:1525
 		{
 			l := yylex.(*yyLexState)
 			cmd := l.command
@@ -2941,15 +2962,15 @@ yydefault:
 				return 0
 			}
 		}
-	case 65:
+	case 66:
 		yyDollar = yyS[yypt-6 : yypt+1]
-//line parser.y:1518
+//line parser.y:1534
 		{
 			yylex.(*yyLexState).command.argv = yyDollar[5].string_list
 		}
-	case 66:
+	case 67:
 		yyDollar = yyS[yypt-5 : yypt+1]
-//line parser.y:1525
+//line parser.y:1541
 		{
 			l := yylex.(*yyLexState)
 			cmd := l.command
@@ -2960,9 +2981,9 @@ yydefault:
 			}
 			cmd.OK_exit_status = make([]byte, 32)
 		}
-	case 68:
+	case 69:
 		yyDollar = yyS[yypt-1 : yypt+1]
-//line parser.y:1540
+//line parser.y:1556
 		{
 			l := yylex.(*yyLexState)
 
@@ -2974,9 +2995,9 @@ yydefault:
 
 			l.command.OK_exit_status[u8/8] |= 0x1 << (u8 % 8)
 		}
-	case 69:
+	case 70:
 		yyDollar = yyS[yypt-3 : yypt+1]
-//line parser.y:1553
+//line parser.y:1569
 		{
 			l := yylex.(*yyLexState)
 			if yyDollar[3].uint64 > 255 {
@@ -2990,25 +3011,25 @@ yydefault:
 			 */
 			l.command.OK_exit_status[u8/8] |= 0x1 << (u8 % 8)
 		}
-	case 70:
+	case 71:
 		yyDollar = yyS[yypt-1 : yypt+1]
-//line parser.y:1570
+//line parser.y:1586
 		{
 			if !(yylex.(*yyLexState)).put_sqlstate(yyDollar[1].string) {
 				return 0
 			}
 		}
-	case 71:
+	case 72:
 		yyDollar = yyS[yypt-3 : yypt+1]
-//line parser.y:1577
+//line parser.y:1593
 		{
 			if !(yylex.(*yyLexState)).put_sqlstate(yyDollar[3].string) {
 				return 0
 			}
 		}
-	case 74:
+	case 75:
 		yyDollar = yyS[yypt-3 : yypt+1]
-//line parser.y:1592
+//line parser.y:1608
 		{
 			l := yylex.(*yyLexState)
 			if l.seen_driver_name {
@@ -3024,9 +3045,9 @@ yydefault:
 			}
 			l.sql_database.driver_name = yyDollar[3].string
 		}
-	case 75:
+	case 76:
 		yyDollar = yyS[yypt-3 : yypt+1]
-//line parser.y:1609
+//line parser.y:1625
 		{
 			l := yylex.(*yyLexState)
 			if l.seen_data_source_name {
@@ -3042,9 +3063,9 @@ yydefault:
 			}
 			l.sql_database.data_source_name = yyDollar[3].string
 		}
-	case 76:
+	case 77:
 		yyDollar = yyS[yypt-3 : yypt+1]
-//line parser.y:1626
+//line parser.y:1642
 		{
 			l := yylex.(*yyLexState)
 			if l.seen_max_idle_conns {
@@ -3056,9 +3077,9 @@ yydefault:
 			l.seen_max_idle_conns = true
 			l.sql_database.max_idle_conns = int(yyDollar[3].uint64)
 		}
-	case 77:
+	case 78:
 		yyDollar = yyS[yypt-3 : yypt+1]
-//line parser.y:1639
+//line parser.y:1655
 		{
 			l := yylex.(*yyLexState)
 			if l.seen_max_open_conns {
@@ -3070,17 +3091,17 @@ yydefault:
 			l.seen_max_open_conns = true
 			l.sql_database.max_open_conns = int(yyDollar[3].uint64)
 		}
-	case 80:
+	case 81:
 		yyDollar = yyS[yypt-3 : yypt+1]
-//line parser.y:1660
+//line parser.y:1676
 		{
 			l := yylex.(*yyLexState)
 			l.error("unknown database: %s", yyDollar[3].string)
 			return 0
 		}
-	case 81:
+	case 82:
 		yyDollar = yyS[yypt-3 : yypt+1]
-//line parser.y:1667
+//line parser.y:1683
 		{
 			l := yylex.(*yyLexState)
 
@@ -3110,9 +3131,9 @@ yydefault:
 					"both sql_query_row and sql_exec are nil")
 			}
 		}
-	case 82:
+	case 83:
 		yyDollar = yyS[yypt-3 : yypt+1]
-//line parser.y:1698
+//line parser.y:1714
 		{
 			l := yylex.(*yyLexState)
 			if yyDollar[3].string == "" {
@@ -3147,9 +3168,9 @@ yydefault:
 				panic("both sql_query_row and sql_exec are nil")
 			}
 		}
-	case 83:
+	case 84:
 		yyDollar = yyS[yypt-5 : yypt+1]
-//line parser.y:1734
+//line parser.y:1750
 		{
 			l := yylex.(*yyLexState)
 
@@ -3169,9 +3190,9 @@ yydefault:
 				ex.statement[i] = s
 			}
 		}
-	case 84:
+	case 85:
 		yyDollar = yyS[yypt-3 : yypt+1]
-//line parser.y:1755
+//line parser.y:1771
 		{
 			l := yylex.(*yyLexState)
 
@@ -3192,9 +3213,9 @@ yydefault:
 				panic("both sql_query_row and sql_exec are nil")
 			}
 		}
-	case 89:
+	case 90:
 		yyDollar = yyS[yypt-1 : yypt+1]
-//line parser.y:1809
+//line parser.y:1803
 		{
 			l := yylex.(*yyLexState)
 			if l.seen_boot {
@@ -3204,18 +3225,18 @@ yydefault:
 			l.seen_boot = true
 			l.in_boot = true
 		}
-	case 90:
+	case 91:
 		yyDollar = yyS[yypt-5 : yypt+1]
-//line parser.y:1820
+//line parser.y:1814
 		{
 			yylex.(*yyLexState).in_boot = false
 			yyVAL.ast = &ast{
 				yy_tok: BOOT,
 			}
 		}
-	case 91:
+	case 92:
 		yyDollar = yyS[yypt-8 : yypt+1]
-//line parser.y:1829
+//line parser.y:1823
 		{
 			l := yylex.(*yyLexState)
 			/*
@@ -3235,9 +3256,9 @@ yydefault:
 				tail:   l.config.tail,
 			}
 		}
-	case 92:
+	case 93:
 		yyDollar = yyS[yypt-1 : yypt+1]
-//line parser.y:1850
+//line parser.y:1844
 		{
 			l := yylex.(*yyLexState)
 			if l.command != nil {
@@ -3247,15 +3268,15 @@ yydefault:
 			yyVAL.command = l.command
 
 		}
-	case 93:
+	case 94:
 		yyDollar = yyS[yypt-3 : yypt+1]
-//line parser.y:1858
+//line parser.y:1852
 		{
 			yyDollar[2].command.name = yyDollar[3].string
 		}
-	case 94:
+	case 95:
 		yyDollar = yyS[yypt-7 : yypt+1]
-//line parser.y:1859
+//line parser.y:1853
 		{
 			l := yylex.(*yyLexState)
 			if len(l.config.command) > 255 {
@@ -3277,64 +3298,64 @@ yydefault:
 				command: yyDollar[2].command,
 			}
 		}
-	case 95:
+	case 96:
 		yyDollar = yyS[yypt-2 : yypt+1]
-//line parser.y:1882
+//line parser.y:1876
 		{
 			yyDollar[1].ast.right = &ast{
 				yy_tok: WHEN,
 				left: &ast{
 					yy_tok: yy_TRUE,
 				},
-			}
-			yylex.(*yyLexState).call = nil
-		}
-	case 96:
-		yyDollar = yyS[yypt-4 : yypt+1]
-//line parser.y:1893
-		{
-			yyDollar[1].ast.right = &ast{
-				yy_tok: WHEN,
-				left:   yyDollar[3].ast,
 			}
 			yylex.(*yyLexState).call = nil
 		}
 	case 97:
+		yyDollar = yyS[yypt-4 : yypt+1]
+//line parser.y:1887
+		{
+			yyDollar[1].ast.right = &ast{
+				yy_tok: WHEN,
+				left:   yyDollar[3].ast,
+			}
+			yylex.(*yyLexState).call = nil
+		}
+	case 98:
 		yyDollar = yyS[yypt-2 : yypt+1]
-//line parser.y:1902
+//line parser.y:1896
 		{
 			yyDollar[1].ast.right = &ast{
 				yy_tok: WHEN,
 				left: &ast{
 					yy_tok: yy_TRUE,
 				},
-			}
-			yylex.(*yyLexState).sql_query_row = nil
-			yylex.(*yyLexState).sql_exec = nil
-		}
-	case 98:
-		yyDollar = yyS[yypt-4 : yypt+1]
-//line parser.y:1914
-		{
-			yyDollar[1].ast.right = &ast{
-				yy_tok: WHEN,
-				left:   yyDollar[3].ast,
 			}
 			yylex.(*yyLexState).sql_query_row = nil
 			yylex.(*yyLexState).sql_exec = nil
 		}
 	case 99:
+		yyDollar = yyS[yypt-4 : yypt+1]
+//line parser.y:1908
+		{
+			yyDollar[1].ast.right = &ast{
+				yy_tok: WHEN,
+				left:   yyDollar[3].ast,
+			}
+			yylex.(*yyLexState).sql_query_row = nil
+			yylex.(*yyLexState).sql_exec = nil
+		}
+	case 100:
 		yyDollar = yyS[yypt-3 : yypt+1]
-//line parser.y:1924
+//line parser.y:1918
 		{
 			l := yylex.(*yyLexState)
 			l.sql_database = &sql_database{
 				name: yyDollar[3].string,
 			}
 		}
-	case 100:
+	case 101:
 		yyDollar = yyS[yypt-7 : yypt+1]
-//line parser.y:1930
+//line parser.y:1924
 		{
 			l := yylex.(*yyLexState)
 			if l.sql_database.driver_name == "" {
@@ -3349,9 +3370,9 @@ yydefault:
 			l.config.sql_database[yyDollar[3].string] = l.sql_database
 			l.sql_database = nil
 		}
-	case 101:
+	case 102:
 		yyDollar = yyS[yypt-4 : yypt+1]
-//line parser.y:1946
+//line parser.y:1940
 		{
 			l := yylex.(*yyLexState)
 			l.sql_query_row = &sql_query_row{
@@ -3361,9 +3382,9 @@ yydefault:
 					map[string]*sql_query_result_row),
 			}
 		}
-	case 102:
+	case 103:
 		yyDollar = yyS[yypt-8 : yypt+1]
-//line parser.y:1955
+//line parser.y:1949
 		{
 			l := yylex.(*yyLexState)
 			q := l.sql_query_row
@@ -3398,18 +3419,18 @@ yydefault:
 			l.config.sql_query_row[yyDollar[3].string] = l.sql_query_row
 			l.sql_query_row = nil
 		}
-	case 103:
+	case 104:
 		yyDollar = yyS[yypt-3 : yypt+1]
-//line parser.y:1991
+//line parser.y:1985
 		{
 			l := yylex.(*yyLexState)
 			l.sql_exec = &sql_exec{
 				name: yyDollar[3].string,
 			}
 		}
-	case 104:
+	case 105:
 		yyDollar = yyS[yypt-7 : yypt+1]
-//line parser.y:1997
+//line parser.y:1991
 		{
 			l := yylex.(*yyLexState)
 			ex := l.sql_exec
@@ -3440,15 +3461,15 @@ yydefault:
 			l.config.sql_exec[yyDollar[3].string] = l.sql_exec
 			l.sql_exec = nil
 		}
-	case 105:
+	case 106:
 		yyDollar = yyS[yypt-1 : yypt+1]
-//line parser.y:2033
+//line parser.y:2027
 		{
 			yyVAL.go_kind = reflect.Bool
 		}
-	case 106:
+	case 107:
 		yyDollar = yyS[yypt-2 : yypt+1]
-//line parser.y:2040
+//line parser.y:2034
 		{
 			l := yylex.(*yyLexState)
 			q := l.sql_query_row
@@ -3472,15 +3493,15 @@ yydefault:
 			q.result_row = append(q.result_row, *rr)
 			q.name2result[yyDollar[1].string] = rr
 		}
-	case 109:
+	case 110:
 		yyDollar = yyS[yypt-1 : yypt+1]
-//line parser.y:2073
+//line parser.y:2067
 		{
 			yylex.(*yyLexState).ast_root = yyDollar[1].ast
 		}
-	case 110:
+	case 111:
 		yyDollar = yyS[yypt-2 : yypt+1]
-//line parser.y:2078
+//line parser.y:2072
 		{
 			s := yyDollar[1].ast
 			for ; s.next != nil; s = s.next {
