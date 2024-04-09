@@ -239,13 +239,13 @@ const (
 %token	EQ_UINT64
 %token	EXIT_STATUS
 %token	FDR_ROLL_DURATION
+%token	FLOWING
+%token	TAIL_FLOWING
 %token	FLOW_WORKER_COUNT
 %token	FROM
 %token	HEARTBEAT_DURATION
 %token	IN
 %token	IS
-%token	LOCK
-%token	TAS_LOCK
 %token	LOG_DIRECTORY
 %token	MAX_IDLE_CONNS
 %token	MAX_OPEN_CONNS
@@ -309,7 +309,7 @@ const (
 %type	<ast>		constant  rel_op
 %type	<ast>		qualify
 %type	<ast>		statement_list  statement
-%type	<ast>		tail_project  projection  tail_rel
+%type	<ast>		tail_project  projection  tail_ref
 %type	<brr_field>	brr_field
 %type	<command>	COMMAND_REF
 %type	<go_kind>	sql_result_type
@@ -607,11 +607,19 @@ rel_op:
 	  }
 	;
 
-tail_rel:
+tail_ref:
 	  TAIL_REF  '.'
 	  {
 	  	$$ = &ast{
 			yy_tok:	PROJECT_BRR,
+			tail:	$1,
+		}
+	  }
+	|
+	  TAIL_REF  '$' 
+	  {
+	  	$$ = &ast{
+			yy_tok: TAIL_FLOWING,
 			tail:	$1,
 		}
 	  }
@@ -1004,21 +1012,21 @@ brr_field:
 	;
 
 tail_project:
-	  tail_rel  NAME
+	  tail_ref  NAME
 	  {
 		l := yylex.(*yyLexState)
 		l.error("%s: unknown tail attribute: %s", $1.tail.name, $2)
 		return 0
 	  }
 	|
-	  tail_rel  EXIT_STATUS
+	  tail_ref  EXIT_STATUS
 	  {
 		l := yylex.(*yyLexState)
 		l.error("%s: exit_status is not a tail attribute", $1.tail.name)
 		return 0
 	  }
 	|
-	  tail_rel  brr_field
+	  tail_ref  brr_field
 	  {
 	  	$1.brr_field = $2
 
@@ -1042,6 +1050,16 @@ tail_project:
 				Sprintf("%s %s", subject, $1.tail.name,
 			))
 	  }
+	|
+	  tail_ref FLOWING		//  Note: verify called only once!
+	  {
+		l := yylex.(*yyLexState)
+		if l.seen_tail_flowing {
+			l.error("tail$flowing referenced twice")
+			return 0
+		}
+		l.seen_tail_flowing = true
+	  }
 	;
 
 projection:
@@ -1051,23 +1069,11 @@ projection:
 	;
 
 qualify:
-	  TAS_LOCK '(' tail_project ')'
-	  {
-		l := yylex.(*yyLexState)
-
-		f := $3.brr_field
-	  	if f != brr_UDIG {
-			l.error("tas_lock: only project udig, not %s", f)
-			return 0
-		}
-		$$ = &ast {
-			yy_tok:	TAS_LOCK,
-			left:	$3,
-		}
-	  }
-	|
 	  projection  rel_op  constant
 	  {
+Printf("WTF: projection: %#v\n", $1)
+Printf("WTF: op: %#v\n", $2)
+Printf("WTF: constant: %#v\n", $3)
 		l := yylex.(*yyLexState)
 		left := $1
 
@@ -2101,7 +2107,6 @@ var keyword = map[string]int{
 	"in":			IN,
 	"int64":		yy_INT64,
 	"is":			IS,
-	"lock":			LOCK,
 	"log_directory":	LOG_DIRECTORY,
 	"max_idle_conns":	MAX_IDLE_CONNS,
 	"max_open_conns":	MAX_OPEN_CONNS,
@@ -2130,7 +2135,7 @@ var keyword = map[string]int{
 	"wall_duration":	WALL_DURATION,
 	"when":			WHEN,
 	"xdr_roll_duration":	XDR_ROLL_DURATION,
-	"tas_lock":		TAS_LOCK,
+	"flowing":		FLOWING,
 }
 
 type yyLexState struct {
@@ -2170,6 +2175,7 @@ type yyLexState struct {
 	seen_os_exec_worker_count	bool
 	seen_qdr_roll_duration		bool
 	seen_xdr_roll_duration		bool
+	seen_tail_flowing		bool
 
 	ast_root			*ast
 
@@ -2601,7 +2607,9 @@ func (l *yyLexState) wire_rel_op(left, op, right *ast) bool {
 	//  verify that the PROJECT_BRR or command.exit_status
 	//  are compared to a constant of a matching type.
 
-	if left.yy_tok == PROJECT_BRR {
+	switch left.yy_tok {
+
+	case PROJECT_BRR:
 
 		//  if the brr field is a blob size compared to a
 		//  uint, then reparent the with a CAST_UINT64 node
@@ -2656,7 +2664,7 @@ func (l *yyLexState) wire_rel_op(left, op, right *ast) bool {
 				return false
 			}
 		}
-	} else {
+	case COMMAND_REF:
 		//  <command>.exit_status == ...
 
 		if right.yy_tok != UINT64 {
@@ -2670,7 +2678,35 @@ func (l *yyLexState) wire_rel_op(left, op, right *ast) bool {
 			op.yy_tok = NEQ_UINT64
 		}
 		op.uint64 = right.uint64
+
+	//  Note: tail flowing must only be called once!
+	case TAIL_FLOWING:
+		if right.is_bool() == false {
+			l.error(
+				"%s$flowing not compared to bool: %d",
+				left.tail.name,
+				right.yy_tok,
+			)
+			return false
+		}
+		if op.yy_tok == EQ {
+			op.yy_tok = EQ_BOOL
+		} else {
+			op.yy_tok = NEQ_BOOL
+		}
+		switch right.yy_tok {
+		case yy_TRUE:
+			left.bool = true
+		case yy_FALSE:
+			left.bool = false
+		default:
+			l.error("right token not bool: %d", right.yy_tok)
+		}
+
+	default:
+		panic("unknown left.yy_tok: " + strconv.Itoa(left.yy_tok))
 	}
+		 
 	return true
 }
 
@@ -2776,8 +2812,6 @@ func (a *ast) to_string(brief bool) string {
 		what = Sprintf("EQ_STRING(\"%s\")", a.string)
 	case TAIL:
 		what = Sprintf("TAIL(%s)", a.tail.name)
-	case TAS_LOCK:
-		what = Sprintf("TAS_LOCK")
 	case TAIL_REF:
 		what = Sprintf("TAIL_REF(%s.%s)", a.tail.name, a.brr_field)
 	case COMMAND_REF:
@@ -2829,6 +2863,8 @@ func (a *ast) to_string(brief bool) string {
 				a.brr_field.String(),
 				a.brr_field,
 			)
+	case TAIL_FLOWING:
+		what = Sprintf("TAIL_FLOWING(%s:%t)", a.tail.name, a.bool)
 	default:
 		offset := a.yy_tok - __MIN_YYTOK + 3
 		if (a.yy_tok > __MIN_YYTOK) {
