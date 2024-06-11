@@ -967,7 +967,12 @@ func (l *yyLexState) wire_rel_op(left, op, right *ast) bool {
 		case yy_FALSE:
 			left.bool = false
 		default:
-			l.error("right token not bool: %d", right.yy_tok)
+			//  impossible
+
+			panic(fmt.Sprintf(
+				"right token not bool: %d",
+				right.yy_tok,
+			))
 		}
 	case PROJECT_XDR_EXIT_STATUS:
 		if right.is_uint64() == false {
