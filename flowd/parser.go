@@ -9,6 +9,7 @@ import __yyfmt__ "fmt"
 
 import (
 	"errors"
+	"fmt"
 	"io"
 	"reflect"
 	"regexp"
@@ -16,7 +17,6 @@ import (
 	"unicode"
 	"unicode/utf8"
 
-	. "fmt"
 	. "time"
 )
 
@@ -173,7 +173,7 @@ const EQ_UINT64 = 57368
 const EXIT_STATUS = 57369
 const FDR_ROLL_DURATION = 57370
 const FLOWING = 57371
-const TAIL_FLOWING = 57372
+const PROJECT_TAIL_FLOWING = 57372
 const FLOW_WORKER_COUNT = 57373
 const FROM = 57374
 const HEARTBEAT_DURATION = 57375
@@ -268,7 +268,7 @@ var yyToknames = [...]string{
 	"EXIT_STATUS",
 	"FDR_ROLL_DURATION",
 	"FLOWING",
-	"TAIL_FLOWING",
+	"PROJECT_TAIL_FLOWING",
 	"FLOW_WORKER_COUNT",
 	"FROM",
 	"HEARTBEAT_DURATION",
@@ -349,7 +349,7 @@ const yyEofCode = 1
 const yyErrCode = 2
 const yyInitialStackSize = 16
 
-//line parser.y:2085
+//line parser.y:2082
 
 var keyword = map[string]int{
 	"OK":                   yy_OK,
@@ -847,15 +847,15 @@ PARSE_ERROR:
 
 func (l *yyLexState) mkerror(format string, args ...interface{}) error {
 
-	return errors.New(Sprintf("%s, near line %d",
-		Sprintf(format, args...),
+	return errors.New(fmt.Sprintf("%s, near line %d",
+		fmt.Sprintf(format, args...),
 		l.line_no,
 	))
 }
 
 func (l *yyLexState) error(format string, args ...interface{}) {
 
-	l.Error(Sprintf(format, args...))
+	l.Error(fmt.Sprintf(format, args...))
 }
 
 func (l *yyLexState) Error(msg string) {
@@ -947,7 +947,7 @@ func (l *yyLexState) wire_rel_op(left, op, right *ast) bool {
 		op.uint64 = right.uint64
 
 	//  Note: tail flowing must only be called once!
-	case TAIL_FLOWING:
+	case PROJECT_TAIL_FLOWING:
 		if right.is_bool() == false {
 			l.error(
 				"%s$flowing not compared to bool: %d",
@@ -969,9 +969,19 @@ func (l *yyLexState) wire_rel_op(left, op, right *ast) bool {
 		default:
 			l.error("right token not bool: %d", right.yy_tok)
 		}
-
+	case PROJECT_XDR_EXIT_STATUS:
+		if right.is_uint64() == false {
+			l.error("exit_status is not compared to uint64")
+			return false
+		}
+		if op.yy_tok == EQ {
+			op.yy_tok = EQ_UINT64
+		} else {
+			op.yy_tok = NEQ_UINT64
+		}
+		op.uint64 = right.uint64
 	default:
-		panic("unknown left.yy_tok: " + strconv.Itoa(left.yy_tok))
+		l.error("unknown left.yy_tok: %d", left.yy_tok)
 	}
 
 	return true
@@ -1040,7 +1050,7 @@ func (conf *config) parse(in io.RuneReader) (
 	find_unreferenced_fire(l.ast_root)
 
 	for n, _ := range root_depend {
-		l.depends = append(l.depends, Sprintf("%s %s", n, n))
+		l.depends = append(l.depends, fmt.Sprintf("%s %s", n, n))
 	}
 
 	//  tsort the call/query dependencies.
@@ -1070,74 +1080,96 @@ func (a *ast) to_string(brief bool) string {
 
 	switch a.yy_tok {
 	case COMMAND:
-		what = Sprintf("COMMAND(%s)", a.command.name)
+		what = fmt.Sprintf("COMMAND(%s)", a.command.name)
 	case CALL0:
-		what = Sprintf("CALL0(%s)", a.call.command.name)
+		what = fmt.Sprintf("CALL0(%s)", a.call.command.name)
 	case CALL:
-		what = Sprintf("CALL(%s)", a.call.command.name)
+		what = fmt.Sprintf("CALL(%s)", a.call.command.name)
 	case EQ_STRING:
-		what = Sprintf("EQ_STRING(\"%s\")", a.string)
+		what = fmt.Sprintf("EQ_STRING(\"%s\")", a.string)
+	case MATCH_STRING:
+		what = fmt.Sprintf(
+			"MATCH_STRING(%s:\"%s\")",
+			a.regexp,
+			a.string,
+		)
+	case NO_MATCH_STRING:
+		what = fmt.Sprintf(
+			"NO_MATCH_STRING(%s:\"%s\")",
+			a.regexp,
+			a.string,
+		)
+	case NEQ_STRING:
+		what = fmt.Sprintf("NEQ_STRING(\"%s\")", a.string)
 	case TAIL:
-		what = Sprintf("TAIL(%s)", a.tail.name)
+		what = fmt.Sprintf("TAIL(%s)", a.tail.name)
 	case TAIL_REF:
-		what = Sprintf("TAIL_REF(%s.%s)", a.tail.name, a.brr_field)
+		what = fmt.Sprintf("TAIL_REF(%s.%s)", a.tail.name, a.brr_field)
 	case COMMAND_REF:
-		what = Sprintf("COMMAND_REF(%s)", a.command.name)
+		what = fmt.Sprintf("COMMAND_REF(%s)", a.command.name)
 	case UINT64:
-		what = Sprintf("UINT64(%d)", a.uint64)
+		what = fmt.Sprintf("UINT64(%d)", a.uint64)
 	case STRING:
-		what = Sprintf("STRING(\"%s\")", a.string)
+		what = fmt.Sprintf("STRING(\"%s\")", a.string)
 	case ARGV:
-		what = Sprintf("ARGV(%d)", a.uint64)
+		what = fmt.Sprintf("ARGV(%d)", a.uint64)
 	case SQL_DATABASE:
-		what = Sprintf("SQL_DATABASE(%s:%s)",
+		what = fmt.Sprintf("SQL_DATABASE(%s:%s)",
 			a.sql_database.driver_name,
 			a.sql_database.name,
 		)
 	case SQL_DATABASE_REF:
-		what = Sprintf("SQL_DATABASE_REF(%s)",
+		what = fmt.Sprintf("SQL_DATABASE_REF(%s)",
 			a.sql_database.name,
 		)
 	case SQL_QUERY_ROW_REF:
-		what = Sprintf("SQL_QUERY_ROW_REF(%s.%s)",
+		what = fmt.Sprintf("SQL_QUERY_ROW_REF(%s.%s)",
 			a.sql_query_row.sql_database.name,
 			a.sql_query_row.name,
 		)
 	case SQL_EXEC_REF:
-		what = Sprintf("SQL_EXEC_REF(%s.%s)",
+		what = fmt.Sprintf("SQL_EXEC_REF(%s.%s)",
 			a.sql_exec.sql_database.name,
 			a.sql_exec.name,
 		)
 	case QUERY_ROW:
-		what = Sprintf("QUERY_ROW(%s)",
+		what = fmt.Sprintf("QUERY_ROW(%s)",
 			a.sql_query_row.name,
 		)
 	case QUERY_EXEC:
-		what = Sprintf("QUERY_EXEC(%s)",
+		what = fmt.Sprintf("QUERY_EXEC(%s)",
 			a.sql_exec.name,
 		)
 	case QUERY_EXEC_TXN:
-		what = Sprintf("QUERY_EXEC_TXN(%s)",
+		what = fmt.Sprintf("QUERY_EXEC_TXN(%s)",
 			a.sql_exec.name,
 		)
 	case PROJECT_SQL_QUERY_ROW_BOOL:
-		what = Sprintf("PROJECT_SQL_QUERY_ROW_BOOL(%s:%d)",
+		what = fmt.Sprintf("PROJECT_SQL_QUERY_ROW_BOOL(%s:%d)",
 			a.string,
 			a.uint8,
 		)
 	case PROJECT_BRR:
-		what = Sprintf("PROJECT_BRR(%s[%d])",
+		what = fmt.Sprintf("PROJECT_BRR(%s[%d])",
 			a.brr_field.String(),
 			a.brr_field,
 		)
-	case TAIL_FLOWING:
-		what = Sprintf("TAIL_FLOWING(%s:%t)", a.tail.name, a.bool)
+	case PROJECT_TAIL_FLOWING:
+		what = fmt.Sprintf(
+			"PROJECT_TAIL_FLOWING(%s:%t)",
+			a.tail.name,
+			a.bool,
+		)
+	case EQ_UINT64:
+		what = fmt.Sprintf("EQ_UINT64(%d)", a.uint64)
+	case NEQ_UINT64:
+		what = fmt.Sprintf("NEQ_UINT64(%d)", a.uint64)
 	default:
 		offset := a.yy_tok - __MIN_YYTOK + 3
 		if a.yy_tok > __MIN_YYTOK {
 			what = yyToknames[offset]
 		} else {
-			what = Sprintf(
+			what = fmt.Sprintf(
 				"UNKNOWN(%d)",
 				a.yy_tok,
 			)
@@ -1147,16 +1179,16 @@ func (a *ast) to_string(brief bool) string {
 		return what
 	}
 
-	what = Sprintf("%s:&=%p", what, a)
+	what = fmt.Sprintf("%s:&=%p", what, a)
 
 	if a.left != nil {
-		what = Sprintf("%s,l=%p", what, a.left)
+		what = fmt.Sprintf("%s,l=%p", what, a.left)
 	}
 	if a.right != nil {
-		what = Sprintf("%s,r=%p", what, a.right)
+		what = fmt.Sprintf("%s,r=%p", what, a.right)
 	}
 	if a.next != nil {
-		what = Sprintf("%s,n=%p", what, a.next)
+		what = fmt.Sprintf("%s,n=%p", what, a.next)
 	}
 	return what
 }
@@ -1173,13 +1205,13 @@ func (a *ast) walk_print(indent int, is_first_sibling bool) {
 		return
 	}
 	if indent == 0 {
-		Println("")
+		fmt.Println("")
 	} else {
 		for i := 0; i < indent; i++ {
-			Print("  ")
+			fmt.Print("  ")
 		}
 	}
-	Println(a.to_string(true))
+	fmt.Println(a.to_string(true))
 
 	//  print kids
 	a.left.walk_print(indent+1, true)
@@ -2077,7 +2109,7 @@ yydefault:
 //line parser.y:620
 		{
 			yyVAL.ast = &ast{
-				yy_tok: TAIL_FLOWING,
+				yy_tok: PROJECT_TAIL_FLOWING,
 				tail:   yyDollar[1].tail,
 			}
 		}
@@ -2129,7 +2161,7 @@ yydefault:
 
 			l.depends = append(
 				l.depends,
-				Sprintf("%s %s", subject, yyDollar[1].command.name),
+				fmt.Sprintf("%s %s", subject, yyDollar[1].command.name),
 			)
 
 			yyVAL.ast = &ast{
@@ -2194,7 +2226,7 @@ yydefault:
 
 			l.depends = append(
 				l.depends,
-				Sprintf("%s %s", subject, name),
+				fmt.Sprintf("%s %s", subject, name),
 			)
 
 			yyVAL.ast = &ast{
@@ -2253,7 +2285,7 @@ yydefault:
 
 			l.depends = append(
 				l.depends,
-				Sprintf("%s %s", subject, name),
+				fmt.Sprintf("%s %s", subject, name),
 			)
 
 			yyVAL.ast = &ast{
@@ -2310,7 +2342,7 @@ yydefault:
 
 			l.depends = append(
 				l.depends,
-				Sprintf("%s %s", subject, name),
+				fmt.Sprintf("%s %s", subject, name),
 			)
 
 			yyVAL.ast = &ast{
@@ -2367,7 +2399,7 @@ yydefault:
 
 			l.depends = append(
 				l.depends,
-				Sprintf("%s %s", subject, name),
+				fmt.Sprintf("%s %s", subject, name),
 			)
 
 			yyVAL.ast = &ast{
@@ -2424,7 +2456,7 @@ yydefault:
 
 			l.depends = append(
 				l.depends,
-				Sprintf("%s %s", subject, name),
+				fmt.Sprintf("%s %s", subject, name),
 			)
 
 			yyVAL.ast = &ast{
@@ -2513,7 +2545,7 @@ yydefault:
 			}
 			l.depends = append(
 				l.depends,
-				Sprintf("%s %s", subject, yyDollar[1].ast.tail.name))
+				fmt.Sprintf("%s %s", subject, yyDollar[1].ast.tail.name))
 		}
 	case 44:
 		yyDollar = yyS[yypt-2 : yypt+1]
@@ -2530,9 +2562,6 @@ yydefault:
 		yyDollar = yyS[yypt-3 : yypt+1]
 //line parser.y:1073
 		{
-			Printf("WTF: projection: %#v\n", yyDollar[1].ast)
-			Printf("WTF: op: %#v\n", yyDollar[2].ast)
-			Printf("WTF: constant: %#v\n", yyDollar[3].ast)
 			l := yylex.(*yyLexState)
 			left := yyDollar[1].ast
 
@@ -2546,7 +2575,7 @@ yydefault:
 		}
 	case 48:
 		yyDollar = yyS[yypt-3 : yypt+1]
-//line parser.y:1091
+//line parser.y:1088
 		{
 			l := yylex.(*yyLexState)
 			q := yyDollar[1].ast.sql_query_row
@@ -2615,13 +2644,13 @@ yydefault:
 		}
 	case 49:
 		yyDollar = yyS[yypt-3 : yypt+1]
-//line parser.y:1159
+//line parser.y:1156
 		{
 			yyVAL.ast = yyDollar[2].ast
 		}
 	case 50:
 		yyDollar = yyS[yypt-3 : yypt+1]
-//line parser.y:1164
+//line parser.y:1161
 		{
 			yyVAL.ast = &ast{
 				yy_tok: yy_AND,
@@ -2631,7 +2660,7 @@ yydefault:
 		}
 	case 51:
 		yyDollar = yyS[yypt-3 : yypt+1]
-//line parser.y:1173
+//line parser.y:1170
 		{
 			yyVAL.ast = &ast{
 				yy_tok: yy_OR,
@@ -2641,13 +2670,13 @@ yydefault:
 		}
 	case 54:
 		yyDollar = yyS[yypt-0 : yypt+1]
-//line parser.y:1190
+//line parser.y:1187
 		{
 			yyVAL.ast = nil
 		}
 	case 56:
 		yyDollar = yyS[yypt-3 : yypt+1]
-//line parser.y:1197
+//line parser.y:1194
 		{
 			a := yyDollar[1].ast
 
@@ -2659,7 +2688,7 @@ yydefault:
 		}
 	case 57:
 		yyDollar = yyS[yypt-2 : yypt+1]
-//line parser.y:1209
+//line parser.y:1206
 		{
 			l := yylex.(*yyLexState)
 			l.error("unknown command: '%s'", yyDollar[2].string)
@@ -2667,7 +2696,7 @@ yydefault:
 		}
 	case 58:
 		yyDollar = yyS[yypt-2 : yypt+1]
-//line parser.y:1216
+//line parser.y:1213
 		{
 			l := yylex.(*yyLexState)
 			l.call = &call{
@@ -2676,7 +2705,7 @@ yydefault:
 		}
 	case 59:
 		yyDollar = yyS[yypt-6 : yypt+1]
-//line parser.y:1223
+//line parser.y:1220
 		{
 			l := yylex.(*yyLexState)
 			cmd := yyDollar[2].command
@@ -2768,7 +2797,7 @@ yydefault:
 		}
 	case 60:
 		yyDollar = yyS[yypt-2 : yypt+1]
-//line parser.y:1316
+//line parser.y:1313
 		{
 			l := yylex.(*yyLexState)
 			l.error("unknown query: '%s'", yyDollar[2].string)
@@ -2776,14 +2805,14 @@ yydefault:
 		}
 	case 61:
 		yyDollar = yyS[yypt-2 : yypt+1]
-//line parser.y:1323
+//line parser.y:1320
 		{
 			l := yylex.(*yyLexState)
 			l.sql_query_row = yyDollar[2].sql_query_row
 		}
 	case 62:
 		yyDollar = yyS[yypt-6 : yypt+1]
-//line parser.y:1328
+//line parser.y:1325
 		{
 			l := yylex.(*yyLexState)
 			q := yyDollar[2].sql_query_row
@@ -2870,14 +2899,14 @@ yydefault:
 		}
 	case 63:
 		yyDollar = yyS[yypt-2 : yypt+1]
-//line parser.y:1414
+//line parser.y:1411
 		{
 			l := yylex.(*yyLexState)
 			l.sql_exec = yyDollar[2].sql_exec
 		}
 	case 64:
 		yyDollar = yyS[yypt-6 : yypt+1]
-//line parser.y:1419
+//line parser.y:1416
 		{
 			l := yylex.(*yyLexState)
 			ex := yyDollar[2].sql_exec
@@ -2973,7 +3002,7 @@ yydefault:
 		}
 	case 65:
 		yyDollar = yyS[yypt-3 : yypt+1]
-//line parser.y:1516
+//line parser.y:1513
 		{
 			l := yylex.(*yyLexState)
 			cmd := l.command
@@ -2990,7 +3019,7 @@ yydefault:
 		}
 	case 66:
 		yyDollar = yyS[yypt-1 : yypt+1]
-//line parser.y:1531
+//line parser.y:1528
 		{
 			l := yylex.(*yyLexState)
 			cmd := l.command
@@ -3002,13 +3031,13 @@ yydefault:
 		}
 	case 67:
 		yyDollar = yyS[yypt-6 : yypt+1]
-//line parser.y:1540
+//line parser.y:1537
 		{
 			yylex.(*yyLexState).command.argv = yyDollar[5].string_list
 		}
 	case 68:
 		yyDollar = yyS[yypt-5 : yypt+1]
-//line parser.y:1547
+//line parser.y:1544
 		{
 			l := yylex.(*yyLexState)
 			cmd := l.command
@@ -3021,7 +3050,7 @@ yydefault:
 		}
 	case 70:
 		yyDollar = yyS[yypt-1 : yypt+1]
-//line parser.y:1562
+//line parser.y:1559
 		{
 			l := yylex.(*yyLexState)
 
@@ -3035,7 +3064,7 @@ yydefault:
 		}
 	case 71:
 		yyDollar = yyS[yypt-3 : yypt+1]
-//line parser.y:1575
+//line parser.y:1572
 		{
 			l := yylex.(*yyLexState)
 			if yyDollar[3].uint64 > 255 {
@@ -3051,7 +3080,7 @@ yydefault:
 		}
 	case 72:
 		yyDollar = yyS[yypt-1 : yypt+1]
-//line parser.y:1592
+//line parser.y:1589
 		{
 			if !(yylex.(*yyLexState)).put_sqlstate(yyDollar[1].string) {
 				return 0
@@ -3059,7 +3088,7 @@ yydefault:
 		}
 	case 73:
 		yyDollar = yyS[yypt-3 : yypt+1]
-//line parser.y:1599
+//line parser.y:1596
 		{
 			if !(yylex.(*yyLexState)).put_sqlstate(yyDollar[3].string) {
 				return 0
@@ -3067,7 +3096,7 @@ yydefault:
 		}
 	case 76:
 		yyDollar = yyS[yypt-3 : yypt+1]
-//line parser.y:1614
+//line parser.y:1611
 		{
 			l := yylex.(*yyLexState)
 			if l.seen_driver_name {
@@ -3085,7 +3114,7 @@ yydefault:
 		}
 	case 77:
 		yyDollar = yyS[yypt-3 : yypt+1]
-//line parser.y:1631
+//line parser.y:1628
 		{
 			l := yylex.(*yyLexState)
 			if l.seen_data_source_name {
@@ -3103,7 +3132,7 @@ yydefault:
 		}
 	case 78:
 		yyDollar = yyS[yypt-3 : yypt+1]
-//line parser.y:1648
+//line parser.y:1645
 		{
 			l := yylex.(*yyLexState)
 			if l.seen_max_idle_conns {
@@ -3117,7 +3146,7 @@ yydefault:
 		}
 	case 79:
 		yyDollar = yyS[yypt-3 : yypt+1]
-//line parser.y:1661
+//line parser.y:1658
 		{
 			l := yylex.(*yyLexState)
 			if l.seen_max_open_conns {
@@ -3131,7 +3160,7 @@ yydefault:
 		}
 	case 82:
 		yyDollar = yyS[yypt-3 : yypt+1]
-//line parser.y:1682
+//line parser.y:1679
 		{
 			l := yylex.(*yyLexState)
 			l.error("unknown database: %s", yyDollar[3].string)
@@ -3139,7 +3168,7 @@ yydefault:
 		}
 	case 83:
 		yyDollar = yyS[yypt-3 : yypt+1]
-//line parser.y:1689
+//line parser.y:1686
 		{
 			l := yylex.(*yyLexState)
 
@@ -3171,7 +3200,7 @@ yydefault:
 		}
 	case 84:
 		yyDollar = yyS[yypt-3 : yypt+1]
-//line parser.y:1720
+//line parser.y:1717
 		{
 			l := yylex.(*yyLexState)
 			if yyDollar[3].string == "" {
@@ -3208,7 +3237,7 @@ yydefault:
 		}
 	case 85:
 		yyDollar = yyS[yypt-5 : yypt+1]
-//line parser.y:1756
+//line parser.y:1753
 		{
 			l := yylex.(*yyLexState)
 
@@ -3230,7 +3259,7 @@ yydefault:
 		}
 	case 86:
 		yyDollar = yyS[yypt-3 : yypt+1]
-//line parser.y:1777
+//line parser.y:1774
 		{
 			l := yylex.(*yyLexState)
 
@@ -3253,7 +3282,7 @@ yydefault:
 		}
 	case 91:
 		yyDollar = yyS[yypt-1 : yypt+1]
-//line parser.y:1809
+//line parser.y:1806
 		{
 			l := yylex.(*yyLexState)
 			if l.seen_boot {
@@ -3265,7 +3294,7 @@ yydefault:
 		}
 	case 92:
 		yyDollar = yyS[yypt-5 : yypt+1]
-//line parser.y:1820
+//line parser.y:1817
 		{
 			yylex.(*yyLexState).in_boot = false
 			yyVAL.ast = &ast{
@@ -3274,7 +3303,7 @@ yydefault:
 		}
 	case 93:
 		yyDollar = yyS[yypt-8 : yypt+1]
-//line parser.y:1829
+//line parser.y:1826
 		{
 			l := yylex.(*yyLexState)
 			/*
@@ -3296,7 +3325,7 @@ yydefault:
 		}
 	case 94:
 		yyDollar = yyS[yypt-1 : yypt+1]
-//line parser.y:1850
+//line parser.y:1847
 		{
 			l := yylex.(*yyLexState)
 			if l.command != nil {
@@ -3308,13 +3337,13 @@ yydefault:
 		}
 	case 95:
 		yyDollar = yyS[yypt-3 : yypt+1]
-//line parser.y:1858
+//line parser.y:1855
 		{
 			yyDollar[2].command.name = yyDollar[3].string
 		}
 	case 96:
 		yyDollar = yyS[yypt-7 : yypt+1]
-//line parser.y:1859
+//line parser.y:1856
 		{
 			l := yylex.(*yyLexState)
 			if len(l.config.command) > 255 {
@@ -3338,7 +3367,7 @@ yydefault:
 		}
 	case 97:
 		yyDollar = yyS[yypt-2 : yypt+1]
-//line parser.y:1882
+//line parser.y:1879
 		{
 			yyDollar[1].ast.right = &ast{
 				yy_tok: WHEN,
@@ -3350,7 +3379,7 @@ yydefault:
 		}
 	case 98:
 		yyDollar = yyS[yypt-4 : yypt+1]
-//line parser.y:1893
+//line parser.y:1890
 		{
 			yyDollar[1].ast.right = &ast{
 				yy_tok: WHEN,
@@ -3360,7 +3389,7 @@ yydefault:
 		}
 	case 99:
 		yyDollar = yyS[yypt-2 : yypt+1]
-//line parser.y:1902
+//line parser.y:1899
 		{
 			yyDollar[1].ast.right = &ast{
 				yy_tok: WHEN,
@@ -3373,7 +3402,7 @@ yydefault:
 		}
 	case 100:
 		yyDollar = yyS[yypt-4 : yypt+1]
-//line parser.y:1914
+//line parser.y:1911
 		{
 			yyDollar[1].ast.right = &ast{
 				yy_tok: WHEN,
@@ -3384,7 +3413,7 @@ yydefault:
 		}
 	case 101:
 		yyDollar = yyS[yypt-3 : yypt+1]
-//line parser.y:1924
+//line parser.y:1921
 		{
 			l := yylex.(*yyLexState)
 			l.sql_database = &sql_database{
@@ -3393,7 +3422,7 @@ yydefault:
 		}
 	case 102:
 		yyDollar = yyS[yypt-7 : yypt+1]
-//line parser.y:1930
+//line parser.y:1927
 		{
 			l := yylex.(*yyLexState)
 			if l.sql_database.driver_name == "" {
@@ -3410,7 +3439,7 @@ yydefault:
 		}
 	case 103:
 		yyDollar = yyS[yypt-4 : yypt+1]
-//line parser.y:1946
+//line parser.y:1943
 		{
 			l := yylex.(*yyLexState)
 			l.sql_query_row = &sql_query_row{
@@ -3422,14 +3451,14 @@ yydefault:
 		}
 	case 104:
 		yyDollar = yyS[yypt-8 : yypt+1]
-//line parser.y:1955
+//line parser.y:1952
 		{
 			l := yylex.(*yyLexState)
 			q := l.sql_query_row
 
 			grump := func(format string, args ...interface{}) int {
 				l.error("sql query row: %s: %s", q.name,
-					Sprintf(format, args...))
+					fmt.Sprintf(format, args...))
 				return 0
 			}
 
@@ -3459,7 +3488,7 @@ yydefault:
 		}
 	case 105:
 		yyDollar = yyS[yypt-3 : yypt+1]
-//line parser.y:1991
+//line parser.y:1988
 		{
 			l := yylex.(*yyLexState)
 			l.sql_exec = &sql_exec{
@@ -3468,14 +3497,14 @@ yydefault:
 		}
 	case 106:
 		yyDollar = yyS[yypt-7 : yypt+1]
-//line parser.y:1997
+//line parser.y:1994
 		{
 			l := yylex.(*yyLexState)
 			ex := l.sql_exec
 
 			grump := func(format string, args ...interface{}) int {
 				l.error("sql exec: %s: %s", ex.name,
-					Sprintf(format, args...))
+					fmt.Sprintf(format, args...))
 				return 0
 			}
 
@@ -3501,13 +3530,13 @@ yydefault:
 		}
 	case 107:
 		yyDollar = yyS[yypt-1 : yypt+1]
-//line parser.y:2033
+//line parser.y:2030
 		{
 			yyVAL.go_kind = reflect.Bool
 		}
 	case 108:
 		yyDollar = yyS[yypt-2 : yypt+1]
-//line parser.y:2040
+//line parser.y:2037
 		{
 			l := yylex.(*yyLexState)
 			q := l.sql_query_row
@@ -3533,13 +3562,13 @@ yydefault:
 		}
 	case 111:
 		yyDollar = yyS[yypt-1 : yypt+1]
-//line parser.y:2073
+//line parser.y:2070
 		{
 			yylex.(*yyLexState).ast_root = yyDollar[1].ast
 		}
 	case 112:
 		yyDollar = yyS[yypt-2 : yypt+1]
-//line parser.y:2078
+//line parser.y:2075
 		{
 			s := yyDollar[1].ast
 			for ; s.next != nil; s = s.next {

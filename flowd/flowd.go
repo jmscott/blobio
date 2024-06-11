@@ -21,11 +21,11 @@ func croak(format string, args ...interface{}) {
 
 	Fprintf(stderr, "flowd: ERROR: %s\n", Sprintf(format, args...))
 	Fprintf(stderr,
-		"usage: flowd [server|parse|ast|frisk|depend] <config_path>\n")
+		"usage: flowd [server|parse|ast|depend] <config_path>\n")
 	os.Exit(255)
 }
 
-// flowd [server|frisk|parse|ast|frisk|depend] <schema.flow>
+// flowd [server|parse|ast|depend] <schema.flow>
 func main() {
 
 	if len(os.Args) != 3 {
@@ -73,8 +73,6 @@ func main() {
 
 	switch action {
 	case "parse":
-	case "frisk":
-		os.Exit(0)
 	case "server":
 		conf.server(par)
 	case "ast":

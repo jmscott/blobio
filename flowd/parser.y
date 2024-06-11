@@ -75,6 +75,7 @@ package main
 
 import (
 	"errors"
+	"fmt"
 	"io"
 	"reflect"
 	"regexp"
@@ -83,7 +84,6 @@ import (
 	"unicode/utf8"
 
 	. "time"
-	. "fmt"
 )
 
 func init() {
@@ -240,7 +240,7 @@ const (
 %token	EXIT_STATUS
 %token	FDR_ROLL_DURATION
 %token	FLOWING
-%token	TAIL_FLOWING
+%token	PROJECT_TAIL_FLOWING
 %token	FLOW_WORKER_COUNT
 %token	FROM
 %token	HEARTBEAT_DURATION
@@ -619,7 +619,7 @@ tail_ref:
 	  TAIL_REF  '$' 
 	  {
 	  	$$ = &ast{
-			yy_tok: TAIL_FLOWING,
+			yy_tok: PROJECT_TAIL_FLOWING,
 			tail:	$1,
 		}
 	  }
@@ -672,7 +672,7 @@ call_project:
 
 		l.depends = append(
 				l.depends,
-				Sprintf("%s %s", subject, $1.name),
+				fmt.Sprintf("%s %s", subject, $1.name),
 			)
 
 	  	$$ = &ast{
@@ -738,7 +738,7 @@ query_project:
 
 		l.depends = append(
 				l.depends,
-				Sprintf("%s %s", subject, name),
+				fmt.Sprintf("%s %s", subject, name),
 			)
 
 	  	$$ = &ast{
@@ -796,7 +796,7 @@ query_project:
 
 		l.depends = append(
 				l.depends,
-				Sprintf("%s %s", subject, name),
+				fmt.Sprintf("%s %s", subject, name),
 			)
 
 	  	$$ = &ast{
@@ -852,7 +852,7 @@ query_project:
 
 		l.depends = append(
 				l.depends,
-				Sprintf("%s %s", subject, name),
+				fmt.Sprintf("%s %s", subject, name),
 			)
 
 	  	$$ = &ast{
@@ -908,7 +908,7 @@ query_project:
 
 		l.depends = append(
 				l.depends,
-				Sprintf("%s %s", subject, name),
+				fmt.Sprintf("%s %s", subject, name),
 			)
 
 	  	$$ = &ast{
@@ -964,7 +964,7 @@ query_project:
 
 		l.depends = append(
 				l.depends,
-				Sprintf("%s %s", subject, name),
+				fmt.Sprintf("%s %s", subject, name),
 			)
 
 	  	$$ = &ast{
@@ -1047,7 +1047,7 @@ tail_project:
 		}
 		l.depends = append(
 				l.depends,
-				Sprintf("%s %s", subject, $1.tail.name,
+				fmt.Sprintf("%s %s", subject, $1.tail.name,
 			))
 	  }
 	|
@@ -1071,9 +1071,6 @@ projection:
 qualify:
 	  projection  rel_op  constant
 	  {
-Printf("WTF: projection: %#v\n", $1)
-Printf("WTF: op: %#v\n", $2)
-Printf("WTF: constant: %#v\n", $3)
 		l := yylex.(*yyLexState)
 		left := $1
 
@@ -1958,7 +1955,7 @@ statement:
 
 		grump := func(format string, args ...interface{}) int {
 			l.error("sql query row: %s: %s", q.name,
-						Sprintf(format, args...))
+						fmt.Sprintf(format, args...))
 			return 0
 		}
 
@@ -2000,7 +1997,7 @@ statement:
 
 		grump := func(format string, args ...interface{}) int {
 			l.error("sql exec: %s: %s", ex.name,
-						Sprintf(format, args...))
+						fmt.Sprintf(format, args...))
 			return 0
 		}
 
@@ -2580,15 +2577,15 @@ PARSE_ERROR:
 
 func (l *yyLexState) mkerror(format string, args...interface{}) error {
 
-	return errors.New(Sprintf("%s, near line %d",
-		Sprintf(format, args...),
+	return errors.New(fmt.Sprintf("%s, near line %d",
+		fmt.Sprintf(format, args...),
 		l.line_no,
 	))
 }
 
 func (l *yyLexState) error(format string, args...interface{}) {
 
-	l.Error(Sprintf(format, args...))
+	l.Error(fmt.Sprintf(format, args...))
 }
 
 func (l *yyLexState) Error(msg string) {
@@ -2680,7 +2677,7 @@ func (l *yyLexState) wire_rel_op(left, op, right *ast) bool {
 		op.uint64 = right.uint64
 
 	//  Note: tail flowing must only be called once!
-	case TAIL_FLOWING:
+	case PROJECT_TAIL_FLOWING:
 		if right.is_bool() == false {
 			l.error(
 				"%s$flowing not compared to bool: %d",
@@ -2702,9 +2699,19 @@ func (l *yyLexState) wire_rel_op(left, op, right *ast) bool {
 		default:
 			l.error("right token not bool: %d", right.yy_tok)
 		}
-
+	case PROJECT_XDR_EXIT_STATUS:
+		if right.is_uint64() == false {
+			l.error("exit_status is not compared to uint64")
+			return false
+		}
+		if op.yy_tok == EQ {
+			op.yy_tok = EQ_UINT64
+		} else {
+			op.yy_tok = NEQ_UINT64
+		}
+		op.uint64 = right.uint64
 	default:
-		panic("unknown left.yy_tok: " + strconv.Itoa(left.yy_tok))
+		l.error("unknown left.yy_tok: %d", left.yy_tok)
 	}
 		 
 	return true
@@ -2773,7 +2780,7 @@ func (conf *config) parse(in io.RuneReader) (
 	find_unreferenced_fire(l.ast_root)
 
 	for n, _ := range root_depend {
-		l.depends = append(l.depends, Sprintf("%s %s", n, n))
+		l.depends = append(l.depends, fmt.Sprintf("%s %s", n, n))
 	}
 
 	//  tsort the call/query dependencies.
@@ -2803,74 +2810,96 @@ func (a *ast) to_string(brief bool) string {
 
 	switch a.yy_tok {
 	case COMMAND:
-		what = Sprintf("COMMAND(%s)", a.command.name)
+		what = fmt.Sprintf("COMMAND(%s)", a.command.name)
 	case CALL0:
-		what = Sprintf("CALL0(%s)", a.call.command.name)
+		what = fmt.Sprintf("CALL0(%s)", a.call.command.name)
 	case CALL:
-		what = Sprintf("CALL(%s)", a.call.command.name)
+		what = fmt.Sprintf("CALL(%s)", a.call.command.name)
 	case EQ_STRING:
-		what = Sprintf("EQ_STRING(\"%s\")", a.string)
+		what = fmt.Sprintf("EQ_STRING(\"%s\")", a.string)
+	case MATCH_STRING:
+		what = fmt.Sprintf(
+				"MATCH_STRING(%s:\"%s\")",
+				a.regexp,
+				a.string,
+		)
+	case NO_MATCH_STRING:
+		what = fmt.Sprintf(
+				"NO_MATCH_STRING(%s:\"%s\")",
+				a.regexp,
+				a.string,
+		)
+	case NEQ_STRING:
+		what = fmt.Sprintf("NEQ_STRING(\"%s\")", a.string)
 	case TAIL:
-		what = Sprintf("TAIL(%s)", a.tail.name)
+		what = fmt.Sprintf("TAIL(%s)", a.tail.name)
 	case TAIL_REF:
-		what = Sprintf("TAIL_REF(%s.%s)", a.tail.name, a.brr_field)
+		what = fmt.Sprintf("TAIL_REF(%s.%s)", a.tail.name, a.brr_field)
 	case COMMAND_REF:
-		what = Sprintf("COMMAND_REF(%s)", a.command.name)
+		what = fmt.Sprintf("COMMAND_REF(%s)", a.command.name)
 	case UINT64:
-		what = Sprintf("UINT64(%d)", a.uint64)
+		what = fmt.Sprintf("UINT64(%d)", a.uint64)
 	case STRING:
-		what = Sprintf("STRING(\"%s\")", a.string)
+		what = fmt.Sprintf("STRING(\"%s\")", a.string)
 	case ARGV:
-		what = Sprintf("ARGV(%d)", a.uint64)
+		what = fmt.Sprintf("ARGV(%d)", a.uint64)
 	case SQL_DATABASE:
-		what = Sprintf("SQL_DATABASE(%s:%s)",
+		what = fmt.Sprintf("SQL_DATABASE(%s:%s)",
 					a.sql_database.driver_name,
 					a.sql_database.name,
 		       )
 	case SQL_DATABASE_REF:
-		what = Sprintf("SQL_DATABASE_REF(%s)",
+		what = fmt.Sprintf("SQL_DATABASE_REF(%s)",
 					a.sql_database.name,
 		       )
 	case SQL_QUERY_ROW_REF:
-		what = Sprintf("SQL_QUERY_ROW_REF(%s.%s)",
+		what = fmt.Sprintf("SQL_QUERY_ROW_REF(%s.%s)",
 				a.sql_query_row.sql_database.name,
 				a.sql_query_row.name,
 			)
 	case SQL_EXEC_REF:
-		what = Sprintf("SQL_EXEC_REF(%s.%s)",
+		what = fmt.Sprintf("SQL_EXEC_REF(%s.%s)",
 				a.sql_exec.sql_database.name,
 				a.sql_exec.name,
 			)
 	case QUERY_ROW:
-		what = Sprintf("QUERY_ROW(%s)",
+		what = fmt.Sprintf("QUERY_ROW(%s)",
 				a.sql_query_row.name,
 			)
 	case QUERY_EXEC:
-		what = Sprintf("QUERY_EXEC(%s)",
+		what = fmt.Sprintf("QUERY_EXEC(%s)",
 				a.sql_exec.name,
 			)
 	case QUERY_EXEC_TXN:
-		what = Sprintf("QUERY_EXEC_TXN(%s)",
+		what = fmt.Sprintf("QUERY_EXEC_TXN(%s)",
 				a.sql_exec.name,
 			)
 	case PROJECT_SQL_QUERY_ROW_BOOL:
-		what = Sprintf("PROJECT_SQL_QUERY_ROW_BOOL(%s:%d)",
+		what = fmt.Sprintf("PROJECT_SQL_QUERY_ROW_BOOL(%s:%d)",
 				a.string,
 				a.uint8,
 			)
 	case PROJECT_BRR:
-		what = Sprintf("PROJECT_BRR(%s[%d])",
+		what = fmt.Sprintf("PROJECT_BRR(%s[%d])",
 				a.brr_field.String(),
 				a.brr_field,
 			)
-	case TAIL_FLOWING:
-		what = Sprintf("TAIL_FLOWING(%s:%t)", a.tail.name, a.bool)
+	case PROJECT_TAIL_FLOWING:
+		what = fmt.Sprintf(
+			"PROJECT_TAIL_FLOWING(%s:%t)",
+			a.tail.name,
+			a.bool,
+		)
+	case EQ_UINT64:
+		what = fmt.Sprintf("EQ_UINT64(%d)", a.uint64)
+	case NEQ_UINT64:
+		what = fmt.Sprintf("NEQ_UINT64(%d)", a.uint64)
 	default:
 		offset := a.yy_tok - __MIN_YYTOK + 3
 		if (a.yy_tok > __MIN_YYTOK) {
 			what = yyToknames[offset]
 		} else {
-			what = Sprintf(
+			what = fmt.Sprintf(
 				"UNKNOWN(%d)",
 				a.yy_tok,
 			)
@@ -2880,16 +2909,16 @@ func (a *ast) to_string(brief bool) string {
 		return what
 	}
 
-	what = Sprintf("%s:&=%p", what, a)
+	what = fmt.Sprintf("%s:&=%p", what, a)
 
 	if a.left != nil {
-		what = Sprintf("%s,l=%p", what, a.left)
+		what = fmt.Sprintf("%s,l=%p", what, a.left)
 	}
 	if a.right != nil {
-		what = Sprintf("%s,r=%p", what, a.right)
+		what = fmt.Sprintf("%s,r=%p", what, a.right)
 	}
 	if a.next != nil {
-		what = Sprintf("%s,n=%p", what, a.next)
+		what = fmt.Sprintf("%s,n=%p", what, a.next)
 	}
 	return what
 }
@@ -2906,13 +2935,13 @@ func (a *ast) walk_print(indent int, is_first_sibling bool) {
 		return
 	}
 	if indent == 0 {
-		Println("")
+		fmt.Println("")
 	} else {
 		for i := 0;  i < indent;  i++ {
-			Print("  ")
+			fmt.Print("  ")
 		}
 	}
-	Println(a.to_string(true))
+	fmt.Println(a.to_string(true))
 
 	//  print kids
 	a.left.walk_print(indent + 1, true)

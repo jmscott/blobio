@@ -87,7 +87,7 @@ func (in os_exec_chan) worker_flowd_execv() {
 
 	cmd := &exec.Cmd{
 		Path: flowd_execv_path,
-		Args: []string{"flowd-execv"},
+		Args: []string{"sbin/flowd-execv"},
 	}
 
 	cmd_pipe_in, err := cmd.StdinPipe()

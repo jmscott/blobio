@@ -49,12 +49,15 @@ const (
 var and = [137]rummy{}
 var or = [137]rummy{}
 
-//  global named lock table, for coordinating across flows
-var flow_tas sync.Mutex
-var flow_tas_locked	map[string]bool
+//  implement tail$flowing reference: true if already flowing on current udig,
+//  false if not, in wich case the current flow is recorded
+
+var flowing_mux	sync.Mutex
+var flowing	map[string]bool
 
 func init() {
 
+	flowing = make(map[string]bool)
 	//  some shifted constants for left hand bits
 
 	const lw = rummy(rum_WAIT << 4)
@@ -192,7 +195,7 @@ func init() {
 	or[ln|rum_WAIT] = rum_WAIT
 }
 
-// bool_value is result of AND, OR, LOCKED and relational operations
+// bool_value is result of AND, OR, FLOWING and relational operations
 type bool_value struct {
 	bool
 	is_null bool
@@ -291,7 +294,7 @@ type flow struct {
 
 	next chan flow_chan
 
-	//  channel is closed when all call()/queries have been can make no
+	//  channel is closed when all call()/queries have can make no
 	//  further progress
 
 	resolved chan struct{}
@@ -304,9 +307,6 @@ type flow struct {
 
 	//  count of go routines still flowing expressions
 	confluent_count int
-
-	//  lock is active.  closed when session ends
-	active_lock	string
 
 	green_count	uint8
 	yellow_count	uint8
@@ -681,6 +681,40 @@ func (flo *flow) eq_bool(
 	return out
 }
 
+func (flo *flow) neq_bool(
+	b_const bool,
+	in bool_chan,
+) (out bool_chan) {
+
+	out = make(bool_chan)
+
+	go func() {
+		defer close(out)
+
+		for flo = flo.get(); flo != nil; flo = flo.get() {
+
+			bv := <-in
+			if bv == nil {
+				return
+			}
+
+			var b, is_null bool
+
+			if bv.is_null {
+				is_null = true
+			} else {
+				b = (b_const != bv.bool)
+			}
+			out <- &bool_value{
+				bool:    b,
+				is_null: is_null,
+				flow:    flo,
+			}
+		}
+	}()
+	return out
+}
+
 //  cast string to uint64, panicing upon error
 
 func (flo *flow) cast_uint64(in string_chan) (out uint64_chan) {
@@ -962,9 +996,9 @@ func (flo *flow) argv1(in string_chan) (out argv_chan) {
 	return out
 }
 
-//  test and set a global lock using string as a lock name 
+//  test and set current flow as active
 
-func (flo *flow) test_and_lock(in string_chan) (out bool_chan) {
+func (flo *flow) project_tail_flowing() (out bool_chan) {
 
 	out = make(bool_chan)
 
@@ -973,51 +1007,18 @@ func (flo *flow) test_and_lock(in string_chan) (out bool_chan) {
 
 		for flo = flo.get(); flo != nil; flo = flo.get() {
 
-			sv := <-in
-			if sv == nil {
-				return
-			}
-			lock_exists := false
-			flow_tas.Lock()
-			if flow_tas_locked[sv.string] {
-				lock_exists = true
+			is_flowing := false
+			flowing_mux.Lock()
+			udig := flo.brr[brr_UDIG]
+			if flowing[udig] == false {
+				flowing[udig] = true
 			} else {
-				flow_tas_locked[sv.string] = true
+				is_flowing = true
 			}
-			flow_tas.Unlock()
+			flowing_mux.Unlock()
+
 			out <- &bool_value{
-				bool:    lock_exists,
-				is_null: false,
-				flow:    flo,
-			}
-		}
-	}()
-	return out
-}
-//  test and set a global lock using string as a lock name 
-
-func (flo *flow) test_and_unlock(in string_chan) (out bool_chan) {
-
-	out = make(bool_chan)
-
-	go func() {
-		defer close(out)
-
-		for flo = flo.get(); flo != nil; flo = flo.get() {
-
-			sv := <-in
-			if sv == nil {
-				return
-			}
-			lock_exists := false
-			flow_tas.Lock()
-			if flow_tas_locked[sv.string] {
-				lock_exists = true
-				delete(flow_tas_locked, sv.string)
-			}
-			flow_tas.Unlock()
-			out <- &bool_value{
-				bool:    lock_exists,
+				bool:    is_flowing,
 				is_null: false,
 				flow:    flo,
 			}

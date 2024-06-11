@@ -1,7 +1,7 @@
+//
 //  Synopsis:
 //	Compile a flow configuration into a network of channels.
-//  Note:
-//	The panic(no ast node (or not invoked?)) is confusing.
+//
 
 package main
 
@@ -196,6 +196,10 @@ func (cmpl *compile) compile() fdr_chan {
 		case WHEN:
 			a2b[a] = a2b[a.left]
 			cc = 0
+		/*
+		case PROJECT_TAIL_FLOWING:
+			a2b[a] = flo.project_tail_flowing()
+		*/
 		case PROJECT_XDR_EXIT_STATUS:
 			cx := command2xdr[a.string]
 
@@ -272,6 +276,10 @@ func (cmpl *compile) compile() fdr_chan {
 			a2b[a] = flo.no_match_string(a.regexp, a2s[a.left])
 		case EQ_BOOL:
 			a2b[a] = flo.eq_bool(a.bool, a2b[a.left])
+		/*
+		case NEQ_BOOL:
+			a2b[a] = flo.neq_bool(a.bool, a2b[a.left])
+		*/
 		case yy_OR:
 			a2b[a] = flo.bool2(or, a2b[a.left], a2b[a.right])
 		case yy_AND:
@@ -291,11 +299,11 @@ func (cmpl *compile) compile() fdr_chan {
 		}
 
 		var root *ast
-		if root = par.call2ast[n]; root == nil {
+		if root = par.call2ast[n];  root == nil {
 			root = par.query2ast[n]
 		}
 		if root == nil {
-			panic(Sprintf("no ast node (or not invoked?): %s", n))
+			panic(Sprintf("command/query never invoked: %s", n))
 		}
 		compile(root)
 	}
