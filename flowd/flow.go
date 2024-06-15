@@ -16,6 +16,7 @@ import (
 	"regexp"
 	"strconv"
 	"sync"
+	"sync/atomic"
 	"unicode/utf8"
 	"encoding/hex"
 
@@ -52,12 +53,12 @@ var or = [137]rummy{}
 //  implement tail$flowing reference: true if already flowing on current udig,
 //  false if not, in wich case the current flow is recorded
 
-var flowing_mux	sync.Mutex
-var flowing	map[string]bool
+var flowing		sync.Map
+var flowing_store_count	atomic.Int64
+var flowing_load_count	atomic.Int64
 
 func init() {
 
-	flowing = make(map[string]bool)
 	//  some shifted constants for left hand bits
 
 	const lw = rummy(rum_WAIT << 4)
@@ -1007,18 +1008,18 @@ func (flo *flow) project_tail_flowing() (out bool_chan) {
 
 		for flo = flo.get(); flo != nil; flo = flo.get() {
 
-			is_flowing := false
-			flowing_mux.Lock()
-			udig := flo.brr[brr_UDIG]
-			if flowing[udig] == false {
-				flowing[udig] = true
+			_, loaded := flowing.LoadOrStore(
+					flo.brr[brr_UDIG],
+					true,
+			)
+			if loaded {
+				flowing_load_count.Add(1)
 			} else {
-				is_flowing = true
+				flowing_store_count.Add(1)
 			}
-			flowing_mux.Unlock()
 
 			out <- &bool_value{
-				bool:    is_flowing,
+				bool:    loaded,
 				is_null: false,
 				flow:    flo,
 			}

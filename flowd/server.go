@@ -530,10 +530,12 @@ func (conf *config) server(par *parse) {
 
 		case <-heartbeat.C:
 
-			flowing_mux.Lock()
-			lfl := len(flowing)
-			flowing_mux.Unlock()
-			info("flowing: %d udigs", lfl)
+			info("flowing load count: %d hits",
+				flowing_load_count.Load(),
+			)
+			info("flowing store count: %d udigs",
+				flowing_store_count.Load(),
+			)
 
 			//  dump open database count
 
