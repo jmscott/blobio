@@ -769,8 +769,8 @@ bio4d(
 
 	//  set the process title seen by the os
 
-	strcpy(ps_title, "bio4d-");
-	strcat(ps_title, verb);
+	ps_title[0] = 0;
+	jmscott_strcat2(ps_title, sizeof ps_title, "bio4d-", verb);
 	ps_title_set(ps_title, (char *)0, (char *)0);
 
 	/*
@@ -1871,45 +1871,9 @@ static void
 daemonize()
 {
 	pid_t pid;
-	char buf[MSG_SIZE];
 	static char n[] = "daemonize";
 
 	info("daemonizing");
-
-	/*
-	 *  Server always runs as user blobio.
-	 *
-	 *  Note:
-	 *	This code is probably not needed with modern init managers.
-	 */
-	if (getuid() == 0) {
-		struct passwd *pwd = getpwnam("blobio");
-
-		if (pwd == NULL) {
-			panic("root user must setuid() to user blobio");
-			die2(n, "no password entry for user blobio");
-		}
-		/*
-		 *  Set real and effective group id.
-		 */
-		if (setgid(pwd->pw_uid) < 0) {
-			int e = errno;
-
-			snprintf(buf, sizeof buf, "setgid(blobio:%d) failed",
-								pwd->pw_uid);
-			die3(n, buf, strerror(e));
-		}
-		/*
-		 *  Set real and effective user id.
-		 */
-		if (setuid(pwd->pw_uid) < 0) {
-			int e = errno;
-
-			snprintf(buf, sizeof buf, "setuid(blobio:%d) failed",
-								pwd->pw_uid);
-			die3(n, buf, strerror(e));
-		}
-	}
 
 	/*
 	 *  Put ourselves in the background.
@@ -2280,6 +2244,9 @@ main(int argc, char **argv, char **env)
 
 	ps_title_init(argc, argv);
 
+	snprintf(buf, sizeof buf, "in foreground: %d", in_foreground);
+	info(buf);
+
 	if (!in_foreground)
 		daemonize();
 	set_pid_log(pid_path);
@@ -2304,7 +2271,7 @@ main(int argc, char **argv, char **env)
 
 	/*
 	 *  Dump process environment.  Want a minimal environment in production,
-	 *  so this dump forces keeping the enironment simple.
+	 *  so this dump forces keeping the environment simple.
 	 */
 	info("dumping process environment variables ...");
 	if (*env[0])

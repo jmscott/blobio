@@ -300,8 +300,11 @@ again:
 	 */
 	if (isprint(reply[0]) && isprint(reply[1])) {
 
-		strcpy(ebuf, "unexpected reply: first 2 chars: ");
-		strcat(ebuf, reply);
+		ebuf[0] = 0;
+		jmscott_strcat2(ebuf, sizeof ebuf,
+				"unexpected reply: first 2 chars: ",
+				reply
+		);
 	} else
 		/*
 		 *  Unprintable junk, to boot.

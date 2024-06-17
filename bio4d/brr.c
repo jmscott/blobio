@@ -1064,8 +1064,8 @@ wrap(struct request *r, struct digest_module *mp)
 	if (frozen_fd < 0)
 		panic4(n, frozen_path, "open(frozen brr) failed",
 							strerror(errno));
-	strcpy(frozen_udig, mp->name);
-	strcat(frozen_udig, ":");
+	frozen_udig[0] = 0;
+	jmscott_strcat2(frozen_udig, sizeof frozen_udig, mp->name, ":");
 	/*
 	 *  Call the module to generate a digest for the stream of the
 	 *  wrapped brr log file.
@@ -1086,9 +1086,12 @@ wrap(struct request *r, struct digest_module *mp)
 	/*
 	 *  Rename the frozen brr log file in spool/ to spool/wrap/<udig>.brr
 	 */
-	strcpy(wrap_path, "spool/wrap/");
-	strcat(wrap_path, frozen_udig);
-	strcat(wrap_path, ".brr");
+	wrap_path[0] = 0;
+	jmscott_strcat3(wrap_path, sizeof wrap_path,
+		"spool/wrap/",
+		frozen_udig,
+		".brr"
+	);
 	if (io_rename(frozen_path, wrap_path)) {
 		char buf[MSG_SIZE];
 		int err;
@@ -1185,8 +1188,8 @@ wrap(struct request *r, struct digest_module *mp)
 	if (offset != 0)
 		panic3(n, wrap_set_path, "lseek(wrap set) != 0");
 
-	strcpy(wrap_set_udig, mp->name);
-	strcat(wrap_set_udig, ":");
+	wrap_set_udig[0] = 0;
+	jmscott_strcat2(wrap_set_udig, sizeof wrap_set_udig, mp->name, ":");
 
 	/*
 	 *  Digest the temporary wrapped set of udigs.
@@ -1209,7 +1212,7 @@ wrap(struct request *r, struct digest_module *mp)
 		return -1;
 	}
 	r->digest = strdup(strchr(wrap_set_udig, ':') + 1);
-	strcat(wrap_set_udig, "\n");
+	jmscott_strcat(wrap_set_udig, sizeof wrap_set_udig, "\n");
 	len = strlen(wrap_set_udig);
 	if (req_write(r, (unsigned char *)wrap_set_udig, len)) {
 		error4(n, "req_write() failed", r->algorithm, r->digest);

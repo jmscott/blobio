@@ -124,6 +124,7 @@ open_log_path(int truncate)
 	log_dow = now->tm_wday;
 }
 
+//  Note:  return static buf.  uggh.
 char *
 server_elapsed()
 {
@@ -144,7 +145,7 @@ server_elapsed()
 	e = elapsed / 86400;
 	if (e > 0) {
 		snprintf(tbuf, sizeof tbuf, "%lud", e);
-		strcat(buf, tbuf);
+		jmscott_strcat(buf, sizeof buf, tbuf);
 	}
 
 	/*
@@ -153,7 +154,7 @@ server_elapsed()
 	e = ((unsigned long)elapsed % 86400) / 3600;
 	if (e > 0) {
 		snprintf(tbuf, sizeof tbuf, "%luhr", e);
-		strcat(buf, tbuf);
+		jmscott_strcat(buf, sizeof buf, tbuf);
 	}
 
 	/*
@@ -162,7 +163,7 @@ server_elapsed()
 	e = ((unsigned long)elapsed % 3600) / 60;
 	if (e > 0) {
 		snprintf(tbuf, sizeof tbuf, "%lumin", e);
-		strcat(buf, tbuf);
+		jmscott_strcat(buf, sizeof buf, tbuf);
 	}
 
 	/*
@@ -171,7 +172,7 @@ server_elapsed()
 	e = (unsigned long)elapsed % 60;
 	if (e > 0) {
 		snprintf(tbuf, sizeof tbuf, "%lusec", e);
-		strcat(buf, tbuf);
+		jmscott_strcat(buf, sizeof buf, tbuf);
 	}
 	return buf;
 }
@@ -456,14 +457,15 @@ log_strcat2(char *buf, int buf_size, char *msg1, char *msg2)
 {
 	if (msg1 && *msg1) {
 		if (buf[0])
-			strncat(buf, ": ", buf_size - (strlen(buf) + 1));
-		strncat(buf, msg1, buf_size - (strlen(buf) + 1));
-		if (msg2 && *msg2) {
-			strncat(buf, ": ", buf_size - (strlen(buf) + 1));
-			strncat(buf, msg2, buf_size - (strlen(buf) + 1));
-		}
-	} else if (msg2 && *msg2)
-		strncpy(buf, msg2, buf_size);
+			jmscott_strcat(buf, buf_size, ": ");
+		jmscott_strcat(buf, buf_size,  msg1);
+		if (msg2 && *msg2)
+			jmscott_strcat2(buf, buf_size, ": ", msg2);
+	} else if (msg2 && *msg2) {
+		if (buf[0])
+			jmscott_strcat(buf, buf_size, ": ");
+		jmscott_strcat(buf, buf_size,  msg1);
+	}
 	return buf;
 }
 
@@ -533,13 +535,10 @@ log_format(char *msg, char *buf, int buf_size)
 	 *  For a non null message, build the entry for the log file
 	 *  in a single buffer;  otherwise, for a null message get panicy.
 	 */
-	if (msg && *msg) {
-		strncat(buf, msg, buf_size - (strlen(buf) + 1));
-		strncat(buf, "\n", buf_size - (strlen(buf) + 1));
-	}
+	if (msg && *msg)
+		jmscott_strcat2(buf, buf_size, msg, "\n");
 	else
-		strncat(buf, ": PANIC: info(null parameter)\n",
-						buf_size - (strlen(buf) + 1));
+		panic("info(null parameter)");
 }
 
 void
@@ -678,7 +677,7 @@ panic(char *msg1)
 	if (log_fd != 2) {
 		char msg[MSG_SIZE];
 
-		log_format(msg1, msg, sizeof msg);
+		write(2, msg1, strlen(msg1));
 		write(2, "\n", 1);
 		write(2, msg, strlen(msg));
 		write(2, "\n", 1);

@@ -387,8 +387,11 @@ make_path(struct request *r, char *digest)
 	/*
 	 *  Build the path to the final resting place of the blob file.
 	 */
-	strcpy(s->blob_path, s->blob_dir_path);
-	strcat(s->blob_path, digest);
+	s->blob_path[0] = 0;
+	jmscott_strcat2(s->blob_path, sizeof s->blob_path,
+			s->blob_dir_path,
+			digest
+	);
 }
 
 static int

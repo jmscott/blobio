@@ -61,7 +61,7 @@ add_word(int size[], char *word, int add_space)
 {
 	int i, len;
 
-	len = strlen(word);
+	len = strlen(word) + 1;
 	/*
 	 *  Search for space in argv[].
 	 */
@@ -72,7 +72,7 @@ add_word(int size[], char *word, int add_space)
 		if (need > size[i])
 			continue;
 		/*
-		 *  Add the word to argv[].
+		 *  Add the word to argv[i].
 		 */
 		if (add_space)
 			strcat(_argv[i], " ");
