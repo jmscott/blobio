@@ -94,6 +94,7 @@ GOSRCs="
 	qdr.go								\
 	server.go							\
 	sql.go								\
+	sync.go								\
 	tail.go								\
 	tas_lock.go							\
 	tsort.go							\
