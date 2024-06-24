@@ -2,6 +2,8 @@
  *  Synopsis:
  *	Yacc grammar for 'flow' language.
  *  Note:
+ *	action "parse" should warn about unused queries of commands.
+ *
  *	An attribute of a result row with the same name as the sql
  *	query is accepted.  however, the sql_query.sql_query is a parse
  *	error.
@@ -137,8 +139,11 @@ type config struct {
 	//  sql exec <name>
 	sql_exec	map[string]*sql_exec
 
-	//  all os commands{}
+	//  all os process commands{}
 	command          	map[string]*command
+
+	//  all LoadOrStore sync Maps
+	sync_map          	map[string]*sync_map
 
 	//  defaults to "log"
 	log_directory		string
@@ -157,6 +162,7 @@ type ast struct {
 	*call
 	*tail
 	*command
+	*sync_map
 	*sql_database
 	*sql_query_row
 	*sql_exec
@@ -221,6 +227,7 @@ const (
 %token	ARGV0
 %token	ARGV1
 %token	BLOB_SIZE
+%token	SYNC  MAP  LOAD_OR_STORE  SYNC_MAP_REF
 %token	BOOT
 %token	BRR_CAPACITY
 %token	CALL
@@ -1803,6 +1810,17 @@ sql_decl_stmt_list:
 	;
 
 statement:
+	  SYNC  MAP  NAME  ';'
+	  {
+		l := yylex.(*yyLexState)
+		l.config.sync_map[$3] = &sync_map{
+						name:	$3,
+					}
+		$$ = &ast{
+			yy_tok:	SYNC_MAP_REF,
+		}
+	  }
+	|
 	  BOOT {
 		l := yylex.(*yyLexState)
 		if l.seen_boot {
@@ -2105,6 +2123,7 @@ var keyword = map[string]int{
 	"int64":		yy_INT64,
 	"is":			IS,
 	"log_directory":	LOG_DIRECTORY,
+	"map":			MAP,
 	"max_idle_conns":	MAX_IDLE_CONNS,
 	"max_open_conns":	MAX_OPEN_CONNS,
 	"memstats_duration":	MEMSTAT_DURATION,
@@ -2123,6 +2142,7 @@ var keyword = map[string]int{
 	"sqlstate":		SQLSTATE,
 	"start_time":		START_TIME,
 	"statement":		STATEMENT,
+	"sync":			SYNC,
 	"tail":			TAIL,
 	"transport":		TRANSPORT,
 	"true":			yy_TRUE,
@@ -2285,7 +2305,7 @@ func skip_space(l *yyLexState) (c rune, eof bool, err error) {
 }
 
 /*
- *  Words are a sequence of ascii letters, digits/numbers and '_' characters.
+ *  Words are a sequence of utf8 letters, digits/numbers and '_' characters.
  *  The word is mapped onto first a keyword, then command, then query and,
  *  finally, then tail.
  */

@@ -34,9 +34,19 @@ func main() {
 	}
 	action := os.Args[1]
 
+	switch action {
+		case "server":
+		case "ast":
+		case "depend":
+		case "parse": 
+		default:
+			croak("unknown action: %s", action)
+	}
+
 	conf := &config{
 		path:                 os.Args[2],
 		command:              make(map[string]*command),
+		sync_map:             make(map[string]*sync_map),
 		sql_database:         make(map[string]*sql_database),
 		sql_query_row:        make(map[string]*sql_query_row),
 		sql_exec:             make(map[string]*sql_exec),
@@ -65,12 +75,8 @@ func main() {
 
 	par, err := conf.parse(bufio.NewReader(cf))
 	if err != nil {
-		if action == "parse" {
-			os.Exit(1)
-		}
-		croak("%s", err)
+		croak("%s: %s", action, err)
 	}
-
 	switch action {
 	case "parse":
 	case "server":
