@@ -210,6 +210,7 @@ const (
 	string
 	tail		*tail
 	command		*command
+	sync_map	*sync_map
 	call		*call
 	sql_database	*sql_database
 	sql_query_row	*sql_query_row
@@ -227,7 +228,6 @@ const (
 %token	ARGV0
 %token	ARGV1
 %token	BLOB_SIZE
-%token	SYNC  MAP  LOAD_OR_STORE  SYNC_MAP_REF
 %token	BOOT
 %token	BRR_CAPACITY
 %token	CALL
@@ -247,7 +247,6 @@ const (
 %token	EXIT_STATUS
 %token	FDR_ROLL_DURATION
 %token	FLOWING
-%token	PROJECT_TAIL_FLOWING
 %token	FLOW_WORKER_COUNT
 %token	FROM
 %token	HEARTBEAT_DURATION
@@ -271,7 +270,9 @@ const (
 %token	PROJECT_QDR_ROWS_AFFECTED
 %token	PROJECT_QDR_SQLSTATE
 %token	PROJECT_SQL_QUERY_ROW_BOOL
+%token	PROJECT_TAIL_FLOWING
 %token	PROJECT_XDR_EXIT_STATUS
+%token  PROJECT_SYNC_MAP_LOS_TRUE_LOADED
 %token	QDR_ROLL_DURATION
 %token	QUERY_DURATION
 %token	QUERY_EXEC
@@ -289,6 +290,7 @@ const (
 %token	START_TIME
 %token	STATEMENT
 %token	STRING
+%token	SYNC MAP LOAD_OR_STORE SYNC_MAP_REF LOADED
 %token	TAIL
 %token	TAIL_REF
 %token	TRANSACTION
@@ -309,14 +311,15 @@ const (
 %token	yy_TRUE
 %token  QUERY
 %token  yy_BOOL
+%token  yy_STRING
 
 %type	<ast>		arg arg_list
 %type	<ast>		call  query
-%type	<ast>		call_project  query_project
+%type	<ast>		call_project tail_project query_project project_sync_map
 %type	<ast>		constant  rel_op
 %type	<ast>		qualify
 %type	<ast>		statement_list  statement
-%type	<ast>		tail_project  projection  tail_ref
+%type	<ast>		projection  tail_ref
 %type	<brr_field>	brr_field
 %type	<command>	COMMAND_REF
 %type	<go_kind>	sql_result_type
@@ -328,6 +331,7 @@ const (
 %type	<string>	boot_capacity  boot_duration
 %type	<string_list>	string_list
 %type	<tail>		TAIL_REF
+%type	<sync_map>	SYNC_MAP_REF
 %type	<uint64>	UINT64
 
 %%
@@ -1058,7 +1062,7 @@ tail_project:
 			))
 	  }
 	|
-	  tail_ref FLOWING		//  Note: verify called only once!
+	  tail_ref  FLOWING		//  Note: verify called only once!
 	  {
 		l := yylex.(*yyLexState)
 		if l.seen_tail_flowing {
@@ -1069,10 +1073,26 @@ tail_project:
 	  }
 	;
 
+project_sync_map:
+	SYNC_MAP_REF  '.'  LOAD_OR_STORE  '('  arg  ','  yy_TRUE  ')' 
+	  '.'  LOADED
+	{
+		//  l := yylex.(*yyLexState)
+
+		$$ = &ast{
+			yy_tok:	PROJECT_SYNC_MAP_LOS_TRUE_LOADED,
+			sync_map: $1,
+			left: $5,
+		}
+	}
+;
+
 projection:
 	  tail_project
 	|
 	  call_project
+	|
+	  project_sync_map
 	;
 
 qualify:
@@ -1810,14 +1830,19 @@ sql_decl_stmt_list:
 	;
 
 statement:
-	  SYNC  MAP  NAME  ';'
+	  SYNC  MAP  NAME  '['  yy_STRING  ']'  yy_BOOL  ';'
 	  {
 		l := yylex.(*yyLexState)
 		l.config.sync_map[$3] = &sync_map{
-						name:	$3,
+						name:		$3,
+						go_domain:
+							sync_map_go_string,
+						go_range:
+							sync_map_go_bool,
 					}
 		$$ = &ast{
 			yy_tok:	SYNC_MAP_REF,
+			sync_map: l.config.sync_map[$3],
 		}
 	  }
 	|
@@ -2118,6 +2143,7 @@ var keyword = map[string]int{
 	"false":		yy_FALSE,
 	"fdr_roll_duration":	FDR_ROLL_DURATION,
 	"flow_worker_count":	FLOW_WORKER_COUNT,
+	"flowing":		FLOWING,
 	"heartbeat_duration":	HEARTBEAT_DURATION,
 	"in":			IN,
 	"int64":		yy_INT64,
@@ -2142,7 +2168,10 @@ var keyword = map[string]int{
 	"sqlstate":		SQLSTATE,
 	"start_time":		START_TIME,
 	"statement":		STATEMENT,
+	"string":		yy_STRING,
 	"sync":			SYNC,
+	"loaded":		LOADED,
+	"LoadOrStore":		LOAD_OR_STORE,
 	"tail":			TAIL,
 	"transport":		TRANSPORT,
 	"true":			yy_TRUE,
@@ -2152,7 +2181,6 @@ var keyword = map[string]int{
 	"wall_duration":	WALL_DURATION,
 	"when":			WHEN,
 	"xdr_roll_duration":	XDR_ROLL_DURATION,
-	"flowing":		FLOWING,
 }
 
 type yyLexState struct {
@@ -2350,10 +2378,17 @@ func (l *yyLexState) scan_word(yylval *yySymType, c rune) (tok int, err error) {
 		);
 	}
 
-	//  command reference?
+	//  search through declared objects
+
 	if c := l.config.command[w];  c != nil {
 		yylval.command = c
 		return COMMAND_REF, nil
+	}
+
+	//  sync map reference?
+	if sm := l.config.sync_map[w];  sm != nil {
+		yylval.sync_map = sm
+		return SYNC_MAP_REF, nil
 	}
 
 	//  tail file reference?
@@ -2735,6 +2770,21 @@ func (l *yyLexState) wire_rel_op(left, op, right *ast) bool {
 			op.yy_tok = NEQ_UINT64
 		}
 		op.uint64 = right.uint64
+	case PROJECT_SYNC_MAP_LOS_TRUE_LOADED:
+		if left.left.is_string() == false {
+			l.error("sync map: [domain]: is not string")
+			return false
+		}
+		if right.is_bool() == false {
+			l.error("sync map: is not compared to bool")
+			return false
+		}
+		if op.yy_tok == EQ {
+			op.yy_tok = EQ_BOOL
+		} else {
+			op.yy_tok = NEQ_BOOL
+		}
+		op.bool = right.bool
 	default:
 		l.error("unknown left.yy_tok: %d", left.yy_tok)
 	}
@@ -2860,6 +2910,8 @@ func (a *ast) to_string(brief bool) string {
 		what = fmt.Sprintf("TAIL(%s)", a.tail.name)
 	case TAIL_REF:
 		what = fmt.Sprintf("TAIL_REF(%s.%s)", a.tail.name, a.brr_field)
+	case SYNC_MAP_REF:
+		what = fmt.Sprintf("SYNC_MAP_REF(%s)", a.sync_map.name)
 	case COMMAND_REF:
 		what = fmt.Sprintf("COMMAND_REF(%s)", a.command.name)
 	case UINT64:
@@ -2905,7 +2957,8 @@ func (a *ast) to_string(brief bool) string {
 				a.uint8,
 			)
 	case PROJECT_BRR:
-		what = fmt.Sprintf("PROJECT_BRR(%s[%d])",
+		what = fmt.Sprintf("PROJECT_BRR(%s.%s[%d])",
+				a.tail.name,
 				a.brr_field.String(),
 				a.brr_field,
 			)
@@ -2915,10 +2968,20 @@ func (a *ast) to_string(brief bool) string {
 			a.tail.name,
 			a.bool,
 		)
+	case PROJECT_SYNC_MAP_LOS_TRUE_LOADED:
+		what = fmt.Sprintf(
+			"PROJECT_SYNC_MAP_LOS_TRUE_LOADED(%s)",
+			a.sync_map.name,
+		)
 	case EQ_UINT64:
 		what = fmt.Sprintf("EQ_UINT64(%d)", a.uint64)
 	case NEQ_UINT64:
 		what = fmt.Sprintf("NEQ_UINT64(%d)", a.uint64)
+	case PROJECT_XDR_EXIT_STATUS:
+		what = fmt.Sprintf(
+				"PROJECT_XDR_EXIT_STATUS(%s)",
+				a.command.name,
+		)
 	default:
 		offset := a.yy_tok - __MIN_YYTOK + 3
 		if (a.yy_tok > __MIN_YYTOK) {
@@ -2991,9 +3054,20 @@ func (a *ast) is_uint64() bool {
 }
 
 func (a *ast) is_string() bool {
+
 	switch a.yy_tok {
 	case STRING:
 	case PROJECT_QDR_SQLSTATE:
+	case PROJECT_BRR:
+		switch a.brr_field {
+		case brr_UDIG:
+		case brr_CHAT_HISTORY:
+		case brr_VERB:
+		case brr_TRANSPORT:
+		default:
+			return false
+		}
+		return true
 	default:
 		return false
 	}

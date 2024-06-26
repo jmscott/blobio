@@ -198,6 +198,12 @@ func (cmpl *compile) compile() fdr_chan {
 			cc = 0
 		case PROJECT_TAIL_FLOWING:
 			a2b[a] = flo.project_tail_flowing()
+		case PROJECT_SYNC_MAP_LOS_TRUE_LOADED:
+			/*
+			a2b[a] = flo.project_sync_map_los_true_loaded(
+					a.sync_map,
+					)
+			*/
 		case PROJECT_XDR_EXIT_STATUS:
 			cx := command2xdr[a.string]
 
@@ -274,10 +280,8 @@ func (cmpl *compile) compile() fdr_chan {
 			a2b[a] = flo.no_match_string(a.regexp, a2s[a.left])
 		case EQ_BOOL:
 			a2b[a] = flo.eq_bool(a.bool, a2b[a.left])
-		/*
 		case NEQ_BOOL:
 			a2b[a] = flo.neq_bool(a.bool, a2b[a.left])
-		*/
 		case yy_OR:
 			a2b[a] = flo.bool2(or, a2b[a.left], a2b[a.right])
 		case yy_AND:

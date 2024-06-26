@@ -997,6 +997,38 @@ func (flo *flow) argv1(in string_chan) (out argv_chan) {
 	return out
 }
 
+//  project sync_map.LoadOrStore(string_chan, true).loaded -> bool
+
+func (flo *flow) project_sync_map_los_true_loaded(
+	sm *sync_map,
+	sc string_chan,
+) (out bool_chan) {
+
+	out = make(bool_chan)
+
+	go func() {
+		defer close(out)
+
+		for flo = flo.get();  flo != nil;  flo = flo.get() {  
+			sv := <- sc
+			_, loaded := flowing.LoadOrStore(sv.string, true)
+
+			if loaded {
+				atomic.AddInt64(&sm.loaded_count, 1)
+			} else {
+				atomic.AddInt64(&sm.store_count, 1)
+			}
+
+			out <- &bool_value{
+				bool:    loaded,
+				is_null: false,
+				flow:    flo,
+			}
+		}
+	}()
+	return out
+}
+
 //  test and set current flow as active
 
 func (flo *flow) project_tail_flowing() (out bool_chan) {
@@ -1006,7 +1038,7 @@ func (flo *flow) project_tail_flowing() (out bool_chan) {
 	go func() {
 		defer close(out)
 
-		for flo = flo.get(); flo != nil; flo = flo.get() {
+		for flo = flo.get(); flo != nil;  flo = flo.get() {
 
 			_, loaded := flowing.LoadOrStore(
 					flo.brr[brr_UDIG],
@@ -2142,6 +2174,7 @@ func (flo *flow) sql_exec(
 	}()
 	return out
 }
+
 
 func (flo *flow) sql_exec_txn(
 	ex *sql_exec,
