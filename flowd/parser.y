@@ -246,7 +246,6 @@ const (
 %token	EQ_UINT64
 %token	EXIT_STATUS
 %token	FDR_ROLL_DURATION
-%token	FLOWING
 %token	FLOW_WORKER_COUNT
 %token	FROM
 %token	HEARTBEAT_DURATION
@@ -270,7 +269,6 @@ const (
 %token	PROJECT_QDR_ROWS_AFFECTED
 %token	PROJECT_QDR_SQLSTATE
 %token	PROJECT_SQL_QUERY_ROW_BOOL
-%token	PROJECT_TAIL_FLOWING
 %token	PROJECT_XDR_EXIT_STATUS
 %token  PROJECT_SYNC_MAP_LOS_TRUE_LOADED
 %token	QDR_ROLL_DURATION
@@ -623,14 +621,6 @@ tail_ref:
 	  {
 	  	$$ = &ast{
 			yy_tok:	PROJECT_BRR,
-			tail:	$1,
-		}
-	  }
-	|
-	  TAIL_REF  '$' 
-	  {
-	  	$$ = &ast{
-			yy_tok: PROJECT_TAIL_FLOWING,
 			tail:	$1,
 		}
 	  }
@@ -1060,16 +1050,6 @@ tail_project:
 				l.depends,
 				fmt.Sprintf("%s %s", subject, $1.tail.name,
 			))
-	  }
-	|
-	  tail_ref  FLOWING		//  Note: verify called only once!
-	  {
-		l := yylex.(*yyLexState)
-		if l.seen_tail_flowing {
-			l.error("tail$flowing referenced twice")
-			return 0
-		}
-		l.seen_tail_flowing = true
 	  }
 	;
 
@@ -2143,7 +2123,6 @@ var keyword = map[string]int{
 	"false":		yy_FALSE,
 	"fdr_roll_duration":	FDR_ROLL_DURATION,
 	"flow_worker_count":	FLOW_WORKER_COUNT,
-	"flowing":		FLOWING,
 	"heartbeat_duration":	HEARTBEAT_DURATION,
 	"in":			IN,
 	"int64":		yy_INT64,
@@ -2220,7 +2199,6 @@ type yyLexState struct {
 	seen_os_exec_worker_count	bool
 	seen_qdr_roll_duration		bool
 	seen_xdr_roll_duration		bool
-	seen_tail_flowing		bool
 
 	ast_root			*ast
 
@@ -2730,35 +2708,6 @@ func (l *yyLexState) wire_rel_op(left, op, right *ast) bool {
 			op.yy_tok = NEQ_UINT64
 		}
 		op.uint64 = right.uint64
-
-	//  Note: tail flowing must only be called once!
-	case PROJECT_TAIL_FLOWING:
-		if right.is_bool() == false {
-			l.error(
-				"%s$flowing not compared to bool: %d",
-				left.tail.name,
-				right.yy_tok,
-			)
-			return false
-		}
-		if op.yy_tok == EQ {
-			op.yy_tok = EQ_BOOL
-		} else {
-			op.yy_tok = NEQ_BOOL
-		}
-		switch right.yy_tok {
-		case yy_TRUE:
-			left.bool = true
-		case yy_FALSE:
-			left.bool = false
-		default:
-			//  impossible
-
-			panic(fmt.Sprintf(
-				"right token not bool: %d", 
-				right.yy_tok,
-			))
-		}
 	case PROJECT_XDR_EXIT_STATUS:
 		if right.is_uint64() == false {
 			l.error("exit_status is not compared to uint64")
@@ -2962,12 +2911,6 @@ func (a *ast) to_string(brief bool) string {
 				a.brr_field.String(),
 				a.brr_field,
 			)
-	case PROJECT_TAIL_FLOWING:
-		what = fmt.Sprintf(
-			"PROJECT_TAIL_FLOWING(%s:%t)",
-			a.tail.name,
-			a.bool,
-		)
 	case PROJECT_SYNC_MAP_LOS_TRUE_LOADED:
 		what = fmt.Sprintf(
 			"PROJECT_SYNC_MAP_LOS_TRUE_LOADED(%s)",

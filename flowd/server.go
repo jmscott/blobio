@@ -1,6 +1,8 @@
 //Synopsis:
 //	Server action for flowd.
 //  Note:
+//	Statistics are not properly accessed using atomic.{Store,LoadInt}64()!
+//
 //	race conditon getting boot/recent when writing run/flowd.gyr
 //
 //	race condition removing file run/flowd.pid during panic.
@@ -22,6 +24,7 @@ import (
 	"os/signal"
 	"runtime"
 	"sort"
+	"sync/atomic"
 	"syscall"
 
 	_ "github.com/lib/pq"
@@ -530,12 +533,13 @@ func (conf *config) server(par *parse) {
 
 		case <-heartbeat.C:
 
-			info("flowing load count: %d hits",
-				flowing_load_count.Load(),
-			)
-			info("flowing store count: %d udigs",
-				flowing_store_count.Load(),
-			)
+			for nm, sv := range par.config.sync_map { 
+				info("%s: load/store count: %d/%d hits",
+					nm,
+					atomic.LoadInt64(&sv.loaded_count),
+					atomic.LoadInt64(&sv.store_count),
+				)
+			}
 
 			//  dump open database count
 

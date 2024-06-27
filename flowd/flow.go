@@ -50,13 +50,6 @@ const (
 var and = [137]rummy{}
 var or = [137]rummy{}
 
-//  implement tail$flowing reference: true if already flowing on current udig,
-//  false if not, in wich case the current flow is recorded
-
-var flowing		sync.Map
-var flowing_store_count	atomic.Int64
-var flowing_load_count	atomic.Int64
-
 func init() {
 
 	//  some shifted constants for left hand bits
@@ -196,7 +189,7 @@ func init() {
 	or[ln|rum_WAIT] = rum_WAIT
 }
 
-// bool_value is result of AND, OR, FLOWING and relational operations
+// bool_value is result of AND, OR and relational operations
 type bool_value struct {
 	bool
 	is_null bool
@@ -1011,49 +1004,18 @@ func (flo *flow) project_sync_map_los_true_loaded(
 
 		for flo = flo.get();  flo != nil;  flo = flo.get() {  
 			sv := <- sc
-			_, loaded := flowing.LoadOrStore(sv.string, true)
+			_, loaded := sm.mapx.LoadOrStore(sv.string, true)
+
+			out <- &bool_value{
+				bool:    loaded,
+				is_null: false,
+				flow:    flo,
+			}
 
 			if loaded {
 				atomic.AddInt64(&sm.loaded_count, 1)
 			} else {
 				atomic.AddInt64(&sm.store_count, 1)
-			}
-
-			out <- &bool_value{
-				bool:    loaded,
-				is_null: false,
-				flow:    flo,
-			}
-		}
-	}()
-	return out
-}
-
-//  test and set current flow as active
-
-func (flo *flow) project_tail_flowing() (out bool_chan) {
-
-	out = make(bool_chan)
-
-	go func() {
-		defer close(out)
-
-		for flo = flo.get(); flo != nil;  flo = flo.get() {
-
-			_, loaded := flowing.LoadOrStore(
-					flo.brr[brr_UDIG],
-					true,
-			)
-			if loaded {
-				flowing_load_count.Add(1)
-			} else {
-				flowing_store_count.Add(1)
-			}
-
-			out <- &bool_value{
-				bool:    loaded,
-				is_null: false,
-				flow:    flo,
 			}
 		}
 	}()

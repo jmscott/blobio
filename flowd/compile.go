@@ -196,14 +196,11 @@ func (cmpl *compile) compile() fdr_chan {
 		case WHEN:
 			a2b[a] = a2b[a.left]
 			cc = 0
-		case PROJECT_TAIL_FLOWING:
-			a2b[a] = flo.project_tail_flowing()
 		case PROJECT_SYNC_MAP_LOS_TRUE_LOADED:
-			/*
 			a2b[a] = flo.project_sync_map_los_true_loaded(
 					a.sync_map,
-					)
-			*/
+					a2s[a.left],
+				)
 		case PROJECT_XDR_EXIT_STATUS:
 			cx := command2xdr[a.string]
 
