@@ -2,7 +2,8 @@
  *  Synopsis:
  *	Yacc grammar for 'flow' language.
  *  Note:
- *	action "parse" should warn about unused queries of commands.
+ *	action "parse" should abort for unused queries/commands/sync maps!
+ *	currently aborts when server starts!
  *
  *	An attribute of a result row with the same name as the sql
  *	query is accepted.  however, the sql_query.sql_query is a parse
@@ -1057,8 +1058,7 @@ project_sync_map:
 	SYNC_MAP_REF  '.'  LOAD_OR_STORE  '('  arg  ','  yy_TRUE  ')' 
 	  '.'  LOADED
 	{
-		//  l := yylex.(*yyLexState)
-
+		$1.referenced = true
 		$$ = &ast{
 			yy_tok:	PROJECT_SYNC_MAP_LOS_TRUE_LOADED,
 			sync_map: $1,
@@ -1815,6 +1815,7 @@ statement:
 		l := yylex.(*yyLexState)
 		l.config.sync_map[$3] = &sync_map{
 						name:		$3,
+						line_no:	l.line_no,
 						go_domain:
 							sync_map_go_string,
 						go_range:

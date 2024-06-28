@@ -1,6 +1,10 @@
 //
 //  Synopsis:
 //	Compile a flow configuration into a network of channels.
+//  Note:
+//	Why is panic() invoked instead of die()?
+//
+//	Must add sync maps to dependency order.
 //
 
 package main
@@ -289,6 +293,17 @@ func (cmpl *compile) compile() fdr_chan {
 		flo.confluent_count += cc
 	}
 
+	//  all sync maps must be referenced
+	for n, sm := range par.config.sync_map {
+		if sm.referenced == false {
+			panic(Sprintf(
+				"sync map not referenced: %s: near line %d",
+				n,
+				sm.line_no,
+			))
+		}
+	}
+
 	//  compile nodes from least dependent to most dependent order
 	for _, n := range par.depend_order {
 
@@ -304,6 +319,8 @@ func (cmpl *compile) compile() fdr_chan {
 		if root == nil {
 			panic(Sprintf("command/query never invoked: %s", n))
 		}
+
+
 		compile(root)
 	}
 
