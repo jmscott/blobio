@@ -534,7 +534,7 @@ func (conf *config) server(par *parse) {
 		case <-heartbeat.C:
 
 			for nm, sv := range par.config.sync_map { 
-				info("%s: load/store count: %d/%d hits",
+				info("boot: %s: load/store count: %d/%d hits",
 					nm,
 					atomic.LoadInt64(&sv.loaded_count),
 					atomic.LoadInt64(&sv.store_count),
