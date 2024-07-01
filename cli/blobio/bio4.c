@@ -417,8 +417,8 @@ _read(int fd, unsigned char *buf, int buf_size, int *nread)
 }
 
 /*
- *  Read a response from a server.  Return 0 if 'ok' returned,
- *  return 1 if 'no', or  die() upon error.
+ *  Read a response from a server.  Write 0 if 'ok' returned,
+ *  wrte 1 if 'no', or  return char string describing error.
  */
 static char *
 read_ok_no(int *reply)
