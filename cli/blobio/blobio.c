@@ -211,7 +211,7 @@ Options:\n\
 	--trace		deep trace to standard error\n\
 	--io-timeout	read/write() timeouts.\n\
 	--help\n\
-Query Args:\n\
+Service Query Args:\n\
 	algo	hash algorithm for wrap verb [sha|btc20]\n\
 	brr	hex one byte bit map mask for which brr records to write\n\
 		  \"brr=ff\" puts a brr for all verbs\n\
@@ -249,6 +249,8 @@ Digest Algorithms:\n\
 }
 
 /*
+ *  All paths lead to die() for the doomed.
+ *
  *  Format an error message like
  *
  * 	blobio: ERROR: <verb>: <message>\n
@@ -259,21 +261,33 @@ void
 die(char *msg)
 {
 	cleanup(3);
-	jmscott_die(3, msg);
+	if (verb[0])
+		jmscott_die2(3, verb, msg);
+	else
+		jmscott_die(3, msg);
 }
 
 void
 die2(char *msg1, char *msg2)
 {
+	char msg[MAX_ATOMIC_MSG];
+
 	cleanup(3);
-	jmscott_die2(3, msg1, msg2);
+
+	msg[0] = 0;
+	jmscott_strcat3(msg, sizeof msg, msg1, ": ", msg2);
+	die(msg);
 }
 
 void
 die3(char *msg1, char *msg2, char *msg3)
 {
+	char msg[MAX_ATOMIC_MSG];
+
 	cleanup(2);
-	jmscott_die3(3, msg1, msg2, msg3);
+	msg[0] = 0;
+	jmscott_strcat3(msg, sizeof msg, msg1, ": ", msg2);
+	jmscott_die2(3, msg, msg3);
 }
 
 void
@@ -667,6 +681,10 @@ static void
 xref_argv()
 {
 	/*
+	 *  Note:
+	 *	Itemize either required or forbidden options ...
+	 *	but not either/or.
+	 *
 	 *  verb: get/give/put/take/roll
 	 *  	--service required
 	 *  	--udig required
