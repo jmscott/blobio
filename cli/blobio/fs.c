@@ -829,6 +829,14 @@ fs_brr_frisk(struct brr *brr)
 	return (char *)0;
 }
 
+static char *
+fs_roll(int *ok_no)
+{
+	(void)ok_no;
+	TRACE("entered");
+	return "roll not ready";
+}
+
 struct service fs_service =
 {
 	.name			=	"fs",
@@ -841,5 +849,6 @@ struct service fs_service =
 	.take			=	fs_take,
 	.give			=	fs_give,
 	.wrap			=	fs_wrap,
+	.roll			=	fs_roll,
 	.brr_frisk		=	fs_brr_frisk
 };
