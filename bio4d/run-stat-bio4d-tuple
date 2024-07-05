@@ -45,6 +45,18 @@ RECENT_GYR='null	null	null'
 if [ -e $PID_PATH ];  then
 	STATE=UP
 	if [ -s $PID_PATH ];  then
+		pgrep -F $PID_PATH
+		STATUS=$?
+		case $STATUS in
+		0)
+			;;
+		1)
+			STATE=YETI
+			;;
+		*)
+			die "pgrep failed: exit status=$STATUS"
+			;;
+		esac
 		BOOT_EPOCH=$(tail -1 $PID_PATH)
 	else
 		STATE=YETI
