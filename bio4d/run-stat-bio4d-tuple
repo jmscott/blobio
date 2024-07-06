@@ -37,7 +37,7 @@ BOOT_EPOCH=null		#  tail -1 run/bio4d.pid
 			#  can be overriden by value in "run/bio4d.gyr"
 BOOT_GYR='null	null	null'
 
-GYR_PATH=run//bio4d.gyr
+GYR_PATH=run/bio4d.gyr
 
 RECENT_EPOCH=null			#  epoch of most recent GYR sample
 RECENT_GYR='null	null	null'
@@ -45,7 +45,7 @@ RECENT_GYR='null	null	null'
 if [ -e $PID_PATH ];  then
 	STATE=UP
 	if [ -s $PID_PATH ];  then
-		pgrep -F $PID_PATH
+		pgrep -F $PID_PATH >/dev/null 2>&1
 		STATUS=$?
 		case $STATUS in
 		0)
