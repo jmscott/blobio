@@ -156,6 +156,7 @@ cleanup(int status)
 {
 	TRACE("entered");
 
+	errno = 0;
 	if (service) {
 		service->close();
 		service = (struct service *)0;
@@ -194,6 +195,7 @@ cleanup(int status)
 
 			jmscott_write_all(2, buf, strlen(buf));
 		}
+	errno = 0;		//  reset for a unlink not exists
 	TRACE("bye");
 }
 
