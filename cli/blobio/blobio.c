@@ -274,8 +274,6 @@ die2(char *msg1, char *msg2)
 {
 	char msg[MAX_ATOMIC_MSG];
 
-	cleanup(3);
-
 	msg[0] = 0;
 	jmscott_strcat3(msg, sizeof msg, msg1, ": ", msg2);
 	die(msg);
@@ -286,7 +284,6 @@ die3(char *msg1, char *msg2, char *msg3)
 {
 	char msg[MAX_ATOMIC_MSG];
 
-	cleanup(2);
 	msg[0] = 0;
 	jmscott_strcat3(msg, sizeof msg, msg1, ": ", msg2);
 	jmscott_die2(3, msg, msg3);
@@ -295,7 +292,6 @@ die3(char *msg1, char *msg2, char *msg3)
 void
 die_timeout(char *msg)
 {
-	cleanup(2);
 	jmscott_die(2, msg);
 }
 
@@ -980,6 +976,7 @@ main(int argc, char **argv)
 		if (err)
 			die3("brr_service() failed", service->name, err);
 	}
+
 	cleanup(exit_status);
 
 	/*NOTREACHED*/
