@@ -815,9 +815,11 @@ fs_brr_frisk(struct brr *brr)
 	);
 	TRACE2("transport", brr->transport);
 
-	if (jmscott_mkdirat_EEXIST(end_point_fd, "spool", 0777))
+	//  Note: perms to u=rwx,go=rx,o= !
+	if (jmscott_mkdirat_EEXIST(end_point_fd, "spool", 0750))
 		return strerror(errno);
 
+	TRACE("openat end_point: spool/fs.brr")
 	brr->log_fd = jmscott_openat(
 			end_point_fd,
 			"spool/fs.brr",
@@ -826,6 +828,7 @@ fs_brr_frisk(struct brr *brr)
 	);
 	if (brr->log_fd < 0)
 		return strerror(errno);
+	TRACE("exit");
 	return (char *)0;
 }
 
