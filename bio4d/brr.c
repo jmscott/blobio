@@ -696,7 +696,7 @@ extract_wrap_udig(char *name, char *udig)
 
 /*
  *  Synopsis:
- *	Forget all traffic logs (not blobs) that match a udig in a set.
+ *	Roll up brr logs in udig set referenced by "roll udig".
  *  Protocol Flow:
  *	>roll udig\n			# request to roll set of traffic logs
  *	    <ok\n[close]		# ok, traffic files forgotten
