@@ -100,7 +100,7 @@ type flow_worker struct {
 	info_log_chan    file_byte_chan
 	flow_sample_chan chan<- flow_worker_sample
 
-	seq_chan <-chan uint64
+	seq_chan <-chan int64
 }
 
 func put_stat(boot, recent flow_worker_sample) {
@@ -464,9 +464,9 @@ func (conf *config) server(par *parse) {
 
 	//  start a sequence channel for the fdr records
 
-	seq_q := make(chan uint64, conf.brr_capacity)
+	seq_q := make(chan int64, conf.brr_capacity)
 	go func() {
-		seq := uint64(1)
+		seq := int64(1)
 		for {
 			seq_q <- seq
 			seq++
@@ -489,7 +489,7 @@ func (conf *config) server(par *parse) {
 			info_log_chan:    info_log_ch,
 			flow_sample_chan: flow_sample_ch,
 
-			seq_chan: seq_q,
+			seq_chan:	seq_q,
 		}).flow()
 	}
 
@@ -664,7 +664,7 @@ func (conf *config) server(par *parse) {
 
 func (work *flow_worker) flow() {
 
-	boot_seq := uint64(work.id)
+	boot_seq := int64(work.id)
 	flowA := &flow{
 		seq:      boot_seq,
 		next:     make(chan flow_chan),

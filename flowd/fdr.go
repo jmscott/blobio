@@ -24,7 +24,7 @@ type fdr struct {
 	wall_duration Duration
 
 	//  server sequence of flow, sets to 0 when server boots
-	sequence uint64
+	sequence int64
 }
 
 const fdr_LOG_FORMAT = "%s\t%s\t%d\t%d\t%.9f\t%d\n"

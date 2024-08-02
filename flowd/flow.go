@@ -294,7 +294,7 @@ type flow struct {
 	resolved chan struct{}
 
 	//  first, second, ... n-th brr flow
-	seq uint64
+	seq int64
 
 	//  the blob request record being "flowed"
 	brr *brr

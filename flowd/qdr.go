@@ -24,7 +24,7 @@ const (
 
 type qdr struct {
 	start_time        Time
-	flow_sequence     uint64
+	flow_sequence     int64
 	query_name        string
 	termination_class string
 	udig              string

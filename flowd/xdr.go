@@ -15,7 +15,7 @@ import (
 
 type xdr struct {
 	start_time        Time
-	flow_sequence     uint64
+	flow_sequence     int64
 	call_name         string
 	exit_class	  string
 	udig              string
