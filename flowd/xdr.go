@@ -19,7 +19,7 @@ type xdr struct {
 	call_name         string
 	exit_class	  string
 	udig              string
-	exit_code	  uint8
+	exit_status	  uint8
 	wall_duration     Duration
 	system_duration   Duration
 	user_duration     Duration
@@ -37,6 +37,6 @@ func (xdr *xdr) debug() string {
 	return Sprintf("%s(%s:%d)",
 		xdr.call_name,
 		xdr.exit_class,
-		xdr.exit_code,
+		xdr.exit_status,
 	)
 }

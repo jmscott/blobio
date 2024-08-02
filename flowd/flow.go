@@ -405,7 +405,7 @@ func (flo *flow) project_xdr_exit_status(
 			if xv.is_null || xv.xdr == nil {
 				is_null = true
 			} else {
-				ui = uint64(xv.xdr.exit_code)
+				ui = uint64(xv.xdr.exit_status)
 			}
 
 			out <- &uint64_value{
@@ -1313,7 +1313,7 @@ func (flo *flow) call0(
 						udig:              udig,
 						flow_sequence:     flo.seq,
 						exit_class: "OK",
-						exit_code:  0,
+						exit_status:  0,
 					},
 					flow: flo,
 				}
@@ -1369,9 +1369,9 @@ func (flo *flow) log_xdr_error(
 					who(xv.xdr),
 					xv.xdr.exit_class,
 				)
-				log_ch.ERROR("%s: termination code: %d",
+				log_ch.ERROR("%s: exit status: %d",
 					who(xv.xdr),
-					xv.xdr.exit_code,
+					xv.xdr.exit_status,
 				)
 				//  only OK or ERR are valid xdr
 				if xv.exit_class != "ERR" {
@@ -1511,7 +1511,7 @@ func (flo *flow) log_xdr(
 						xdr.call_name,
 						xdr.exit_class,
 						xdr.udig,
-						xdr.exit_code,
+						xdr.exit_status,
 						xdr.wall_duration.Seconds(),
 						xdr.system_duration.Seconds(),
 						xdr.user_duration.Seconds(),

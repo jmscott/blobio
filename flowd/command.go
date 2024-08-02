@@ -268,25 +268,25 @@ func (cmd *command) call(argv []string, osx_q os_exec_chan) (xv *xdr_value) {
 
 	if reply.signal > 0 {
 		xdr.exit_class = "SIG"
-		xdr.exit_code = uint8(reply.signal)
+		xdr.exit_status = uint8(reply.signal)
 		return
 	}
 
 	//  process ran and exited normally.
 	//  classify the exit code as OK or ERR
 
-	xdr.exit_code = reply.exit_status
+	xdr.exit_status = reply.exit_status
 
 	//  OK bit map identifies which exit codes are to be classified as OK
 
 	if cmd.OK_exit_status != nil {
-		if cmd.OK_exit_status[xdr.exit_code/8]&
-			(0x1<<(xdr.exit_code%8)) != 0 {
+		if cmd.OK_exit_status[xdr.exit_status/8]&
+			(0x1<<(xdr.exit_status%8)) != 0 {
 			xdr.exit_class = "OK"
 		} else {
 			xdr.exit_class = "ERR"
 		}
-	} else if xdr.exit_code == 0 {
+	} else if xdr.exit_status == 0 {
 		xdr.exit_class = "OK"
 	} else {
 		xdr.exit_class = "ERR"

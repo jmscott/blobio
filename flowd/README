@@ -57,7 +57,7 @@ Process Execution Detail Record:
 		command_name		#  command name in config file
 		exit_class		#  termination class: OK, ERR, SIG, NOPS
 		blob			#  udig of blob being processed
-		exit_code		#  process/signal/query exit code value
+		exit_status		#  process/signal exit staus <= 255
 		wall_duration		#  wall clock duration in seconds
 		system_duration		#  os duration in seconds
 		user_duration		#  user/kids total duration in seconds
