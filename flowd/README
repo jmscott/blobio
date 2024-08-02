@@ -55,9 +55,9 @@ Process Execution Detail Record:
 		start_time		#  YYYY-MM-DDThh:mm:ss.ns9[+-]ZZ:ZZ
 		log_sequence		#  sequence number for log file
 		command_name		#  command name in config file
-		termination_class	#  termination class: OK, ERR, SIG
+		exit_class		#  termination class: OK, ERR, SIG, NOPS
 		blob			#  udig of blob being processed
-		termination_code	#  process/signal/query exit code value
+		exit_code		#  process/signal/query exit code value
 		wall_duration		#  wall clock duration in seconds
 		system_duration		#  os duration in seconds
 		user_duration		#  user/kids total duration in seconds
@@ -84,8 +84,8 @@ Query Detail Record:
 		wall_duration		#  wall clock duration as seconds
 		query_duration		#  db query duration as seconds
 
-	As with the "xdr" records, uniqueness can be determined by start_time,
-	log_sequence and query_name.
+	As with the "xdr" records, uniqueness can be determined by start_time
+	and log_sequence.
 
 	Wall/Query durations are float64 seconds formated as %20.9f.
 
