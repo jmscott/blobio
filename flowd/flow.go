@@ -405,7 +405,7 @@ func (flo *flow) project_xdr_exit_status(
 			if xv.is_null || xv.xdr == nil {
 				is_null = true
 			} else {
-				ui = xv.xdr.termination_code
+				ui = uint64(xv.xdr.exit_code)
 			}
 
 			out <- &uint64_value{
@@ -1312,8 +1312,8 @@ func (flo *flow) call0(
 						call_name:         name,
 						udig:              udig,
 						flow_sequence:     flo.seq,
-						termination_class: "OK",
-						termination_code:  0,
+						exit_class: "OK",
+						exit_code:  0,
 					},
 					flow: flo,
 				}
@@ -1364,17 +1364,17 @@ func (flo *flow) log_xdr_error(
 
 		for xv := range in {
 
-			if xv.xdr != nil && xv.xdr.termination_class != "OK" {
+			if xv.xdr != nil && xv.xdr.exit_class != "OK" {
 				log_ch.ERROR("%s: termination class: %s",
 					who(xv.xdr),
-					xv.xdr.termination_class,
+					xv.xdr.exit_class,
 				)
 				log_ch.ERROR("%s: termination code: %d",
 					who(xv.xdr),
-					xv.xdr.termination_code,
+					xv.xdr.exit_code,
 				)
 				//  only OK or ERR are valid xdr
-				if xv.termination_class != "ERR" {
+				if xv.exit_class != "ERR" {
 					xv.xdr = nil
 				}
 			}
@@ -1509,14 +1509,14 @@ func (flo *flow) log_xdr(
 							RFC3339Nano),
 						xdr.flow_sequence,
 						xdr.call_name,
-						xdr.termination_class,
+						xdr.exit_class,
 						xdr.udig,
-						xdr.termination_code,
+						xdr.exit_code,
 						xdr.wall_duration.Seconds(),
 						xdr.system_duration.Seconds(),
 						xdr.user_duration.Seconds(),
 					))
-				switch xdr.termination_class {
+				switch xdr.exit_class {
 				case "OK":
 					flo.green_count++
 				case "SIG":
@@ -1527,7 +1527,7 @@ func (flo *flow) log_xdr(
 					panic(
 						"log_xdr: " +
 						"termination class: " +
-						xdr.termination_class,
+						xdr.exit_class,
 					)
 				}
 			}
@@ -1629,7 +1629,7 @@ func (flo *flow) reduce(inx []xdr_chan, inq []qdr_chan) (out fdr_chan) {
 
 			//  terminated with OK
 
-			case xdr.termination_class == "OK":
+			case xdr.exit_class == "OK":
 				fdr.ok_count++
 
 			//  terminated with ERR, SIG, or NOPS

@@ -17,9 +17,9 @@ type xdr struct {
 	start_time        Time
 	flow_sequence     uint64
 	call_name         string
-	termination_class string
+	exit_class	  string
 	udig              string
-	termination_code  uint64
+	exit_code	  uint8
 	wall_duration     Duration
 	system_duration   Duration
 	user_duration     Duration
@@ -31,12 +31,12 @@ func (xdr *xdr) debug() string {
 	if xdr == nil {
 		return "xdr(nil)"
 	}
-	if xdr.termination_class == "OK" {
+	if xdr.exit_class == "OK" {
 		return Sprintf("%s(OK)", xdr.call_name)
 	}
 	return Sprintf("%s(%s:%d)",
 		xdr.call_name,
-		xdr.termination_class,
-		xdr.termination_code,
+		xdr.exit_class,
+		xdr.exit_code,
 	)
 }

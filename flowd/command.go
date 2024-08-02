@@ -267,29 +267,29 @@ func (cmd *command) call(argv []string, osx_q os_exec_chan) (xv *xdr_value) {
 	//  process was interrupted with a signal
 
 	if reply.signal > 0 {
-		xdr.termination_class = "SIG"
-		xdr.termination_code = uint64(reply.signal)
+		xdr.exit_class = "SIG"
+		xdr.exit_code = uint8(reply.signal)
 		return
 	}
 
 	//  process ran and exited normally.
 	//  classify the exit code as OK or ERR
 
-	xdr.termination_code = uint64(reply.exit_status)
+	xdr.exit_code = reply.exit_status
 
 	//  OK bit map identifies which exit codes are to be classified as OK
 
 	if cmd.OK_exit_status != nil {
-		if cmd.OK_exit_status[xdr.termination_code/8]&
-			(0x1<<(xdr.termination_code%8)) != 0 {
-			xdr.termination_class = "OK"
+		if cmd.OK_exit_status[xdr.exit_code/8]&
+			(0x1<<(xdr.exit_code%8)) != 0 {
+			xdr.exit_class = "OK"
 		} else {
-			xdr.termination_class = "ERR"
+			xdr.exit_class = "ERR"
 		}
-	} else if xdr.termination_code == 0 {
-		xdr.termination_class = "OK"
+	} else if xdr.exit_code == 0 {
+		xdr.exit_class = "OK"
 	} else {
-		xdr.termination_class = "ERR"
+		xdr.exit_class = "ERR"
 	}
 
 	return xv
