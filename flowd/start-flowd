@@ -4,7 +4,7 @@
 #	Hard start of flowd process from MAC OS launchd or systemd.
 #  Usage:
 #	export BLOBIO_ROOT=/opt/local/jmscott/jmsdesk/blobio
-#	sbin/start-flowd
+#	sbin/start-flowd <path/to>/blobio.flow
 #  Requires:
 #	gnu xargs
 #  Note:
