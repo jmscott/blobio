@@ -31,6 +31,15 @@ test $# = 0 || die "wrong number of arguments: got $#, expected 0"
 test -n "$BLOBIO_ROOT" || die 'env not defined: BLOBIO_ROOT'
 cd $BLOBIO_ROOT || die "cd BLOBIO_ROOT failed: exit status=$?"
 
+cat <<END
+
+Who Am I: $(hostname):$BLOBIO_ROOT
+     Now: $(date)
+
+Load Avg: $(uptime | sed 's/.*load average: //')
+
+END
+
 (
 	cat <<END
 Process	State	Boot	Green,Yellow,Red	Recent	Green,Yellow,Red
