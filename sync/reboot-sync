@@ -10,6 +10,8 @@
 #	#  Called from cron-reboot
 #	reboot-sync
 #  Note:
+#	Rename ro reboot-sync-remote
+#
 #	No safety value check for user blobio, which typically is controlled
 #	by systemd or launchctl.
 #
