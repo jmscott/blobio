@@ -1,11 +1,6 @@
 #
 #  Synopsis:
-#	Example flow config for syncing a local bio4 server with a remote.
-#  Note:
-#	Rethink the take of a remote blob!
-#
-#	Various scripts expect the name of this file to be
-#	sync-<remote-name>.flow, so do not rename!
+#	example remote sync template.  replace ${BLOBIO_*} vars
 #
 
 boot
@@ -21,6 +16,8 @@ boot
 	heartbeat_duration = "10s";
 }
 
+sync map seen_udig[string]bool;
+
 #  remote blobio bio4d server.
 #  typically ssh tunnel to remote bio4d server.
 
@@ -30,7 +27,7 @@ command eat_remote
 	argv = (
 		"eat",
 		"--service",
-		"{REMOTE_BLOBIO_SERVICE}",
+		"${BLOBIO_REMOTE_SERVICE}",
 		"--udig"
 	);
 	exit_status is OK when in {0, 1};
@@ -43,34 +40,12 @@ command sync_put
 {
 	path = "sync-put";
 	argv = (
-		"{REMOTE_BLOBIO_SERVICE}"
+		"${BLOBIO_REMOTE_SERVICE}"
 	);
 	exit_status is OK when in {0, 1};
 }
 
-command lock_put
-{
-	path = "true";
-}
-
-#  sync wrapped blobs to remote blobio bio4d server.
-#  typically ssh tunnel to remote bio4d server.
-
-command sync_wrap
-{
-	path = "sync-wrap";
-	argv = (
-		"{REMOTE_BLOBIO_SERVICE}"
-	);
-	exit_status is OK when in {0};
-}
-
-command brr_blob_existed
-{
-	path = "true";
-}
-
-command brr_blob_taken
+command first_seen
 {
 	path = "true";
 }
@@ -91,128 +66,28 @@ command eat_local
 	argv = (
 		"eat",
 		"--service",
-		"{BLOBIO_SERVICE}",
+		"${BLOBIO_GET_SERVICE}",
 		"--udig"
 	);
 	exit_status is OK when in {0, 1};
 }
 
-#
-#  Zap a remote blob by executing take on remote server.
-#
-#	blobio take --service bio4:lct:1797	 		\
-#			--output-path /dev/null				\
-#			--udig sha:a8872ee1db693bf221d33228c920c73ae76c0d60
-#  Note:
-#	A blob zap can be expensive, since the bio4 protocol requires copying
-#	the taken blob over the network.  Eventually a full blown
-#	sync protocol will replace this flowd implementation.
-#
-
-command sync_zap
-{
-	path = "blobio";
-	argv = (
-		"take",
-		"--service",
-		"{REMOTE_BLOBIO_SERVICE}",
-		"--output-path",
-		"/dev/null",
-		"--udig"
-	);
-}
-
-#
-#  The blob existed according to blob request record.
-#
-#  Note:
-#	Including the "eat" verb means we could get into loops with the 
-#	remote server when it probes with an "eat".  Unfortunatly, the brr
-#	tuple only has the ipaddress in the transport field, which is
-#	problematic.  More thinking needed here.
-#
-
-call brr_blob_existed()
+call first_seen()
   when
-	(
-		brr.verb == "put"
-		or
-		brr.verb == "get"
-		or
-		brr.verb == "give"
-		or
-		brr.verb == "wrap"
-		or
-		brr.verb == "roll"
-	)
-	and
-	(
-		brr.chat_history == "ok"
-		or
-		brr.chat_history == "ok,ok"
-		or
-		brr.chat_history == "ok,ok,ok"
-	)
-;
-
-call brr_blob_taken()
-  when
-	brr.verb == "take"
-	and
-	brr.chat_history == "ok,ok,ok"
+  	seen_udig.LoadOrStore(brr.udig, true).loaded == false
 ;
 
 call eat_local(brr.udig)
   when
-  	brr_blob_existed.exit_status == 0
-	or
-	brr_blob_taken.exit_status == 0
+  	first_seen.exit_status == 0
 ;
 
 call eat_remote(brr.udig)
   when
-  	brr_blob_existed.exit_status == 0
-	or
-	brr_blob_taken.exit_status == 0
+  	eat_local.exit_status == 0
 ;
 
-call lock_put(brr.udig)
-  when
-  	brr$flowing == false
-	and
-  	brr_blob_existed.exit_status ==	0	#  brr proves exists
-	and
-	eat_local.exit_status == 0		#  exists locally
-	and
-	eat_remote.exit_status == 1		#  does not exist remotely
-;
 call sync_put(brr.udig)
   when
-  	lock_put.exit_status == 0
-;
-
-
-#  only zap the blob when it does not exist locally but does exist remotely
-
-call sync_zap(brr.udig)
-  when
-  	brr_blob_taken.exit_status == 0		#  blob was taken at one time
-	and
-  	eat_local.exit_status == 1		#  does not exist locally
-	and
-	eat_remote.exit_status == 0		#  exists remotely
-;
-
-
-#  push all blobs in wrap set to remote server
-
-call sync_wrap(brr.udig)
-  when
-	(
-		brr.verb == "wrap"
-		or
-		brr.verb == "roll"
-	)
-	and
-	brr.chat_history == "ok"
+	eat_remote.exit_status == 1
 ;
