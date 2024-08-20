@@ -11,6 +11,8 @@
 #
 #	cron-reboot --no-zap-flowd	#  do not zap bio4/flowd processes
 #  Note:
+#	Need to rename "reboot-blobio".
+#
 #	inexact zapping of flowd process by zap-proc when the file
 #	run/flowd.pid is missing.
 #
