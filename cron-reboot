@@ -19,7 +19,6 @@ PROG=$(basename $0)
 USER=$(id -un)
 FLOWD_PAUSE=4
 PKILL_PAUSE=4
-NO_ZAP_FLOWD=no
 
 log()
 {
@@ -48,7 +47,6 @@ case $# in
 	;;
 1)
 	test "$1" = '--no-zap-flowd' || die "unknown argument: $1"
-	NO_ZAP_FLOWD=yes
 	;;
 *)
 	die "wrong argument count: got $#, expected 0 or 1"
@@ -58,19 +56,7 @@ esac
 cd $BLOBIO_ROOT || die "cd $BLOBIO_ROOT failed"
 . etc/profile
 
-log "no zap flowd: $NO_ZAP_FLOWD"
-
-test $NO_ZAP_FLOWD = no && zap-proc run/flowd.pid
-if [ $USER = blobio ];  then
-	log 'user is blobio, so process controled by launchd or systemd'
-	zap-proc run/bio4d.pid biod4d-listen
-	log 'pausing 3 seconds while system restarts process'
-	sleep 3
-	run-stat-report
-	exit
-fi
-
-log 'calling bio4d_ctl restart ...'
+log 'calling bio4d_ctl restart bio4d ...'
 bio4d_ctl restart || die "bio4d_ctl restart failed: exit status=$?"
 log 'bio4d_ctl restart ok'
 
@@ -81,9 +67,6 @@ sleep $FLOWD_PAUSE
 test -e run/flowd.pid || die "flowd failed to start in background"
 log "flowd pid: $(cat run/flowd.pid)"
 
-log 'reboot sync flowd processes'
-test $NO_ZAP_FLOWD = yes && (
-	reboot-sync || die "reboot-sync failed: exit status=$?"
-)
+reboot-sync || die "reboot-sync failed: exit status=$?"
 
-run-stat-report
+exec run-stat-report
