@@ -11,10 +11,12 @@ package main
 import (
 	"os"
 	"strconv"
+	"sync"
 	"time"
 )
 
 var boot_time time.Time
+var pid_mux sync.Mutex
 const stale_duration = 120		//  120 seconds
 const pid_update_pause = time.Minute
 const pid_path = "run/flowd.pid"
@@ -25,6 +27,10 @@ func write_pid_log() {
 		strconv.FormatInt(int64(os.Getpid()), 10) + "\n" +
 		strconv.FormatInt(int64(boot_time.Unix()), 10)+ "\n",
 	)
+
+	pid_mux.Lock()
+	defer pid_mux.Unlock()
+
 	f, err := os.OpenFile(
 			pid_path,
 			os.O_WRONLY|os.O_CREATE|os.O_TRUNC,
@@ -52,7 +58,11 @@ func update_pid_log() {
 	for {
 		time.Sleep(pid_update_pause);
 		now := time.Now()
-		if err := os.Chtimes(pid_path, now, now);  err != nil {
+		pid_mux.Lock()
+		err := os.Chtimes(pid_path, now, now);
+		pid_mux.Unlock()
+
+		if err != nil {
 			croak("os.Chtimes(pid log) failed: %s", err)
 		}
 	}
@@ -64,6 +74,9 @@ func boot_pid_log() (is_stale bool) {
 
 	//  zap a stale pid or croak if recently updated
 	if st, err := os.Stat(pid_path);  err == nil {
+
+		pid_mux.Lock()
+		defer pid_mux.Unlock()
 
 		//  if the file has not been touched in awhile
 		//  then remove and move on.
