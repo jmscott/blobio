@@ -1035,14 +1035,20 @@ bump_no(unsigned char exit_status, ui64 *v_no, ui64 *v_no2, ui64 *v_no3) {
 		break;
 	case REQUEST_EXIT_STATUS_CHAT_NO:
 		no_count++;
+		if (v_no == NULL)
+			panic("bump_no: v_no==NULL");
 		*v_no += 1;
 		break;
 	case REQUEST_EXIT_STATUS_CHAT_NO2:
 		no2_count++;
+		if (v_no2 == NULL)
+			panic("bump_no: v_no2==NULL");
 		*v_no2 += 1;
 		break;
 	case REQUEST_EXIT_STATUS_CHAT_NO3:
 		no3_count++;
+		if (v_no3 == NULL)
+			panic("bump_no: v_no3==NULL");
 		*v_no3 += 1;
 		break;
 	}
@@ -1096,61 +1102,22 @@ reap_request()
 again:
 	while ((corpse = waitpid((pid_t)-1, &status, WNOHANG)) > 0) {
 		if (corpse == logger_pid) {
-			char buf[MSG_SIZE];
-
 			logger_pid = 0;
 			if (leaving)
 				continue;
-			snprintf(buf, sizeof buf,
-				"signaled=%d, exited=%d, core=%c, status=%d",
-				WIFSIGNALED(status),
-				WIFEXITED(status),
-#ifdef WCOREDUMP
-				WCOREDUMP(status) ? '1' : '0',
-#else
-				'?',
-#endif
-				status
-			);
-			panic2("unexpected exit of logger process", buf);
+			panic("unexpected exit of logger process");
 		}
 		if (corpse == brr_logger_pid) {
-			char buf[MSG_SIZE];
-
 			brr_logger_pid = 0;
 			if (leaving)
 				continue;
-			snprintf(buf, sizeof buf,
-				"signaled=%d, exited=%d, core=%c, status=%d",
-				WIFSIGNALED(status),
-				WIFEXITED(status),
-#ifdef WCOREDUMP
-				WCOREDUMP(status) ? '1' : '0',
-#else
-				'?',
-#endif
-				status
-			);
-			panic2("unexpected exit of brr logger process", buf);
+			panic("unexpected exit of brr logger process");
 		}
 		if (corpse == arborist_pid) {
-			char buf[MSG_SIZE];
-
 			arborist_pid = 0;
 			if (leaving)
 				continue;
-			snprintf(buf, sizeof buf,
-				"signaled=%d, exited=%d, core=%c, status=%d",
-				WIFSIGNALED(status),
-				WIFEXITED(status),
-#ifdef WCOREDUMP
-				WCOREDUMP(status) ? '1' : '0',
-#else
-				'?',
-#endif
-				status
-			);
-			panic2("unexpected exit of arborist process", buf);
+			panic("unexpected exit of arborist process");
 		}
 		wait_count++;
 
@@ -1159,16 +1126,28 @@ again:
 		 *  No brr record is ever generated for a signaled process.
 		 */
 		if (WIFSIGNALED(status)) {
-			char buf[128];
+			char *sign;
 			unsigned char sig;
+			char corpsea[21];
+			char siga[21];
+
+			jmscott_ulltoa((unsigned long long)corpse, corpsea);
 
 			signal_count++;
 			sig = WTERMSIG(status);
+			sign = sig_name(sig);
+			jmscott_ulltoa((unsigned long long)sig, siga);
 
-			snprintf(buf, sizeof buf,
-					"process #%u exited with signal %s(%d)",
-					corpse, sig_name(sig), sig
+			// "process #%u exited with signal %s(%d)"
+			char buf[MSG_SIZE];
+			buf[0] = 0;
+			jmscott_strcat7(buf, sizeof buf,
+				"process #",
+				corpsea,
+				" exited with signal ",
+				sign, "(", siga, ")"
 			);
+
 			switch (sig) {
 			case SIGINT: case SIGQUIT: case SIGTERM:
 			case SIGPIPE:
@@ -1290,8 +1269,6 @@ again:
 				);
 				break;
 			default: {
-				char buf[MSG_SIZE];
-
 				/*
 				 *  Cheap sanity test of exit status code.
 				 *  An exit status with no errors must have
@@ -1299,13 +1276,7 @@ again:
 				 */
 				if (s8 & 0x3)
 					break;
-				snprintf(buf, sizeof buf,
-					"pid #%u: no verb in exit status: "
-					  "0x%x",
-					corpse,
-					s8
-				);
-				panic(buf);
+				panic("no verb in exit status");
 			}}
 		}
 	}
@@ -1734,8 +1705,6 @@ catch_CHLD(int sig)
 	(void)sig;
 
 	reap_request();
-	heartbeat();
-	gyr_rrd();
 }
 
 static void
@@ -2310,8 +2279,14 @@ main(int argc, char **argv, char **env)
 	if (sigprocmask(SIG_UNBLOCK, &mask, (sigset_t *)0) != 0)
 		panic2("sigprocmask(SETMASK) failed", strerror(errno));
 
+	/*
+	 *  Note:
+	 *	catch_CHLD() can have no calls to stdlib, per spec
+	 *	https://port70.net/~nsz/c/c11/n1570.html#note188
+	 */
 	if (signal(SIGCHLD, catch_CHLD) == SIG_ERR)
 		panic2("signal(CHLD) failed", strerror(errno));
+
 	if (signal(SIGINT, catch_terminate) == SIG_ERR)
 		panic2("signal(INT) failed", strerror(errno));
 	if (signal(SIGQUIT, catch_terminate) == SIG_ERR)
@@ -2322,6 +2297,8 @@ main(int argc, char **argv, char **env)
 		panic2("signal(ABRT) failed", strerror(errno));
 	if (signal(SIGSEGV, catch_terminate) == SIG_ERR)
 		panic2("signal(SEGV) failed", strerror(errno));
+	if (signal(SIGILL, catch_terminate) == SIG_ERR)
+		panic2("signal(ILL) failed", strerror(errno));
 	if (signal(SIGBUS, catch_terminate) == SIG_ERR)
 		panic2("signal(BUS) failed", strerror(errno));
 	if (signal(SIGPIPE, SIG_IGN) == SIG_ERR)
