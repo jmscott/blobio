@@ -411,7 +411,7 @@ die3_NO(char *msg1, char *msg2, char *msg3)
  *	Fire digest module callbacks for unimplemented "cat" verb.
  *  Protocol Flow:
  *	cat algorithm:digest\n		#  blob
- *		<ok algorithm:digst\n	#  the udig of the concat (no blob)
+ *		<ok algorithm:digest\n	#  the udig of the concat (no blob)
  *		<no\n			#  concat not completed
  *  Return Status:
  *	0	no error
@@ -2345,6 +2345,8 @@ main(int argc, char **argv, char **env)
 	info(buf);
 
 	snprintf(buf, sizeof buf, "log heartbeat: %u sec", LOG_HEARTBEAT);
+	info(buf);
+
 	snprintf(buf, sizeof buf, "pid heartbeat: %u sec", PID_HEARTBEAT);
 	info(buf);
 
