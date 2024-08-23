@@ -13,7 +13,7 @@ die() {
 	exit 1
 }
 
-test $# -lt 1 && die "wrong number of cli args: got $#, expected > 0" 
+test $# -ge 1 || die "wrong number of cli args: got $#, want >= 1" 
 
 VERB=$1;  shift
 case $VERB in
