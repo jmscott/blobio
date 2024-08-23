@@ -364,10 +364,11 @@ _write(int fd, unsigned char *buf, int buf_size)
 	}
 #ifdef COMPILE_TRACE
 	if (tracing) {
-		TRACE("hex dump bytes written");
+		TRACE("hex dump of bytes to write");
 		hexdump((unsigned char *)buf, buf_size, '>');
 	}
 #endif
+	errno = 0;
 	if (jmscott_write_all(fd, (unsigned char *)buf, buf_size))
 		err = strerror(errno);
 	if (io_timeout > 0) {
@@ -402,11 +403,11 @@ _read(int fd, unsigned char *buf, int buf_size, int *nread)
 	} else if (tracing) {
 		if (nr > 0) {
 			TRACE("hex dump bytes read");
-			hexdump((unsigned char *)buf, nr, '>');
+			hexdump((unsigned char *)buf, nr, '<');
 		} else if (nr == 0) {
 			TRACE("read() returned 0 bytes");
 		} else {
-			TRACE("imposible: read error and err==null");
+			TRACE("impossible: read error and returned err null");
 		}
 	}
 #endif
@@ -775,18 +776,19 @@ static char *
 bio4_wrap(int *ok_no)
 {
 	char *err;
-	char udig[8+1+128+1+1];		//  <algo>:<digest>\n\0
-	unsigned int nread = 0;
 
 	TRACE("entered");
 
+	udig[0] = 0;
 	if ((err = request(ok_no)))	//  read chat history: ok|no
 		return err;
 	if (*ok_no)
 		return (char *)0;
 
-	//  read back 
-	while (nread < sizeof udig -1) {
+	//  read back the reply udig
+
+	unsigned int nread = 0;
+	while (nread <= sizeof(udig)) {
 		int nr;
 		char *err;
 		
@@ -800,17 +802,13 @@ bio4_wrap(int *ok_no)
 			return err;
 
 		if (nr == 0)
-			return "read() returned unexpected 0 bytes";
+			return "read(udig) returned unexpected 0 bytes";
 		nread += nr;
+		if (nread > sizeof(udig))
+			return "read(udig) too big for udig";
 		if (udig[nread - 1] == '\n')
 			break;
 	}
-
-	//  reply udig must be <= 35 ascii chars
-	if (nread < (1 + 1 + 32 + 1))
-		return "udig from server < 35 chars";
-	if (nread >= sizeof udig - 1)
-		return "failed to read udig from server";
 
 	//  zap the newline and frisk the wrap udig
 	udig[nread - 1] = 0;
@@ -819,7 +817,7 @@ bio4_wrap(int *ok_no)
 		return err;
 
 	if (brr_mask_is_set(verb, brr_mask)) {
-		//  update vars algorithm[] and ascii_digest[] for a the
+		//  update global vars algorithm[] and ascii_digest[] for a the
 		//  client side blob request record.
 		if (!memccpy(algorithm, udig, ':', 8))
 			return "memccpy(algo) return unexpected null";
@@ -829,10 +827,6 @@ bio4_wrap(int *ok_no)
 		colon++;
 		strcpy(ascii_digest, colon);
 	}
-
-	if (_write(output_fd, (unsigned char *)udig, nread))
-		return strerror(errno);
-
 	return bio4_set_brr("ok");
 }
 

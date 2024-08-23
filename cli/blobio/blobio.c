@@ -956,15 +956,16 @@ main(int argc, char **argv)
 	} else if (*verb == 'w') {
 		if ((err = service->wrap(&ok_no)))
 			die2("wrap() failed", err);
+		if (udig[0]) {
+			int len = strlen(udig);
+			char udig_out[8+1+128+1];
 
-		TRACE2("wrap udig", udig);
-		int len = strlen(udig);
-		char udig_out[8+1+128+1];
-		memcpy(udig_out, udig, len);
-		udig_out[len++] = '\n';
-		if (jmscott_write_all(output_fd, udig_out, len))
-			die2("write(udig) failed", strerror(errno));
-
+			memcpy(udig_out, udig, len);
+			udig_out[len++] = '\n';
+			if (jmscott_write_all(output_fd, udig_out, len))
+				die2("write(udig) failed", strerror(errno));
+		} else
+			TRACE("empty udig (ok)");
 		exit_status = ok_no;
 	} else if (*verb == 'r') {
 		if ((err = service->roll(&ok_no)))
