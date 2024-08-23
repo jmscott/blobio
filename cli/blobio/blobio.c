@@ -15,6 +15,8 @@
  *	--output-path <path/to/file>
  *	--help
  *  Note:
+ *	Trace the argv[].
+ *
  *	Getting an empty blob should always be true and never depend upon the
  *	underlying service driver!
  *
