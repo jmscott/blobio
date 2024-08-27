@@ -668,6 +668,8 @@ parse_argv(int argc, char **argv)
 		} else
 			die2("unknown option", argv[i]);
 	}
+	if (service && brr_mask > 0 && !service->brr_frisk)
+		die2("brr mask not supported for service", service->name);
 	if (io_timeout == -1)
 		io_timeout = 0;
 }
