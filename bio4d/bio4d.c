@@ -172,7 +172,7 @@ static int		listen_fd = -1;
  *  we track accept/wait explicity, to ferret bugs.
  */
 static ui64	accept_count = 0;	//  socket connections answered
-static ui64	wait_count = 0;		//  number of req process waited upon
+static ui64	exit_count = 0;		//  number of req process waited upon
 
 /*
  *  Request summaries
@@ -1119,7 +1119,7 @@ again:
 				continue;
 			panic("unexpected exit of arborist process");
 		}
-		wait_count++;
+		exit_count++;
 
 		/*
 		 *  Process exited abnormally with signal, so log status.
@@ -1320,13 +1320,13 @@ heartbeat()
 	 *  A simple tickle of the listen socket will change the request count.
 	 */
 	if (prev_accept_count == accept_count &&
-	    prev_wait_count == wait_count)
+	    prev_wait_count == exit_count)
 		return;
 
 	snprintf(buf, sizeof buf,
 		"accept=%llu,exit=%llu",
 			accept_count,
-			wait_count
+			exit_count
 	);
 	info(buf);
 
@@ -1380,7 +1380,7 @@ heartbeat()
 	info(buf);
 
 	prev_accept_count = accept_count;
-	prev_wait_count = wait_count;
+	prev_wait_count = exit_count;
 }
 
 /*
@@ -1406,7 +1406,7 @@ heartbeat()
  *		//  request summaries
  *
  *		accept_count:		//  accept() with no error
- *		wait_count:		//  number of process waited upon
+ *		exit_count:		//  number of process waited upon
  *
  *		success_count:		//  blob request record generated
  *		error_count:		//  stable error in request
@@ -1452,7 +1452,7 @@ gyr_rrd()
 	 *  we want (accept - wait) to be smallish.
 	 */
 	static int	accept_count_prev =	0;
-	static int	wait_count_prev =	0;
+	static int	exit_count_prev =	0;
 
 	/*
 	 *  Request summaries
@@ -1527,7 +1527,7 @@ gyr_rrd()
 		now,
 
 		accept_count - accept_count_prev,
-		wait_count - wait_count_prev,
+		exit_count - exit_count_prev,
 
  		success_count - success_count_prev,
 		error_count - error_count_prev,
@@ -1610,7 +1610,7 @@ gyr_rrd()
 	rrd_now_prev = now;
 
 	accept_count_prev = accept_count;
-	wait_count_prev = wait_count;
+	exit_count_prev = exit_count;
 	success_count_prev = success_count;
 	error_count_prev = error_count;
 	timeout_count_prev = timeout_count;
