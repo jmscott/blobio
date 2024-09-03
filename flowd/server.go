@@ -74,7 +74,7 @@ func (sam flow_worker_sample) String() (s string) {
 		nano := (float64(sam.wall_duration) / float64(sam.fdr_count))
 		rate = Sprintf("%s", Duration(nano).Round(Millisecond))
 	}
-	s = Sprintf("fdr=%d, ok=%d, fault=%d, %s/flow-wtf",
+	s = Sprintf("fdr=%d, ok=%d, fault=%d, %s/flow",
 		sam.fdr_count,
 		sam.ok_count,
 		sam.fault_count,
