@@ -25,14 +25,18 @@
  *
  *	Fatal errors for flowd-execv are written to standard err and then
  *	flowd-execv exits.
+ *
  *  Exit Status:
  *  	0	exit ok
  *  	1	exit error (written to standard error)
  *  Note:
- *	The stderr of process is assumed to be <= MAX_MSG
- *	written in single write by the child.  this is not reasonable.
+ *	No reason to limit output to 4096 bytes, since no need for atomic
+ *	write.  The output limit should be either passed as command line
+ *	option to flowd-execv or in the request record.
  *
- *	On ERROR, flowd-exec does not return user/system times.
+ *	What reaps child processes when parent panics?
+ *
+ *	Use jmscott/libjmscott.a!
  *
  *	Should the process be killed upon receiving a STOP signal?
  */
@@ -131,25 +135,49 @@ die3(char *msg1, char *msg2, char *msg3)
 	die2(msg, msg3);
 }
 
-/*
- *  Interuptible, single read() of up to MAX_MSG bytes.
- */
-static int
-_read(int fd, char *buf)
+static void
+_read_request(char *buf)
 {
-	ssize_t nb;
+	ssize_t nr, nread = 0;
+	char *p = buf;
+	
+	*p = 0;
 
-again:
-	nb = read(fd, buf, MAX_MSG);
-	if (nb >= 0) {
-		buf[nb] = 0;
-		return nb;
+AGAIN:
+	nr = read(0, p, MAX_MSG - nread);
+	if (nr < 0)
+		die2("read(request) failed", strerror(errno));
+	if (nr == 0)
+		die("unexpected read(request) of 0");
+	nread += nr;
+	p += nr;
+	if (buf[nread - 1] == '\n') {
+		buf[nread] = 0;
+		return;
 	}
-	if (errno == EINTR)		//  try read()
-		goto again;
+	goto AGAIN;
+}
 
-	if (fd == 0)
-		die2("read(argv) failed", strerror(errno));
+static int
+_read_child(int fd, char *buf)
+{
+	ssize_t nb, nread = 0;
+	char *p = buf;
+	*buf = 0;
+
+AGAIN:
+	nb = read(fd, p, MAX_MSG - nread);
+	if (nb == 0) {
+		buf[nread] = 0;		// sizeof buf is MAX_MSG + 1
+		return nread;
+	}
+	if (nb > 0) {
+		nread += nb;
+		p += nb;
+		goto AGAIN;
+	}
+	if (errno == EINTR)
+		goto AGAIN;
 	die2("read(child) failed", strerror(errno));
 
 	/*NOTREACHED*/
@@ -161,11 +189,11 @@ _write(void *p, ssize_t nbytes)
 {
 	int nb = 0;
 
-again:
+AGAIN:
 	nb = write(1, p + nb, nbytes);
 	if (nb < 0) {
 		if (errno == EINTR)
-			goto again;
+			goto AGAIN;
 		die2("write(1) failed", strerror(errno));
 	}
 	if (nb == 0)
@@ -173,27 +201,27 @@ again:
 	nbytes -= nb;
 	if (nbytes == 0)
 		return;
-	goto again;
+	goto AGAIN;
 }
 
 static void
 _wait4(pid_t pid, int *statp, struct rusage *ru)
 {
-again:
+AGAIN:
 	if (wait4(pid, statp, 0, ru) == pid)
 		return;
 	if (errno == EINTR)
-		goto again;
+		goto AGAIN;
 	die2("wait4() failed", strerror(errno));
 }
 
 static void
 _close(int fd)
 {
-again:
+AGAIN:
 	if (close(fd) < 0) {
 		if (errno == EINTR)
-			goto again;
+			goto AGAIN;
 		die2("close() failed", strerror(errno));
 	}
 }
@@ -201,10 +229,10 @@ again:
 static void
 _dup2(int old, int new)
 {
-again:
+AGAIN:
 	if (dup2(old, new) < 0) {
 		if (errno == EINTR)
-			goto again;
+			goto AGAIN;
 		die2("dup2() failed", strerror(errno));
 	}
 }
@@ -243,7 +271,7 @@ fork_wait() {
 	//  followed by the child's output.
 
 	_close(merge[1]);
-	olen = _read(merge[0], child_out);
+	olen = _read_child(merge[0], child_out);
 	_close(merge[0]);
 
 	//  reap the dead
@@ -301,49 +329,47 @@ main(int argc, char **argv)
 	x_argc = 0;
 	arg = x_argv[0];
 
-	while (_read(0, buf) > 0) {
-		char *p;
+READ_REQUEST:
+	_read_request(buf);
+	char *p;
 
-		p = buf;
+	p = buf;
 
-		while ((c = *p++)) {
-			switch (c) {
+	while ((c = *p++)) {
+		switch (c) {
 
-			//  finished parsing an element of string vector
-			case '\t':
-				*arg = 0;
-				x_argc++;
-				if (x_argc > MAX_X_ARGC)
-					die("argc too big");
-				arg = x_argv[x_argc];
-				continue;
-
-			//  parsed final element of string vector, so exec()
-			case '\n':
-				*arg = 0;
-				x_argc++;
-				break;
-
-			//  partial parse of an element in the string vector
-			default:
-				if (!isascii(c))
-					die("non-ascii input");
-				if (arg - x_argv[x_argc] > MAX_X_ARG)
-					die("arg too big");
-				*arg++ = c;
-				continue;
-			}
+		//  finished parsing an element of string vector
+		case '\t':
+			*arg = 0;
+			x_argc++;
+			if (x_argc > MAX_X_ARGC)
+				die("argc too big");
 			arg = x_argv[x_argc];
-			x_argv[x_argc] = 0;	//  null-terminate vector
+			continue;
 
-			fork_wait();
+		//  parsed final element of string vector, so exec()
+		case '\n':
+			*arg = 0;
+			x_argc++;
+			break;
 
-			x_argv[x_argc] = arg;	//  reset null to arg buffer
-			arg = x_argv[0];
-			x_argc = 0;
+		//  partial parse of an element in the string vector
+		default:
+			if (!isascii(c))
+				die("non-ascii input");
+			if (arg - x_argv[x_argc] > MAX_X_ARG)
+				die("arg too big");
+			*arg++ = c;
+			continue;
 		}
+		arg = x_argv[x_argc];
+		x_argv[x_argc] = 0;	//  null-terminate vector
+
+		fork_wait();
+
+		x_argv[x_argc] = arg;	//  reset null to arg buffer
+		arg = x_argv[0];
+		x_argc = 0;
 	}
-	if (c != 0 && c != '\n')
-		die("last read() char not new-line");
-	return 0;
+	goto READ_REQUEST;
 }

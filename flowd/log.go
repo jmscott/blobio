@@ -50,7 +50,7 @@ func init() {
 
 //  trivial, serialized debug printf() with easy to grep prefix
 
-func wtf(format string, args ...interface{}) {
+func WTF(format string, args ...interface{}) {
 
 	io := func() {
 		go func() {

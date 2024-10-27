@@ -112,7 +112,9 @@ func (in os_exec_chan) worker_flowd_execv() {
 		panic(err)
 	}
 
-	//  listen on stderr for a dieing flowd-execv
+	//  listen on stderr for a dying flowd-execv
+	//  stderr from flowd-execv is NOT from stderr of the
+	//  process.
 
 	go func() {
 
@@ -133,6 +135,7 @@ func (in os_exec_chan) worker_flowd_execv() {
 
 	for req := range in {
 
+		//  Note: argv[] cannot contain a tab!
 		reqs := strings.Join(req.argv, "\t") + "\n"
 
 		//  write request to exec command to flowd-execv process
@@ -144,19 +147,20 @@ func (in os_exec_chan) worker_flowd_execv() {
 			panic(err)
 		}
 
-		reps, err := cmd_out.ReadString('\n')
+		//  read reply from execv() of process
+		rep_line, err := cmd_out.ReadString('\n')
 		if err != nil {
 			panic(err)
 		}
-		reps = strings.TrimSuffix(reps, "\n")
+		rep_line = strings.TrimSuffix(rep_line, "\n")
 
-		rep := strings.Split(reps, "\t")
+		rep := strings.Split(rep_line, "\t")
 		reply := os_exec_reply{}
 
 		if rep[0] == "ERROR" {
 			panic(errors.New(Sprintf(
 				"flowd-exec failed: %s",
-				reps,
+				rep_line,
 			)))
 		}
 
