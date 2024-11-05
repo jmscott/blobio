@@ -4,6 +4,8 @@
  *  Usage:
  *	jaccard <config-file>
  *  Note:
+ *	Added options for "since" timestamp and/or limit!
+ *
  *	Added UDig of config file in answer json.
  */
 
