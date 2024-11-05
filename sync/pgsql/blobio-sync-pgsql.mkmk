@@ -76,8 +76,10 @@ SBINs="
 #"
 
 #  Uncomment to create src/ directory
-#SRCs="
-#"
+SRCs="
+	jaccard-tip.go
+	jaccard.go
+"
 
 #  Uncomment to create attic/ directory
 #ATTIC="
