@@ -104,7 +104,11 @@ parser.go: parser.y
 	rm -f y.output
 
 flowd-execv: flowd-execv.c
-	cc $(CFLAGS) -o flowd-execv flowd-execv.c
+	cc $(CFLAGS)							\
+		flowd-execv.c						\
+		-o flowd-execv						\
+		-L $(JMSCOTT_ROOT)/lib					\
+		-ljmscott
 
 dev-links:
 	mkdir -p attic
