@@ -2,12 +2,12 @@
  *  Synopsis:
  *	Execute command vectors read from stdin and write summaries on stdout
  *  Usage:
- *	Invoked as a background worker by flowd server.
+ *	Invoked as a background worker by flowd server. 
  *
  * 	#  to test at command line, do
- *	echo /bin/true | flowd-execv
- *	echo /bin/false | flowd-execv
- *	echo /bin/date | flowd-execv
+ *	echo /usr/bin/true | flowd-execv
+ *	echo /usr/bin/false | flowd-execv
+ *	echo /usr/bin/date | flowd-execv
  *	
  *	A summary of the exit status of the process is written to standard out:
  *	
@@ -53,88 +53,44 @@
 
 #include <stdlib.h>		//  zap me when done debugging
 
-#define MAX_MSG	4095		//  must be atomic as write!
+#include "jmscott/libjmscott.h"
+
+char *jmscott_progname = "flowd-execv";
+static char *usage = "flowd-execv";
+
+#define MAX_MSG	JMSCOTT_ATOMIC_WRITE_SIZE
+
+/*  maximum number arg vector sent to flowd-execv from flowd */
 
 #define MAX_X_ARG	256	//  max byte length of a single string argv[]
 #define MAX_X_ARGC	64	//  max elements in argv[]
 
 static int	x_argc;
 
-//  the argv for the execv()
+//  the argv for the execv() (not main())
 static char	*x_argv[MAX_X_ARGC + 1];
 
 static char	args[MAX_X_ARGC * (MAX_X_ARG + 1)];
 
-/*
- *  Synopsis:
- *  	Safe & simple string concatenator
- *  Returns:
- * 	Number of non-null bytes consumed by buffer.
- *  Usage:
- *  	buf[0] = 0
- *  	_strcat(buf, sizeof buf, "hello, world");
- *  	_strcat(buf, sizeof buf, ": ");
- *  	_strcat(buf, sizeof buf, "good bye, cruel world");
- *  	write(2, buf, _strcat(buf, sizeof buf, "\n"));
- */
-static int
-_strcat(char *tgt, int tgtsize, char *src)
-{
-	char *tp = tgt;
-
-	//  find null terminated end of target buffer
-	while (*tp++)
-		--tgtsize;
-	--tp;
-
-	//  copy non-null src bytes, leaving room for trailing null
-	while (--tgtsize > 0 && *src)
-		*tp++ = *src++;
-
-	// target always null terminated
-	*tp = 0;
-
-	return tp - tgt;
-}
-
 static void
-die(char *msg1)
+die(char *msg)
 {
-	static char ERROR[] = "ERROR	";
-	char msg[256] = {0};
-
-	_strcat(msg, sizeof msg, ERROR);
-	_strcat(msg, sizeof msg, msg1);
-
-	write(2, msg, _strcat(msg, sizeof msg, "\n"));
-
-	_exit(1);
+	jmscott_die(1, msg);
 }
 
 static void
 die2(char *msg1, char *msg2)
 {
-	char msg[256] = {0};
-
-	_strcat(msg, sizeof msg, msg1);
-	_strcat(msg, sizeof msg, ": ");
-	_strcat(msg, sizeof msg, msg2);
-
-	die(msg);
+	jmscott_die2(1, msg1, msg2);
 }
 
 static void
 die3(char *msg1, char *msg2, char *msg3)
 {
-	char msg[256] = {0};
-
-	_strcat(msg, sizeof msg, msg1);
-	_strcat(msg, sizeof msg, ": ");
-	_strcat(msg, sizeof msg, msg2);
-
-	die2(msg, msg3);
+	jmscott_die3(1, msg1, msg2, msg3);
 }
 
+/*  read a request from flowd to execute a command */
 static void
 _read_request(char *buf)
 {
@@ -144,7 +100,8 @@ _read_request(char *buf)
 	*p = 0;
 
 AGAIN:
-	nr = read(0, p, MAX_MSG - nread);
+	//  room for null (not written), since sizeof buf == MAX_MSG + 1
+	nr = jmscott_read(0, p, MAX_MSG - nread);
 	if (nr < 0)
 		die2("read(request) failed", strerror(errno));
 	if (nr == 0)
@@ -158,6 +115,8 @@ AGAIN:
 	goto AGAIN;
 }
 
+/*  blocking read of output from a child process */
+
 static int
 _read_child(int fd, char *buf)
 {
@@ -166,7 +125,7 @@ _read_child(int fd, char *buf)
 	*buf = 0;
 
 AGAIN:
-	nb = read(fd, p, MAX_MSG - nread);
+	nb = jmscott_read(fd, p, MAX_MSG - nread);
 	if (nb == 0) {
 		buf[nread] = 0;		// sizeof buf is MAX_MSG + 1
 		return nread;
@@ -176,8 +135,6 @@ AGAIN:
 		p += nb;
 		goto AGAIN;
 	}
-	if (errno == EINTR)
-		goto AGAIN;
 	die2("read(child) failed", strerror(errno));
 
 	/*NOTREACHED*/
@@ -190,12 +147,9 @@ _write(void *p, ssize_t nbytes)
 	int nb = 0;
 
 AGAIN:
-	nb = write(1, p + nb, nbytes);
-	if (nb < 0) {
-		if (errno == EINTR)
-			goto AGAIN;
+	nb = jmscott_write(1, p + nb, nbytes);
+	if (nb < 0)
 		die2("write(1) failed", strerror(errno));
-	}
 	if (nb == 0)
 		die("write(1) wrote 0 bytes");
 	nbytes -= nb;
@@ -218,12 +172,8 @@ AGAIN:
 static void
 _close(int fd)
 {
-AGAIN:
-	if (close(fd) < 0) {
-		if (errno == EINTR)
-			goto AGAIN;
+	if (jmscott_close(fd) < 0)
 		die2("close() failed", strerror(errno));
-	}
 }
 
 static void
@@ -255,7 +205,8 @@ fork_wait() {
 	if (pid < 0)
 		die2("fork() failed", strerror(errno));
 
-	//  in the child
+	//  in the child process
+
 	if (pid == 0) {
 		_close(0);
 		_close(merge[0]);
@@ -263,7 +214,7 @@ fork_wait() {
 		_dup2(merge[1], 2);
 		_close(merge[1]);
 		execv(x_argv[0], x_argv);
-		die3("execv() failed", strerror(errno), x_argv[0]);
+		die3("execv(request) failed", strerror(errno), x_argv[0]);
 	}
 
 	//  in parent, so wait for output from the child,
@@ -278,7 +229,7 @@ fork_wait() {
 
 	_wait4(pid, &status, &ru);
 
-	//  Note: what about core dumps?
+	//  determine process exit class, per xdr records
 
 	if (WIFEXITED(status)) {
 		xclass = "EXIT";
@@ -296,7 +247,8 @@ fork_wait() {
 		die2("wait(request) impossible status", buf);
 	}
 
-	//  write the execution description record
+	//  write the execution description record (xdr) back to flowd
+
 	snprintf(reply, sizeof reply, "%s\t%d\t%ld.%06ld\t%ld.%06ld\t%ld\n",
 			xclass,
 			xstatus,
@@ -319,10 +271,11 @@ main(int argc, char **argv)
 	int i;
 
 	if (argc != 1)
-		die("wrong number of arguments");
+		jmscott_die_argc(1, argc, 1, usage);
 	(void)argv;
 
-	//  initialize static memory for x_args[] vector read from stdin
+	//  initialize static memory for x_args[] vector read from flowd
+
 	for (i = 0;  i < MAX_X_ARGC;  i++)
 		x_argv[i] = &args[i * (MAX_X_ARG + 1)];
 
@@ -364,6 +317,14 @@ READ_REQUEST:
 		}
 		arg = x_argv[x_argc];
 		x_argv[x_argc] = 0;	//  null-terminate vector
+
+		/*
+		 *  A request of zero length string is a request from flowd
+		 *  for flowd-execv process to exit cleanly.
+		 */  
+
+		if (x_argc == 1 && strcmp(x_argv[0], "") == 0)
+			exit(0);
 
 		fork_wait();
 
