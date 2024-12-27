@@ -2,6 +2,8 @@
  *  Synopsis:
  *	PostgreSQL schema tracks blobs available in a particular bio4d server.
  *  Note:
+ *	Do we need tables roll2stat_json and bio4d_stat?
+ *
  *	Set COLLATIONS to C!  blob request records are by definition ascii.
  *
  *	Still have not resolved if verb from any transport should have same
