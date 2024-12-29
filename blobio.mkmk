@@ -43,9 +43,9 @@ LIBs="
 SBINs="
 	BLOBIO_ROOT-bash						\
 	brr-stat							\
-	cron-reboot
 	cron-wrap							\
 	find-etc-flow-path						\
+	reboot-all
 	reboot-sync-remote						\
 	run-stat-report							\
 	run-stat-tuple							\

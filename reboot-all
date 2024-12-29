@@ -41,27 +41,26 @@ trap leave EXIT
 test -n "$BLOBIO_ROOT" || die "environment variable not defined: BLOBIO_ROOT"
 log "BLOBIO_ROOT=$BLOBIO_ROOT"
 
-case $# in
-0)
-	;;
-2)
-	test "$1" = '--flow-path' || die "unknown argument: $1"
-	FLOW_PATH=$2
-	shift;  shift;
-	;;
-*)
-	die "wrong argument count: got $#, expected 0 or 1"
-	;;
-esac
-log "flow path: $FLOW_PATH"
-test -r $FLOW_PATH || die "can not read file: $FLOW_PATH"
-
 cd $BLOBIO_ROOT || die "cd $BLOBIO_ROOT failed"
 . etc/profile
 
 log 'calling bio4d_ctl restart bio4d ...'
 bio4d_ctl restart || die "bio4d_ctl restart failed: exit status=$?"
 log 'bio4d_ctl restart ok'
+
+FLOW_PATH=$(find-etc-flow-path)
+STATUS=$?
+case $STATUS in
+0)
+	log "etc flow: $FLOW_PATH"
+	;;
+1)
+	die 'missing etc flow file'
+	;;
+*)
+	die "find-etc-flow-path failed: exit status=$STATUS"
+	;;
+esac
 
 log 'starting flowd server in background ...'
 flowd server $FLOW_PATH &
