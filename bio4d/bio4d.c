@@ -1305,7 +1305,7 @@ heartbeat()
 		times[0].tv_sec = times[1].tv_sec = now;
 		times[0].tv_usec = times[1].tv_usec = 0;
 		if (io_utimes(pid_path, times) < 0)
-			panic2("io_utime(pid log) failed", strerror(errno));
+			panic2("io_utime(pid path) failed", strerror(errno));
 		recent_pid_heartbeat = now;
 	}
 

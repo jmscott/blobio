@@ -48,7 +48,6 @@ SBINs="
 	flip-remote-brr
 	make-sync-remote
 	purge-sync-cache
-	reboot-sync
 	rummy-chain
 	sync-put
 	sync-wrap

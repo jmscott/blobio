@@ -43,12 +43,12 @@ LIBs="
 SBINs="
 	BLOBIO_ROOT-bash						\
 	brr-stat							\
-	cron-reboot							\
+	cron-reboot
 	cron-wrap							\
-	lock-flow-udig							\
+	find-etc-flow-path						\
+	reboot-sync-remote						\
 	run-stat-report							\
 	run-stat-tuple							\
-	unlock-flow-udig						\
 "
 
 #  Uncomment to create tmp/ directory

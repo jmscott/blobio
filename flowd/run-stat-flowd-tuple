@@ -44,7 +44,8 @@ case $PROCESS in
 flowd)
 	GYR_PATH=run/flowd.gyr
 	PID_PATH=run/flowd.pid
-	FLOW_PATH=etc/blobio.flow
+	FLOW_PATH=$(find-etc-flow-path)
+	test -n "$FLOW_PATH" || die 'can not find etc/*.flow file'
 	;;
 'flowd>'*)
 	TAG=$(echo $PROCESS  | sed 's/......//')

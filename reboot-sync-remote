@@ -5,13 +5,11 @@
 #  Usage:
 #	#  Standalone
 #	export BLOBIO_ROOT=/usr/local/blobio
-#	reboot-sync
+#	reboot-sync-remote
 #
 #	#  Called from cron-reboot
-#	reboot-sync
+#	reboot-sync-remote
 #  Note:
-#	Rename ro reboot-sync-remote
-#
 #	No safety value check for user blobio, which typically is controlled
 #	by systemd or launchctl.
 #
@@ -54,10 +52,10 @@ find $BLOBIO_ROOT/sync/remote/ -mindepth 1 -maxdepth 1 -type d 		|
 	SYNC_NAME=$(basename $SYNC_ROOT)
 	log "sync name: $SYNC_NAME"
 	cd $SYNC_ROOT || dieh "cd $SYNC_ROOT failed: exit status=$?"
-	FLOW=etc/sync-$SYNC_NAME.flow
 
-	if [ ! -e $FLOW ];  then
-		logr "WARN (ok): no config for flowd: $FLOW"
+	FLOW_PATH=etc/sync-$SYNC_NAME.flow
+	if [ ! -e $FLOW_PATH ];  then
+		logr "WARN (ok): no config for flowd: $FLOW_PATH"
 		continue
 	fi
 

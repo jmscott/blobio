@@ -1,0 +1,35 @@
+#!/usr/bin/env bash
+#
+#  Synopsis:
+#	Find file etc/*.flow
+#  Usage:
+#	FLOW_PATH=$(find-flow-path)
+#  Exit Status:
+#	0	a single file $BLOBIO_ROOT/etc/*.flow exists and is readable
+#	1	file does not exist
+#	2	unexpected error
+#
+
+die()
+{
+	echo "$(basename $0): ERROR: $@" >&2
+	exit 2
+}
+
+test -n "$BLOBIO_ROOT" || die 'env does not exist: BLOBIO_ROOT'
+
+ETC_DIR=etc
+if [ $(pwd) != "$BLOBIO_ROOT" ];  then
+	ETC_DIR=$BLOBIO_ROOT/etc
+fi
+test -x $ETC_DIR || die 'can not search etc/'
+set -o pipefail
+FP=$(
+	find $ETC_DIR -maxdepth 1 -follow -type f -name '*.flow'	|
+	xargs ls -t							|
+	head -1
+)
+STATUS=$?
+test $STATUS=0 || die "find etc/ failed: exit status=$STATUS"
+test "$FP" = '' && exit 1
+exec echo $FP

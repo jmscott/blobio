@@ -5,20 +5,15 @@
 #  Usage:
 #	#  in crontab
 #	BLOBIO_ROOT=/usr/local/blobio
-#	LOG=$BLOBIO_ROOT/log/cron-reboot.log
+#	LOG=$BLOBIO_ROOT/log/reboot-blobio.log
 #
-#	@reboot $BLOBIO_ROOTsbin/cron-reboot >>$LOG 2>&1
-#
-#	cron-reboot --no-zap-flowd	#  do not zap bio4/flowd processes
+#	@reboot $BLOBIO_ROOTsbin/reboot-blobio >>$LOG 2>&1
 #  Note:
-#	Need to rename "reboot-blobio".
-#
 #	inexact zapping of flowd process by zap-proc when the file
 #	run/flowd.pid is missing.
 #
 
 PROG=$(basename $0)
-USER=$(id -un)
 FLOWD_PAUSE=4
 PKILL_PAUSE=4
 
@@ -38,6 +33,8 @@ leave()
 	log 'good bye, cruel world'
 }
 
+test $# = 0 || die "wrong argument count: got $#, need 0"
+
 log 'hello, world'
 trap leave EXIT
 
@@ -47,13 +44,17 @@ log "BLOBIO_ROOT=$BLOBIO_ROOT"
 case $# in
 0)
 	;;
-1)
-	test "$1" = '--no-zap-flowd' || die "unknown argument: $1"
+2)
+	test "$1" = '--flow-path' || die "unknown argument: $1"
+	FLOW_PATH=$2
+	shift;  shift;
 	;;
 *)
 	die "wrong argument count: got $#, expected 0 or 1"
 	;;
 esac
+log "flow path: $FLOW_PATH"
+test -r $FLOW_PATH || die "can not read file: $FLOW_PATH"
 
 cd $BLOBIO_ROOT || die "cd $BLOBIO_ROOT failed"
 . etc/profile
@@ -63,12 +64,12 @@ bio4d_ctl restart || die "bio4d_ctl restart failed: exit status=$?"
 log 'bio4d_ctl restart ok'
 
 log 'starting flowd server in background ...'
-flowd server etc/blobio.flow &
+flowd server $FLOW_PATH &
 log "pausing $FLOWD_PAUSE sec while flowd starts ..."
 sleep $FLOWD_PAUSE
 test -e run/flowd.pid || die "flowd failed to start in background"
 log "flowd pid: $(cat run/flowd.pid)"
 
-reboot-sync || die "reboot-sync failed: exit status=$?"
+reboot-sync-remote || die "reboot-sync-remote failed: exit status=$?"
 
 exec run-stat-report
