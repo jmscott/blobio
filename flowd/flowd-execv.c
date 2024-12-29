@@ -17,11 +17,11 @@
  *		# process was interupted by a signal
  *		SIG\t<signal>\t<user-seconds>\t<system-seconds>
  *
- *		# process got the stop signal and was killed
+ *		# process got the KILLSTOP signal and was killed
  *		STOP\t<stop-signal>\t<user-seconds>\t<system-seconds>
  *
  * 		A fatal error occured when execv'ing the process
- *		ERROR\t<error description>
+ *		FAULT\t<error description>
  *
  *	Fatal errors for flowd-execv are written to standard err and then
  *	flowd-execv exits.
@@ -75,7 +75,10 @@ static char	args[MAX_X_ARGC * (MAX_X_ARG + 1)];
 static void
 die(char *msg)
 {
-	jmscott_die(1, msg);
+	write(2, "ERROR\t", 6);
+	write(2, msg, strlen(msg));
+	write(2, "\n", 1);
+	exit(1);
 }
 
 static void
@@ -203,7 +206,7 @@ fork_wait() {
 		die2("pipe(merge) failed", strerror(errno));
 	pid = fork();
 	if (pid < 0)
-		die2("fork() failed", strerror(errno));
+		die2("fork(request) failed", strerror(errno));
 
 	//  in the child process
 

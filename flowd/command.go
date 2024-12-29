@@ -112,9 +112,7 @@ func (in os_exec_chan) worker_flowd_execv() {
 		panic(err)
 	}
 
-	//  listen on stderr for a dying flowd-execv
-	//  stderr from flowd-execv is NOT from stderr of the
-	//  process.
+	//  listen on stderr for a dying flowd-execv (not exec process stderr).
 
 	go func() {
 
