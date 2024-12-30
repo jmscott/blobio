@@ -45,7 +45,7 @@ export BLOBIO_TRUST_FS=${BLOBIO_TRUST_FS:=false}
 #  the script run-stat-report uses run/bio4d.gyr and files mysteriously
 #  when BLOBIO_BIO4D_RRD_DURATION=0. 
 #
-export BLOBIO_BIO4D_RRD_DURATION=0
+export BLOBIO_BIO4D_RRD_DURATION=60
 
 #
 #  set var BLOBIO_GET_SERVICE explicitly for trusted reads from filesystem.
