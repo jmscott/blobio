@@ -76,7 +76,7 @@ if [ -e $GYR_PATH ];  then
 	elif [ $STATE = DOWN ];  then
 		STATE=ZOMBI
 	fi
-elif [ $STATE = UP ];  then
+elif [ "$BLOBIO_BIO4D_RRD_DURATION" -gt 0 -a $STATE = UP ];  then
 	STATE=YETI
 fi
 

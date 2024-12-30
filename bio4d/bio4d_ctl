@@ -94,6 +94,16 @@ restart)
 	0)
 		log 'bio4d not reporting stats'
 		;;
+	'')
+		log 'WARN: env not defined: BLOBIO_BIO4D_RRD_DURATION'
+		;;
+	heartbeat)
+		log 'rrd set to heartbeat'
+		;;
+	*)
+		D=$BLOBIO_BIO4D_RRD_DURATION
+		die "unexpected value for BLOBIO_BIO4D_RRD_DURATION: $D"
+		;;
 	esac
 	log 'our work here is done'
 	;;
