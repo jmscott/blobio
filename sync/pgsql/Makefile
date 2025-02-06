@@ -19,9 +19,9 @@ clean:
 	rm -f $(COMPILEs)
 
 jaccard-tip: jaccard-tip.go
-	$(GODIST)/bin/go build jaccard-tip.go
+	$(GOEXE) build jaccard-tip.go
 jaccard: jaccard.go
-	$(GODIST)/bin/go build jaccard.go
+	$(GOEXE) build jaccard.go
 
 install-dirs:
 	cd .. && $(_MAKE) install-dirs

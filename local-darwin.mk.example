@@ -15,9 +15,6 @@
 #		OPENSSL_INC	Where ssl include files live
 #		OPENSSL_LIB	Link line for openssl libraries
 #
-#		GODIST		Where is go distribution installed.
-#					Redefining GOROOT is problematic,
-#					hence GODIST
 #  Usage:
 #	cp local-macosx.mk.example local.mk
 #	vi local.mk
@@ -37,11 +34,7 @@ DIST_ROOT=$(HOME)/opt/blobio
 OPENSSL_INC=-I/opt/local/include -DOPENSSL_API_COMPAT=0x10100000L
 OPENSSL_LIB=-L/opt/local/lib -lssl -lcrypto
 
-#
-#  Note:
-#	Replace GODIST with call to "$GOEXE environment"
-#
-GODIST=/usr/local/go
+GOEXE=/opt/local/bin/go
 
 #  postgresql configuration, for both source built and repo install.
 PG_CONFIG?=/usr/local/pgsql/bin/pg_config

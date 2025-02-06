@@ -47,7 +47,7 @@ OPENSSL_LIB=-lssl -lcrypto
 #  Note:
 #	replace with "$GOEXE environment"
 #
-GODIST=/usr/local/go
+GOEXE=/usr/local/go/bin/go
 
 #  postgresql configuration, for both source built and repo install.
 PG_CONFIG?=/usr/local/pgsql/bin/pg_config

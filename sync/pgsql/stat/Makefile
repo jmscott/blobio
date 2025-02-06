@@ -33,7 +33,7 @@ install: $(SBINs) $(LIBs)
 		$(DIST_ROOT)/sbin
 
 roll2stat_json: roll2stat_json.go
-	$(GODIST)/bin/go build roll2stat_json.go
+	$(GOEXE) build roll2stat_json.go
 
 merge-stdin-roll2stat_json: merge-stdin-roll2stat_json.pgc
 	ecpg merge-stdin-roll2stat_json.pgc

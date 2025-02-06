@@ -33,16 +33,13 @@ LIBs := $(shell  (. ./$(MKMK) && echo $$LIBs))
 COMPILEs := $(shell  (. ./$(MKMK) && echo $$COMPILEs))
 GOSRCs := $(shell  (. ./$(MKMK) && echo $$GOSRCs))
 
-export PATH := $(GODIST)/bin:$(PATH)
-GO=$(GODIST)/bin/go
-
 export GO111MODULE := off
 
-GOYACC=$(shell $(GO) env GOPATH)/bin/goyacc
+GOYACC=$(shell $(GOEXE) env GOPATH)/bin/goyacc
 
 #  Note: why?
-GOHOSTOS=$(shell $(GO) env GOHOSTOS)
-GOHOSTARCH=$(shell $(GO) env GOHOSTARCH)
+GOHOSTOS=$(shell $(GOEXE) env GOHOSTOS)
+GOHOSTARCH=$(shell $(GOEXE) env GOHOSTARCH)
 GOPKG_OSARCH=$(GOHOSTOS)_$(GOHOSTARCH)
 
 #
@@ -63,7 +60,7 @@ GOPKG_OSARCH=$(GOHOSTOS)_$(GOHOSTARCH)
 all: flowd flowd-execv
 
 flowd: $(GOSRCs)
-	$(GO) build $(GCFLAGS) $(GO_BUILD_RACE) $(GOSRCs)
+	$(GOEXE) build $(GCFLAGS) $(GO_BUILD_RACE) $(GOSRCs)
 
 install-dirs:
 	install -g $(DIST_GROUP) -o $(DIST_USER) -m u=rwx,g=rx,o=	\
@@ -94,13 +91,13 @@ distclean:
 	test ! -d $(DIST_ROOT)/sbin || (cd $(DIST_ROOT)/sbin && rm -f $(SBINs))
 
 fmt: $(GOSRC)
-	$(GO) fmt $(GOSRC)
+	$(GOEXE) fmt $(GOSRC)
 vet: $(GOSRC)
-	$(GO) vet $(GOSRC)
+	$(GOEXE) vet $(GOSRC)
 
 parser.go: parser.y
 	$(GOYACC) -o parser.go parser.y || (rm -f parser.go; exit 1)
-	$(GO) fmt parser.go
+	$(GOEXE) fmt parser.go
 	rm -f y.output
 
 flowd-execv: flowd-execv.c
@@ -125,7 +122,7 @@ dev-links:
 clean-links:
 	rm -rf attic data etc lib log profile rrd run sbin spool
 goenv:
-	$(GO) env
+	$(GOEXE) env
 doc:
 	godoc flowd
 lint:
