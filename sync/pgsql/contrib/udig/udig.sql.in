@@ -13,9 +13,7 @@
  *  Note:
  *	Should a udig be in the blobio schema?
  */
-\set ON_ERROR_STOP
-
-SET search_path = public;
+\set ON_ERROR_STOP 1
 
 /*
  *  SHA1 UDig Core Type.
