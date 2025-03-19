@@ -251,6 +251,7 @@ CREATE INDEX idx_brr_blob_size_byte_count
 CREATE INDEX idx_brr_blob_size_hash
 	ON brr_blob_size USING hash(blob)
 ;
+CLUSTER brr_blob_size USING idx_brr_blob_size_byte_count;
 ALTER TABLE brr_blob_size OWNER TO :DBOWNER;
 
 /*
