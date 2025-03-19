@@ -48,6 +48,7 @@ BINs="
 "
 
 SBINs="
+	CREATE-blobio-schema
 	cron-bio4d-stat2pg
 	cron-eat-unroll
 	cron-rummy
