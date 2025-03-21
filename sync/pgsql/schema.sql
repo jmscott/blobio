@@ -12,8 +12,6 @@
  */
 \set ON_ERROR_STOP on
 
-SET search_path to blobio,public;
-
 \echo UDIG SQL: :UDIG_PATH
 \echo DATABASE OWNER: :DBOWNER
 
@@ -28,7 +26,10 @@ ALTER SCHEMA blobio OWNER TO :DBOWNER;
 
 \echo create udig type in schema blobio
 \echo include :UDIG_PATH
+SET search_path to blobio,public;
 \include :UDIG_PATH
+
+ALTER TYPE udig SET SCHEMA blobio;
 
 DROP DOMAIN IF EXISTS brr_duration CASCADE;
 CREATE DOMAIN brr_duration AS interval
@@ -160,7 +161,7 @@ ALTER DOMAIN brr_chat_history OWNER TO :DBOWNER;
 --  Note: create type forbids "NOT NULL" for a field
 
 DROP DOMAIN IF EXISTS brr_udig CASCADE;
-CREATE DOMAIN brr_udig AS udig CHECK (
+CREATE DOMAIN brr_udig AS blobio.udig CHECK (
 	--  Note: create type forbids "NOT NULL" for a field
 	value IS NOT NULL
 );
@@ -226,9 +227,10 @@ ALTER DOMAIN brr OWNER TO :DBOWNER;
 DROP TABLE IF EXISTS brr_blob_size CASCADE;
 CREATE TABLE brr_blob_size
 (
-	blob		udig
+	blob		blobio.udig
 				PRIMARY KEY,
-	byte_count	ui63,
+	byte_count	ui63	NOT NULL,
+
 	CONSTRAINT size_check CHECK (
 	  (
 		udig_is_empty(blob)
@@ -261,12 +263,12 @@ ALTER TABLE brr_blob_size OWNER TO :DBOWNER;
 DROP TABLE IF EXISTS brr_discover;
 CREATE TABLE brr_discover
 (
-	blob		udig
+	blob		blobio.udig
 				PRIMARY KEY,
 	/*
 	 *  Start time in blob request record.
 	 */
-	start_time	brr_timestamp
+	start_time	brr_timestamp NOT NULL
 );
 COMMENT ON TABLE brr_discover
   IS
