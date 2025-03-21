@@ -68,6 +68,8 @@ sql database blobio
 	max_open_conns = 32;
 }
 
+sync map size_in_flight[string]bool;
+
 sql query blob_size_exists row
 {
 	result row is (
@@ -189,6 +191,8 @@ call blob_on_network()
 
 query blob_size_exists(bio4d.udig)
   when
+  	size_in_flight.LoadOrStore(bio4d.udig, true).loaded == false
+	and
   	blob_on_network.exit_status == 0
 	and
 	(
