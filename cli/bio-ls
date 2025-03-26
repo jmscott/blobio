@@ -8,7 +8,10 @@
 #  Enviroment:
 #	BLOBIO_PG{HOST, PORT, USER, PASSWORD, DATABASE}
 #  Note:
-#	Incorrect code when service table is empty.
+#	- Refactor sql into lib/bio-ls.sql with proper escaping of cli
+#	  variables.  Also, create lib/bio-common.bash
+#
+#	- Incorrect code when service table is empty.
 #
 
 export PGHOST=${BLOBIO_PGHOST:=${PGHOST:=/tmp}}
@@ -25,7 +28,10 @@ die()
 
 _ls()
 {
-	psql --no-psqlrc --quiet <<END || die "psql detail failed: exit status=$?"
+	#  Note: refactor to use lib/bio-ls.sql
+
+	psql --set blob=$1 --no-psqlrc --quiet <<END
+SET search_path TO blobio,public;
 \\x on
 \\pset tuples_only
 \\pset null Unknown
@@ -34,10 +40,8 @@ _ls()
 SELECT
 	s.blob AS "Blob",
 	c.system_identifier AS "PG System Id",
-	regexp_replace(age(now(), s.discover_time)::text, '\..*', '') || ' ago'
-		AS "Discovered",
-	regexp_replace(age(now(), s.recent_verify_time)::text, '\..*', '') || ' ago'
-		AS "Recent Verify",
+	interval_terse_english(age(now(), s.discover_time)) || ' @ ' ||
+		s.discover_time AS "Discovered",
 	pg_size_pretty(bs.byte_count) ||
 	CASE
 	  WHEN pg_size_pretty(bs.byte_count) ~ ' bytes'
@@ -46,17 +50,16 @@ SELECT
 	  ELSE
 		' (' || bs.byte_count || ' bytes)'
 	END
-		AS "Size",
-	s.discover_time AS "Discovered @",
-	s.recent_verify_time AS "Verified @"
+		AS "Size"
   FROM
   	blobio.service s
 	  LEFT OUTER JOIN blobio.brr_blob_size bs ON (bs.blob = s.blob),
 	pg_control_system() c
   WHERE
-  	s.blob = '$1'
+  	s.blob = :'blob'
 ;
 END
+	test $? = 0 || die "psql ls failed: exit status=$?"
 }
 
 recent_udig()
