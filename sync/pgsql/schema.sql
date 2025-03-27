@@ -421,8 +421,9 @@ CREATE OR REPLACE FUNCTION interval_terse_english(duration interval)
 	end if;
 
 	--  seconds
+
 	if elapsed > 0 then
-		sec = round(elapsed / 60);
+		sec = round(elapsed);
 		sec_unit = 'sec ';
 	end if;
 
@@ -435,13 +436,15 @@ CREATE OR REPLACE FUNCTION interval_terse_english(duration interval)
 		sec || sec_unit
 	;
 	english = regexp_replace(english, ' *0 *', '', 'g');
+	english = regexp_replace(english, '^( *0)+', '');
+	english = regexp_replace(english, '( *0 *)+$', '');
 	if english = '' then
 		english = '0sec';
 	end if;
 
 	return english;
 
-  END $$ LANGUAGE plpgsql VOLATILE STRICT
+  END $$ LANGUAGE plpgsql IMMUTABLE STRICT
 ;
 COMMENT ON FUNCTION interval_terse_english(interval) IS
   'Convert time interval to full precision, terse english, e.g. 3hr12min5sec'
