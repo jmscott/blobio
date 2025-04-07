@@ -5,7 +5,9 @@
  *  	0	request succeed (ok).
  *  	1	request denied (no).
  *	2	i/o timeout
- *	3	unexpected error.
+ *	3	EPIPE on read
+ *	4	EPIPE on write
+ *	10	unexpected error.
  *  Options:
  *	--io-timeout seconds
  *	--service name:end_point
@@ -15,26 +17,22 @@
  *	--output-path <path/to/file>
  *	--help
  *  Note:
- *	Trace the argv[].
+ *	- Trace the argv[].
  *
- *	Getting an empty blob should always be true and never depend upon the
+ *	- Getting an empty blob should always be true and never depend upon the
  *	underlying service driver!
  *
- *	Replace "-" in options to more variable friendly "_" char.
+ *	- Replace "-" in options to more variable friendly "_" char.
  *	So, for example, "io-timeout" becomes "io_timeout".
  *
- *	Add query arg for --io_timeout option
- *
- *		?tmo=20
- *
- *	The wrap driver must write the digest to stdout.  that is incorrect
+ *	- The wrap driver must write the digest to stdout.  that is incorrect
  *	layering.  this level should write the udig, since the behavior
  *	is the same regardless of thhe digest algorithm
  *
- *	Investigate linux system calls splice(), sendfile() and
+ *	- Investigate linux system calls splice(), sendfile() and
  *	copy_file_range().
  *
- *	The following fails with exit 1 for service fs:/usr/local/blobio
+ *	- The following fails with exit 1 for service fs:/usr/local/blobio
  *	when blob actually exists but output dir does not!
  *
  *		blobio get						\
@@ -43,13 +41,10 @@
  *			--service fs:/usr/local/blobio
  *
  *	Under OSX 10.9, an exit status 141 in various shells can indicate a
- *	SIGPIPE interupted the execution:  blobio does not exists 141.
- *	A SIGPIPE when reading from stdin probably out to be considered a
+ *	SIGPIPE interupted the execution:  blobio does not exit 141.
+ *	A SIGPIPE when reading from stdin probably ought to be considered a
  *	cancel.  Currently a SIGPIPE generated an error about the input
  *	not matching the digest, which is confusing.
- *
- *  	Options desperately need to be folding into a data structure.
- *  	We refuse to use getopts().
  *
  *	Also, the take&give exit statuses ought to reflect the various ok/no
  *	chat histories or perhaps the exit status ought to also store the
@@ -436,7 +431,7 @@ parse_argv(int argc, char **argv)
 		 *	--input-path <path/to/file>
 		 *	--output-path <path/to/file>
 		 *	--trace
-		 *	--io-timeout
+		 *	--io-timeout <sec>
 		 *	--help
 		 */
 
