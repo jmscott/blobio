@@ -21,17 +21,17 @@
  *	Think about how to determine termination of a process.  Would a
  *	for a non null exit status be adequate?
  *
- *		upsert_pddocument.exit_status is not null
+ *		merge_pddocument.exit_status is not null
  *
  *	The current method is to test for all possible values
  *
- *		upsert_pddocument.exit_status == 0
+ *		merge_pddocument.exit_status == 0
  *		or
- *		upsert_pddocument.exit_status != 0
+ *		merge_pddocument.exit_status != 0
  *
  *	which is a bit of a hack.  Added a termination state burns a keyword.
  *
- *		upsert_pddocument.done == true
+ *		merge_pddocument.done == true
  *
  *	In command{}, the null keyword in argv=() list ought to be place
  *	holders for required arguments.  For example,
@@ -146,6 +146,12 @@ type config struct {
 	//  all LoadOrStore sync Maps
 	sync_map          	map[string]*sync_map
 
+	//  all Clear sync Maps
+	clear_sync_map         	map[string]*sync_map
+
+	//  all Delete sync Maps
+	delete_sync_map          	map[string]*sync_map
+
 	//  defaults to "log"
 	log_directory		string
 }
@@ -236,10 +242,12 @@ const (
 %token	CAST_STRING
 %token	CAST_UINT64
 %token	CHAT_HISTORY
+%token	CLEAR  CLEAR_SYNC_MAP
 %token	COMMAND
 %token	COMMAND_REF
 %token	DATABASE
 %token	DATA_SOURCE_NAME
+%token	DELETE  DELETE_SYNC_MAP
 %token	DRIVER_NAME
 %token	EQ MATCH
 %token	EQ_BOOL
@@ -271,7 +279,6 @@ const (
 %token	PROJECT_QDR_SQLSTATE
 %token	PROJECT_SQL_QUERY_ROW_BOOL
 %token	PROJECT_XDR_EXIT_STATUS
-%token  PROJECT_SYNC_MAP_LOS_TRUE_LOADED
 %token	QDR_ROLL_DURATION
 %token	QUERY_DURATION
 %token	QUERY_EXEC
@@ -308,6 +315,7 @@ const (
 %token	yy_OK
 %token	yy_OR
 %token	yy_TRUE
+%token  PROJECT_SYNC_MAP_LOS_TRUE_LOADED
 %token  QUERY
 %token  yy_BOOL
 %token  yy_STRING
@@ -1044,6 +1052,10 @@ tail_project:
 			subject = l.sql_query_row.name
 		case l.sql_exec != nil:
 			subject = l.sql_exec.name
+		case l.clear_sync_map != nil:
+			subject = l.clear_sync_map.name
+		case l.delete_sync_map != nil:
+			subject = l.delete_sync_map.name
 		default:
 			panic("impossible TAIL_REF outside of rule")
 		}
@@ -1810,6 +1822,53 @@ sql_decl_stmt_list:
 	;
 
 statement:
+	  DELETE  SYNC_MAP_REF  
+	  {
+		l := yylex.(*yyLexState)
+	  	if l.config.delete_sync_map[$2.name] != nil {
+			l.error("sync map deleted twice: %s", $2.name)
+			return 0
+		}
+		l.config.delete_sync_map[$2.name] = $2
+		l.delete_sync_map = $2
+	  }
+	  '('  arg  ')'
+	  {
+	  	$<ast>$ = &ast{
+				yy_tok:	DELETE_SYNC_MAP,
+				sync_map:	$2,
+				left:		$5,
+		}
+	  }
+	  WHEN  qualify  ';'
+	  {
+		yylex.(*yyLexState).delete_sync_map = nil
+	  	$<ast>7.right = $9
+	  	$$ = $<ast>7
+	  }
+	|
+	  CLEAR  SYNC_MAP_REF
+	  {
+		l := yylex.(*yyLexState)
+	  	if l.config.clear_sync_map[$2.name] != nil {
+			l.error("sync map cleared twice: %s", $2.name)
+			return 0
+		}
+		l.config.clear_sync_map[$2.name] = $2
+		l.clear_sync_map = $2
+
+	  	$<ast>$ = &ast{
+				yy_tok:	CLEAR_SYNC_MAP,
+				sync_map:	$2,
+		}
+	  }
+	  WHEN  qualify  ';'
+	  {
+		yylex.(*yyLexState).clear_sync_map = nil
+	  	$<ast>3.left = $5
+	  	$$ = $<ast>3
+	  }
+	|
 	  SYNC  MAP  NAME  '['  yy_STRING  ']'  yy_BOOL  ';'
 	  {
 		l := yylex.(*yyLexState)
@@ -2106,6 +2165,9 @@ statement_list:
 %%
 
 var keyword = map[string]int{
+	"Clear":		CLEAR,
+	"Delete":		DELETE,
+	"LoadOrStore":		LOAD_OR_STORE,
 	"OK":			yy_OK,
 	"and":			yy_AND,
 	"argv":			ARGV,
@@ -2128,6 +2190,7 @@ var keyword = map[string]int{
 	"in":			IN,
 	"int64":		yy_INT64,
 	"is":			IS,
+	"loaded":		LOADED,
 	"log_directory":	LOG_DIRECTORY,
 	"map":			MAP,
 	"max_idle_conns":	MAX_IDLE_CONNS,
@@ -2150,8 +2213,6 @@ var keyword = map[string]int{
 	"statement":		STATEMENT,
 	"string":		yy_STRING,
 	"sync":			SYNC,
-	"loaded":		LOADED,
-	"LoadOrStore":		LOAD_OR_STORE,
 	"tail":			TAIL,
 	"transport":		TRANSPORT,
 	"true":			yy_TRUE,
@@ -2175,6 +2236,9 @@ type yyLexState struct {
 	*sql_database
 	*sql_query_row
 	*sql_exec
+
+	delete_sync_map		*sync_map
+	clear_sync_map		*sync_map
 
 	in				io.RuneReader	//  config source stream
 	line_no				uint64	   //  lexical line number

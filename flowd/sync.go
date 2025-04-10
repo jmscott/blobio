@@ -26,4 +26,6 @@ type sync_map struct {
 
 	loaded_count	int64
 	store_count	int64
+	delete_count	int64
+	clear_count	int64
 }

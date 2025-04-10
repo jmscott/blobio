@@ -1022,6 +1022,25 @@ func (flo *flow) project_sync_map_los_true_loaded(
 	return out
 }
 
+//  delete an entry in sync_map
+
+func (flo *flow) delete_sync_map(
+	sm *sync_map,
+	sc string_chan,
+) {
+
+	go func() {
+		for flo = flo.get();  flo != nil;  flo = flo.get() {  
+			sv := <- sc
+			sm.mapx.Delete(sv.string)
+			atomic.AddInt64(&sm.delete_count, 1)
+			if sv.flow.seq != flo.seq {
+				panic("string: delete: out of sync")
+			}
+		}
+	}()
+}
+
 //  read strings from multiple input channels and write assmbled argv[]
 //  any null value renders the whole argv[] null
 
@@ -1194,6 +1213,26 @@ func (flo *flow) const_uint64(ui64 uint64) (out uint64_chan) {
 	}()
 
 	return out
+}
+
+func (flo *flow) clear_sync_map(
+	sm *sync_map,
+	in_when bool_chan,
+) {
+	go func() {
+		for flo = flo.get(); flo != nil; flo = flo.get() {
+
+			when := <- in_when
+
+			if !when.is_null && when.bool {
+				sm.mapx.Clear()
+				atomic.AddInt64(&sm.clear_count, 1)
+			}
+			if when.flow.seq != flo.seq {
+				panic("when: clear out of sync")
+			}
+		}
+	}()
 }
 
 func (flo *flow) call(
