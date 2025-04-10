@@ -1,55 +1,81 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-<!--
-  Synopsis:
-  	Example config for launchd manging flowd processes for blobio service.
--->
-<plist version="1.0">
-<dict>
-  <key>Label</key>
-  <string>blobio.flowd</string>
+boot
+{
+	brr_capacity = 16;
+	os_exec_capacity = 8;
+	os_exec_worker_count = 4;
+	flow_worker_count = 8;
 
-  <key>KeepAlive</key>
-  <true/>
+	qdr_roll_duration = "24h";
+	fdr_roll_duration = "24h";
+	xdr_roll_duration = "24h";
+	heartbeat_duration = "10s";
+}
 
-  <key>RunAtLoad</key>
-  <true/>
+tail bio4d
+{
+	path = "spool/bio4d.brr";
+}
 
-  <key>ProcessType</key>
-  <string>Background</string>
+command hello
+{
+	path = "./to-tty";
+	argv = (
+		"hello, world"
+	);
+}
 
-  <key>AbandonProcessGroup</key>
-  <false/>
+command bye
+{
+	path = "./to-tty";
+	argv = (
+		"good bye, cruel world"
+	);
+}
 
-  <key>EnvironmentVariables</key>
-  <dict>
-	<key>BLOBIO_ROOT</key>
-	<string>/usr/local/blobio</string>
-  </dict>
+sync map seen_udig[string]bool;
 
-  <key>ProgramArguments</key>
-  <array>
-	<string>/usr/local/jmscott/sbin/launchd-log</string>
-	<string>sbin/start-flowd</string>
-  </array>
+Clear seen_udig
+  when
+  	bio4d.verb == "wrap"
+	or
+	bio4d.verb == "roll"
+;
 
-  <key>Disabled</key>
-  <false/>
+Delete seen_udig[bio4d.udig]
+  when
+  	bio4d.verb == "eat"
+	and
+	(
+		bio4d.chat_history == "no"
+		or
+		bio4d.chat_history == "ok,no"
+		or
+		bio4d.chat_history == "ok,ok,no"
+	)
+;
 
-  <key>UserName</key>
-  <string>blobio</string>
+command nope
+{
+	path = "false";
+	exit_status is OK when in {1};
+}
 
-  <key>GroupName</key>
-  <string>staff</string>
+command yep
+{
+	path = "true";
+}
 
-  <key>WorkingDirectory</key>
-  <string>/usr/local/blobio</string>
+call hello()
+  when
+	seen_udig.LoadOrStore(bio4d.udig, true).loaded == false
+;
 
-  <key>StandardErrorPath</key>
-  <string>/Users/blobio/log/launchd-flowd.log</string>
+call nope()
+  when
+  	hello.exit_status == 0
+;
 
-  <key>StandardOutPath</key>
-  <string>/Users/blobio/log/launchd-flowd.log</string>
-
-</dict>
-</plist>
+call bye()
+  when
+  	nope.exit_status == 1
+;

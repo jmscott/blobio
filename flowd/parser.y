@@ -1832,8 +1832,13 @@ statement:
 		l.config.delete_sync_map[$2.name] = $2
 		l.delete_sync_map = $2
 	  }
-	  '('  arg  ')'
+	  '['  arg  ']'
 	  {
+		l := yylex.(*yyLexState)
+	  	if $5.is_string() == false {
+			l.error("Delete key string key: %s", $2.name)
+			return 0
+		}
 	  	$<ast>$ = &ast{
 				yy_tok:	DELETE_SYNC_MAP,
 				sync_map:	$2,
