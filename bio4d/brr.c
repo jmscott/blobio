@@ -862,7 +862,6 @@ roll(struct request *r, struct digest_module *mp)
 		}
 		if (blob_set_exists(udig_set, (ui8 *)udig, strlen(udig))) {
 
-
 			char path[MAX_FILE_PATH_LEN];
 
 			path[0] = 0;
