@@ -17,23 +17,11 @@
  *	--output-path <path/to/file>
  *	--help
  *  Note:
- *	- Trace the argv[].
- *
  *	- Getting an empty blob should always be true and never depend upon the
- *	underlying service driver!
- *
- *	- Replace "-" in options to more variable friendly "_" char.
- *	So, for example, "io-timeout" becomes "io_timeout".
- *
- *	- The wrap driver must write the digest to stdout.  that is incorrect
- *	layering.  this level should write the udig, since the behavior
- *	is the same regardless of thhe digest algorithm
- *
- *	- Investigate linux system calls splice(), sendfile() and
- *	copy_file_range().
+ *	  underlying service driver!
  *
  *	- The following fails with exit 1 for service fs:/usr/local/blobio
- *	when blob actually exists but output dir does not!
+ *	  when blob actually exists but output dir does not!
  *
  *		blobio get						\
  *			--udig <exists>					\
@@ -88,6 +76,7 @@ static int	rm_output_path_error = 1;
 char	verb[8+1];
 char	algorithm[8+1] = {0};
 char	algo[9] = {0};
+char	fnp[33] = {0};
 char	udig[8 + 1 + 128 + 1] = {0};
 char	ascii_digest[129] = {0};
 char	*output_path = 0;
@@ -215,6 +204,7 @@ Service Query Args:\n\
 	brr	hex one byte bit map mask for which brr records to write\n\
 		  \"brr=ff\" puts a brr for all verbs\n\
 		  \"brr=6e\" puts a brr for verbs that write to storage\n\
+	fnp	file name prefix of the path to log file spool/<prefix>.brr\n\
 Exit Status:\n\
 	0	request succeed\n\
   	1	request denied.  blob may not exist or is not empty\n\
@@ -525,7 +515,7 @@ parse_argv(int argc, char **argv)
 				eopt("input-path", "empty file path");
 			input_path = argv[i];
 
-		//  --ouput-path pth/to/file
+		//  --ouput-path path/to/file
 
 		} else if (strcmp("output-path", a) == 0) {
 			if (output_path)
@@ -545,6 +535,8 @@ parse_argv(int argc, char **argv)
 			char name[9], *endp;
 			struct service *sp = 0;
 			int j;
+
+			TRACE("parsing service ...");
 
 			if (service)
 				emany("service");
@@ -613,9 +605,11 @@ parse_argv(int argc, char **argv)
 			/*
 			 *  Extract query arguments from service:
 			 *
-			 *	brr	write a brr record [01]
 			 *	algo	algorithm for wrap
+			 *	brr	write a brr record [01]
+			 *	fnp	brr file name prefix
 			 */
+			TRACE2("parse endpoint", endp);
 			if ((query = rindex(endp, '?'))) {
 				*query++ = 0;
 				sp->query[0] = 0;
@@ -627,8 +621,9 @@ parse_argv(int argc, char **argv)
 				if (err)
 					eservice2("query arg: frisk", err);
 
-				BLOBIO_SERVICE_get_algo(query, algo);
-				BLOBIO_SERVICE_get_brr_mask(query, &brr_mask);
+				BLOBIO_SERVICE_get_algo(query);
+				BLOBIO_SERVICE_get_brr_mask(query);
+				BLOBIO_SERVICE_get_fnp(query);
 			}
 
 			//  validate the syntax of the specific end point
@@ -777,6 +772,7 @@ main(int argc, char **argv)
 	char *err;
 	int exit_status = -1, ok_no;
 
+	TRACE("entered");
 	if (clock_gettime(CLOCK_REALTIME, &start_time) < 0)
 		die2(
 			"clock_gettime(start REALTIME) failed",
@@ -788,6 +784,7 @@ main(int argc, char **argv)
 
 	TRACE2("query arg: brr mask", brr_mask2ascii(brr_mask));
 	TRACE2("query arg: algo", algo);
+	TRACE2("query arg: fnp", fnp);
 
 	//  the input path must always exist in the file system.
 

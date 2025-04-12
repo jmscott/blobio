@@ -2,23 +2,16 @@
  *  Synopsis:
  *	Driver for a fast, trusted posix file system blobio service.
  *  Note:
- *	Getting an empty blob should always be true and never depend upon the
- *	underlying service driver!
- *
  *	Review chat history construction.
  *
  *	Double check default (0777) dir perms in various mkdir calls.
- *
- *	Under linux perhaps consult /proc file system to verify that no process
- *	is writing to the frozen wrap brr log after freezing.  clever.
- *
- *	Not UTF-8 safe.  Various char counts are in ascii bytes, not UTF8 chars.
  */
 
+#include <sys/stat.h>
 #include <fcntl.h>
 #include <string.h>
 #include <errno.h>
-#include <sys/stat.h>
+#include <stdlib.h>
 
 #include "blobio.h"
 
@@ -43,6 +36,8 @@ fs_end_point_syntax(char *root_dir)
 {
 	if (strlen(root_dir) > BLOBIO_MAX_FS_PATH - 1)
 		return "too many chars in root directory path";
+	if (!fnp[0])
+		strcpy(fnp, "fs");
 	return (char *)0;
 }
 
@@ -55,8 +50,10 @@ fs_open()
 		if (!algo[0])
 			return "wrap requires algo query arg in service uri";
 		digest_module = find_digest(algo);
-		if (!digest_module)
+		if (!digest_module) {
+			TRACE2("unknwon algo", algo);
 			return "unknown digest module in query arg \"algo\"";
+		}
 		algorithm[0] = 0;
 		jmscott_strcat(algorithm, sizeof algorithm, algo);
 	}
@@ -66,6 +63,7 @@ fs_open()
 
 	char *end_point = fs_service.end_point;
 
+	TRACE2("fnp", fnp);
 	TRACE2("end point directory", end_point);
 
 	//  verify endpoint is full path.
@@ -229,7 +227,7 @@ fs_get(int *ok_no)
 		}
 	}
 
-	TRACE("xdev failed, so copy blob->output");
+	TRACE("no input path, so copy blob->output");
 
 	int blob_fd = jmscott_openat(end_point_fd, blob_path, O_RDONLY, 0777);
 	if (blob_fd < 0) {
@@ -342,6 +340,9 @@ fs_put(int *ok_no)
 	fs_add_chat("ok");
 
 	if (input_path) {
+		TRACE2("input path", input_path);
+
+		TRACE("try hard link blob->input path ...");
 		err = fs_hard_link(
 				ok_no,
 				AT_FDCWD,
@@ -362,10 +363,12 @@ fs_put(int *ok_no)
 			return (char *)0;
 		}
 	}
-	TRACE("xdev failed, so copy input->blob");
+	TRACE("no input path (stdin), so copy input->blob");
 
 	/*
-	 *  First copy blob into $BLOBIO_ROOT/tmp/put-<udig>-<pid>.blob
+	 *  First copy blob into
+	 *
+	 *	$BLOBIO_ROOT/tmp/put-<udig>-<epoch>-<pid>.blob
 	 */
 	err = jmscott_mkdirat_path(end_point_fd, "tmp", 0777);
 	if (err)
@@ -398,7 +401,7 @@ fs_put(int *ok_no)
 			0777
 	);
 	if (tmp_fd < 0)
-		DEFER; 
+		DEFER;
 
 	TRACE("sendfile input>tmp");
 	err = jmscott_send_file(input_fd, tmp_fd, &blob_size);
@@ -497,11 +500,11 @@ fs_eat_input(int fd)
 
 /*
  *  Synopsis:
- *	Wrap the contents of spool/wrap after moving spool/fs.brr to spool/wrap.
+ *	Wrap file spool/<fnp>.brr to spool/wrap/<fnp>-<epoch>.brr
  *  Description:
  *	Wrap occurs in two steps.
  *
- *	First, move a frozen version of spool/bio4d.brr file into the file
+ *	First, move a frozen version of spool/<fnp>.brr file into the file
  *	spool/wrap/<udig>.brr, where <udig> is the digest of the frozen
  *	blobified brr file.  Do a trusted "put" on the frozen file.
  *
@@ -548,22 +551,22 @@ fs_wrap(int *ok_no)
 	TRACE("entered");
 
 	/*
-	 *  Insure dir $BLOBIO_ROOT/spool exists
+	 *  Insure dir $BLOBIO_ROOT/spool/ exists
 	 */
 	if (jmscott_mkdirat_EEXIST(end_point_fd, "spool", 0777))
 		return strerror(errno);
 
 	/*
-	 *  Freeze spool/fs.brr by moving
+	 *  Freeze spool/<fnp>.brr by moving
 	 *
-	 *	spool/fs.brr -> spool/FROZEN-fs-<epoch>-<pid>.brr
+	 *	spool/<fnp>.brr -> spool/FROZEN-<fnp>-<epoch>-<pid>.brr
 	 *
 	 *  Note:
 	 *	How to insure no other process have open, other than locking?
 	 */
 	char brr_path[BLOBIO_MAX_FS_PATH+1];
 	brr_path[0] = 0;
-	jmscott_strcat(brr_path, sizeof brr_path, "spool/fs.brr");
+	jmscott_strcat3(brr_path, sizeof brr_path, "spool/", fnp, ".brr");
 
 	TRACE2("brr path", brr_path);
 
@@ -573,14 +576,16 @@ fs_wrap(int *ok_no)
 
 	char frozen_path[BLOBIO_MAX_FS_PATH+1];
 	frozen_path[0] = 0;
-	jmscott_strcat5(frozen_path, sizeof frozen_path,
-			"spool/FROZEN-fs-",
+	jmscott_strcat7(frozen_path, sizeof frozen_path,
+			"spool/FROZEN-",
+			fnp,
+			"-",
 			epoch,
 			"-",
 			pid,
 			".brr"
 	);
-	TRACE2("fs.brr -> frozen path", frozen_path);
+	TRACE2("<fnp>.brr -> frozen path", frozen_path);
 	int status = jmscott_renameat(
 				end_point_fd,
 				brr_path,
@@ -594,7 +599,7 @@ fs_wrap(int *ok_no)
 		/*
 		 *  Blob Request Record file does not exist, so no wrap.
 		 */
-		TRACE("spool/fs.brr gone (ok)");
+		TRACE("spool/<fnp>.brr does not exist (ok), so wrap fails");
 		fs_add_chat("no");
 		*ok_no = 1;
 		return (char *)0;
@@ -788,13 +793,13 @@ fs_wrap(int *ok_no)
 }
 
 /*
- *  Frisk the blob request record and open the spool/fs.brr file.
+ *  Frisk the blob request record and open the spool/<fnp>.brr file.
  *  The transport and chat history are set in the blob request record..
  */
 char *
 fs_brr_frisk(struct brr *brr)
 {
-	TRACE("entered");
+	TRACE("hi");
 
 	brr->chat_history[0] = 0;
 	jmscott_strcat(
@@ -820,25 +825,134 @@ fs_brr_frisk(struct brr *brr)
 	if (jmscott_mkdirat_EEXIST(end_point_fd, "spool", 0777))
 		return strerror(errno);
 
-	TRACE("openat end_point: spool/fs.brr")
+	char brr_path[BLOBIO_MAX_FS_PATH+1];
+	brr_path[0] =  0;
+	jmscott_strcat3(brr_path, sizeof brr_path, "spool/", fnp, ".brr");
+	TRACE2("brr path", brr_path);
 	brr->log_fd = jmscott_openat(
 			end_point_fd,
-			"spool/fs.brr",
+			brr_path,
 			O_WRONLY | O_CREAT | O_APPEND,
 			0777
 	);
 	if (brr->log_fd < 0)
 		return strerror(errno);
-	TRACE("exit");
+	TRACE("bye");
 	return (char *)0;
 }
 
 static char *
 fs_roll(int *ok_no)
 {
-	(void)ok_no;
-	TRACE("entered");
-	return "roll not ready";
+	char roll_path[BLOBIO_MAX_FS_PATH+1];
+	char *err;
+
+	TRACE("hi");
+
+	*ok_no = 1;
+
+	err = fs_blob_path(roll_path, sizeof roll_path);
+	if (err)
+		return err;
+	*ok_no = 1;
+	TRACE2("blob path", roll_path);
+
+	struct stat st;
+	if (jmscott_fstatat(end_point_fd, roll_path, &st, 0)) {
+		if (errno == ENOENT)
+			return "roll blob does not exist";
+		err = strerror(errno);
+		TRACE2("stat() error", err);
+		return err;
+	}
+	off_t roll_size = st.st_size;
+	TRACE_LL("roll blob size", (long long)roll_size);
+
+	char *roll_blob = (char *)malloc((size_t)roll_size);
+	if (!roll_blob)
+		return "malloc(roll blob) failed";
+	TRACE2("open roll blob", roll_path);
+	int roll_fd = jmscott_openat(
+				end_point_fd,
+				(void *)roll_path,
+				O_RDONLY,
+				0
+			);
+	if (roll_fd < 0) {
+		err = strerror(errno);
+		TRACE2("open roll blob failed", err);
+		return err;
+	}
+	TRACE("reading roll blob ...");
+	if (jmscott_read_exact(roll_fd, roll_blob, roll_size)) {
+		err = strerror(errno);
+		TRACE2("read exact failed", err);
+		return err;
+	}
+	roll_blob[roll_size] = 0;
+	if (jmscott_close(roll_fd))
+		return strerror(errno);
+
+	int roll_offset[16 * 1024];
+	int roll_count = sizeof roll_offset / sizeof *roll_offset;
+	err = jmscott_split(roll_blob, '\n', roll_offset, &roll_count);
+	if (err) {
+		TRACE2("roll split failed", err);
+		return err;
+	}
+	TRACE_LL("udig count in roll set", (long long)roll_count);
+	if (roll_count == 0)
+		return "no udigs in roll set";
+
+	TRACE("removing blob files in spool/wrap")
+	int prev_o = 0;
+
+	int unlink_count = 0;
+	int ENOENT_count = 0;
+	for (int i = 0;  i < roll_count;  i++) {
+		int o = roll_offset[i];
+		if (roll_blob[o] != '\n') {
+			TRACE_LL("expected newline at offset", o);
+			return "udig set: char at offset not 0x0a";
+		}
+		roll_blob[o] = 0;
+		char *udig = &roll_blob[prev_o];
+TRACE_LL("prev_o", (long long)prev_o);
+		TRACE2("wrap udig in roll set", udig);
+		if (!*udig)
+			return "empty udig"; 
+		if (strlen(udig) < 34)
+			return "wrap udig < 34 chars";
+
+		char wrap_path[BLOBIO_MAX_FS_PATH+1];
+		wrap_path[0] = 0;
+		jmscott_strcat3(wrap_path, sizeof wrap_path,
+				"spool/wrap/",
+				udig,
+				".brr"
+		);
+		if (jmscott_unlinkat(end_point_fd, wrap_path, 0)) {
+			err = strerror(errno);
+			if (errno != ENOENT) {
+				TRACE2("wrap remove: unlinkat() failed", err);
+				return err;
+			}
+			ENOENT_count++;
+			TRACE2("WARN: no wrap file (ok)", wrap_path);
+		} else {
+			TRACE2("wrap removed", wrap_path);
+			unlink_count++;
+		}
+		prev_o = o + 1;
+	}
+	TRACE_LL("unlink count", (long long)unlink_count);
+	TRACE_LL("ENOENT count", (long long)ENOENT_count);
+
+	fs_add_chat("ok");
+	*ok_no = 0;
+
+	TRACE("bye");
+	return (char *)0;
 }
 
 struct service fs_service =

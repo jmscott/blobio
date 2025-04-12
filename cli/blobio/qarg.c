@@ -9,11 +9,20 @@
 #include <ctype.h>
 #include <limits.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include "jmscott/libjmscott.h"
 #include "blobio.h"
 
 #define _QARG_MAX_VALUE		64
+
+static int	algo_offset = -1;
+static int	algo_length = -1;
+
+static int	brr_mask_offset = -1;
+
+static int	fnp_offset = -1;
+static int	fnp_length = -1;
 
 /*
  *  A prosaic frisker of query arguments in BLOBIO_SERVICE.
@@ -22,8 +31,6 @@
  *	(char *)0:	no error and updates *p_equal to first char after '='
  *	error:		english error string
  *  Note:
- *	Add an arg for length of the value!
- *
  *	Correctness of escaped chars, etc, not frisked!
  */
 static char *
@@ -90,12 +97,13 @@ qae(char *qarg, char *err)
  *	Brute force frisk (but not extract) of query args in a uri
  *	$BLOBIO_SERVICE.
  *
- *		algo=[a-z][a-z0-9]{0,7}	#  algorithm for service wrap
+ *		algo=[a-z][a-z0-9]{0,7}	#  algorithm for verb "wrap"
  *		brr=[0-9a-f][0-9a-f]	#  bit mask for brr verbs to write
+ *		fnp=[a-z][0-9a-f]{0,15}	#  file name prefix of brr log in spool
  *
- *	Tis an error if args other than the three above exist in query string.
- *  Returns:
- *	An error string or (char *)0 if no unexpected args exist.
+ *	tis an error if args other than the three above exist in query string.
+ *  returns:
+ *	an error string or (char *)0 if no unexpected args exist.
  */
 char *
 BLOBIO_SERVICE_frisk_qargs(char *query)
@@ -104,8 +112,13 @@ BLOBIO_SERVICE_frisk_qargs(char *query)
 
 	char *q = query, c;
 	char *equal;
-	char seen_algo = 0, seen_brr = 0;
 	char *err;
+	static char eonce[] = "arg specified more than once";
+	static char efirst[] = "first char not lower alpha";
+	static char elowdig[] = "char not lower alpha or digit";
+	static char ehex1[] = "first digit is not lower hex";
+	static char ehex2[] = "second digit is not lower hex";
+	static char enograph[] = "non graph char in path";
 
 	if (!query || !*query)
 		return (char *)0;
@@ -115,65 +128,85 @@ BLOBIO_SERVICE_frisk_qargs(char *query)
 		//  match: algo=[a-z][a-z0-9]{0,7}[&\000]
 
 		case 'a':
-			TRACE("saw char 'a', expect qarg \"algo\"");
+			TRACE("saw char 'a', so expect \"algo\"");
 			err = frisk_qarg("algo", q - 1, &equal, 8);
 			if (err)
 				return qae("algo", err);
-			if (seen_algo)
-				return "algo: specified more than once";
+			if (algo_offset > -1)
+				return qae("algo", eonce);
 
 			//  insure the algorithm matches [a-z][a-z0-9]{0,7}
 			q = equal;
+			algo_offset = q - query;
 
 			c = *q++;
-			if (!islower(c) || !isalpha(c))
-				return "algo: "
-				       "first char in value "
-				       "not lower alpha"
-				;
-				
+			if (!islower(c))
+				return qae("algo", efirst);
+
 			//  scan [a-z0-9]{0,7}[&\000]
-			while ((c = *q++)) {
-				if (!c)
-					return (char *)0;
-				if (c == '&')
-					break;
-				if (!isdigit(c) &&
-				    !(islower(c) && isalpha(c)))
-					return "algo: non alnum in value";
-			}
-			seen_algo = 1;
+
+			while ((c = *q++) && c != '&')
+				if (!islower(c) && !isdigit(c))
+					return qae("algo", elowdig);
+			algo_length = q - &query[algo_offset];
+			if (!c)
+				return (char *)0;
+			algo_length--;
 			break;
 
-		//  match: brr=[0-9a-f][0-9a-f]		bit mask for bee verbs
+		//  match: brr=[0-9a-f][0-9a-f], the bit mask for which verbs 
+		//         write brr records
+
 		case 'b':
-			TRACE("saw char 'b', expect qarg \"brr\"");
+			TRACE("saw char 'b', so expect \"brr\"");
 			err = frisk_qarg("brr", q - 1, &equal, 2);
 			if (err)
 				return qae("brr", err);
-			if (seen_brr)
-				return "brr: specified more than once";
+			if (brr_mask_offset > -1)
+				return qae("brr", eonce);
 
 			q = equal;
+			brr_mask_offset = q - query;
 
 			c = *q++;
 			if (c == 0)
-				return "brr: empty: want [0-9a-f][0-9a-f]";
-			if (!isxdigit(c))
-				return "brr: first char is not hex digit";
-			if (isalpha(c) && !islower(c))
-				return "first hex digit is not lower case";
+				qae("brr", "no hex value");
+			if (!isxdigit(c) || (isalpha(c) && !islower(c)))
+				return qae("brr", ehex1);
 
 			c = *q++;
 			if (c == 0)
-				return "brr: short: want [0-9a-f][0-9a-f]";
-			if (!isxdigit(c))
-				return "brr: second char is not hex digit";
-			if (isalpha(c) && !islower(c))
-				return "second hex digit is not lower case";
+				return qae("brr", "no second hex char");
+			if (!isxdigit(c) || !islower(c))
+				return qae("brr", ehex2);
 
-			seen_brr = 1;
 			c = *q++;
+			break;
+		case 'f':
+			TRACE("saw char 'f', so expect \"fnp\"");
+			err = frisk_qarg("fnp", q - 1, &equal, 32);
+			if (err)
+				return qae("fnp", err);
+			if (fnp_offset > -1)
+				return qae("fnp", eonce);
+
+			//  insure the algorithm matches [[:graph:]]{1,32}
+			q = equal;
+			fnp_offset = q - query;
+
+			TRACE2("fnp: parsing query fragment", q);
+
+			//  scan [[:graph:]]{1,32}
+			while ((c = *q++) && c != '&')
+				if (!isgraph(c))
+					return qae("fnp", enograph);
+			fnp_length = q - &query[fnp_offset];
+			if (c)
+				fnp_length--;
+			if (fnp_length == 0)
+				return qae("fnp", "no path after =");
+			if (fnp_length > 32)
+				return qae("fnp", "path length > 32 chars");
 			break;
 		default: {
 			char got[2];
@@ -195,68 +228,63 @@ BLOBIO_SERVICE_frisk_qargs(char *query)
 /*
  *  Synopsis:
  *  	Extract the "algo" value from a frisked query string.
+ *  Note:
+ *	Already frisked value of "algo" for matching [a-z][a-z0-9]{0,7}
  */
 void
-BLOBIO_SERVICE_get_algo(char *query, char *algo)
+BLOBIO_SERVICE_get_algo(char *query)
 {
-	TRACE("entered");
+	if (algo_offset == -1)
+		return;
+	memcpy(algo, query + algo_offset, algo_length);
+	algo[algo_length] = 0;
 
-	char *q = query, c, *a = algo;
-	
-	*a = 0;
-	while ((c = *q++)) {
-		if (c == '&')
-			continue;
-		if (c == 'a') {
-			q += 4;		// skip over "lgo="
+	TRACE2("algo", algo);
+}
 
-			// already know algo matches [a-z][a-z]{0,7}
-			while ((c = *q++) && c != '&')
-				*a++ = c;
-			*a = 0;
-			return;
-		}
-
-		while ((c = *q++) && c != '&')
-			;
-		if (!c)
-			return;
-	}
+/*
+ *  Synopsis:
+ *  	Extract the "fnp" value from a frisked query string.
+ *  Note:
+ *	Already frisked value of "fnp" for matching [a-z][a-z0-9_-]{0,31}
+ */
+void
+BLOBIO_SERVICE_get_fnp(char *query)
+{
+	if (fnp_offset == -1)
+		return;
+	memcpy(fnp, query + fnp_offset, fnp_length);
+	fnp[fnp_length] = 0;
+	TRACE2("fnp", fnp);
 }
 
 /*
  *  Synopsis:
  *  	Extract the bit mask for blob request records to write.
+ *  Note:
+ *	Already frisked value of "brr" for matching [a-f0-9][a-f0-9]
  */
 void
-BLOBIO_SERVICE_get_brr_mask(char *query, unsigned char *p_mask)
+BLOBIO_SERVICE_get_brr_mask(char *query)
 {
-	TRACE("entered");
-
-	char *q = query, c;
-	
-	while ((c = *q++)) {
-		if (c == '&' || c != 'b')	//  not "brr="
-			continue;
-
-		q += 3;			//  skip over "brr="
-
-		unsigned cu, cl;	//  upper & lower bytes
-
-		unsigned c = *q++;
-		if (islower(c))
-			cu = (c - 'a') + 10;
-		else
-			cu = c - '0';
-
-		c = *q++;
-		if (islower(c))
-			cl = (c - 'a') + 10;
-		else
-			cl = c - '0';
-		*p_mask = (cu << 4) | cl;
-
-		TRACE2("qarg: brr mask", brr_mask2ascii(*p_mask));
+	if (brr_mask_offset == -1)
 		return;
-	}
+
+	unsigned char cu, cl;	//  upper & lower bytes
+	char *q = &query[brr_mask_offset];
+
+	unsigned c = *q++;
+	if (islower(c))
+		cu = (c - 'a') + 10;
+	else
+		cu = c - '0';
+
+	c = *q;
+	if (islower(c))
+		cl = (c - 'a') + 10;
+	else
+		cl = c - '0';
+	brr_mask = (cu << 4) | cl;
+
+	TRACE2("brr mask", brr_mask2ascii(brr_mask));
 }

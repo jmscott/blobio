@@ -247,14 +247,16 @@ extern ssize_t	uni_write(int fd, const void *buf, size_t count);
 
 extern char	*BLOBIO_SERVICE_frisk_qargs(char *query);
 
-void		BLOBIO_SERVICE_get_brr_mask(char *query, unsigned char *mask);
-void		BLOBIO_SERVICE_get_algo(char *query, char *algo);
+void		BLOBIO_SERVICE_get_algo(char *query);
+void		BLOBIO_SERVICE_get_brr_mask(char *query);
+void		BLOBIO_SERVICE_get_fnp(char *query);
 
 extern struct digest	*find_digest(char *algorithm);
 
 extern char		udig[8 + 1 + 128 + 1];
 extern char		verb[8 + 1];
 extern char		algo[8 + 1];
+extern char		fnp[32 + 1];
 extern char		algorithm[8 + 1];
 extern char		chat_history[2 + 1 + 2 + 1 + 2 + 1];
 extern struct digest	*digest_module;
