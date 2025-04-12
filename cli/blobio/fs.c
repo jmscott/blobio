@@ -19,6 +19,7 @@
 
 extern struct service fs_service;
 
+static char wrap_set_path[BLOBIO_MAX_FS_PATH+1] = {0};
 static char fs_data[4 + 1 + 3 + 8 + 1];			// data/fs_<algo>
 static int end_point_fd = -1;
 
@@ -105,6 +106,21 @@ static char *
 fs_close()
 {
 	TRACE("entered");
+
+	if (wrap_set_path[0]) {
+		TRACE2("wrap set path", wrap_set_path);
+		if (end_point_fd >= 0) {
+			TRACE2("wrap set not ulinked (OK)", wrap_set_path);
+			if (jmscott_unlinkat(end_point_fd, wrap_set_path, 0)) {
+				char *err = strerror(errno);
+				TRACE2("unlinkat(wrap set) failed", err);
+				return err;
+			}
+		} else {
+			TRACE("WARN: wrap set not removed, end point closed")
+		}
+		wrap_set_path[0] = 0;
+	}
 	if (end_point_fd > -1 && jmscott_close(end_point_fd))
 		return strerror(errno);
 	return (char *)0;
@@ -132,7 +148,7 @@ fs_hard_link(int *ok_no, int src_fd, char *src_path, int tgt_fd, char *tgt_path)
 			*ok_no = 1;
 			return (char *)0;
 		case EEXIST:
-			TRACE("tgt blob exists (ok)");
+			TRACE("tgt blob exists (OK)");
 			break;
 		case EXDEV:
 			TRACE("src blob on different device");
@@ -599,7 +615,7 @@ fs_wrap(int *ok_no)
 		/*
 		 *  Blob Request Record file does not exist, so no wrap.
 		 */
-		TRACE("spool/<fnp>.brr does not exist (ok), so wrap fails");
+		TRACE("spool/<fnp>.brr does not exist (OK), so wrap fails");
 		fs_add_chat("no");
 		*ok_no = 1;
 		return (char *)0;
@@ -682,7 +698,6 @@ fs_wrap(int *ok_no)
 	 *	tmp/wrap-set-<epoch>-<pid>.uset
 	 */
 	TRACE("build the wrap set tmp/wrap-set-<epoch>-<pid>.uset");
-	char wrap_set_path[BLOBIO_MAX_FS_PATH+1];
 	wrap_set_path[0] = 0;
 	jmscott_strcat5(wrap_set_path, sizeof wrap_set_path,
 				"tmp/wrap-set-",
@@ -719,17 +734,18 @@ fs_wrap(int *ok_no)
 	struct dirent *ep;
 	while ((ep = jmscott_readdir(wdp))) {
 
-		TRACE2("wrap dir entry", ep->d_name);
+		char *nm = ep->d_name;
+		TRACE2("wrap dir entry", nm);
+		if (strcmp(".", nm) == 0 || strcmp("..", nm) == 0)
+			continue;
 
 		//  skip over non-files or paths too short or path
 		//  not ending in ".brr".
 
 		if (ep->d_type != DT_REG) {
-			TRACE2("dir entry a regular file", ep->d_name);
+			TRACE2("WARN: dir entry not regular file", ep->d_name);
 			continue;
 		}
-
-		char *nm = ep->d_name;
 
 		//  must be >= min udig+len(.brr)
 		int nlen = strlen(nm);
@@ -782,10 +798,17 @@ fs_wrap(int *ok_no)
 	udig[0] = 0;
 	jmscott_strcat3(udig, sizeof udig, algorithm, ":", ascii_digest);
 	input_fd = wrap_set_fd;
-	TRACE("\"put\" wrap udig set");
+	TRACE2("\"put\" wrap udig set", wrap_set_path);
 	err = fs_put(ok_no);
 	if (err)
 		return err;
+	errno = 0;
+	if (jmscott_unlinkat(end_point_fd, wrap_set_path, 0)) {
+		wrap_set_path[0] = 0;
+		err = strerror(errno);
+		TRACE2("unlinkat(wrap set) failed", err);
+		return err;
+	}
 
 	fs_add_chat("ok");
 	*ok_no = 0;
@@ -938,7 +961,7 @@ TRACE_LL("prev_o", (long long)prev_o);
 				return err;
 			}
 			ENOENT_count++;
-			TRACE2("WARN: no wrap file (ok)", wrap_path);
+			TRACE2("WARN: no wrap file (OK)", wrap_path);
 		} else {
 			TRACE2("wrap removed", wrap_path);
 			unlink_count++;

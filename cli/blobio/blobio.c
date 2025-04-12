@@ -2,7 +2,7 @@
  *  Synopsis:
  *	Client to get/put/give/take/eat/wrap/roll blobs from blobio services.
  *  Exit Status:
- *  	0	request succeed (ok).
+ *  	0	request succeed (Ok).
  *  	1	request denied (no).
  *	2	i/o timeout
  *	3	EPIPE on read
@@ -958,8 +958,11 @@ main(int argc, char **argv)
 			udig_out[len++] = '\n';
 			if (jmscott_write_all(output_fd, udig_out, len))
 				die2("write(udig) failed", strerror(errno));
-		} else
-			TRACE("empty udig (ok)");
+		} else {
+			if (ok_no  == 0)
+				die("no udig for ok wrap");
+			TRACE("empty udig (OK)");
+		}
 		exit_status = ok_no;
 	} else if (*verb == 'r') {
 		if ((err = service->roll(&ok_no)))

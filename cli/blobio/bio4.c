@@ -775,7 +775,6 @@ static char *
 bio4_wrap(int *ok_no)
 {
 	char *err;
-	char udig[8+1+128+1+1];		//  <algo>:<digest>\n\0
 	unsigned int nread = 0;
 
 	TRACE("entered");
@@ -817,9 +816,10 @@ bio4_wrap(int *ok_no)
 	err = jmscott_frisk_udig(udig);
 	if (err)
 		return err;
+	TRACE2("wrap udig", udig);
 
 	if (brr_mask_is_set(verb, brr_mask)) {
-		//  update vars algorithm[] and ascii_digest[] for a the
+		//  update vars algorithm[] and ascii_digest[] for the
 		//  client side blob request record.
 		if (!memccpy(algorithm, udig, ':', 8))
 			return "memccpy(algo) return unexpected null";
@@ -829,10 +829,6 @@ bio4_wrap(int *ok_no)
 		colon++;
 		strcpy(ascii_digest, colon);
 	}
-
-	if (_write(output_fd, (unsigned char *)udig, nread))
-		return strerror(errno);
-
 	return bio4_set_brr("ok");
 }
 
