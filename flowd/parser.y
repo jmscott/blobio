@@ -2,6 +2,9 @@
  *  Synopsis:
  *	Yacc grammar for 'flow' language.
  *  Note:
+ *	The optimization for 'path = "true";' in command statement really ought
+ *	ought to be 'path = true;'.
+ *
  *	action "parse" should abort for unused queries/commands/sync maps!
  *	currently aborts when server starts!
  *
@@ -147,10 +150,10 @@ type config struct {
 	sync_map          	map[string]*sync_map
 
 	//  all Clear sync Maps
-	clear_sync_map         	map[string]*sync_map
+	Clear_sync_map         	map[string]*sync_map
 
 	//  all Delete sync Maps
-	delete_sync_map          	map[string]*sync_map
+	Delete_sync_map          	map[string]*sync_map
 
 	//  defaults to "log"
 	log_directory		string
@@ -238,7 +241,7 @@ const (
 %token	BOOT
 %token	BRR_CAPACITY
 %token	CALL
-%token	CALL0
+%token	CALLX0
 %token	CAST_STRING
 %token	CAST_UINT64
 %token	CHAT_HISTORY
@@ -661,6 +664,12 @@ call_project:
 		case l.sql_exec != nil:
 			what = "sql exec"
 			subject = l.sql_exec.name
+		case l.Clear_sync_map != nil:
+			what = "Clear"
+			subject = l.Clear_sync_map.name
+		case l.Delete_sync_map != nil:
+			what = "Delete"
+			subject = l.Delete_sync_map.name
 		default:
 			panic("exit_status: unknown rule")
 		}
@@ -1052,10 +1061,10 @@ tail_project:
 			subject = l.sql_query_row.name
 		case l.sql_exec != nil:
 			subject = l.sql_exec.name
-		case l.clear_sync_map != nil:
-			subject = l.clear_sync_map.name
-		case l.delete_sync_map != nil:
-			subject = l.delete_sync_map.name
+		case l.Clear_sync_map != nil:
+			subject = l.Clear_sync_map.name
+		case l.Delete_sync_map != nil:
+			subject = l.Delete_sync_map.name
 		default:
 			panic("impossible TAIL_REF outside of rule")
 		}
@@ -1305,7 +1314,7 @@ call:
 		switch argc {
 		case 0:
 			if call.command.path == "true" {
-				ctok = CALL0
+				ctok = CALLX0
 			}
 			tok = ARGV0
 		case 1:
@@ -1825,12 +1834,12 @@ statement:
 	  DELETE  SYNC_MAP_REF  
 	  {
 		l := yylex.(*yyLexState)
-	  	if l.config.delete_sync_map[$2.name] != nil {
+	  	if l.config.Delete_sync_map[$2.name] != nil {
 			l.error("sync map deleted twice: %s", $2.name)
 			return 0
 		}
-		l.config.delete_sync_map[$2.name] = $2
-		l.delete_sync_map = $2
+		l.config.Delete_sync_map[$2.name] = $2
+		l.Delete_sync_map = $2
 	  }
 	  '['  arg  ']'
 	  {
@@ -1847,7 +1856,7 @@ statement:
 	  }
 	  WHEN  qualify  ';'
 	  {
-		yylex.(*yyLexState).delete_sync_map = nil
+		yylex.(*yyLexState).Delete_sync_map = nil
 	  	$<ast>7.right = $9
 	  	$$ = $<ast>7
 	  }
@@ -1855,12 +1864,12 @@ statement:
 	  CLEAR  SYNC_MAP_REF
 	  {
 		l := yylex.(*yyLexState)
-	  	if l.config.clear_sync_map[$2.name] != nil {
+	  	if l.config.Clear_sync_map[$2.name] != nil {
 			l.error("sync map cleared twice: %s", $2.name)
 			return 0
 		}
-		l.config.clear_sync_map[$2.name] = $2
-		l.clear_sync_map = $2
+		l.config.Clear_sync_map[$2.name] = $2
+		l.Clear_sync_map = $2
 
 	  	$<ast>$ = &ast{
 				yy_tok:	CLEAR_SYNC_MAP,
@@ -1869,7 +1878,7 @@ statement:
 	  }
 	  WHEN  qualify  ';'
 	  {
-		yylex.(*yyLexState).clear_sync_map = nil
+		yylex.(*yyLexState).Clear_sync_map = nil
 	  	$<ast>3.left = $5
 	  	$$ = $<ast>3
 	  }
@@ -2242,8 +2251,8 @@ type yyLexState struct {
 	*sql_query_row
 	*sql_exec
 
-	delete_sync_map		*sync_map
-	clear_sync_map		*sync_map
+	Delete_sync_map		*sync_map
+	Clear_sync_map		*sync_map
 
 	in				io.RuneReader	//  config source stream
 	line_no				uint64	   //  lexical line number
@@ -2905,8 +2914,8 @@ func (a *ast) to_string(brief bool) string {
 	switch a.yy_tok {
 	case COMMAND:
 		what = fmt.Sprintf("COMMAND(%s)", a.command.name)
-	case CALL0:
-		what = fmt.Sprintf("CALL0(%s)", a.call.command.name)
+	case CALLX0:
+		what = fmt.Sprintf("CALLX0(%s)", a.call.command.name)
 	case CALL:
 		what = fmt.Sprintf("CALL(%s)", a.call.command.name)
 	case EQ_STRING:

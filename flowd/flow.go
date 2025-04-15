@@ -1024,7 +1024,7 @@ func (flo *flow) project_sync_map_los_true_loaded(
 
 //  delete an entry in sync_map
 
-func (flo *flow) delete_sync_map(
+func (flo *flow) Delete_sync_map(
 	sm *sync_map,
 	sc string_chan,
 ) {
@@ -1215,7 +1215,7 @@ func (flo *flow) const_uint64(ui64 uint64) (out uint64_chan) {
 	return out
 }
 
-func (flo *flow) clear_sync_map(
+func (flo *flow) Clear_sync_map(
 	sm *sync_map,
 	in_when bool_chan,
 ) {
@@ -1310,7 +1310,7 @@ func (flo *flow) call(
 //  fire an xdr record for an optimized command that always has an exit
 //  status of 0.
 
-func (flo *flow) call0(
+func (flo *flow) callx0(
 	name string,
 	in_argv argv_chan,
 	in_when bool_chan,
@@ -1332,7 +1332,7 @@ func (flo *flow) call0(
 
 			switch {
 
-			//  xdr is null when either argv or when is null
+			//  xdr is null when either argv or "when" is null
 
 			case argv.is_null || when.is_null:
 				xv = &xdr_value{
@@ -1340,8 +1340,7 @@ func (flo *flow) call0(
 					flow:    flo,
 				}
 
-			//  when is rule optimized "true" which does not invoke
-			//  a process
+			//  rule is "true"
 
 			case when.bool:
 				udig := flo.brr[brr_UDIG]

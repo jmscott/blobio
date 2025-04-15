@@ -96,7 +96,7 @@ func (cmpl *compile) compile() fdr_chan {
 			}
 			a2a[a] = flo.argv(in)
 
-		case CALL0:
+		case CALLX0:
 			cmd := a.call.command
 
 			//  any command with path = "true" is optimized
@@ -104,7 +104,7 @@ func (cmpl *compile) compile() fdr_chan {
 			//  like the borne shell.  the call() must
 			//  have no arguments
 
-			a2x[a] = flo.call0(cmd.name, a2a[a.left], a2b[a.right])
+			a2x[a] = flo.callx0(cmd.name, a2a[a.left], a2b[a.right])
 
 			//  broadcast to all dependent rules plus log_xdr
 			command2xdr[cmd.name] =
