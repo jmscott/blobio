@@ -47,8 +47,6 @@ func main() {
 		path:                 os.Args[2],
 		command:              make(map[string]*command),
 		sync_map:             make(map[string]*sync_map),
-		Clear_sync_map:       make(map[string]*sync_map),
-		Delete_sync_map:      make(map[string]*sync_map),
 		sql_database:         make(map[string]*sql_database),
 		sql_query_row:        make(map[string]*sql_query_row),
 		sql_exec:             make(map[string]*sql_exec),

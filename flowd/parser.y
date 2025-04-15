@@ -149,12 +149,6 @@ type config struct {
 	//  all LoadOrStore sync Maps
 	sync_map          	map[string]*sync_map
 
-	//  all Clear sync Maps
-	Clear_sync_map         	map[string]*sync_map
-
-	//  all Delete sync Maps
-	Delete_sync_map          	map[string]*sync_map
-
 	//  defaults to "log"
 	log_directory		string
 }
@@ -192,7 +186,7 @@ type parse struct {
 
 	ast_root	*ast
 
-	//  dependency order of call() and query() nodes
+	//  dependency order of call(), query(), clear() nodes
 	depend_order	[]string
 
 	//  map of a call() statements to the branch of it's abstract
@@ -250,7 +244,6 @@ const (
 %token	COMMAND_REF
 %token	DATABASE
 %token	DATA_SOURCE_NAME
-%token	DELETE  DELETE_SYNC_MAP
 %token	DRIVER_NAME
 %token	EQ MATCH
 %token	EQ_BOOL
@@ -644,9 +637,6 @@ call_project:
 		l := yylex.(*yyLexState)
 
 		//  record dependency between call_project and statement.
-		//
-		//  gnu tsort treats nodes that point to themselves as islands,
-		//  not loops, so check here that we don't point to our selves.
 
 		var subject, what string
 
@@ -664,12 +654,6 @@ call_project:
 		case l.sql_exec != nil:
 			what = "sql exec"
 			subject = l.sql_exec.name
-		case l.Clear_sync_map != nil:
-			what = "Clear"
-			subject = l.Clear_sync_map.name
-		case l.Delete_sync_map != nil:
-			what = "Delete"
-			subject = l.Delete_sync_map.name
 		default:
 			panic("exit_status: unknown rule")
 		}
@@ -678,9 +662,6 @@ call_project:
 			return 0
 		}
 		$1.depend_ref_count++
-
-		//  is trivial loopback?  gnu tsort for some reason treats
-		//  these as island nodes and not loopbacks.
 
 		if subject == $1.name {
 			l.error("%s '%s' refers to itself", what, $1.name)
@@ -715,9 +696,6 @@ query_project:
 		}
 
 		//  record dependency between query_project and statement.
-		//
-		//  gnu tsort treats nodes that point to themselves as islands,
-		//  not loops, so check here that we don't point to our selves.
 
 		var subject, what string
 
@@ -745,9 +723,6 @@ query_project:
 		}
 		$1.depend_ref_count++
 
-		//  is trivial loopback?  gnu tsort for some reason treats
-		//  these as island nodes and not loopbacks.
-
 		if subject == name {
 			l.error("%s '%s' refers to itself", what, name)
 			return 0
@@ -772,9 +747,6 @@ query_project:
 		l := yylex.(*yyLexState)
 
 		//  record dependency between query_project and statement.
-		//
-		//  gnu tsort treats nodes that point to themselves as islands,
-		//  not loops, so check here that we don't point to our selves.
 
 		var subject, what string
 
@@ -803,9 +775,6 @@ query_project:
 		}
 		$1.depend_ref_count++
 
-		//  is trivial loopback?  gnu tsort for some reason treats
-		//  these as island nodes and not loopbacks.
-
 		if subject == name {
 			l.error("%s '%s' refers to itself", what, name)
 			return 0
@@ -830,9 +799,6 @@ query_project:
 
 		//  record dependency between query_project and statement.
 		//
-		//  gnu tsort treats nodes that point to themselves as islands,
-		//  not loops, so check here that we don't point to our selves.
-
 		var subject, what string
 
 		name := $1.name
@@ -859,9 +825,6 @@ query_project:
 		}
 		$1.depend_ref_count++
 
-		//  is trivial loopback?  gnu tsort for some reason treats
-		//  these as island nodes and not loopbacks.
-
 		if subject == name {
 			l.error("%s '%s' refers to itself", what, name)
 			return 0
@@ -886,8 +849,6 @@ query_project:
 
 		//  record dependency between query_project and statement.
 		//
-		//  gnu tsort treats nodes that point to themselves as islands,
-		//  not loops, so check here that we don't point to our selves.
 
 		var subject, what string
 
@@ -915,9 +876,6 @@ query_project:
 		}
 		$1.depend_ref_count++
 
-		//  is trivial loopback?  gnu tsort for some reason treats
-		//  these as island nodes and not loopbacks.
-
 		if subject == name {
 			l.error("%s '%s' refers to itself", what, name)
 			return 0
@@ -941,9 +899,6 @@ query_project:
 		l := yylex.(*yyLexState)
 
 		//  record dependency between query_project and statement.
-		//
-		//  gnu tsort treats nodes that point to themselves as islands,
-		//  not loops, so check here that we don't point to our selves.
 
 		var subject, what string
 
@@ -970,9 +925,6 @@ query_project:
 			return 0
 		}
 		$1.depend_ref_count++
-
-		//  is trivial loopback?  gnu tsort for some reason treats
-		//  these as island nodes and not loopbacks.
 
 		if subject == name {
 			l.error("%s '%s' refers to itself", what, name)
@@ -1061,10 +1013,6 @@ tail_project:
 			subject = l.sql_query_row.name
 		case l.sql_exec != nil:
 			subject = l.sql_exec.name
-		case l.Clear_sync_map != nil:
-			subject = l.Clear_sync_map.name
-		case l.Delete_sync_map != nil:
-			subject = l.Delete_sync_map.name
 		default:
 			panic("impossible TAIL_REF outside of rule")
 		}
@@ -1831,58 +1779,6 @@ sql_decl_stmt_list:
 	;
 
 statement:
-	  DELETE  SYNC_MAP_REF  
-	  {
-		l := yylex.(*yyLexState)
-	  	if l.config.Delete_sync_map[$2.name] != nil {
-			l.error("sync map deleted twice: %s", $2.name)
-			return 0
-		}
-		l.config.Delete_sync_map[$2.name] = $2
-		l.Delete_sync_map = $2
-	  }
-	  '['  arg  ']'
-	  {
-		l := yylex.(*yyLexState)
-	  	if $5.is_string() == false {
-			l.error("Delete key string key: %s", $2.name)
-			return 0
-		}
-	  	$<ast>$ = &ast{
-				yy_tok:	DELETE_SYNC_MAP,
-				sync_map:	$2,
-				left:		$5,
-		}
-	  }
-	  WHEN  qualify  ';'
-	  {
-		yylex.(*yyLexState).Delete_sync_map = nil
-	  	$<ast>7.right = $9
-	  	$$ = $<ast>7
-	  }
-	|
-	  CLEAR  SYNC_MAP_REF
-	  {
-		l := yylex.(*yyLexState)
-	  	if l.config.Clear_sync_map[$2.name] != nil {
-			l.error("sync map cleared twice: %s", $2.name)
-			return 0
-		}
-		l.config.Clear_sync_map[$2.name] = $2
-		l.Clear_sync_map = $2
-
-	  	$<ast>$ = &ast{
-				yy_tok:	CLEAR_SYNC_MAP,
-				sync_map:	$2,
-		}
-	  }
-	  WHEN  qualify  ';'
-	  {
-		yylex.(*yyLexState).Clear_sync_map = nil
-	  	$<ast>3.left = $5
-	  	$$ = $<ast>3
-	  }
-	|
 	  SYNC  MAP  NAME  '['  yy_STRING  ']'  yy_BOOL  ';'
 	  {
 		l := yylex.(*yyLexState)
@@ -2179,8 +2075,6 @@ statement_list:
 %%
 
 var keyword = map[string]int{
-	"Clear":		CLEAR,
-	"Delete":		DELETE,
 	"LoadOrStore":		LOAD_OR_STORE,
 	"OK":			yy_OK,
 	"and":			yy_AND,
@@ -2250,9 +2144,6 @@ type yyLexState struct {
 	*sql_database
 	*sql_query_row
 	*sql_exec
-
-	Delete_sync_map		*sync_map
-	Clear_sync_map		*sync_map
 
 	in				io.RuneReader	//  config source stream
 	line_no				uint64	   //  lexical line number
@@ -2886,12 +2777,12 @@ func (conf *config) parse(in io.RuneReader) (
 		l.depends = append(l.depends, fmt.Sprintf("%s %s", n, n))
 	}
 
-	//  tsort the call/query dependencies.
+	//  tsort the call/query/clear dependencies.
 	//  reverse the order so roots are first
 
 	depend_order := tsort(l.depends)
 	if depend_order == nil {
-		err = errors.New("cycle exists between call/query graphs")
+		err = errors.New("cycle exists in call/query/clear graphs")
 	} else {
 		for i, j := 0, len(depend_order) - 1;  i<j;  i, j = i+1, j-1 {
 			depend_order[i], depend_order[j] =
