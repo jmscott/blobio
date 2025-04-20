@@ -38,6 +38,12 @@ put_file()
 	blobio eat --udig $UDIG --service $BLOBIO_SERVICE
 	STATUS=$?
 	case $STATUS in
+	0)
+		cat <<END
+$FILE
+	@$UDIG
+END
+		;;
 	1)
 		blobio put --udig $UDIG --input-path "$FILE"		\
 				--service $BLOBIO_SERVICE
@@ -47,14 +53,8 @@ $FILE
 	>$UDIG
 END
 		;;
-	0)
-		cat <<END
-$FILE
-	@$UDIG
-END
-		;;
 	*)
-		die "blobio eat: unexpected exit status"
+		die "blobio eat failed: exit status=$STATUS"
 		;;
 	esac
 }
