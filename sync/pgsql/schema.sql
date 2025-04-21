@@ -188,7 +188,6 @@ ALTER TYPE blob_request_record OWNER TO :DBOWNER;
 DROP DOMAIN IF EXISTS brr CASCADE;
 CREATE DOMAIN brr AS blob_request_record
   CHECK (
-  	--  "get" verb
   	(
 		(value).verb = 'get'
 		AND
