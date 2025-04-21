@@ -17,6 +17,9 @@
  *	--output-path <path/to/file>
  *	--help
  *  Note:
+ *	- Why does a "blobio get(fs) | blobio put(network) take so long and
+ *	  still not timeout?
+ *
  *	- Getting an empty blob should always be true and never depend upon the
  *	  underlying service driver!
  *
