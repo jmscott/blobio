@@ -16,6 +16,7 @@
  */
 
 \set ON_ERROR_STOP true
+SET search_path TO blobio;
 
 CREATE TEMP TABLE cli_bio_byte_count(
 	blob	udig
