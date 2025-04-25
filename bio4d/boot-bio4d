@@ -122,4 +122,6 @@ sbin/bio4d								\
 	--rrd-duration $BLOBIO_BIO4D_RRD_DURATION
 STATUS=$?
 log "sbin/bio4d exit status: $STATUS"
+
+#  Note: do forced cleanup in case bio4d exited ungracefully
 kill-bio4d
