@@ -88,8 +88,9 @@ func (q *sql_query_row) query_row(argv []string) (qv *qdr_value) {
 	}
 
 	die := func(format string, args ...interface{}) {
-		panic(Sprintf("sql query row: %s: %s", q.name,
-			Sprintf(format, args...)))
+		format = "sql query row: " + q.name + ": " + format
+		msg := Sprintf(format, args...)
+		panic(msg)
 	}
 
 	//  allocate result slice of return values
@@ -143,7 +144,7 @@ func (q *sql_query_row) query_row(argv []string) (qv *qdr_value) {
 				qv.err = nil
 			}
 		} else {
-			die("%s", qv.err)
+			die("unknown pg error: %s", qv.err)
 		}
 	}
 	return qv
