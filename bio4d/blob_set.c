@@ -153,10 +153,8 @@ blob_set_put(void *set, ui8 *element, int size)
 	e_new->size = size;
 	e_new->next = 0;
 	hash = djb(element, size) % s->size;
-	if ((e = s->table[hash]))
-		e->next = e_new;
-	else
-		s->table[hash] = e_new;
+	e_new->next = s->table[hash];
+	s->table[hash] = e_new;
 	return 0;
 }
 
