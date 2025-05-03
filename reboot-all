@@ -45,7 +45,7 @@ cd $BLOBIO_ROOT || die "cd $BLOBIO_ROOT failed"
 . etc/profile
 
 log 'calling bio4d_ctl restart bio4d ...'
-log 'WARN: some log messages may be out of order (ok)' 
+log 'WARN: log messages out of order (ok)' 
 bio4d_ctl restart || die "bio4d_ctl restart failed: exit status=$?"
 log 'bio4d_ctl restart ok'
 
