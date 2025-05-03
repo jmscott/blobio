@@ -83,28 +83,6 @@ restart)
 	) || die 'stop/start failed, bye'
 
 	. etc/profile
-	case "$BLOBIO_BIO4D_RRD_DURATION" in
-	[1-9]*)
-		log "pause $BLOBIO_BIO4D_RRD_DURATION sec for stats ..."
-		sleep $BLOBIO_BIO4D_RRD_DURATION
-		echo
-		run-stat-report
-		echo
-		;;
-	0)
-		log 'bio4d not reporting stats'
-		;;
-	'')
-		log 'WARN: env not defined: BLOBIO_BIO4D_RRD_DURATION'
-		;;
-	heartbeat)
-		log 'rrd set to heartbeat'
-		;;
-	*)
-		D=$BLOBIO_BIO4D_RRD_DURATION
-		die "unexpected value for BLOBIO_BIO4D_RRD_DURATION: $D"
-		;;
-	esac
 	log 'our work here is done'
 	;;
 *)
