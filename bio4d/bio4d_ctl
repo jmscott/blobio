@@ -11,7 +11,9 @@
 
 PROG=$(basename $0)
 PAUSE=3
-SOCKET_EXPIRE_PAUSE=20
+
+#  how long to pause before hard stop of bio4d
+BIO4D_STOP_PAUSE=20
 
 die()
 {
@@ -67,15 +69,20 @@ stop)
 	sbin/kill-bio4d
 	;;
 restart)
+	#
+	#  since no "--mode fast" exists, we first attempt quick stop.
+	#  if bio4d still running, then do a sleep a bit before restarting.
+	#
 	log 'restart'
-	SOCKET_MAY_BE_BUSY=$(test -e run/bio4d.pid;  echo $?)
+	bio4d_ctl stop
+	sleep 3
+	BIO4D_MAY_BE_BUSY=$(test -e run/bio4d.pid;  echo $?)
 	(
-		bio4d_ctl stop						&&
 		(
-			test $SOCKET_MAY_BE_BUSY = 0			&&
+			test $BIO6D_MAY_BE_BUSY = 0			&&
 			(
-				log "pause $SOCKET_EXPIRE_PAUSE sec for socket"
-				sleep $SOCKET_EXPIRE_PAUSE
+				log "pause $BIO4D_STOP_PAUSE sec for socket"
+				sleep $BIO4D_STOP_PAUSE
 			)
 			true
 		)							&&

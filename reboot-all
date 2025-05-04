@@ -64,7 +64,7 @@ case $STATUS in
 esac
 
 log 'starting flowd server in background ...'
-log 'WARN: some log messages may be out of order (ok)'
+log 'WARN: log messages out of order (ok)'
 flowd server $FLOW_PATH &
 log "pausing $FLOWD_PAUSE sec while flowd starts ..."
 sleep $FLOWD_PAUSE
