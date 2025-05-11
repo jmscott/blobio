@@ -1372,10 +1372,6 @@ func (flo *flow) log_xdr_error(
 					who(xv.xdr),
 					xv.xdr.exit_status,
 				)
-				//  only OK or ERR are valid xdr
-				if xv.exit_class != "ERR" {
-					xv.xdr = nil
-				}
 			}
 
 			//  burp out process output to log file
