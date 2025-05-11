@@ -14,10 +14,10 @@ type fdr struct {
 	//  blob beinging flowed over
 	udig string
 
-	//  count of termination class "OK" in all rules that fired in flow
+	//  count of exit class "OK" in all rules that fired in flow
 	ok_count uint8
 
-	//  count of termination class not "OK" in all rules that fired in flow
+	//  count of exit class not "OK" in all rules that fired in flow
 	fault_count uint8
 
 	//  wall clock elapsed time for firing of all rules

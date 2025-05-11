@@ -1364,7 +1364,7 @@ func (flo *flow) log_xdr_error(
 		for xv := range in {
 
 			if xv.xdr != nil && xv.xdr.exit_class != "OK" {
-				log_ch.ERROR("%s: termination class: %s",
+				log_ch.ERROR("%s: exit class: %s",
 					who(xv.xdr),
 					xv.xdr.exit_class,
 				)
@@ -1458,7 +1458,7 @@ func (flo *flow) log_qdr_error(
 
 			if qv.qdr != nil && qv.qdr.termination_class != "OK" {
 
-				//  Note:  need to distinguish ERROR/WARN
+				//  Note: need to distinguish ERROR/WARN
 
 				log_ch.ERROR("%s: termination class: %s",
 					who(qv.qdr),
@@ -1525,7 +1525,7 @@ func (flo *flow) log_xdr(
 				default:
 					panic(
 						"log_xdr: " +
-						"termination class: " +
+						"exit class: " +
 						xdr.exit_class,
 					)
 				}
@@ -1580,7 +1580,7 @@ func (flo *flow) log_qdr(
 					flo.red_count++
 				default:
 					panic(
-						"log_xdr: " +
+						"log_qdr: " +
 						"termination class: " +
 						qdr.termination_class,
 					)
