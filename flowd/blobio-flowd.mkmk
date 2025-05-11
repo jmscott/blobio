@@ -56,11 +56,11 @@ SBINs="
 	cron-dr2rrd
 	fdr2pg-copy-stage
 	fdr2rrd-minute
-	kill-flowd
 	rrd-create-fdr
 	rrd-graph-fdr
 	run-stat-flowd-tuple
 	start-flowd
+	stop-flowd
 "
 
 #  Uncomment to create tmp/ directory
