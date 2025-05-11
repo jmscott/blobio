@@ -1505,7 +1505,7 @@ func (flo *flow) log_xdr(
 				log_ch <- []byte(
 					Sprintf(xdr_LOG_FORMAT,
 						xdr.start_time.Format(
-							RFC3339Nano),
+						RFC3339Nano),
 						xdr.flow_sequence,
 						xdr.call_name,
 						xdr.exit_class,
@@ -1520,12 +1520,11 @@ func (flo *flow) log_xdr(
 					flo.green_count++
 				case "SIG":
 					flo.yellow_count++
-				case "ERR":
+				case "ERR", "NOPS":
 					flo.red_count++
 				default:
 					panic(
-						"log_xdr: " +
-						"exit class: " +
+						"unknown exit class: " +
 						xdr.exit_class,
 					)
 				}
@@ -1580,8 +1579,7 @@ func (flo *flow) log_qdr(
 					flo.red_count++
 				default:
 					panic(
-						"log_qdr: " +
-						"termination class: " +
+						"unknown termination class: " +
 						qdr.termination_class,
 					)
 				}
@@ -1612,12 +1610,10 @@ func (flo *flow) reduce(inx []xdr_chan, inq []qdr_chan) (out fdr_chan) {
 
 			switch {
 
-			//  sanity check
+			//  cheap sanity tests
 
 			case xv.flow.seq < f.seq:
-				panic("stale xdr")
-
-			//  sanity test
+				panic("xdr from the past")
 			case xv.flow.seq > f.seq:
 				panic("xdr from the future")
 
@@ -1649,13 +1645,10 @@ func (flo *flow) reduce(inx []xdr_chan, inq []qdr_chan) (out fdr_chan) {
 
 			switch {
 
-			//  sanity check
+			//  cheap sanity checks
 
 			case qv.flow.seq < f.seq:
-				panic("stale qdr")
-
-			//  sanity test
-			//  Note: obsolete?
+				panic("qdr from the past")
 
 			case qv.flow.seq > f.seq:
 				panic("qdr from the future")
@@ -1765,7 +1758,7 @@ func (flo *flow) reduce(inx []xdr_chan, inq []qdr_chan) (out fdr_chan) {
 						return
 					}
 					if xv.flow.seq != flo.seq {
-						panic("xv out of sync")
+						panic("xdr_merge: out of sync")
 					}
 					xdr_stat(flo, fdr, xv)
 
@@ -1774,7 +1767,7 @@ func (flo *flow) reduce(inx []xdr_chan, inq []qdr_chan) (out fdr_chan) {
 						return
 					}
 					if qv.flow.seq != flo.seq {
-						panic("qv out of sync")
+						panic("qdr_merge: out of sync")
 					}
 					qdr_stat(flo, fdr, qv)
 				}
