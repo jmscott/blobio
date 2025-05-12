@@ -60,6 +60,7 @@ func main() {
 		heartbeat_duration:   10 * Second,
 		memstats_duration:    15 * Minute,
 		log_directory:        "log",
+		data_directory:       "data",
 	}
 	cf, err := os.OpenFile(conf.path, os.O_RDONLY, 0)
 	if err != nil {

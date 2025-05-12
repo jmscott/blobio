@@ -438,26 +438,26 @@ func (conf *config) server(par *parse) {
 		}
 	}
 
-	//  flow detail record log file
+	//  flow detail record (*.fdr) log file
 
 	info("fdr file roll duration: %s", conf.fdr_roll_duration)
-	path := Sprintf("%s/flowd", conf.log_directory)
+	path := Sprintf("%s/flowd", conf.data_directory)
 	info("opening fdr log file: %s.fdr", path)
 	fdr_log_chan := make(file_byte_chan)
 	fdr_log_chan.roll_epoch(path, "fdr", conf.fdr_roll_duration, false)
 
-	//  execution detail record log file
+	//  execution detail record (*.xdr) log file
 
 	info("xdr file roll duration: %s", conf.xdr_roll_duration)
-	path = Sprintf("%s/flowd", conf.log_directory)
+	path = Sprintf("%s/flowd", conf.data_directory)
 	info("opening xdr log file: %s.xdr", path)
 	xdr_log_chan := make(file_byte_chan)
 	xdr_log_chan.roll_epoch(path, "xdr", conf.xdr_roll_duration, false)
 
-	//  query detail log file
+	//  query detail record (*.qdr) log file
 
 	info("qdr file roll duration: %s", conf.qdr_roll_duration)
-	path = Sprintf("%s/flowd", conf.log_directory)
+	path = Sprintf("%s/flowd", conf.data_directory)
 	info("opening qdr log file: %s.qdr", path)
 	qdr_log_chan := make(file_byte_chan)
 	qdr_log_chan.roll_epoch(path, "qdr", conf.qdr_roll_duration, false)

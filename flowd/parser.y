@@ -149,8 +149,11 @@ type config struct {
 	//  all LoadOrStore sync Maps
 	sync_map          	map[string]*sync_map
 
-	//  defaults to "log"
+	//  where flowd-Dow files live.  defaults to "log/"
 	log_directory		string
+
+	//  where flowd.[fqx]dr files live.  defaults to "data/"
+	data_directory		string
 }
 
 //  abstract syntax tree that represents the config file
@@ -242,8 +245,9 @@ const (
 %token	CLEAR  CLEAR_SYNC_MAP
 %token	COMMAND
 %token	COMMAND_REF
-%token	DATABASE
+%token	DATA_DIRECTORY
 %token	DATA_SOURCE_NAME
+%token	DATABASE
 %token	DRIVER_NAME
 %token	EQ MATCH
 %token	EQ_BOOL
@@ -284,11 +288,11 @@ const (
 %token	ROW
 %token	ROWS_AFFECTED
 %token	SQL
-%token	SQLSTATE
 %token	SQL_DATABASE
 %token	SQL_DATABASE_REF
 %token	SQL_EXEC_REF
 %token	SQL_QUERY_ROW_REF
+%token	SQLSTATE
 %token	START_TIME
 %token	STATEMENT
 %token	STRING
@@ -525,6 +529,22 @@ boot_stmt:
 			return 0
 		}
 		l.config.log_directory = $3
+	  }
+	|
+	  DATA_DIRECTORY  '='  STRING
+	  {
+		l := yylex.(*yyLexState)
+
+		if $3 == "" {
+			l.error("boot: data_directory is empty")
+			return 0
+		}
+
+		if l.config.data_directory != "" {
+			l.error("boot: data_directory set again")
+			return 0
+		}
+		l.config.data_directory = $3
 	  }
 	;
 
@@ -2075,8 +2095,6 @@ statement_list:
 %%
 
 var keyword = map[string]int{
-	"LoadOrStore":		LOAD_OR_STORE,
-	"OK":			yy_OK,
 	"and":			yy_AND,
 	"argv":			ARGV,
 	"blob_size":		BLOB_SIZE,
@@ -2086,6 +2104,7 @@ var keyword = map[string]int{
 	"call":			CALL,
 	"chat_history":		CHAT_HISTORY,
 	"command":		COMMAND,
+	"data_directory":	DATA_DIRECTORY,
 	"data_source_name":	DATA_SOURCE_NAME,
 	"database":		DATABASE,
 	"driver_name":		DRIVER_NAME,
@@ -2099,19 +2118,21 @@ var keyword = map[string]int{
 	"int64":		yy_INT64,
 	"is":			IS,
 	"loaded":		LOADED,
+	"LoadOrStore":		LOAD_OR_STORE,
 	"log_directory":	LOG_DIRECTORY,
 	"map":			MAP,
 	"max_idle_conns":	MAX_IDLE_CONNS,
 	"max_open_conns":	MAX_OPEN_CONNS,
 	"memstats_duration":	MEMSTAT_DURATION,
+	"OK":			yy_OK,
 	"or":			yy_OR,
 	"os_exec_capacity":	OS_EXEC_CAPACITY,
 	"os_exec_worker_count":	OS_EXEC_WORKER_COUNT,
 	"path":			PATH,
 	"process":		PROCESS,
 	"qdr_roll_duration":	QDR_ROLL_DURATION,
-	"query":		QUERY,
 	"query_duration":	QUERY_DURATION,
+	"query":		QUERY,
 	"result":		RESULT,
 	"row":			ROW,
 	"rows_affected":	ROWS_AFFECTED,
