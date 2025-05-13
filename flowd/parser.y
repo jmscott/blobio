@@ -2638,7 +2638,7 @@ func (l *yyLexState) wire_rel_op(left, op, right *ast) bool {
 		if left.brr_field == brr_BLOB_SIZE {
 			if right.yy_tok != UINT64 {
 				l.error(
-				  "%s.blob_size not compared to uint64",
+				  "%s.blob_size: not compared to uint64",
 							  left.tail.name)
 				return false
 			}
@@ -2654,7 +2654,7 @@ func (l *yyLexState) wire_rel_op(left, op, right *ast) bool {
 			op.uint64 = right.uint64
 		} else {
 			if right.yy_tok != STRING {
-				l.error("%s.%s not compared to string",
+				l.error("%s.%s: not compared to string",
 					left.tail.name, left.brr_field)
 				return false
 			}
@@ -2681,7 +2681,7 @@ func (l *yyLexState) wire_rel_op(left, op, right *ast) bool {
 			}
 			if err != nil {
 				l.error(
-				  "can not compile regexp: %s", right.string)
+				  "cannot compile regexp: %s", right.string)
 				return false
 			}
 		}
@@ -2689,8 +2689,8 @@ func (l *yyLexState) wire_rel_op(left, op, right *ast) bool {
 		//  <command>.exit_status == ...
 
 		if right.yy_tok != UINT64 {
-			l.error("%s.exit_status not compared to uint64",
-					  left.string)
+			l.error("%s.exit_status: not compared to uint64",
+					  left.command.name)
 			return false
 		}
 		if op.yy_tok == EQ {
@@ -2701,7 +2701,8 @@ func (l *yyLexState) wire_rel_op(left, op, right *ast) bool {
 		op.uint64 = right.uint64
 	case PROJECT_XDR_EXIT_STATUS:
 		if right.is_uint64() == false {
-			l.error("exit_status is not compared to uint64")
+			l.error("%s.exit_status: not compared to uint64",
+					left.command.name)
 			return false
 		}
 		if op.yy_tok == EQ {
@@ -2716,7 +2717,7 @@ func (l *yyLexState) wire_rel_op(left, op, right *ast) bool {
 			return false
 		}
 		if right.is_bool() == false {
-			l.error("sync map: is not compared to bool")
+			l.error("sync map: not compared to bool")
 			return false
 		}
 		if op.yy_tok == EQ {
