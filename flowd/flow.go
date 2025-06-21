@@ -288,8 +288,8 @@ type flow struct {
 
 	next chan flow_chan
 
-	//  channel is closed when all call()/queries have can make no
-	//  further progress
+	//  channel is closed when all call()/queries can make no further
+	//  progress
 
 	resolved chan struct{}
 
