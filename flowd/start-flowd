@@ -8,6 +8,8 @@
 #  Requires:
 #	gnu xargs
 #  Note:
+#	What uses this script? 
+#
 #	Ponder moving 'unset PGSYSCONFDIR' somewhere else.
 #	Only gocode/libpq croaks on defined PGSYSCONFDIR, so we can
 #	not put 'unset PGSYSCONFDIR' in etc/profile.
