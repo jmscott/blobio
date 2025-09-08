@@ -64,10 +64,10 @@ comm -3 <(fs2udig | sort) <(ls-service)					|
 	while read LINE;  do
 		case "$LINE" in
 		*[\>]*)
-			fs_count=$(($fs_count + 1))
+			service_count=$(($service_count + 1))
 			;;
 		*[\<]*)
-			service_count=$(($service_count + 1))
+			fs_count=$(($fs_count + 1))
 			;;
 		*)
 			die "can not match: $LINE"
@@ -76,8 +76,9 @@ comm -3 <(fs2udig | sort) <(ls-service)					|
 		log $LINE
 	done
 STATUS=${PIPESTATUS[*]}
+shopt -u lastpipe
 test "$STATUS" = '0 0 0 0' || die "comm fs/service failed: exit status=$STATUS"
 
 log 'file system in column <, service in column >'
-log "fs udig count: $fs_count"
-log "service udig count: $service_count"
+log "fs only udig count: $fs_count"
+log "service only udig count: $service_count"
