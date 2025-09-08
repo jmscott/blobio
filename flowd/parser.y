@@ -2,8 +2,7 @@
  *  Synopsis:
  *	Yacc grammar for 'flow' language.
  *  Note:
- *	The optimization for 'path = "true";' in command statement really ought
- *	ought to be 'path = true;'.
+ *	rename paser.y to pass1.y
  *
  *	action "parse" should abort for unused queries/commands/sync maps!
  *	currently aborts when server starts!
