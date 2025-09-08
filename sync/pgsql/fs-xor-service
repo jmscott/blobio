@@ -3,16 +3,15 @@
 #  Synopsis:
 #	Symmetric difference between the file system and service view.
 #  Usage:
-#	fs-xor-service >fs-xor-service.log 2>&1 &
-#	32 4 * * Sun sbin/fs-xor-service >>support/fs-xor-service/fxs.out 2>&1
-#  Note:
-#	- Option "--udig-file-path to save udigs for further eat/get.
+#	fs-xor-service >fs-xor-service.out
+#
+#	#  list udigs in both xor'ed sets
+#	grep ': [<>] [a-z]' fs-xor-service.out
 #
 
 START_TIME=$(date +%s)
 PROG=$(basename $0)
 
-TMP_COUNT=${TMPDIR:=/tmp}/$PROG-$$.wc
 declare  -i fs_count=0
 declare  -i service_count=0
 shopt -s lastpipe
@@ -35,7 +34,6 @@ die()
 
 leave()
 {
-	rm -f $TMP_COUNT || echo "ERROR: rm $TMP_COUNT failed: exit status=$?"
 	DURATION=$(expr $(date +%s) - $START_TIME)
 	log "good bye, cruel world: $(duration-english $DURATION) elapsed"
 }
@@ -58,7 +56,6 @@ log "PGUSER=$PGUSER"
 log "PGDATABASE=$PGDATABASE"
 
 log "PATH=$PATH"
-log "tmp count file: $TMP_COUNT"
 
 log "starting scan of $(pwd)/data/ ..."
 comm -3 <(fs2udig | sort) <(ls-service)					|
