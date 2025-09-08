@@ -3,7 +3,7 @@
  *	Schema that tracks blobs available in a service (bio4, fs, cache).
  *  Note:
  *	No function to get owner of current_database!  Need to write a function
- *	in future pgfabric system: pgfabic.database_owner()!
+ *	in future pgfabric system: pgfabic.:db_owner()!
  *
  *	Set COLLATIONS to C!  blob request records are by definition ascii.
  *
@@ -12,8 +12,16 @@
  */
 \set ON_ERROR_STOP on
 
-\echo UDIG SQL: :UDIG_PATH
-\echo DATABASE OWNER: :DBOWNER
+\echo get owner of current database
+SELECT
+        datdba::regrole AS db_owner
+  FROM
+        pg_database
+  WHERE
+        datname = current_database()
+;
+\gset
+\echo db_owner: :db_owner
 
 BEGIN TRANSACTION;
 
@@ -22,12 +30,15 @@ CREATE SCHEMA blobio;
 COMMENT ON SCHEMA blobio IS
   'Blobs in service and summaries of historical blob request records'
 ;
-ALTER SCHEMA blobio OWNER TO :DBOWNER;
+ALTER SCHEMA blobio OWNER TO :db_owner;
 
 \echo create udig type in schema blobio
 \echo include :UDIG_PATH
 SET search_path to blobio,public;
-\include :UDIG_PATH
+
+\echo including udig.sql
+\getenv PGHOME PGHOME
+\include :PGHOME/share/contrib/udig.sql
 
 ALTER TYPE udig SET SCHEMA blobio;
 
@@ -41,7 +52,7 @@ CREATE DOMAIN brr_duration AS interval
 COMMENT ON DOMAIN brr_duration IS
   'wall clock duration of a blob request'
 ;
-ALTER DOMAIN brr_duration OWNER TO :DBOWNER;
+ALTER DOMAIN brr_duration OWNER TO :db_owner;
 
 DROP DOMAIN IF EXISTS brr_timestamp CASCADE;
 CREATE DOMAIN brr_timestamp AS timestamptz
@@ -53,7 +64,7 @@ CREATE DOMAIN brr_timestamp AS timestamptz
 COMMENT ON DOMAIN brr_timestamp IS
   'starting time of request for a blob'
 ;
-ALTER DOMAIN brr_timestamp OWNER TO :DBOWNER;
+ALTER DOMAIN brr_timestamp OWNER TO :db_owner;
 
 DROP DOMAIN IF EXISTS ui63 CASCADE;
 CREATE DOMAIN ui63 AS bigint
@@ -65,7 +76,7 @@ CREATE DOMAIN ui63 AS bigint
 COMMENT ON DOMAIN ui63 IS
   'non null integer in range 0 <= 2^63 - 1'
 ;
-ALTER DOMAIN ui63 OWNER TO :DBOWNER;
+ALTER DOMAIN ui63 OWNER TO :db_owner;
 
 DROP DOMAIN IF EXISTS ui31 CASCADE;
 CREATE DOMAIN ui31 AS int
@@ -77,7 +88,7 @@ CREATE DOMAIN ui31 AS int
 COMMENT ON DOMAIN ui31 IS
   'non null integer in range 0 <= 2^31 - 1'
 ;
-ALTER DOMAIN ui31 OWNER TO :DBOWNER;
+ALTER DOMAIN ui31 OWNER TO :db_owner;
 
 DROP DOMAIN IF EXISTS ui15 CASCADE;
 CREATE DOMAIN ui15 AS smallint
@@ -89,7 +100,7 @@ CREATE DOMAIN ui15 AS smallint
 COMMENT ON DOMAIN ui15 IS
   'non null integer in range 0 <= 2^15 - 1'
 ;
-ALTER DOMAIN ui15 OWNER TO :DBOWNER;
+ALTER DOMAIN ui15 OWNER TO :db_owner;
 
 DROP DOMAIN IF EXISTS ui8 CASCADE;
 CREATE DOMAIN ui8 AS smallint
@@ -103,7 +114,7 @@ CREATE DOMAIN ui8 AS smallint
 COMMENT ON DOMAIN ui8 IS
   'non null integer in range 0 <= 2^8 - 1'
 ;
-ALTER DOMAIN ui8 OWNER TO :DBOWNER;
+ALTER DOMAIN ui8 OWNER TO :db_owner;
 
 DROP DOMAIN IF EXISTS brr_transport CASCADE;
 CREATE DOMAIN brr_transport AS text
@@ -116,7 +127,7 @@ CREATE DOMAIN brr_transport AS text
 COMMENT ON DOMAIN brr_transport IS
   'Network transport for a blob request record'
 ;
-ALTER DOMAIN brr_transport OWNER TO :DBOWNER;
+ALTER DOMAIN brr_transport OWNER TO :db_owner;
 
 DROP DOMAIN IF EXISTS brr_verb CASCADE;
 CREATE DOMAIN brr_verb AS text
@@ -137,7 +148,7 @@ CREATE DOMAIN brr_verb AS text
 COMMENT ON DOMAIN brr_verb IS
   'The 8 deadly verbs of a blob request record'
 ;
-ALTER DOMAIN brr_verb OWNER TO :DBOWNER;
+ALTER DOMAIN brr_verb OWNER TO :db_owner;
 
 DROP DOMAIN IF EXISTS brr_chat_history CASCADE;
 CREATE DOMAIN brr_chat_history AS text
@@ -156,7 +167,7 @@ CREATE DOMAIN brr_chat_history AS text
 COMMENT ON DOMAIN brr_chat_history IS
   'Blob Request Chat (ok/no) History'
 ;
-ALTER DOMAIN brr_chat_history OWNER TO :DBOWNER;
+ALTER DOMAIN brr_chat_history OWNER TO :db_owner;
 
 --  Note: create type forbids "NOT NULL" for a field
 
@@ -168,7 +179,7 @@ CREATE DOMAIN brr_udig AS blobio.udig CHECK (
 COMMENT ON DOMAIN brr_udig IS
   'A uniform digest in a blob request record (never null)'
 ;
-ALTER DOMAIN brr_udig OWNER TO :DBOWNER;
+ALTER DOMAIN brr_udig OWNER TO :db_owner;
 
 DROP TYPE IF EXISTS blob_request_record CASCADE;
 CREATE TYPE blob_request_record AS (
@@ -183,7 +194,7 @@ CREATE TYPE blob_request_record AS (
 COMMENT ON TYPE blob_request_record IS
   'A blob request record type'
 ;
-ALTER TYPE blob_request_record OWNER TO :DBOWNER;
+ALTER TYPE blob_request_record OWNER TO :db_owner;
 
 DROP DOMAIN IF EXISTS brr CASCADE;
 CREATE DOMAIN brr AS blob_request_record
@@ -218,7 +229,7 @@ CREATE DOMAIN brr AS blob_request_record
 COMMENT ON DOMAIN brr IS
   'Qualified Blob Request Record, (no quals in SQL TYPE blob_request record)'
 ;
-ALTER DOMAIN brr OWNER TO :DBOWNER;
+ALTER DOMAIN brr OWNER TO :db_owner;
 
 /*
  *  The immutable blob size AS observed in a brr record of an existing blob.
@@ -253,7 +264,7 @@ CREATE INDEX idx_brr_blob_size_hash
 	ON brr_blob_size USING hash(blob)
 ;
 CLUSTER brr_blob_size USING idx_brr_blob_size_byte_count;
-ALTER TABLE brr_blob_size OWNER TO :DBOWNER;
+ALTER TABLE brr_blob_size OWNER TO :db_owner;
 
 /*
  *  Earliest known existence of a blob.  Both the brr time
@@ -280,7 +291,7 @@ COMMENT ON COLUMN brr_discover.start_time
 CREATE INDEX idx_brr_discover_hash ON brr_discover USING hash(blob);
 CREATE INDEX idx_brr_discover_start_time ON brr_discover(start_time);
 CLUSTER brr_discover USING idx_brr_discover_start_time;
-ALTER TABLE brr_discover OWNER TO :DBOWNER;
+ALTER TABLE brr_discover OWNER TO :db_owner;
 
 /*
  *  Fetchable blobs with regard to the blobio network service.
@@ -297,7 +308,7 @@ COMMENT ON VIEW service
   IS
   	'all fetchable blobs managed by the server'
 ;
-ALTER VIEW service OWNER TO :DBOWNER;
+ALTER VIEW service OWNER TO :db_owner;
 
 /*
  *  Synopsis:
@@ -317,7 +328,7 @@ CREATE VIEW rummy AS
 COMMENT ON view rummy IS
   'Blobs with known unknown attributes'
 ;
-ALTER VIEW rummy OWNER TO :DBOWNER;
+ALTER VIEW rummy OWNER TO :db_owner;
 
 DROP FUNCTION IF EXISTS interval_terse_english(interval) CASCADE;
 CREATE OR REPLACE FUNCTION interval_terse_english(duration interval)
