@@ -8,14 +8,14 @@
 #  Note:
 #	- Option "--udig-file-path to save udigs for further eat/get.
 #
-#	- Would be nice display timestamps blobs, to quickly identify
-#	  blobs that arrived during scan.
-#
 
 START_TIME=$(date +%s)
 PROG=$(basename $0)
 
 TMP_COUNT=${TMPDIR:=/tmp}/$PROG-$$.wc
+declare  -i fs_count=0
+declare  -i service_count=0
+shopt -s lastpipe
 
 #
 #  Force sort command to honor case.
@@ -64,13 +64,23 @@ log "starting scan of $(pwd)/data/ ..."
 comm -3 <(fs2udig | sort) <(ls-service)					|
 	sed 's/^\t/> /' 						|
 	sed 's/^\([^>]\)/< \1/'						|
-	tee >(wc -l | awk '{print $1}' >$TMP_COUNT)			|
 	while read LINE;  do
+		case "$LINE" in
+		*[\>]*)
+			fs_count=$(($fs_count + 1))
+			;;
+		*[\<]*)
+			service_count=$(($service_count + 1))
+			;;
+		*)
+			die "can not match: $LINE"
+			;;
+		esac
 		log $LINE
 	done
 STATUS=${PIPESTATUS[*]}
-test "$STATUS" = '0 0 0 0 0'						||
-		die "comm fs/service failed: exit status=$STATUS"
+test "$STATUS" = '0 0 0 0' || die "comm fs/service failed: exit status=$STATUS"
 
 log 'file system in column <, service in column >'
-log "xor udig count: $(cat $TMP_COUNT)"
+log "fs udig count: $fs_count"
+log "service udig count: $service_count"
