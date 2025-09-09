@@ -1,12 +1,10 @@
 #!/usr/bin/env bash
 #
 #  Synopsis:
-#	Make the root dir tree for a remote service in $BLOBIO_ROOT/sync/remote
+#	Make files for remote service in $BLOBIO_ROOT/sync/remote/<tag>
 #  Usage:
-#	make-sync-remote <remote tag> <remote blobio service>
-#	make-sync-remote lct bio4:10.187.1.2:1797
-#  Note:
-#	The links back to $BLOBIO_ROOT/{bin,sbin,lib} should relative!
+#	make-sync-remote <tag>
+#	make-sync-remote lct
 #
 
 die()
@@ -19,7 +17,7 @@ _mkdir()
 {
 	D=$1
 	test -e $D && return 
-	mkdir -p $D || die "mkdir $D failed: exit status=$?"
+	mkdir --parents $D || die "mkdir $D failed: exit status=$?"
 	chmod u=rwx,g=rx,o= $D || die "chmod $D failed: exit status=$?"
 }
 
@@ -41,7 +39,7 @@ cd $BLOBIO_ROOT || die "cd $BLOBIO_ROOT failed: exit status=$?"
 #  make sync directories and symlinks to $BLOBIO_ROOT
 
 SYNC_ROOT=$BLOBIO_ROOT/sync/remote/$REMOTE_TAG
-test -d $SYNC_ROOT && die "refuse to overwrite remote dir: $SYNC_ROOT"
+test -d $SYNC_ROOT && die "refuse to clobber remote dir: $SYNC_ROOT"
 _mkdir $SYNC_ROOT
 
 cd $SYNC_ROOT || die "cd $SYNC_ROOT failed: exit status=$?"
