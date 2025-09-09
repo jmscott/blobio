@@ -8,6 +8,8 @@
 #	0	a single file $BLOBIO_ROOT/etc/*.flow exists and is readable
 #	1	file does not exist
 #	2	unexpected error
+#  Note:
+#	This script is a ugly.
 #
 
 die()
