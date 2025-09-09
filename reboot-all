@@ -5,17 +5,14 @@
 #  Usage:
 #	#  in crontab
 #	BLOBIO_ROOT=/usr/local/blobio
-#	LOG=$BLOBIO_ROOT/log/reboot-blobio.log
+#	LOG=$BLOBIO_ROOT/log/reboot-all.log
 #
-#	@reboot $BLOBIO_ROOTsbin/reboot-blobio >>$LOG 2>&1
-#  Note:
-#	inexact zapping of flowd process by zap-proc when the file
-#	run/flowd.pid is missing.
+#	@reboot $BLOBIO_ROOTsbin/reboot-all >>$LOG 2>&1
 #
 
 PROG=$(basename $0)
-FLOWD_PAUSE=4
-PKILL_PAUSE=4
+FLOWD_PAUSE=8
+PKILL_PAUSE=8
 
 log()
 {
@@ -42,10 +39,12 @@ test -n "$BLOBIO_ROOT" || die "environment variable not defined: BLOBIO_ROOT"
 log "BLOBIO_ROOT=$BLOBIO_ROOT"
 
 cd $BLOBIO_ROOT || die "cd $BLOBIO_ROOT failed"
+log "current direction: $(pwd)"
+
 . etc/profile
 
 log 'calling bio4d_ctl restart bio4d ...'
-log 'WARN: log messages out of order (ok)' 
+log 'log messages may be out of order (ok)' 
 bio4d_ctl restart || die "bio4d_ctl restart failed: exit status=$?"
 log 'bio4d_ctl restart ok'
 
@@ -64,10 +63,13 @@ case $STATUS in
 esac
 
 log 'starting flowd server in background ...'
-log 'WARN: log messages out of order (ok)'
+
 flowd server $FLOW_PATH &
 log "pausing $FLOWD_PAUSE sec while flowd starts ..."
 sleep $FLOWD_PAUSE
+
+#  Note: trust flowd to discern if an older flowd was running
+
 test -e run/flowd.pid || die "flowd failed to start in background"
 log "flowd pid: $(cat run/flowd.pid)"
 
