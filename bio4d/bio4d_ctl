@@ -57,7 +57,7 @@ cd $BLOBIO_ROOT || die "cd $BLOBIO_ROOT failed"
 
 case "$ACTION" in
 start)
-	log 'boot biod4 into background ...'
+	log 'boot bio4d into background ...'
 	sbin/boot-bio4d $BLOBIO_ROOT &
 
 	log "pausing $PAUSE sec while bio4d starts ..."

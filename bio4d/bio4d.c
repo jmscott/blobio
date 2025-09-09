@@ -1579,7 +1579,7 @@ gyr_rrd()
 	ui64 red_count = signal_count + fault_count;
 	ui64 recent_red_count = red_count - red_count_prev;
 
-	//  only update run/biod4.gyr when stats change.
+	//  only update run/bio4d.gyr when stats change.
 
 	if (recent_green_count || recent_yellow_count || recent_red_count) {
 
