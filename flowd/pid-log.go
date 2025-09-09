@@ -89,7 +89,6 @@ func boot_pid_log() (is_stale bool) {
 		if err != nil {
 			croak("os.Remove(pid log) failed: %s", err)
 		}
-		os.Remove("run/flowd.gyr")
 	} else if !os.IsNotExist(err) {
 		croak("os.Stat(pid log) failed: %s", err)
 	}
