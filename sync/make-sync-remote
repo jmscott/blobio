@@ -68,7 +68,9 @@ FLOW=etc/sync-$REMOTE_TAG.flow
 
 FLOW_EXAMPLE=$BLOBIO_ROOT/lib/sync-remote.flow.example
 test -r $FLOW_EXAMPLE || die "can not read flow example: $FLOW_EXAMPLE"
-cp $FLOW_EXAMPLE $FLOW || die "cp flow.example -> etc/ failed: exit status=$?"
+cp --force --verbose $FLOW_EXAMPLE $FLOW				||
+		die "cp flow.example -> etc/ failed: exit status=$?"
+chmod u=rw,g=r,o= $FLOW || die "chmod etc/flow failed: exit status=$?"
 
 #  default profile just dots in local profile and resets BLOBIO_ROOT
 
@@ -76,6 +78,7 @@ cat >etc/profile <<END || die "cat >etc/profile failed: exit status=$?"
 . ../../../etc/profile
 export BLOBIO_ROOT=../../..
 END
+chmod u=rw,g=r,o= etc/profile || die "chmod etc/profile failed: exit status=$?"
 
 cat <<END
 
