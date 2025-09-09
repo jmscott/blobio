@@ -50,8 +50,8 @@ _mkdir log
 _mkdir run
 _mkdir spool
 _mkdir data
->$SYNC_ROOT/spool/biod4.brr						||
-	die "echo >spool/biod4.brr failed: exit status=$?"
+>$SYNC_ROOT/spool/bio4d.brr						||
+	die "echo >spool/bio4d.brr failed: exit status=$?"
 _mkdir tmp
 
 _ln_root sbin
