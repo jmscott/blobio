@@ -26,7 +26,9 @@ _mkdir()
 _ln_root()
 {
 	DIR=../../../$1
-	ln -s $DIR . || die "ln -s $DIR . failed: exit status=$?"
+	TGT=$(dirname $1)
+	ln --symbolic --relative $DIR $TGT				||
+				die "ln -s $DIR $TGT failed: exit status=$?"
 }
 
 test $# = 2 || die "wrong number of arguments: got $#, expected 2"
@@ -60,6 +62,7 @@ _mkdir etc
 _mkdir log
 _mkdir run
 _mkdir spool
+_mkdir data
 >$SYNC_ROOT/spool/biod4.brr						||
 	die "echo >spool/biod4.brr failed: exit status=$?"
 _mkdir tmp
@@ -67,7 +70,9 @@ _mkdir tmp
 _ln_root sbin
 _ln_root bin
 _ln_root lib
-_ln_root data
+
+#  link the fs blobs but NOT the other files in data/, such as flowd.[qxf]dr
+_ln_root data/fs_*
 
 #  build a default flow file from the example file in
 #  $BLOBIO_ROOT/lib/sync-remote.flow.example .
@@ -93,8 +98,15 @@ END
 cat <<END
 
 Important:
-	Remember to update the flow file in $BLOBIO_ROOT/etc/blobio.flow.
-	Request records in $BLOBIO_ROOT/spool are now copied to to
+	Remember to update the flow file in
+
+		$BLOBIO_ROOT/etc/blobio.flow.
+
+	so request records in
+
+		$BLOBIO_ROOT/spool
+
+	are copied to to
 
 		$SYNC_ROOT/spool
 
