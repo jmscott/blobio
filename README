@@ -110,7 +110,7 @@ Description:
 
 		verb			#  get|put|give|take|wrap|roll|eat|cat
 
-		udig			#  algorithm:digest
+		blob			#  algorithm:digest
 					#    ALGO_re=[a-z][a-z0-9]{0,7}
 					#    DIGEST_re=[[:graph:]]{32,128}
 					#    /$ALGO_re:$DIGEST_re/
@@ -170,7 +170,7 @@ Description:
 		(8+1+160)	+ 1 +	#  transport
 					#    /[a-z][a-z0-9]{7}~[[:graph:]]{160}/
 		(4 + 1 + 19)	+ 1 +	#  verb=give
-		(8+1+128)	+ 1 +	#  udig
+		(8+1+128)	+ 1 +	#  blob
 		                        #    /[a-z][a-z0-9]{7}:[[:graph:]]{128}
 		(8)		+ 1 +	#  chat history 
 		                        #    /(ok,ok,(ok|no)/
@@ -303,11 +303,11 @@ Proposed Byte Count Added to Protocol Flow (not implemented):
 	Problematically, the <verb>.ui63 request leaks info about the blob.
 
 Protocol Questions:
-        - think about a "cat" command that allows the server to "prove" the existence 
-	   of a set of blobs on a remote server.  the obvious technique would be for
-	   the cliet "cat" to send the udig of a list of blobs to the server, for which
-	   the server replies with the digest of the cancatenation of the blobs in the
-	   sent udig list.
+        - think about a "cat" command that allows the server to "prove"
+	  the existence of a set of blobs on a remote server.  the obvious
+	  technique would be for the verb "cat" to send the udig of a list of
+	  blobs to the server, for which the server replies with the digest of
+	  the cancatenation of the blobs in the sent udig list.
 
 Billing Model Questions:
 	- what to measure per billing cycle:
