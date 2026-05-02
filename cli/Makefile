@@ -38,7 +38,7 @@ install: all
 	cd blobio && $(_MAKE) install
 clean:
 	cd blobio && $(_MAKE) clean
-	rm -fv $(COMPILEs)
+	rm -fv $(COMPILEs) *.o
 distclean:
 	cd blobio && $(_MAKE) distclean
 	test -d $(DIST_ROOT)/bin && (cd $(DIST_ROOT)/bin && rm -f $(BINs))
