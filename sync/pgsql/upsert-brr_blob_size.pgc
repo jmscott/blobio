@@ -1,0 +1,78 @@
+/*
+ *  Synopsis:
+ *	Merge a blob size into table brr_blob_size
+ */
+#include <fcntl.h>
+#include <stdlib.h>
+#include <unistd.h>
+
+#include <stdio.h>
+
+#include "jmscott/libjmscott.h"
+
+#define EXIT_OK		0
+#define EXIT_BAD	1
+
+char *jmscott_progname = "upsert-all-extract_pages_utf8";
+static char *usage =
+        "upsert-all-extract_pages_utf8 <tsvector config> <pdf-udig>"
+;
+
+//  ignore these sql warnings
+
+extern int jmscott_ecpg_error_code;
+extern int jmscott_ecpg_warn_code;
+
+static struct jmscott_ecpg_state_fault no_warns[] =
+{
+        {"02000",       -1},    //  no data found due to upsert conflict
+        {"54000",       -1},    //  word is too long to be indexed
+        {(char *)0,     -1}
+};
+
+static void
+die2(char *msg1, char *msg2)
+{
+        jmscott_die2(EXIT_BAD, msg1, msg2);
+}
+
+int
+main(int argc, char **argv)
+{
+EXEC SQL BEGIN DECLARE SECTION;
+	char *blob;
+	unsigned long long byte_count = 0;
+EXEC SQL END DECLARE SECTION;
+
+	if (--argc != 2)
+		jmscott_die_argc(EXIT_BAD, argc, 2, usage);
+	close(0);
+	close(1);
+
+	jmscott_ecpg_error_code = jmscott_ecpg_warn_code = 1;
+
+	//  frisk the blob udig from argv[1]
+
+        blob = argv[1];
+        char *err;
+        if ((err = jmscott_frisk_udig(blob)))
+                die2("can not parse udig", blob);
+	
+	//  parse the blob size in argv[2]
+	if ((err = jmscott_a2ui63(argv[2], &byte_count)))
+		die2("can not parse byte count", argv[1]);
+
+	EXEC SQL WHENEVER SQLERROR CALL jmscott_ecpg_error(
+                (struct jmscott_ecpg_state_fault *)0
+        );
+	EXEC SQL WHENEVER SQLWARNING CALL jmscott_ecpg_warning(no_warns);
+        EXEC SQL CONNECT TO default;
+
+	EXEC SQL INSERT INTO
+		blobio.brr_blob_size(blob, byte_count)
+		VALUES(:blob, :byte_count)
+	  ON CONFLICT
+	  	DO NOTHING
+	;
+	EXEC SQL COMMIT;
+}
