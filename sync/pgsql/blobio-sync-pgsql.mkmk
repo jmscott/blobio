@@ -27,6 +27,7 @@
 COMPILEs="
 	jaccard
 	jaccard-tip
+	upsert-brr_blob_size
 "
 
 LIBs="
@@ -80,6 +81,7 @@ SBINs="
 SRCs="
 	jaccard-tip.go
 	jaccard.go
+	upsert-brr_blob_size.pgc
 "
 
 #  Uncomment to create attic/ directory

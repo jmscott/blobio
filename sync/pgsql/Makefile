@@ -55,3 +55,14 @@ world:
 	$(MAKE) $(MFLAGS) install
 tar:
 	make-make tar $(MKMK)
+
+upsert-brr_blob_size: upsert-brr_blob_size.pgc
+	ecpg upsert-brr_blob_size.pgc
+	$(CC) $(CFLAGS) 						\
+		-I$(JMSCOTT_INC)					\
+		-I$(PGINC) 						\
+		upsert-brr_blob_size.c					\
+		-o upsert-brr_blob_size					\
+		-L$(JMSCOTT_ROOT)/lib -ljmscott				\
+		-L$(PGLIB) -lecpg
+	rm upsert-brr_blob_size.c
