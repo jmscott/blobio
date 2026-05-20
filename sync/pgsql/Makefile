@@ -66,3 +66,14 @@ upsert-brr_blob_size: upsert-brr_blob_size.pgc
 		-L$(JMSCOTT_ROOT)/lib -ljmscott				\
 		-L$(PGLIB) -lecpg
 	rm upsert-brr_blob_size.c
+
+exists-brr_blob_size: exists-brr_blob_size.pgc
+	ecpg exists-brr_blob_size.pgc
+	$(CC) $(CFLAGS) 						\
+		-I$(JMSCOTT_INC)					\
+		-I$(PGINC) 						\
+		exists-brr_blob_size.c					\
+		-o exists-brr_blob_size					\
+		-L$(JMSCOTT_ROOT)/lib -ljmscott				\
+		-L$(PGLIB) -lecpg
+	rm exists-brr_blob_size.c

@@ -27,6 +27,7 @@
 COMPILEs="
 	jaccard
 	jaccard-tip
+	exists-brr_blob_size
 	upsert-brr_blob_size
 "
 
@@ -81,6 +82,7 @@ SBINs="
 SRCs="
 	jaccard-tip.go
 	jaccard.go
+	exists-brr_blob_size.pgc
 	upsert-brr_blob_size.pgc
 "
 
