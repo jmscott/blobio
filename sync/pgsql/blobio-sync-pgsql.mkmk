@@ -25,10 +25,12 @@
 #)
 
 COMPILEs="
+	exists-brr_blob_size
+	exists-brr_discover
 	jaccard
 	jaccard-tip
-	exists-brr_blob_size
 	upsert-brr_blob_size
+	upsert-brr_discover
 "
 
 LIBs="
@@ -56,6 +58,8 @@ SBINs="
 	cron-rummy
 	cron-rummy-yesterday
 	eat-unroll.sql
+	exists-brr_blob_size
+	exists-brr_discover
 	fs-get
 	fs-xor-service
 	jaccard
@@ -64,6 +68,8 @@ SBINs="
 	minus-service
 	not-in-service
 	rummy-txn
+	upsert-brr_blob_size
+	upsert-brr_discover
 "
 
 #  Uncomment to create tmp/ directory
@@ -80,10 +86,12 @@ SBINs="
 
 #  Uncomment to create src/ directory
 SRCs="
+	exists-brr_blob_size.pgc
+	exists-brr_discover.pgc
 	jaccard-tip.go
 	jaccard.go
-	exists-brr_blob_size.pgc
 	upsert-brr_blob_size.pgc
+	upsert-brr_discover.pgc
 "
 
 #  Uncomment to create attic/ directory

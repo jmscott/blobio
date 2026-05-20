@@ -276,7 +276,7 @@ CREATE TABLE brr_discover
 	blob		blobio.udig
 				PRIMARY KEY,
 	/*
-	 *  Start time in blob request record.
+	 *  Earliest sen start time in blob request record.
 	 */
 	start_time	brr_timestamp NOT NULL
 );

@@ -61,8 +61,9 @@ EXEC SQL END DECLARE SECTION;
 	//EXEC SQL WHENEVER SQLWARNING CALL jmscott_ecpg_warning(no_warns);
         EXEC SQL CONNECT TO default;
 
+	EXEC SQL SET search_path TO blobio;
 	EXEC SQL INSERT INTO
-		blobio.brr_blob_size(blob, byte_count)
+		brr_blob_size(blob, byte_count)
 		VALUES(:blob, :byte_count)
 	  ON CONFLICT
 	  	DO NOTHING

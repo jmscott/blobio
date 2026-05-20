@@ -1,10 +1,9 @@
 /*
  *  Synopsis:
- *	Does a tuple exist in table brr_blob_size.
+ *	Upsert the oldest time of a blob was seen in a brr record.
  *  Exit Codes:
- *	0	tuple exists
- *	1	tuple does not exist
- *	2	unexpected error
+ *	0	tuple upserted ok
+ *	1	unexpected error
  */
 #include <fcntl.h>
 #include <stdlib.h>
@@ -14,15 +13,21 @@
 
 #include "jmscott/libjmscott.h"
 
-#define EXIT_EXIST		0
-#define EXIT_NOEXIST		1
-#define EXIT_BAD		2
+#define EXIT_EXISTS		0
+#define EXIT_BAD		1
 
-char *jmscott_progname = "exist-brr_blob_size";
-static char *usage = "exist-brr_blob_count.pgc <udig>";
+char *jmscott_progname = "upsert-brr_discover";
+static char *usage = "upsert-brr_discover <udig> <start_time>"
+;
 
 extern int jmscott_ecpg_error_code;
 extern int jmscott_ecpg_warn_code;
+
+static void
+die(char *msg)
+{
+        jmscott_die(EXIT_BAD, msg);
+}
 
 static void
 die2(char *msg1, char *msg2)
@@ -35,11 +40,11 @@ main(int argc, char **argv)
 {
 EXEC SQL BEGIN DECLARE SECTION;
 	char *blob;
-	bool blob_exists;
+	char  *start_time;
 EXEC SQL END DECLARE SECTION;
 
-	if (--argc != 1)
-		jmscott_die_argc(EXIT_BAD, argc, 1, usage);
+	if (--argc != 2)
+		jmscott_die_argc(EXIT_BAD, argc, 2, usage);
 	close(0);
 	close(1);
 
@@ -52,26 +57,25 @@ EXEC SQL END DECLARE SECTION;
         if ((err = jmscott_frisk_udig(blob)))
                 die2("can not parse udig", blob);
 	
+	start_time = argv[2];
+	if (!start_time[0])
+		die("empty start time");
+
 	EXEC SQL WHENEVER SQLERROR CALL jmscott_ecpg_error(
                 (struct jmscott_ecpg_state_fault *)0
         );
+
         EXEC SQL CONNECT TO default;
 
-	EXEC SQL
-		SET search_path TO blobio
-	;
-	EXEC SQL
-	  SELECT EXISTS (
-	    SELECT
-	  	byte_count
-	    FROM
-	    	brr_blob_size
+	EXEC SQL SET search_path TO blobio;
+	EXEC SQL INSERT INTO
+		brr_discover(blob, start_time)
+		VALUES(:blob, :start_time::brr_timestamp)
+	  ON CONFLICT (blob) DO UPDATE 
+	    SET
+	    	start_time = :start_time::brr_timestamp
 	    WHERE
-	    	blob = :blob
-	  ) INTO :blob_exists
+	    	EXCLUDED.start_time > :start_time::brr_timestamp
 	;
 	EXEC SQL COMMIT;
-	if (blob_exists)
-		exit(EXIT_EXIST);
-	exit(EXIT_NOEXIST);
 }

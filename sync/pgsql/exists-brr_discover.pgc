@@ -1,6 +1,6 @@
 /*
  *  Synopsis:
- *	Does a tuple exist in table brr_blob_size.
+ *	Does a tuple exist in table brr_discover.
  *  Exit Codes:
  *	0	tuple exists
  *	1	tuple does not exist
@@ -18,7 +18,7 @@
 #define EXIT_NOEXIST		1
 #define EXIT_BAD		2
 
-char *jmscott_progname = "exist-brr_blob_size";
+char *jmscott_progname = "exist-brr_discover";
 static char *usage = "exist-brr_blob_count.pgc <udig>";
 
 extern int jmscott_ecpg_error_code;
@@ -63,9 +63,9 @@ EXEC SQL END DECLARE SECTION;
 	EXEC SQL
 	  SELECT EXISTS (
 	    SELECT
-	  	byte_count
+	  	start_time
 	    FROM
-	    	brr_blob_size
+	    	brr_discover
 	    WHERE
 	    	blob = :blob
 	  ) INTO :blob_exists

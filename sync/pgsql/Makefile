@@ -66,6 +66,16 @@ upsert-brr_blob_size: upsert-brr_blob_size.pgc
 		-L$(JMSCOTT_ROOT)/lib -ljmscott				\
 		-L$(PGLIB) -lecpg
 	rm upsert-brr_blob_size.c
+upsert-brr_discover: upsert-brr_discover.pgc
+	ecpg upsert-brr_discover.pgc
+	$(CC) $(CFLAGS) 						\
+		-I$(JMSCOTT_INC)					\
+		-I$(PGINC) 						\
+		upsert-brr_discover.c					\
+		-o upsert-brr_discover					\
+		-L$(JMSCOTT_ROOT)/lib -ljmscott				\
+		-L$(PGLIB) -lecpg
+	rm upsert-brr_discover.c
 
 exists-brr_blob_size: exists-brr_blob_size.pgc
 	ecpg exists-brr_blob_size.pgc
@@ -77,3 +87,14 @@ exists-brr_blob_size: exists-brr_blob_size.pgc
 		-L$(JMSCOTT_ROOT)/lib -ljmscott				\
 		-L$(PGLIB) -lecpg
 	rm exists-brr_blob_size.c
+
+exists-brr_discover: exists-brr_discover.pgc
+	ecpg exists-brr_discover.pgc
+	$(CC) $(CFLAGS) 						\
+		-I$(JMSCOTT_INC)					\
+		-I$(PGINC) 						\
+		exists-brr_discover.c					\
+		-o exists-brr_discover					\
+		-L$(JMSCOTT_ROOT)/lib -ljmscott				\
+		-L$(PGLIB) -lecpg
+	rm exists-brr_discover.c
