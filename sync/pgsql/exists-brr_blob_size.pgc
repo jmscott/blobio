@@ -1,6 +1,6 @@
 /*
  *  Synopsis:
- *	Upsert a tuple into table brr_blob_size.
+ *	Does a tuple exist in table brr_blob_size.
  *  Exit Codes:
  *	0	tuple exists
  *	1	tuple does not exist
