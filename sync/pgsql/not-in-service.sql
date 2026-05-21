@@ -20,6 +20,7 @@ CREATE UNIQUE INDEX idx_not_in_service
 ;
 ANALYZE not_in_service;
 
+SET search_path TO blobio;
 SELECT
 	blob
   FROM
@@ -28,7 +29,7 @@ SELECT
     SELECT
     	srv.blob
     FROM
-    	blobio.service srv
+    	service srv
     WHERE
     	srv.blob = ns.blob
   )

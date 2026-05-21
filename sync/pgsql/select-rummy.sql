@@ -2,15 +2,17 @@
  *  Synopsis:
  *	Find all blobs in postgres blobio.service with missing data.
  *  Usage:
- *	psql -f select-rummy-since.sql
+ *	psql --file select-rummy-since.sql --quiet ...
  *  See:
  *	sbin/cron-rummy
  */
+SET search_path TO blobio;
+
 SELECT
 	srv.blob
   FROM
-  	blobio.service srv
-	  LEFT OUTER JOIN blobio.brr_blob_size sz ON (sz.blob = srv.blob)
+  	service srv
+	  LEFT OUTER JOIN brr_blob_size sz ON (sz.blob = srv.blob)
   WHERE
 	sz.blob IS null
 ;
