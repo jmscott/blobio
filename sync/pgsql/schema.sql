@@ -2,6 +2,8 @@
  *  Synopsis:
  *	Schema that tracks blobs available in a service (bio4, fs, cache).
  *  Note:
+ *	Remove ,public from SET search_path.  Should just be blobio.
+ *
  *	No function to get owner of current_database!  Need to write a function
  *	in future pgfabric system: pgfabic.:db_owner()!
  *
