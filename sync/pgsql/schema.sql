@@ -36,7 +36,7 @@ ALTER SCHEMA blobio OWNER TO :db_owner;
 
 \echo create udig type in schema blobio
 \echo include :UDIG_PATH
-SET search_path to blobio,public;
+SET search_path to blobio;
 
 \echo including udig.sql
 \getenv PGHOME PGHOME
