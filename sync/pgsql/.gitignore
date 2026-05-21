@@ -2,5 +2,6 @@ exists-brr_blob_size
 exists-brr_discover
 jaccard
 jaccard-tip
+spool
 upsert-brr_blob_size
 upsert-brr_discover
