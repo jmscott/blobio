@@ -56,12 +56,7 @@ define command upsert_brr_blob_size as {
 	path:	"sbin/upsert-brr_blob_size"
 };
 
-define command write_tty as {
-	path:	"/Users/jmscott/src/github.com/jmscott/play/floq/write-tty"
-};
-
 flow next_brr();
-run write_tty("hi from tty");
 
 run exists_brr_discover(next_brr.blob)
   when
