@@ -34,6 +34,7 @@ COMPILEs="
 "
 
 LIBs="
+	blobio.floq.example
 	blobio.flow.example
 	bug-cast_jsonb_brr.sql
 	eat-unroll.sql
