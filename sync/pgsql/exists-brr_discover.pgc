@@ -24,6 +24,12 @@ static char *usage = "exist-brr_blob_count.pgc <udig>";
 extern int jmscott_ecpg_error_code;
 extern int jmscott_ecpg_warn_code;
 
+static struct jmscott_ecpg_state_fault no_warn[] =
+{
+	{"02000", 0},         //  no data for conflict on upsert/insert
+	{(char *)0, 0}
+};
+
 static void
 die2(char *msg1, char *msg2)
 {
@@ -52,6 +58,7 @@ EXEC SQL END DECLARE SECTION;
         if ((err = jmscott_frisk_udig(blob)))
                 die2("can not parse udig", blob);
 	
+	EXEC SQL WHENEVER SQLWARNING CALL jmscott_ecpg_warning(no_warn);
 	EXEC SQL WHENEVER SQLERROR CALL jmscott_ecpg_error(
                 (struct jmscott_ecpg_state_fault *)0
         );

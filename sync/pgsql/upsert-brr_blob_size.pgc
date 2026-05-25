@@ -23,6 +23,12 @@ static char *usage = "upsert-brr_blob_size <udig> <byte-count>"
 extern int jmscott_ecpg_error_code;
 extern int jmscott_ecpg_warn_code;
 
+static struct jmscott_ecpg_state_fault no_warn[] =
+{
+	{"02000", 0},         //  no data for conflict on upsert/insert
+	{(char *)0, 0}
+};
+
 static void
 die2(char *msg1, char *msg2)
 {
@@ -55,17 +61,17 @@ EXEC SQL END DECLARE SECTION;
 	if ((err = jmscott_a2ui63(argv[2], &byte_count)))
 		die2("can not parse byte count", argv[1]);
 
+	EXEC SQL WHENEVER SQLWARNING CALL jmscott_ecpg_warning(no_warn);
 	EXEC SQL WHENEVER SQLERROR CALL jmscott_ecpg_error(
                 (struct jmscott_ecpg_state_fault *)0
         );
-	//EXEC SQL WHENEVER SQLWARNING CALL jmscott_ecpg_warning(no_warns);
         EXEC SQL CONNECT TO default;
 
 	EXEC SQL SET search_path TO blobio;
 	EXEC SQL INSERT INTO
 		brr_blob_size(blob, byte_count)
 		VALUES(:blob, :byte_count)
-	  ON CONFLICT
+	  ON CONFLICT (blob)
 	  	DO NOTHING
 	;
 	EXEC SQL COMMIT;
