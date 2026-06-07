@@ -2,6 +2,8 @@
  *  Synopsis:
  *	Driver for a fast, trusted posix file system blobio service.
  *  Note:
+ *	io_timeout not honored for all reads()! 
+ *
  *	Review chat history construction.
  *
  *	Double check default (0777) dir perms in various mkdir calls.
