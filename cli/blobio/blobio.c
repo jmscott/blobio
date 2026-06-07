@@ -200,7 +200,7 @@ Options:\n\
 	--udig          algorithm:digest for get/put/give/take/eat/empty/roll\n\
 	--algorithm     algorithm name for local eat request\n\
 	--trace		deep trace to standard error\n\
-	--io-timeout	read/write() timeouts.\n\
+	--io-timeout	network only read/write() timeouts.\n\
 	--help\n\
 Service Query Args:\n\
 	algo	hash algorithm for wrap verb [sha|btc20]\n\
@@ -655,7 +655,7 @@ parse_argv(int argc, char **argv)
 			if (ull > 255)
 				eopt(a, "seconds > 255");
 			io_timeout = ull;
-			TRACE2("timeout seconds", argv[i])
+			TRACE2("io timeout seconds", argv[i])
 		} else if (strcmp("help", a) == 0) {
 			help();
 		} else
