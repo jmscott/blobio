@@ -5,8 +5,9 @@
  *	cd /usr/local/blobio
  *	sbin/bio4d
  *  Note:
- *	Getting an empty blob should always be true and never depend upon the
- *	underlying service driver!
+ *	Clarify behavior when network interface goes up or down.  The listen
+ *	socket is bound to *.  I (jmscott) recall reading of a POSIX signal
+ *	for network interface change but find no documentation now.
  *
  *	upon boot the bio4d process should create {data/fs_*} dirs,
  *	since, technically, only bio4d knows the supported algorithms for
@@ -1738,7 +1739,7 @@ open_listen( unsigned short port)
 	 */
 	listen_fd = socket(PF_INET, SOCK_STREAM, IPPROTO_TCP);
 	if (listen_fd < 0)
-		die2("socket(PF_INET) failed", strerror(errno));
+		die2("socket(listen) failed", strerror(errno));
 	/*
 	 *  Allow the listen socket to bind to an address:port for which 
 	 *  "ACTIVE" connections still exist. Typically these connections
