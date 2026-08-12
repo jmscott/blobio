@@ -190,6 +190,8 @@ roll_log_Dow()
 	time(&now_t);
 	now = localtime(&now_t);
 
+	//  Heartbeat implies log not idle for a week.
+
 	if (now->tm_wday == log_dow)
 		return;
 
