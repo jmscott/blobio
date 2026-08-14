@@ -14,24 +14,18 @@
  *  Exit Status:
  *	0	ok, append succeeded
  *	1	append failed
- *  See:
- *	https://github.com/jmscott/work/blob/master/RFC3339Nano.c
  *  Note:
- *	Need to rewrite using $JMSCOTT_ROOT/lib/libjmscott.a!
+ *  	- No syntax checking is done on the fields of the blob request record.
+ *  	  Only field sizes and char set sare checked.
  *
- *  	No syntax checking is done on the fields of the blob request record.
- *  	Only field sizes are checked.
- *
- *	O_CREAT must be an option on the file open, otherwise rolling the file
- *	is problemmatic.  For example, without O_CREAT, the following
- *	trivial roll will fail for each append()
+ *	- O_CREAT must be an option on the file open, otherwise rolling the file
+ *	  is problemmatic.  For example, without O_CREAT, the following
+ *	  trivial roll will fail for each append()
  *
  *		mv pdf.log pdf-$(date +'%a').log
  *		#  window when an error in append-brr could occur
  *
- *	since pdf.log disappears briefly.
- *
- *	Consider replacing write() with writev().
+ *	  since pdf.log disappears briefly.
  */
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -54,6 +48,27 @@ char	*jmscott_progname = "append-brr";
 #define MIN_BRR		35
 #define MAX_BRR		419
 
+void
+die(char *msg)
+{
+	jmscott_die2(1, "ERROR", msg);
+	/*NOTREACHED*/
+}
+
+void
+die2(char *msg1, char *msg2)
+{
+	jmscott_die3(1, "ERROR", msg1, msg2);
+	/*NOTREACHED*/
+}
+
+void
+die3(char *msg1, char *msg2, char *msg3)
+{
+	jmscott_die4(1, "ERROR", msg1, msg2, msg3);
+	/*NOTREACHED*/
+}
+
 /*
  *  open() a file.
  */
@@ -64,12 +79,7 @@ _open(char *path, int oflag, int mode)
 
 	fd = jmscott_open(path, oflag, mode);
 	if (fd < 0)
-		jmscott_die3(
-			EXIT_BAD_OPEN,
-			"open() failed",
-			strerror(errno),
-			path
-		);
+		die3("open() failed", strerror(errno), path);
 	return fd;
 }
 
@@ -88,19 +98,14 @@ arg2brr(char *name, char *arg, size_t min_len, int size, char **brr)
 	int n;
 
 	if (strlen(arg) < min_len)
-		jmscott_die3(EXIT_BAD_BRR, "argument too short", name, arg);
+		die3("argument too short", name, arg);
 	n = 0;
 	src = arg;
 	tgt = *brr;
 	while (*src && n++ < size)
 		*tgt++ = *src++;
 	if (n >= size && *src)
-		jmscott_die3(
-			EXIT_BAD_BRR,
-			"arg too big for brr field",
-			name,
-			arg
-		); 
+		die3("arg too big for brr field", name, arg); 
 	*tgt++ = '\t';
 	*brr = tgt;
 }
@@ -122,12 +127,7 @@ in_char_set(char *name, char *arg, char *set)
 			sp++;
 		}
 		if (*sp == 0)
-			jmscott_die3(
-				EXIT_BAD_BRR,
-				name,
-				"illegal char exists",
-				arg
-			);
+			die3(name, "illegal char exists", arg);
 	}
 }
 
@@ -142,17 +142,17 @@ is_start_time(char *arg, char **brr)
 
 	arg2brr(nm, arg, 26,  10+1+8+1+9+1+6, brr);
 	if (arg[4] != '-')
-		jmscott_die3(EXIT_BAD_BRR, nm, "dash not at pos 5", arg);
+		die3(nm, "dash not at pos 5", arg);
 	if (arg[7] != '-')
-		jmscott_die3(EXIT_BAD_BRR, nm, "dash not at pos 7", arg);
+		die3(nm, "dash not at pos 7", arg);
 	if (arg[10] != 'T')
-		jmscott_die3(EXIT_BAD_BRR, nm, "T not at pos 11", arg);
+		die3(nm, "T not at pos 11", arg);
 	if (arg[13] != ':')
-		jmscott_die3(EXIT_BAD_BRR, nm, "colon not at pos 14", arg);
+		die3(nm, "colon not at pos 14", arg);
 	if (arg[16] != ':')
-		jmscott_die3(EXIT_BAD_BRR, nm, "colon not at pos 17", arg);
+		die3(nm, "colon not at pos 17", arg);
 	if (arg[19] != '.')
-		jmscott_die3(EXIT_BAD_BRR, nm, "colon not at pos 20", arg);
+		die3(nm, "colon not at pos 20", arg);
 	in_char_set(nm, arg, start_time_set);
 }
 
@@ -165,37 +165,27 @@ is_transport(char *arg, char **brr)
 	arg2brr(nm, arg, 3, 8+1+128, brr);
 	a = arg;
 	if (*a < 'a' || *a > 'z')
-		jmscott_die3(EXIT_BAD_BRR, nm, "protocol not ^[a-z]", arg);
+		die3(nm, "protocol not ^[a-z]", arg);
 	a++;
 
 	//  check chars in protocol
 
 	while ((c = *a) && c != '~') {
 		if (a - arg > 7)
-			jmscott_die3(
-				EXIT_BAD_BRR,
-				nm,
-				"protocol > 8 characters",
-				arg
-			);
+			die3(nm, "protocol > 8 characters", arg);
 		if (!isdigit(c) && !islower(c))
-			jmscott_die3(
-				EXIT_BAD_BRR,
-				nm,
-				"protocol not [a-z0-9]",
-				arg
-			);
+			die3(nm, "protocol not [a-z0-9]", arg);
 		a++;
 	}
 	if (c == 0)
-		jmscott_die3(EXIT_BAD_BRR, nm, "tilda not seen", arg);
+		die3(nm, "tilda not seen", arg);
 	a++;
 	if (strlen(a) > 128)
-		jmscott_die3(EXIT_BAD_BRR, nm, "flow: length > 128", arg);
+		die3(nm, "flow: length > 128", arg);
 
 	while ((c = *a++))
 		if (!isgraph(c) || !isascii(c))
-			jmscott_die3(EXIT_BAD_BRR, nm, "flow: bad char", arg);
+			die3(nm, "flow: bad char", arg);
 }
 
 static void
@@ -208,36 +198,31 @@ is_udig(char *arg, char **brr)
 	arg2brr(nm, arg, 1 + 1 + 28, 8+1+128, brr);
 	a = arg;
 	if (*a < 'a' || *a > 'z')
-		jmscott_die3(EXIT_BAD_BRR, nm, "algorithm not ^[a-z]", arg);
+		die3(nm, "algorithm not ^[a-z]", arg);
 	a++;
 
 	//  check digits in algorithm
 
 	while ((c = *a) && c != ':') {
 		if (a - arg > 7)
-			jmscott_die3(
-				EXIT_BAD_BRR,
-				nm,
-				"algorithm > 8 characters",
-				arg
-			);
+			die3(nm, "algorithm > 8 characters", arg);
 		if (!isdigit(c) && !islower(c))
-			jmscott_die3(EXIT_BAD_BRR, nm, "algorithm not [a-z0-9]", arg);
+			die3(nm, "algorithm not [a-z0-9]", arg);
 		a++;
 	}
 	if (c == 0)
-		jmscott_die3(EXIT_BAD_BRR, nm, "no colon at end of algorithm", arg);
+		die3(nm, "no colon at end of algorithm", arg);
 
 	a++;
 	len = strlen(a);
 	if (len < 32)
-		jmscott_die3(EXIT_BAD_BRR, nm, "digest: length < 32", arg);
+		die3(nm, "digest: length < 32", arg);
 	if (len > 128)
-		jmscott_die3(EXIT_BAD_BRR, nm, "digest: length > 128", arg);
+		die3(nm, "digest: length > 128", arg);
 
 	while ((c = *a++))
 		if (!isgraph(c) || !isascii(c))
-			jmscott_die3(EXIT_BAD_BRR, nm, "digest: bad char", arg);
+			die3(nm, "digest: bad char", arg);
 }
 
 static void
@@ -284,7 +269,7 @@ main(int argc, char **argv)
 	int fd;
 
 	if (argc != 9)
-		jmscott_die_argc(EXIT_BAD_ARGC, argc, 9, usage);
+		jmscott_die_argc(1, argc, 9, usage);
 
 	path = argv[1];
 
@@ -307,7 +292,7 @@ main(int argc, char **argv)
 	    strcmp("wrap", argv[4])					&&
 	    strcmp("cat", argv[4])					&&
 	    strcmp("roll", argv[4]))
-		jmscott_die2(EXIT_BAD_BRR, "not verb", argv[4]);
+		die2("not verb", argv[4]);
 
 	is_udig(argv[5], &b);
 
@@ -320,7 +305,7 @@ main(int argc, char **argv)
 	    strcmp("ok,no", argv[6])					&&
 	    strcmp("ok,ok,ok", argv[6])					&&
 	    strcmp("ok,ok,no", argv[6]))
-		jmscott_die2(EXIT_BAD_BRR, "not chat history", argv[6]);
+		die2("not chat history", argv[6]);
 
 	is_blob_size(argv[7], &b);
 
@@ -334,20 +319,13 @@ main(int argc, char **argv)
 	);
 
 	if (b - brr < MIN_BRR)
-		jmscott_die(EXIT_BAD_BRR, "brr < 35 bytes");
+		die("brr < 35 bytes");
 
 	// atomically write exactly the number bytes in the blob request record
+
 	if (jmscott_write_all(fd, brr, b - brr))
-		jmscott_die2(
-			EXIT_BAD_WRITE,
-			"write(brr) filed",
-			strerror(errno)
-	);
+		die2("write(brr) failed", strerror(errno));
 	if (jmscott_close(fd))
-		jmscott_die2(
-			EXIT_BAD_CLOSE,
-			"close(brr out) failed",
-			strerror(errno)
-		);
+		die2("close(brr out) failed", strerror(errno));
 	_exit(0);
 }
