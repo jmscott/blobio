@@ -1,0 +1,15 @@
+Process execution records summarize the final status of a process crunching
+a blob. The seven, tab separated fields are as follows:
+
+	start_time		#  start time in rfc3339 nano format
+	flow_seq		#  uint64
+	command_tag		#  [^a-z][a-z0-9_]{0,31}
+	process_id		#  0 < 2^64
+	exit_class		#  {OK,ERR,SIG,NOPS}
+	blob			#  udig
+	exit_code		#  0 <= 255
+	wall_duration		#  elapsed wall time in seconds, as sec.nsec
+	user_seconds		#  rusage SELF of cpu in user space, as sec.msec
+	sys_seconds		#  rusage SELF of cpu in kernel, as sec.msec
+
+Typically the xdr records are written into spool/<floq-server>.xdr

@@ -29,13 +29,13 @@ VAR2dir_local=(
 #  removed in "clean" recipes.
 #
 COMPILEs="
+	append-xdr
 "
 
 LIBs="
 	blobio.sync.remote.flowd.plist.example
 	blobio.sync.remote.flowd.service.example
 	profile-sync.example
-	rummy-chain.sql
 	sync-remote.flow.example
 	syncness.sql
 "
@@ -68,8 +68,9 @@ SBINs="
 #"
 
 #  Uncomment to create src/ directory
-#SRCs="
-#"
+SRCs="
+	append-xdr.c
+"
 
 #  Uncomment to create attic/ directory
 #ATTIC="

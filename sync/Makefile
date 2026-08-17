@@ -14,7 +14,7 @@ LIBs := $(shell  (. ./$(MKMK) && echo $$LIBs))
 SRCs := $(shell  (. ./$(MKMK) && echo $$SRCs))
 COMPILEs := $(shell  (. ./$(MKMK) && echo $$COMPILEs))
 
-all:
+all: $(COMPILEs)
 
 install-dirs:
 	cd .. && $(_MAKE) install-dirs
@@ -54,3 +54,10 @@ world:
 	$(_MAKE) all
 	$(_MAKE) distclean
 	$(_MAKE) install
+
+append-xdr: append-xdr.c
+	$(CC) $(CFLAGS)							\
+		-I$(JMSCOTT_INC)					\
+		append-xdr.c						\
+		-o append-xdr						\
+		-L$(JMSCOTT_ROOT)/lib -ljmscott
