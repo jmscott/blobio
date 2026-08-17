@@ -1,0 +1,75 @@
+#!/usr/bin/env zsh
+#
+#  Synopsis:
+#	Write $@ as timestamped entry into log/floq-<Dow>.log, and maybe roll
+#  Usage:
+#	bio-floq-log "hello, world"
+#	bio-floq-log "good bye, cruel world"
+#
+
+zmodload zsh/system		#  for exclusive lock to roll log file
+zmodload zsh/datetime		#  timestamp
+zmodload zsh/stat		#  for modification time of the log file
+
+local NOW;  strftime -s NOW '%Y/%m/%d %H:%M:%S'
+local PROG=floq-log
+
+local DOW;  strftime -s DOW %a
+local LOG_PATH=log/floq-$DOW.log
+local LOCK_TIMEOUT=20
+local LOCK_RETRY=.1
+local LOCK_PATH=run/$PROG.lock
+local LOCK
+
+local MSG="$NOW: $@"
+
+die()
+{
+	print "ERROR: $@" >&2
+	exit 1
+}
+
+#  Note: lock requires existing log file in run/.
+#	 eventually move "touch locl" to either start up script or a boot
+#	 predicate in etc/*.floq.
+
+touch $LOCK_PATH || die "touch lock failed: $?"
+
+#  aquire exclusive lock in case we must roll log file
+
+zsystem flock -f LOCK -t $LOCK_TIMEOUT -i $LOCK_RETRY $LOCK_PATH	||
+	die "zflock failed: exit status=$?"
+
+#  message is the first write to the log file, no reason to roll
+
+if [[ ! -e $LOG_PATH ]];  then
+	print "$MSG" >$LOG_PATH || die "print >log failed: $?"
+	exit 0
+fi
+
+#  get modify time for existing log file
+
+local -H LOG_STAT;  zstat -H LOG_STAT +mtime $LOG_PATH
+local LOG_MTIME=$LOG_STAT[mtime]
+
+#  get midnight uniz epoch
+
+local MIDNIGHT
+{
+        local _MIDNIGHT
+
+        strftime -s _MIDNIGHT "%Y-%m-%d 00:00:00"
+        strftime -r -s MIDNIGHT "%Y-%m-%d %H:%M:%S" $_MIDNIGHT
+}
+
+#  append if writes occured today;  otherwise,  truncate log file.
+
+if (( $LOG_MTIME >= $MIDNIGHT ));  then
+	print $MSG >>$LOG_PATH || die "print append failed: exit status=$?"
+else
+	print %MSG >$LOG_PATH || die "print truncate failed: exit status=$?"
+fi
+
+zsystem flock -u LOCK || die "zfunlock failed: exit status=$?"
+
+exit 0

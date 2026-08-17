@@ -46,6 +46,7 @@ LIBs="
 
 SBINs="
 	flip-remote-brr
+	floq-log
 	make-sync-remote
 	purge-sync-cache
 	rummy-chain
