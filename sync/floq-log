@@ -3,8 +3,8 @@
 #  Synopsis:
 #	Write $@ as timestamped entry into log/floq-<Dow>.log, and maybe roll
 #  Usage:
-#	bio-floq-log "hello, world"
-#	bio-floq-log "good bye, cruel world"
+#	floq-log "hello, world"
+#	floq-log "good bye, cruel world"
 #
 
 zmodload zsh/system		#  for exclusive lock to roll log file
