@@ -37,7 +37,6 @@ LIBs="
 	blobio.sync.remote.flowd.service.example
 	profile-sync.example
 	sync-remote.flow.example
-	syncness.sql
 "
 
 #  Uncoment to create bin/ directory
@@ -45,6 +44,7 @@ LIBs="
 #"
 
 SBINs="
+	append-xdr
 	flip-remote-brr
 	floq-log
 	make-sync-remote
