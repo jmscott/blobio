@@ -35,26 +35,19 @@ define tuple blob_request_record as {
 	}
 };
 
-define command write_upsert_brr_discover_xdr as {
-	path:	"/bin/sh",
-	args:	[
-			"-c", 
-			'echo $0 $1 upsert_brr_discover 
-				$2 $3 $4 $5 $6 $7 $8			
-			   	| sed \'s/  */	/g\' >>data/blobio.xdr
-			'
-		]
+define command append_upsert_xdr as {
+	path:	"sbin/append-xdr",
+	args:	["data/blobio.xdr"]
 };
 
-define command write_exists_brr_discover_xdr as {
-	path:	"/bin/sh",
-	args:	[
-			"-c", 
-			'echo $0 $1 exists_brr_discover 
-				$2 $3 $4 $5 $6 $7 $8			
-			   	| sed \'s/  */	/g\' >>data/blobio.xdr
-			'
-		]
+define command append_upsert_xdr2 as {
+	path:	"sbin/append-xdr",
+	args:	["data/blobio.xdr"]
+};
+
+define command append_exists_brr_discover_xdr as {
+	path:	"sbin/append-xdr",
+	args:	["data/blobio.xdr"]
 };
 
 define command next_brr.blob_request_record as {
@@ -78,29 +71,56 @@ define command upsert_brr_blob_size as {
 	path:	"sbin/upsert-brr_blob_size"
 };
 
-define command write_upsert_brr_blob_size_xdr as {
-	path:	"/bin/sh",
-	args:	[
-			"-c", 
-			'echo $0 $1 upsert_brr_blob_size 
-				$2 $3 $4 $5 $6 $7 $8			
-			   	| sed \'s/  */	/g\' >>data/blobio.xdr
-			'
-		]
+define command append_upsert_brr_blob_size_xdr as {
+	path:	"sbin/append-xdr",
+	args:	["data/blobio.xdr"]
 };
 
-define command write_exists_brr_blob_size_xdr as {
-	path:	"/bin/sh",
-	args:	[
-			"-c", 
-			'echo $0 $1 exists_brr_blob_size 
-				$2 $3 $4 $5 $6 $7 $8			
-			   	| sed \'s/  */	/g\' >>data/blobio.xdr
-			'
-		]
+define command append_exists_brr_blob_size_xdr as {
+	path:	"sbin/append-xdr",
+	args:	["data/blobio.xdr"]
+};
+
+define command log_flow_seq as {
+	path:	"sbin/floq-log"
+};
+
+define command log_hello as {
+	path:	"sbin/floq-log",
+	args:	["hello, world"]
+};
+
+define command log_ERROR as {
+	path:	"sbin/floq-log",
+	args:	["ERROR:"]
+};
+
+define command log_ERROR2 as {
+	path:	"sbin/floq-log",
+	args:	["ERROR:"]
+};
+
+define command log_ERROR3 as {
+	path:	"sbin/floq-log",
+	args:	["ERROR:"]
+};
+
+define command log_ERROR4 as {
+	path:	"sbin/floq-log",
+	args:	["ERROR:"]
+};
+
+define command log_ERROR5 as {
+	path:	"sbin/floq-log",
+	args:	["ERROR:"]
 };
 
 flow next_brr();
+
+run log_hello()
+  when
+  	next_brr$flow_seq == 1
+;
 
 run exists_brr_discover(next_brr.blob)
   when
@@ -126,9 +146,11 @@ run exists_brr_discover(next_brr.blob)
 	)
 ;
 
-run write_exists_brr_discover_xdr(
+run append_exists_brr_discover_xdr(
 	exists_brr_discover$start_time,
-	floq$flow_seq::string,
+	next_brr$flow_seq::string,
+	"exists_brr_discover",
+	exists_brr_discover$pid::string,
 	exists_brr_discover$exit_code <= 1 ? "OK" : "ERR",
 	next_brr.blob,
 	exists_brr_discover$exit_code::string,
@@ -138,10 +160,17 @@ run write_exists_brr_discover_xdr(
 	exists_brr_discover$user_sec::string || "." ||
 		exists_brr_discover$user_usec::string
   ) when
-	#  Note:
-	#	is it true that if a command never runs then exit_code is null?
-	#
-  	exists_brr_discover$exit_code is not null
+  	exists_brr_discover$pid is not null
+;
+
+run log_ERROR(
+	"append_exists_brr_discover failed: exit status: "		||
+		append_exists_brr_discover_xdr$exit_code::string	||
+		`: stderr follows ...
+`,
+	append_exists_brr_discover_xdr$Stderr
+  ) when
+  	append_exists_brr_discover_xdr$Stderr != ""
 ;
 
 run upsert_brr_discover(next_brr.blob, next_brr.start_time)
@@ -149,19 +178,29 @@ run upsert_brr_discover(next_brr.blob, next_brr.start_time)
   	exists_brr_discover$exit_code == 1
 ;
 
-run write_upsert_brr_discover_xdr(
+run append_upsert_xdr(
 	upsert_brr_discover$start_time,
-	floq$flow_seq::string,
+	next_brr$flow_seq::string,
+	"upsert_brr_discover",
+	upsert_brr_discover$pid::string,
 	upsert_brr_discover$exit_code == 0 ? "OK" : "ERR",
 	next_brr.blob,
 	upsert_brr_discover$exit_code::string,
-	upsert_brr_discover$wall_duration::string,
-	upsert_brr_discover$sys_sec::string || "." ||
-		upsert_brr_discover$sys_usec::string,
-	upsert_brr_discover$user_sec::string || "." ||
-		upsert_brr_discover$user_usec::string
+	upsert_brr_discover$wall_duration_seconds,
+	upsert_brr_discover$user_seconds,
+	upsert_brr_discover$sys_seconds
   ) when
   	upsert_brr_discover$exit_code is not null
+;
+
+run log_ERROR2(
+	"upsert_brr_discover failed: exit status: "		||
+		upsert_brr_discover$exit_code::string		||
+	`: stderr follows ...
+`,
+	upsert_brr_discover$Stderr
+  ) when
+  	upsert_brr_discover$Stderr != ""
 ;
 
 run exists_brr_blob_size(next_brr.blob)
@@ -186,19 +225,29 @@ run exists_brr_blob_size(next_brr.blob)
 	)
 ;
 
-run write_exists_brr_blob_size_xdr(
+run append_exists_brr_blob_size_xdr(
 	exists_brr_blob_size$start_time,
-	floq$flow_seq::string,
+	next_brr$flow_seq::string,
+	"exists_brr_blob_size",
+	exists_brr_blob_size$pid::string,
 	exists_brr_blob_size$exit_code <= 1 ? "OK" : "ERR",
 	next_brr.blob,
 	exists_brr_blob_size$exit_code::string,
-	exists_brr_blob_size$wall_duration::string,
-	exists_brr_blob_size$sys_sec::string || "." ||
-		exists_brr_blob_size$sys_usec::string,
-	exists_brr_blob_size$user_sec::string || "." ||
-		exists_brr_blob_size$user_usec::string
+	exists_brr_blob_size$wall_duration_seconds,
+	exists_brr_blob_size$user_seconds,
+	exists_brr_blob_size$sys_seconds
 ) when
 	exists_brr_blob_size$exit_code is not null
+;
+
+run log_ERROR3(
+	"append_exists_brr_blob_size_xdr failed: exit status: "		||
+		append_exists_brr_blob_size_xdr$exit_code::string,
+	`: stderr follows ...
+`,
+	append_exists_brr_blob_size_xdr$Stderr
+  ) when
+  	append_exists_brr_blob_size_xdr$Stderr != ""
 ;
 
 run upsert_brr_blob_size(next_brr.blob, next_brr.byte_count)
@@ -206,17 +255,40 @@ run upsert_brr_blob_size(next_brr.blob, next_brr.byte_count)
   	exists_brr_blob_size$exit_code == 1
 ;
 
-run write_upsert_brr_blob_size_xdr(
+run append_upsert_brr_blob_size_xdr(
 	upsert_brr_blob_size$start_time,
-	floq$flow_seq::string,
+	next_brr$flow_seq::string,
+	"upsert_brr_blob_size",
+	upsert_brr_blob_size$pid::string,
 	upsert_brr_blob_size$exit_code == 0 ? "OK" : "ERR",
 	next_brr.blob,
 	upsert_brr_blob_size$exit_code::string,
-	upsert_brr_blob_size$wall_duration::string,
-	upsert_brr_blob_size$sys_sec::string || "." ||
-		upsert_brr_blob_size$sys_usec::string,
-	upsert_brr_blob_size$user_sec::string || "." ||
-		upsert_brr_blob_size$user_usec::string
+	upsert_brr_blob_size$wall_duration_seconds,
+	upsert_brr_blob_size$user_seconds,
+	upsert_brr_blob_size$sys_seconds
 ) when
 	upsert_brr_blob_size$exit_code is not null
+;
+
+run log_ERROR4(
+	"append_upsert_brr_blob_size_xdr failed: exit status: "		||
+		append_upsert_brr_blob_size_xdr$exit_code::string,
+	`: stderr follows ...
+`,
+	append_upsert_brr_blob_size_xdr$Stderr
+  ) when
+  	append_upsert_brr_blob_size_xdr$Stderr != ""
+;
+
+define command tty_flow_seq as {
+	path:	"/bin/dash",
+	args:	[
+			"-c",
+			"echo flow seq: $0 $1 $2 $3>>/dev/tty"
+		]
+};
+
+run log_flow_seq("flow seq: " || next_brr$flow_seq::string)
+  when
+  	(next_brr$flow_seq % 100) == 0
 ;
