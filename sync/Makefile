@@ -15,6 +15,7 @@ SRCs := $(shell  (. ./$(MKMK) && echo $$SRCs))
 COMPILEs := $(shell  (. ./$(MKMK) && echo $$COMPILEs))
 
 all: $(COMPILEs)
+	cd pgsql && $(_MAKE) all
 
 install-dirs:
 	cd .. && $(_MAKE) install-dirs
@@ -41,6 +42,7 @@ distclean:
 	realpath --relative-to $(DIST_ROOT)/lib $(LIBs)			|\
 		rm --verbose --force
 clean:
+	cd pgsql && $(_MAKE) clean
 	rm -f $(COMPILEs)
 
 dev-links:
