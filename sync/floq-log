@@ -5,6 +5,8 @@
 #  Usage:
 #	floq-log "hello, world"
 #	floq-log "good bye, cruel world"
+#  Note:
+#	eventuallly rewrite in clang or merge functionality into floq.
 #
 
 zmodload zsh/system		#  for exclusive lock to roll log file
